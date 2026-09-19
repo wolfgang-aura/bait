@@ -14,6 +14,7 @@
     "demo:package": "node prototype/package-demo.js",
     "release:prepare": "node scripts/prepare-public-source.mjs",
     "quota": "node validation/quota.js",
+    "quota:report": "node validation/analyze-robustness.js",
     "validate:smoke": "node validation/smoke.js",
     "validate:pitch": "node validation/verify_pitch.js pitch2.json"
   }

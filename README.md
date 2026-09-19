@@ -71,6 +71,11 @@ tested six losing wallets and one profitable control. The permissive policy fund
 2/6 losing wallets; the strict policy funded 0/6. Both funded the profitable control.
 Each wallet-policy pair ran once, so this remains a small development sample.
 
+The [historical robustness panel](bench/reports/robustness-panel.md) currently contains
+230 distinct Nansen PnL observations across the same seven development wallets. Several
+wallets switch between gains and losses across periods. This is why BAIT treats a
+carefully selected date window as an argument, not proof of a durable edge.
+
 ## Evidence and checks
 
 ```powershell

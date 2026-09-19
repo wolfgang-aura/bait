@@ -123,3 +123,16 @@ leaderboard, accounts, generated cases, deployment or social integration in this
 ## Paired evidence inspection, 19 September
 
 Retain Pico, existing type/spacing/colour tokens, and 1280x800 / 390x844 viewports. After the tool-access table, show the controlled policy comparison before the older exploratory strict run. First notice: the same evidence produced different policy decisions in two of six losing wallets. Use a seven-wallet select, the three exact pitches, and both original replies in existing desk cards. Default to wallet 1, not a selected success. Keep profitable control separate in aggregate counts. Collapse the older experiment. Use frozen tracked results only; make no API calls. Always show one repeat, development sample, and prompt-only limits.
+
+## Public competition pass, 20 September
+
+Reference captures: the public BAIT replay and Singulant Proof at desktop width.
+Singulant leads with a sharper problem statement and one obvious action. BAIT has the
+stronger interaction and empirical model comparison, but its current headline explains
+the mechanism before the game.
+
+The first thing to notice is now the challenge: can true facts make an AI fund a losing
+trader? The mechanism follows in one sentence. Keep the existing replay interaction,
+desk cards, evidence reveal and Pico system. Add no decorative sections. The proof line
+states the actual scope, 90 tool-access replays and seven paired wallets, without
+implying an unseen evaluation.

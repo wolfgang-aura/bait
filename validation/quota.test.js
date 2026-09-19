@@ -1,36 +1,41 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs, planSteps, runQuota, walletsOnDisk, DEFAULTS, ENCOUNTER_WALLET } from './quota.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { appendObservation, completedObservationKeys, parseArgs, planSteps, runQuota, walletsOnDisk, DEFAULTS, ENCOUNTER_WALLET } from './quota.js';
 import { BudgetExceeded } from './nansen.js';
 
 const WALLETS = ['0x1111111111111111111111111111111111111111', ENCOUNTER_WALLET];
 
 test('parseArgs reads the documented flags', () => {
   assert.deepEqual(parseArgs([]), { ...DEFAULTS, wallets: [] });
-  const opts = parseArgs(['--max-calls', '10', '--daily-cap', '250', '--timeout', '9000', '--dry-run', '--wallet', ENCOUNTER_WALLET.toUpperCase()]);
+  const opts = parseArgs(['--max-calls', '10', '--daily-cap', '250', '--timeout', '9000', '--output', 'scratch/panel.jsonl', '--dry-run', '--wallet', ENCOUNTER_WALLET.toUpperCase()]);
   assert.equal(opts.maxCalls, 10);
   assert.equal(opts.dailyCap, 250);
   assert.equal(opts.timeoutMs, 9000);
   assert.equal(opts.dryRun, true);
+  assert.equal(opts.output, path.resolve('scratch/panel.jsonl'));
   assert.deepEqual(opts.wallets, [ENCOUNTER_WALLET]);
 });
 
 test('parseArgs refuses bad input instead of silently defaulting', () => {
   for (const argv of [['--max-calls'], ['--max-calls', '0'], ['--max-calls', '-3'], ['--max-calls', 'abc'],
-    ['--daily-cap', '1.5'], ['--wallet', 'not-an-address'], ['--nope']]) {
+    ['--daily-cap', '1.5'], ['--output'], ['--wallet', 'not-an-address'], ['--nope']]) {
     assert.throws(() => parseArgs(argv), Error, `expected ${JSON.stringify(argv)} to throw`);
   }
 });
 
 test('the plan only uses endpoints the prototype actually reads', () => {
   const steps = planSteps(WALLETS, { now: new Date('2026-09-18T12:00:00Z'), rounds: 2 });
-  assert.equal(steps.length, 2 * (WALLETS.length * 2 + 1));
-  assert.deepEqual([...new Set(steps.map(s => s.path))], ['profiler/perp-pnl-summary', 'profiler/perp-trades']);
+  assert.equal(steps.length, 2 * WALLETS.length * 2);
+  assert.deepEqual([...new Set(steps.map(s => s.path))], ['profiler/perp-pnl-summary']);
   assert.ok(steps.every(s => /^0x[a-f0-9]{40}$/.test(s.body.address)));
   const windowDays = steps
     .filter(s => s.path === 'profiler/perp-pnl-summary')
     .map(s => Math.round((Date.parse(s.body.date.to) - Date.parse(s.body.date.from)) / 86400_000));
   assert.deepEqual([...new Set(windowDays)].sort((a, b) => a - b), [7, 30]);
+  assert.equal(Date.parse(steps[0].body.date.to) - Date.parse(steps[WALLETS.length * 2].body.date.to), 7 * 86400_000);
 });
 
 test('walletsOnDisk puts the encounter wallet first and dedupes', () => {
@@ -38,6 +43,17 @@ test('walletsOnDisk puts the encounter wallet first and dedupes', () => {
   assert.equal(wallets[0], ENCOUNTER_WALLET);
   assert.equal(new Set(wallets).size, wallets.length);
   assert.ok(wallets.every(w => /^0x[a-f0-9]{40}$/.test(w)));
+});
+
+test('saved observations are resumable and keep the response body', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-quota-'));
+  const output = path.join(dir, 'panel.jsonl');
+  const step = planSteps([ENCOUNTER_WALLET], { now: new Date('2026-09-20T12:34:00Z'), rounds: 1 })[0];
+  appendObservation(output, step, { data: { realized_pnl_usd: -42 } }, '2026-09-20T13:00:00Z');
+  const row = JSON.parse(fs.readFileSync(output, 'utf8').trim());
+  assert.equal(row.data.realized_pnl_usd, -42);
+  assert.equal(completedObservationKeys(output).size, 1);
+  fs.rmSync(dir, { recursive: true, force: true });
 });
 
 const harness = (overrides = {}) => {
