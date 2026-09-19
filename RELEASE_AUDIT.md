@@ -1,6 +1,11 @@
 # Public release audit
 
-Prepared 19 September 2026. Nothing has been pushed or deployed.
+Prepared 19 September 2026 and updated after publication on 20 September 2026.
+
+- Public repository: <https://github.com/wolfgang-aura/bait>
+- Recorded demo: <https://wolfgang-aura.github.io/bait/>
+- Published commit: `ab617aac5febcbe7312f1777243d554bd814990b`
+- Pages workflow run `35468370556` passed after the deployment path fix.
 
 The release candidate contains 255 tracked files and starts from one clean commit.
 It excludes the local `.env`, API keys, usage ledgers, conversation notes, local
@@ -21,7 +26,6 @@ before publishing the recorded demo. It cannot expose the live server or API key
 The public page remains clearly labelled as recorded and links to local setup for
 the live game.
 
-Before public release, confirm the repository owner and name. The expected target
-is `wolfgang-aura/bait`; that repository did not exist when this audit ran. Making
-the repository public and enabling Pages will expose the code, blockchain evidence,
-model replies and benchmark reports to anyone.
+The public repository exposes the intended code, blockchain evidence, model replies
+and benchmark reports. It excludes local credentials, usage ledgers, scratch output
+and the development repository's Git history.

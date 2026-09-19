@@ -2,6 +2,9 @@
 
 Can you sell a losing trader using true facts?
 
+[Open the recorded demo](https://wolfgang-aura.github.io/bait/) ·
+[Inspect the public repository](https://github.com/wolfgang-aura/bait)
+
 Pitch selected Nansen evidence to two AI desks. Both receive the same argument and
 the same policy. One can check the full trading record; the other cannot.
 All allocations are fictional.
@@ -86,7 +89,8 @@ included in the downloadable evidence.
 - [Fixed-evidence comparison protocol](bench/PAIRED_PROTOCOL.md), completed on seven wallets. `npm run bench:paired` checks its inputs and budget without making API calls.
 - [Submission status and recording plan](SUBMISSION.md)
 
-Local prototype. No public deployment or final buildathon submission yet.
+The recorded demo is public. The final live-data recording, X post and buildathon
+entry are still in progress.
 Data: Nansen.
 
 ## Recorded demo package

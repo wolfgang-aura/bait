@@ -1,6 +1,6 @@
 # Submission preparation
 
-Not submitted. Verified 19 September 2026.
+Not submitted. Updated 20 September 2026.
 
 ## Entry requirements
 
@@ -13,10 +13,11 @@ live Nansen data visible. The deadline is 27 September at 23:59 UTC, or
 
 Current evidence:
 
-- Local ledger: 142 Nansen calls since 14 September, 141 successful. This is a local
+- Local ledger: 143 Nansen calls since 14 September, 142 successful. This is a local
   count, not confirmation of the organizer's account-wide eligibility count.
-- No Git remote or public repository URL is configured.
-- No deployed URL, final recording, X post or submitted form exists.
+- Public repository: <https://github.com/wolfgang-aura/bait>
+- Recorded demo: <https://wolfgang-aura.github.io/bait/>
+- No final live-data recording, X post or submitted form exists.
 - The saved replay works without keys, but it does not satisfy the live-data
   recording requirement by itself.
 
@@ -59,7 +60,5 @@ reproduction commands accompany the demo.
 A complete real-provider round with live data passed on 19 September, including
 receipt copying and reload recovery. The paired comparison also completed; its
 full result is linked in the README. Confirm eligibility using the account's
-authoritative call count. Review
-the files intended for the public repository, choose its owner and name, and
-publish only the intended code and evidence. Record the final demo and prepare its
-post for review before publishing or submitting it.
+authoritative call count. Record the final demo and prepare its post for review
+before publishing or submitting it.
