@@ -39,6 +39,16 @@ $env:PORT="3001"
 npm start
 ```
 
+If the default trader is no longer losing over the current 30-day window, select
+another tracked snapshot before starting:
+
+```powershell
+$env:ENCOUNTER_WALLET="0x6daec5ff434924e0839358e710e6ae5f158590de"
+```
+
+The server refuses an untracked address because every live encounter needs an audited
+fallback if Nansen is unavailable.
+
 Open <http://127.0.0.1:3001>. **Pitch the comeback** sends a prepared argument with
 two evidence cards immediately. You can also choose cards and write your own pitch.
 After three accepted pitches, copy the receipt with both replies and the evidence

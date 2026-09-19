@@ -13,7 +13,7 @@ live Nansen data visible. The deadline is 27 September at 23:59 UTC, or
 
 Current evidence:
 
-- Local ledger: 143 Nansen calls since 14 September, 142 successful. This is a local
+- Local ledger: 418 Nansen calls since 14 September, 417 successful. This is a local
   count, not confirmation of the organizer's account-wide eligibility count.
 - Public repository: <https://github.com/wolfgang-aura/bait>
 - Recorded demo: <https://wolfgang-aura.github.io/bait/>
@@ -21,8 +21,9 @@ Current evidence:
 - The saved replay works without keys, but it does not satisfy the live-data
   recording requirement by itself.
 
-Do not spend credits on repeated empty calls to reach the threshold. Additional
-data collection should support documented wallet cases or coverage checks.
+The remaining qualification calls build a resumable historical panel across distinct
+7-day and 30-day endpoints. The first batch saved 230 observations across seven
+wallets with no failures. It uses the quota for documented regime-stability evidence.
 
 ## The 55-second recording
 
@@ -62,3 +63,7 @@ receipt copying and reload recovery. The paired comparison also completed; its
 full result is linked in the README. Confirm eligibility using the account's
 authoritative call count. Record the final demo and prepare its post for review
 before publishing or submitting it.
+
+## Final live-data candidate, 20 September
+
+The original trader turned profitable and the game refused to mislabel it. A second tracked trader now supplies the live encounter with an audited fallback. A complete three-pitch DeepSeek round passed with `Live Nansen data · fetched 21:06 UTC` visible. The current 30-day result was -$1,406,757 and the seven-day result was +$39,900. Use this trader for the final recording.

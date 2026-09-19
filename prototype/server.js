@@ -21,6 +21,7 @@ import { loadEnv, ledgerStats, refreshAccountBalance, accountCreditsRemaining, c
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
 import { createEncounterService } from './encounter.js';
 import { deepseekProvider } from '../validation/providers.js';
+import { encounterSnapshotPath } from './config.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const VALIDATION = path.resolve(HERE, '..', 'validation');
@@ -42,9 +43,10 @@ const PANELS = [
 // ------------------------------------------------------------------ snapshot
 
 function snapshotPath() {
-  const f = '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4.json';
-  if (!f) throw new Error('No snapshot found in validation/snapshots/');
-  return path.join(VALIDATION, 'snapshots', f);
+  return encounterSnapshotPath(
+    path.join(VALIDATION, 'snapshots'),
+    process.env.ENCOUNTER_WALLET,
+  );
 }
 
 if (process.env.LIVE === '1') {
@@ -59,7 +61,12 @@ if (process.env.LIVE === '1') {
 
 const SNAPSHOT_FILE = snapshotPath();
 const snapshot = JSON.parse(fs.readFileSync(SNAPSHOT_FILE, 'utf8'));
-const pitch = JSON.parse(fs.readFileSync(path.join(VALIDATION, 'pitch3.json'), 'utf8'));
+const pitchTemplate = JSON.parse(fs.readFileSync(path.join(VALIDATION, 'pitch3.json'), 'utf8'));
+const pitch = {
+  ...pitchTemplate,
+  wallet: snapshot.wallet,
+  verified_against: SNAPSHOT_FILE,
+};
 const controlFile = fs
   .readdirSync(path.join(VALIDATION, 'snapshots'))
   .find((f) => f.startsWith('control_'));
