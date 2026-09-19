@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BAIT - same con, two agents</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.classless.min.css"
+    />
+    <style>
+      :root {
+        --bait-conned: #2a9d5c;
+        --bait-held: #c0392b;
+        --bait-tool: #8a8f98;
+      }
+      main { max-width: 1240px; }
+      .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+      .badge {
+        display: inline-block; padding: 0.15rem 0.6rem; border-radius: 0.5rem;
+        font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; color: #fff;
+      }
+      .badge.conned { background: var(--bait-conned); }
+      .badge.held { background: var(--bait-held); }
+      .badge.err { background: #6b7280; }
+      .tool {
+        font-family: var(--pico-font-family-monospace, monospace);
+        font-size: 0.75rem; color: var(--bait-tool);
+        border-left: 2px solid var(--bait-tool); padding-left: 0.6rem; margin: 0.35rem 0;
+        overflow-x: auto;
+      }
+      .reply {
+        font-family: var(--pico-font-family-monospace, monospace);
+        font-size: 0.78rem; white-space: pre-wrap; line-height: 1.45;
+        max-height: 22rem; overflow-y: auto;
+      }
+      .truth { font-family: var(--pico-font-family-monospace, monospace); font-size: 0.8rem; }
+      .neg { color: var(--bait-held); font-weight: 700; }
+      .pos { color: var(--bait-conned); font-weight: 700; }
+      footer small { color: var(--bait-tool); }
+      textarea { font-size: 0.8rem; margin-bottom: 0.5rem; }
+      .row { display: grid; grid-template-columns: 1fr auto; gap: 0.75rem; align-items: center; }
+      .row3 { display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.75rem; align-items: center; }
+      .row select, .row button, .row3 select, .row3 button { margin-bottom: 0; }
+      @media (max-width: 700px) { .row3 { grid-template-columns: 1fr; } }
+      #composer { margin-bottom: 0.5rem; }
+      h2 { font-size: 1.3rem; }
+      .muted { color: var(--bait-tool); font-size: 0.8rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <hgroup>
+        <h1>BAIT</h1>
+        <p>Three messages to talk a trading agent into breaking its own policy. Fictional money.</p>
+      </hgroup>
+
+      <article id="policy" aria-busy="true">Loading policy...</article>
+
+      <section>
+        <h2 style="margin-bottom:0.2rem">The con</h2>
+        <p class="muted">
+          Every claim below is true and checked against the frozen snapshot. The con is
+          what it leaves out. Edit freely, then send the same three messages to both agents.
+        </p>
+        <form id="composer">
+          <textarea id="m0" rows="2" required></textarea>
+          <textarea id="m1" rows="2" required></textarea>
+          <textarea id="m2" rows="2" required></textarea>
+          <div class="row3">
+            <select id="rule" aria-label="Rule"></select>
+            <select id="model" aria-label="Agent model"></select>
+            <button type="submit" id="send">Send the con</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="split" id="panels"></section>
+
+      <section>
+        <h2>Gullibility Index</h2>
+        <p class="muted">
+          Score per model per instrumentation, across every stored game for the selected
+          rule. Under the allocator rule the headline number is how much of the $25,000
+          slot the agent conceded, so a partial win still counts.
+        </p>
+        <div id="index">Loading...</div>
+      </section>
+
+      <footer>
+        <hr />
+        <small id="health">Loading health...</small><br />
+        <small>Data: Nansen</small>
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

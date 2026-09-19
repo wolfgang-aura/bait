@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "role": "control",
+  "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+  "label": null,
+  "chain": "hyperliquid",
+  "retrieved_at": "2026-09-15T11:10:52Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-16T11:10:51Z",
+      "to": "2026-09-15T11:10:51Z"
+    },
+    "7d": {
+      "from": "2026-09-08T11:10:51Z",
+      "to": "2026-09-15T11:10:51Z"
+    }
+  },
+  "pnl_summary_30d": {
+    "top5_coins": [
+      {
+        "coin": "HYPE",
+        "realized_pnl_usd": 52029.54149,
+        "realized_roi": 0.10062718897868839,
+        "closed_trade_count": 132,
+        "fees_usd": 377.971808
+      },
+      {
+        "coin": "VVV",
+        "realized_pnl_usd": 1394.59387,
+        "realized_roi": 0.015443033658626157,
+        "closed_trade_count": 78,
+        "fees_usd": 68.550428
+      },
+      {
+        "coin": "ASTER",
+        "realized_pnl_usd": 1114.358059,
+        "realized_roi": 0.0068101167402583995,
+        "closed_trade_count": 116,
+        "fees_usd": 124.75271
+      },
+      {
+        "coin": "xyz:PLTR",
+        "realized_pnl_usd": -80.21314,
+        "realized_roi": -0.0009351925957999097,
+        "closed_trade_count": 24,
+        "fees_usd": 15.297709
+      },
+      {
+        "coin": "ZEC",
+        "realized_pnl_usd": -281.613,
+        "realized_roi": -0.020574334979569446,
+        "closed_trade_count": 6,
+        "fees_usd": 10.578716
+      }
+    ],
+    "traded_coin_count": 12,
+    "traded_times": 574,
+    "closed_trade_count": 2064,
+    "winning_trade_count": 1244,
+    "realized_pnl_usd": 35083.453315000006,
+    "realized_pnl_percent": 0.01527075456282575,
+    "win_rate": 0.6027131782945736,
+    "fees_usd": 1404.033808
+  },
+  "pnl_summary_7d": {
+    "top5_coins": [
+      {
+        "coin": "VVV",
+        "realized_pnl_usd": 1394.59387,
+        "realized_roi": 0.015443033658626157,
+        "closed_trade_count": 78,
+        "fees_usd": 68.550428
+      },
+      {
+        "coin": "HYPE",
+        "realized_pnl_usd": 0,
+        "realized_roi": 0,
+        "closed_trade_count": 0,
+        "fees_usd": 32.451169
+      },
+      {
+        "coin": "xyz:PLTR",
+        "realized_pnl_usd": -80.21314,
+        "realized_roi": -0.0009351925957999097,
+        "closed_trade_count": 24,
+        "fees_usd": 15.297709
+      },
+      {
+        "coin": "ZEC",
+        "realized_pnl_usd": -281.613,
+        "realized_roi": -0.020574334979569446,
+        "closed_trade_count": 6,
+        "fees_usd": 10.578716
+      },
+      {
+        "coin": "xyz:HOOD",
+        "realized_pnl_usd": -2240.48906,
+        "realized_roi": -0.07830931392207843,
+        "closed_trade_count": 7,
+        "fees_usd": 2.188721
+      }
+    ],
+    "traded_coin_count": 5,
+    "traded_times": 15,
+    "closed_trade_count": 115,
+    "winning_trade_count": 78,
+    "realized_pnl_usd": -1207.72133,
+    "realized_pnl_percent": -0.0055304716522681435,
+    "win_rate": 0.6782608695652174,
+    "fees_usd": 129.066743
+  },
+  "leaderboard_row": {
+    "trader_address": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+    "trader_address_label": null,
+    "total_trades": 0,
+    "realized_pnl_usd": 1
+  },
+  "trades_30d": [],
+  "trades_pagination": {
+    "is_complete": false,
+    "note": "fills not fetched for the control wallet"
+  }
+}

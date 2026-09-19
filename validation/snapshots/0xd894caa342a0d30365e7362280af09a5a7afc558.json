@@ -1,0 +1,534 @@
+{
+  "schema_version": 1,
+  "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+  "chain": "hyperliquid",
+  "retrieved_at": "2026-09-15T13:20:15Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-16T13:20:15Z",
+      "to": "2026-09-15T13:20:15Z"
+    },
+    "7d": {
+      "from": "2026-09-08T13:20:15Z",
+      "to": "2026-09-15T13:20:15Z"
+    }
+  },
+  "pnl_summary_30d": {
+    "top5_coins": [
+      {
+        "coin": "BNB",
+        "realized_pnl_usd": 10820.538336,
+        "realized_roi": 0.08026669846535583,
+        "closed_trade_count": 37,
+        "fees_usd": 53.922911
+      },
+      {
+        "coin": "NEAR",
+        "realized_pnl_usd": 10510.429568,
+        "realized_roi": 0.04763150624765192,
+        "closed_trade_count": 104,
+        "fees_usd": 172.324773
+      },
+      {
+        "coin": "BTC",
+        "realized_pnl_usd": 2299.09127,
+        "realized_roi": 0.007523093060745323,
+        "closed_trade_count": 31,
+        "fees_usd": 303.877666
+      },
+      {
+        "coin": "ETH",
+        "realized_pnl_usd": -1042.773085,
+        "realized_roi": -0.006460524894217696,
+        "closed_trade_count": 9,
+        "fees_usd": 129.542778
+      },
+      {
+        "coin": "LTC",
+        "realized_pnl_usd": -2299.851538,
+        "realized_roi": -0.007917823035699906,
+        "closed_trade_count": 46,
+        "fees_usd": 233.292168
+      }
+    ],
+    "traded_coin_count": 8,
+    "traded_times": 16,
+    "closed_trade_count": 435,
+    "winning_trade_count": 172,
+    "realized_pnl_usd": -14877.570543000002,
+    "realized_pnl_percent": -0.008384065593223241,
+    "win_rate": 0.3954022988505747,
+    "fees_usd": 1436.27472
+  },
+  "pnl_summary_7d": {
+    "top5_coins": [
+      {
+        "coin": "BTC",
+        "realized_pnl_usd": 0,
+        "realized_roi": 0,
+        "closed_trade_count": 0,
+        "fees_usd": 60.313707
+      },
+      {
+        "coin": "XLM",
+        "realized_pnl_usd": -21335.998368,
+        "realized_roi": -0.10544004368692485,
+        "closed_trade_count": 52,
+        "fees_usd": 80.940755
+      }
+    ],
+    "traded_coin_count": 2,
+    "traded_times": 2,
+    "closed_trade_count": 52,
+    "winning_trade_count": 0,
+    "realized_pnl_usd": -21335.998368,
+    "realized_pnl_percent": -0.10544004368692485,
+    "win_rate": 0,
+    "fees_usd": 141.254462
+  },
+  "open_positions": {
+    "skipped": "not fetched (--no-positions)"
+  },
+  "trades_30d": [
+    {
+      "timestamp": "2026-08-20T16:59:12.474000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1117276456,
+      "token_symbol": "BNB",
+      "price": 653.6492687574549,
+      "size": 206.238,
+      "value_usd": 134807.31789,
+      "start_position": 1.518,
+      "closed_pnl": 10820.538336,
+      "crossed": true,
+      "fee_usd": 53.922911,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0xfee83e413e29ef3a006104429849280202420026d92d0e0da2b0e993fd2dc925",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 521077268122
+    },
+    {
+      "timestamp": "2026-08-21T09:03:53.084000Z",
+      "side": "Long",
+      "action": "Open",
+      "block_number": 1118087797,
+      "token_symbol": "ETH",
+      "price": 2405.6167531227093,
+      "size": 67.5295,
+      "value_usd": 162450.09653,
+      "start_position": 0,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 64.980034,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x9a337a5d5547f1359bad0442a4aa750205430042f04b10073dfc25b0144bcb20",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 521771077285
+    },
+    {
+      "timestamp": "2026-08-21T09:07:53.571000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1118091182,
+      "token_symbol": "ETH",
+      "price": 2390.1682584648192,
+      "size": 67.5295,
+      "value_usd": 161406.86741,
+      "start_position": 13.2651,
+      "closed_pnl": -1042.773085,
+      "crossed": true,
+      "fee_usd": 64.562744,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0xecfd8f48bbd33934ee770442a4b7ae0204b7002e56d6580690c63a9b7ad7131f",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 521777115596
+    },
+    {
+      "timestamp": "2026-08-23T11:46:06.998000Z",
+      "side": "Long",
+      "action": "Open",
+      "block_number": 1120659144,
+      "token_symbol": "LTC",
+      "price": 52.43487018148407,
+      "size": 5583.41,
+      "value_usd": 292765.37852,
+      "start_position": 0,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 117.106136,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x55395ce39721e90c56b30442cbe6c802023200c9322507def90208365625c2f6",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 524016075703
+    },
+    {
+      "timestamp": "2026-08-24T00:12:14.047000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1121294530,
+      "token_symbol": "LTC",
+      "price": 52.022891947752356,
+      "size": 5583.41,
+      "value_usd": 290465.13513,
+      "start_position": 1446.01,
+      "closed_pnl": -2299.851538,
+      "crossed": true,
+      "fee_usd": 116.186032,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0xbc56d02e0f8fdf01bdd00442d598c20206460013aa82fdd3601f7b80ce83b8ec",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 524492779643
+    },
+    {
+      "timestamp": "2026-08-24T00:12:24.610000Z",
+      "side": "Long",
+      "action": "Open",
+      "block_number": 1121294684,
+      "token_symbol": "UNI",
+      "price": 4.509278033927193,
+      "size": 65009.8,
+      "value_usd": 293147.26313,
+      "start_position": 0,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 117.258867,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x635ecb2ec56ed7a764d80442d5995c0202d200146061f679072776818462b192",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 524492934052
+    },
+    {
+      "timestamp": "2026-08-27T08:10:20.743000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1125348708,
+      "token_symbol": "UNI",
+      "price": 4.4191095991681255,
+      "size": 65009.8,
+      "value_usd": 287285.43122,
+      "start_position": 4787.6,
+      "closed_pnl": -5861.309626,
+      "crossed": true,
+      "fee_usd": 114.914095,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x4f3d73adf6785f0f50b704431375640210e30093917b7de1f3061f00b57c38f9",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 528166531995
+    },
+    {
+      "timestamp": "2026-08-27T08:11:14.018000Z",
+      "side": "Long",
+      "action": "Open",
+      "block_number": 1125349463,
+      "token_symbol": "BTC",
+      "price": 79821,
+      "size": 3.79982,
+      "value_usd": 303305.43222,
+      "start_position": 0,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 121.322159,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x36f625f467e3c35b386f0443137857020d1300da02e6e22ddabed14726e79d45",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 528167456822
+    },
+    {
+      "timestamp": "2026-08-28T02:10:27.884000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1126260635,
+      "token_symbol": "BTC",
+      "price": 80426.0526788111,
+      "size": 3.79982,
+      "value_usd": 305604.52349,
+      "start_position": 0.06031,
+      "closed_pnl": 2299.09127,
+      "crossed": true,
+      "fee_usd": 122.2418,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x0f6d50dc0ab1237a10e70443215f9b02037400c1a5b4424cb335fc2ec9b4fd64",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 529063521187
+    },
+    {
+      "timestamp": "2026-08-28T02:10:38.053000Z",
+      "side": "Long",
+      "action": "Open",
+      "block_number": 1126260774,
+      "token_symbol": "SOL",
+      "price": 107.81,
+      "size": 1668.59,
+      "value_usd": 179890.6879,
+      "start_position": 0,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 71.956268,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x983886ed3a62275799b2044321602602033000d2d56546293c01323ff9660142",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 529063634235
+    },
+    {
+      "timestamp": "2026-09-05T13:10:22.446000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1136486575,
+      "token_symbol": "SOL",
+      "price": 103.0348922143846,
+      "size": 1668.59,
+      "value_usd": 171922.9908,
+      "start_position": 706.24,
+      "closed_pnl": -7967.6971,
+      "crossed": true,
+      "fee_usd": 68.769191,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x6bdc22a9bf8fb78f6d550443bd68af0202e5008f5a82d6610fa4cdfc7e83917a",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 536869497393
+    },
+    {
+      "timestamp": "2026-09-05T13:10:31.845000Z",
+      "side": "Long",
+      "action": "Open",
+      "block_number": 1136486711,
+      "token_symbol": "NEAR",
+      "price": 2.2302903649531234,
+      "size": 94225.8,
+      "value_usd": 210150.89387,
+      "start_position": 0,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 84.060313,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x447bc6b8b5031a9645f50443bd6937020355009e50063968e844720b7406f480",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 536869567137
+    },
+    {
+      "timestamp": "2026-09-07T12:10:15.325000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1138858794,
+      "token_symbol": "NEAR",
+      "price": 2.3418351348569075,
+      "size": 94225.8,
+      "value_usd": 220661.28905,
+      "start_position": 3176,
+      "closed_pnl": 10510.429568,
+      "crossed": true,
+      "fee_usd": 88.26446,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x774f9327c08c472578c90443e19b2a0201ce000d5b8f65f71b183e7a7f802110",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 538374461396
+    },
+    {
+      "timestamp": "2026-09-07T12:10:24.936000Z",
+      "side": "Long",
+      "action": "Open",
+      "block_number": 1138858928,
+      "token_symbol": "XLM",
+      "price": 0.19328919012125068,
+      "size": 1157272,
+      "value_usd": 223688.16763,
+      "start_position": 0,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 89.475248,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0xf810ce45983fa1f5f98a0443e19bb001e300e62b3332c0c89bd9799857337be0",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 538374548711
+    },
+    {
+      "timestamp": "2026-09-10T23:11:09.364000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1143034780,
+      "token_symbol": "XLM",
+      "price": 0.1748525404917772,
+      "size": 1157272,
+      "value_usd": 202351.94924,
+      "start_position": 332579,
+      "closed_pnl": -21335.998368,
+      "crossed": true,
+      "fee_usd": 80.940755,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x66eb251c4c41a5cc6864044421539c020c300001e744c49e0ab3d06f0b457fb7",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 541718011435
+    },
+    {
+      "timestamp": "2026-09-13T00:10:24.577000Z",
+      "side": "Long",
+      "action": "Open",
+      "block_number": 1145475081,
+      "token_symbol": "BTC",
+      "price": 77255,
+      "size": 1.73491,
+      "value_usd": 134030.47205,
+      "start_position": 0,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 60.313707,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0xb08e7bccea662938b208044446900902018100b28569480a5457271fa96a0323",
+      "user": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "oid": 543385211144
+    }
+  ],
+  "trades_pagination": {
+    "per_page": 1000,
+    "pages_fetched": 1,
+    "is_complete": true,
+    "max_pages": 3
+  },
+  "sources": [
+    {
+      "path": "profiler/perp-pnl-summary",
+      "body": {
+        "address": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+        "date": {
+          "from": "2026-08-16T13:20:15Z",
+          "to": "2026-09-15T13:20:15Z"
+        }
+      },
+      "note": "30d summary",
+      "at": "2026-09-15T13:20:17Z"
+    },
+    {
+      "path": "profiler/perp-pnl-summary",
+      "body": {
+        "address": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+        "date": {
+          "from": "2026-09-08T13:20:15Z",
+          "to": "2026-09-15T13:20:15Z"
+        }
+      },
+      "note": "7d summary",
+      "at": "2026-09-15T13:20:17Z"
+    },
+    {
+      "path": "profiler/perp-trades",
+      "body": {
+        "address": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+        "date": {
+          "from": "2026-08-16T13:20:15Z",
+          "to": "2026-09-15T13:20:15Z"
+        },
+        "pagination": {
+          "page": 1,
+          "per_page": 1000
+        },
+        "order_by": [
+          {
+            "field": "timestamp",
+            "direction": "ASC"
+          }
+        ]
+      },
+      "note": "fills page 1",
+      "at": "2026-09-15T13:20:18Z"
+    }
+  ],
+  "reconciliation": {
+    "fills_fetched": 16,
+    "fills_complete": true,
+    "distinct_symbols": [
+      "BNB",
+      "ETH",
+      "LTC",
+      "UNI",
+      "BTC",
+      "SOL",
+      "NEAR",
+      "XLM"
+    ],
+    "excluded_spot_index_symbols": [],
+    "excluded_spot_index_fills": 0,
+    "sum_closed_pnl_named_instruments": -14877.570543000002,
+    "summary_realized_pnl_usd": -14877.570543000002,
+    "pnl_delta_usd": 0,
+    "pnl_relative_error": 0,
+    "sum_fee_usd_named_instruments": 1436.2747200000001,
+    "summary_fees_usd": 1436.27472,
+    "fee_delta_usd": -2.2737367544323206e-13,
+    "fee_treatment": "summary realized_pnl_usd is gross of fees; fees_usd is reported separately",
+    "realized_pnl_net_of_fees_usd": -16313.845263000001,
+    "nonzero_closed_pnl_fills": 8,
+    "summary_closed_trade_count": 435,
+    "winning_fills": 3,
+    "summary_winning_trade_count": 172,
+    "win_rate_from_fills": 0.375,
+    "summary_win_rate": 0.3954022988505747,
+    "trade_count_note": "Nansen counts logical closed trades (order-level), not raw fills, so closed_trade_count > fills with non-zero closed_pnl. Win rates differ accordingly. The referee uses the summary figure, which is what a user would see in the product.",
+    "per_symbol": [
+      {
+        "symbol": "XLM",
+        "pnl": -21335.998368,
+        "fees": 170.416003,
+        "fills": 2,
+        "closing": 1,
+        "wins": 0
+      },
+      {
+        "symbol": "SOL",
+        "pnl": -7967.6971,
+        "fees": 140.725459,
+        "fills": 2,
+        "closing": 1,
+        "wins": 0
+      },
+      {
+        "symbol": "UNI",
+        "pnl": -5861.309626,
+        "fees": 232.17296199999998,
+        "fills": 2,
+        "closing": 1,
+        "wins": 0
+      },
+      {
+        "symbol": "LTC",
+        "pnl": -2299.851538,
+        "fees": 233.292168,
+        "fills": 2,
+        "closing": 1,
+        "wins": 0
+      },
+      {
+        "symbol": "ETH",
+        "pnl": -1042.773085,
+        "fees": 129.542778,
+        "fills": 2,
+        "closing": 1,
+        "wins": 0
+      },
+      {
+        "symbol": "BTC",
+        "pnl": 2299.09127,
+        "fees": 303.87766600000003,
+        "fills": 3,
+        "closing": 1,
+        "wins": 1
+      },
+      {
+        "symbol": "NEAR",
+        "pnl": 10510.429568,
+        "fees": 172.324773,
+        "fills": 2,
+        "closing": 1,
+        "wins": 1
+      },
+      {
+        "symbol": "BNB",
+        "pnl": 10820.538336,
+        "fees": 53.922911,
+        "fills": 1,
+        "closing": 1,
+        "wins": 1
+      }
+    ]
+  }
+}

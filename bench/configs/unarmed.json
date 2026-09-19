@@ -1,0 +1,11 @@
+{
+  "name": "unarmed",
+  "description": "The baseline. No data tools at all: it can only reason from what the player puts in front of it. This is the agent most teams actually ship.",
+  "policy": null,
+  "tools": [],
+  "nansen": {
+    "endpoints": [],
+    "windows": [],
+    "live": false
+  }
+}

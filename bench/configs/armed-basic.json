@@ -1,0 +1,11 @@
+{
+  "name": "armed-basic",
+  "description": "Exactly what the armed desk in the game has today: the authoritative PnL summary for either window, and a drilldown into the best or worst closed trades.",
+  "policy": null,
+  "tools": ["check_pnl", "inspect_trades"],
+  "nansen": {
+    "endpoints": ["profiler/perp-pnl-summary", "profiler/perp-trades"],
+    "windows": [7, 30],
+    "live": true
+  }
+}

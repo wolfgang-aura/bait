@@ -1,0 +1,361 @@
+{
+  "retrieved_at": "2026-09-15T10:39:48.725Z",
+  "window_30d": {
+    "from": "2026-08-16T10:39:15Z",
+    "to": "2026-09-15T10:39:15Z"
+  },
+  "results": [
+    {
+      "trader_address": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "trader_address_label": "yellownfts.eth*",
+      "total_pnl": -5194129.04106,
+      "realized_pnl_usd": -4988967.505513,
+      "unrealized_pnl_usd": -205161.53554699974,
+      "roi": -0.1358435894273766,
+      "volume_usd": 35273328.963617004,
+      "total_trades": 3221,
+      "top_positions": [
+        {
+          "coin": "BTC",
+          "side": "short",
+          "size_base": 21.77956,
+          "position_value_usd": 1675218.41652,
+          "entry_price": 71559.6,
+          "unrealized_pnl_usd": -90864.00145199988
+        },
+        {
+          "coin": "HYPE",
+          "side": "short",
+          "size_base": 15339.09,
+          "position_value_usd": 1216988.06151,
+          "entry_price": 70.0794,
+          "unrealized_pnl_usd": -115449.04671399988
+        },
+        {
+          "coin": "xyz:AAPL",
+          "side": "long",
+          "size_base": 1000,
+          "position_value_usd": 330330,
+          "entry_price": 329.28,
+          "unrealized_pnl_usd": 1151.5126190000115
+        }
+      ],
+      "account_value": 294744.013101,
+      "summary30d": {
+        "top5_coins": [
+          {
+            "coin": "xyz:TSLA",
+            "realized_pnl_usd": 41224.02619,
+            "realized_roi": 0.0606444344108447,
+            "closed_trade_count": 96,
+            "fees_usd": 47.583579
+          },
+          {
+            "coin": "ONDO",
+            "realized_pnl_usd": 26019.67191,
+            "realized_roi": 0.10166562233754459,
+            "closed_trade_count": 150,
+            "fees_usd": 89.576763
+          },
+          {
+            "coin": "FARTCOIN",
+            "realized_pnl_usd": 9919.092945,
+            "realized_roi": 0.12340389249959828,
+            "closed_trade_count": 39,
+            "fees_usd": 28.132665
+          },
+          {
+            "coin": "xyz:AAPL",
+            "realized_pnl_usd": 0,
+            "realized_roi": 0,
+            "closed_trade_count": 0,
+            "fees_usd": 9.900758
+          },
+          {
+            "coin": "ADA",
+            "realized_pnl_usd": -9402.41525,
+            "realized_roi": -0.08941148953131675,
+            "closed_trade_count": 50,
+            "fees_usd": 36.805596
+          }
+        ],
+        "traded_coin_count": 12,
+        "traded_times": 516,
+        "closed_trade_count": 2445,
+        "winning_trade_count": 324,
+        "realized_pnl_usd": -4988967.505513,
+        "realized_pnl_percent": -0.17868013624352097,
+        "win_rate": 0.1325153374233129,
+        "fees_usd": 11762.663113999999
+      }
+    },
+    {
+      "trader_address": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "trader_address_label": "Uses \"MMREFCSI\" HL Referral Code",
+      "total_pnl": -5059693.395642,
+      "realized_pnl_usd": -4745429.479047,
+      "unrealized_pnl_usd": -314263.9165950001,
+      "roi": -0.13038666208457292,
+      "volume_usd": 33368085.598341003,
+      "total_trades": 5866,
+      "top_positions": [
+        {
+          "coin": "xyz:GOLD",
+          "side": "long",
+          "size_base": 455.8295,
+          "position_value_usd": 1949628.3544500002,
+          "entry_price": 4303.93,
+          "unrealized_pnl_usd": -13153.987856999967
+        },
+        {
+          "coin": "HYPE",
+          "side": "short",
+          "size_base": 18101.31,
+          "position_value_usd": 1436139.83409,
+          "entry_price": 72.1133,
+          "unrealized_pnl_usd": -119608.82469500008
+        },
+        {
+          "coin": "XRP",
+          "side": "short",
+          "size_base": 865852,
+          "position_value_usd": 1211326.948,
+          "entry_price": 1.264082,
+          "unrealized_pnl_usd": -106395.21073400008
+        },
+        {
+          "coin": "PUMP",
+          "side": "long",
+          "size_base": 277405706,
+          "position_value_usd": 1001434.59866,
+          "entry_price": 0.003877,
+          "unrealized_pnl_usd": -75105.89330899998
+        }
+      ],
+      "account_value": 2935776.326715,
+      "summary30d": {
+        "top5_coins": [
+          {
+            "coin": "PONS",
+            "realized_pnl_usd": 100848.566438,
+            "realized_roi": 0.10826086502360592,
+            "closed_trade_count": 866,
+            "fees_usd": 317.481867
+          },
+          {
+            "coin": "BTC",
+            "realized_pnl_usd": 90443.877091,
+            "realized_roi": 0.016605038734798856,
+            "closed_trade_count": 227,
+            "fees_usd": 2046.552309
+          },
+          {
+            "coin": "PUMP",
+            "realized_pnl_usd": 65620.012984,
+            "realized_roi": 0.09156021182684267,
+            "closed_trade_count": 126,
+            "fees_usd": 374.326915
+          },
+          {
+            "coin": "ZEC",
+            "realized_pnl_usd": 51006.812078,
+            "realized_roi": 0.02583582529849684,
+            "closed_trade_count": 431,
+            "fees_usd": 807.549843
+          },
+          {
+            "coin": "LINK",
+            "realized_pnl_usd": 40500.814092,
+            "realized_roi": 0.045986863535486214,
+            "closed_trade_count": 396,
+            "fees_usd": 112.714144
+          }
+        ],
+        "traded_coin_count": 9,
+        "traded_times": 4731,
+        "closed_trade_count": 4007,
+        "winning_trade_count": 2159,
+        "realized_pnl_usd": -4745429.479047,
+        "realized_pnl_percent": -0.20533772602922926,
+        "win_rate": 0.5388070875967058,
+        "fees_usd": 8053.191069999999
+      }
+    },
+    {
+      "trader_address": "0x06bc596fb16734f7abc3a5996b580be932c2fb72",
+      "trader_address_label": "picholas.eth*",
+      "total_pnl": -3588349.9060319965,
+      "realized_pnl_usd": -3637195.254852,
+      "unrealized_pnl_usd": 48845.348820003506,
+      "roi": -0.01771773706646927,
+      "volume_usd": 172887827.95501,
+      "total_trades": 4568,
+      "top_positions": [
+        {
+          "coin": "ETH",
+          "side": "short",
+          "size_base": 12022.7356,
+          "position_value_usd": 29752904.244032,
+          "entry_price": 2465.4,
+          "unrealized_pnl_usd": 48845.348820003506
+        }
+      ],
+      "account_value": 3211601.042003,
+      "summary30d": {
+        "top5_coins": [
+          {
+            "coin": "BTC",
+            "realized_pnl_usd": -1170415.711542,
+            "realized_roi": -0.08435327801472764,
+            "closed_trade_count": 242,
+            "fees_usd": 5620.39474
+          },
+          {
+            "coin": "ETH",
+            "realized_pnl_usd": -2466779.5433100006,
+            "realized_roi": -0.040343982595334366,
+            "closed_trade_count": 1695,
+            "fees_usd": 43508.788715
+          }
+        ],
+        "traded_coin_count": 2,
+        "traded_times": 562,
+        "closed_trade_count": 1937,
+        "winning_trade_count": 653,
+        "realized_pnl_usd": -3637195.2548520006,
+        "realized_pnl_percent": -0.048483754209357195,
+        "win_rate": 0.3371192565823438,
+        "fees_usd": 49129.183455000006
+      }
+    },
+    {
+      "trader_address": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "trader_address_label": "Uses \"ASD123456\" HL Referral Code",
+      "total_pnl": -2402106.7728810003,
+      "realized_pnl_usd": -2403514.137651,
+      "unrealized_pnl_usd": 1407.3647700000051,
+      "roi": -0.052872042626093865,
+      "volume_usd": 45277444.58838,
+      "total_trades": 4431,
+      "top_positions": [
+        {
+          "coin": "ZEC",
+          "side": "short",
+          "size_base": 134.64,
+          "position_value_usd": 153691.56,
+          "entry_price": 1151.306,
+          "unrealized_pnl_usd": 1407.3647700000051
+        }
+      ],
+      "account_value": 15880.788,
+      "summary30d": {
+        "top5_coins": [
+          {
+            "coin": "xyz:NVDA",
+            "realized_pnl_usd": -141128.138464,
+            "realized_roi": -0.06981562587888303,
+            "closed_trade_count": 508,
+            "fees_usd": 43.662828
+          },
+          {
+            "coin": "SOL",
+            "realized_pnl_usd": -286432.345998,
+            "realized_roi": -0.16190038498566767,
+            "closed_trade_count": 170,
+            "fees_usd": 397.639509
+          },
+          {
+            "coin": "BTC",
+            "realized_pnl_usd": -483406.585052,
+            "realized_roi": -0.049814408283578804,
+            "closed_trade_count": 620,
+            "fees_usd": 3525.851306
+          },
+          {
+            "coin": "ZEC",
+            "realized_pnl_usd": -656856.399446,
+            "realized_roi": -0.18808225532082984,
+            "closed_trade_count": 770,
+            "fees_usd": 738.180947
+          },
+          {
+            "coin": "ETH",
+            "realized_pnl_usd": -835690.668691,
+            "realized_roi": -0.07826320854451914,
+            "closed_trade_count": 860,
+            "fees_usd": 2958.289724
+          }
+        ],
+        "traded_coin_count": 5,
+        "traded_times": 2952,
+        "closed_trade_count": 2928,
+        "winning_trade_count": 728,
+        "realized_pnl_usd": -2403514.137651,
+        "realized_pnl_percent": -0.0868788593504029,
+        "win_rate": 0.24863387978142076,
+        "fees_usd": 7663.624314000001
+      }
+    },
+    {
+      "trader_address": "0xa98143608a6846453c88f29506d64a8b85532e65",
+      "trader_address_label": "Uses \"ASXN\" HL Referral Code",
+      "total_pnl": -6768071.095615,
+      "realized_pnl_usd": -2051706.044027,
+      "unrealized_pnl_usd": -4716365.051588001,
+      "roi": -0.5523153483064769,
+      "volume_usd": 6785893.744754,
+      "total_trades": 3233,
+      "top_positions": [
+        {
+          "coin": "HYPE",
+          "side": "short",
+          "size_base": 135500.04,
+          "position_value_usd": 10750437.673560001,
+          "entry_price": 40.355,
+          "unrealized_pnl_usd": -4716365.051588001
+        }
+      ],
+      "account_value": 1216568.407024,
+      "summary30d": {
+        "top5_coins": [
+          {
+            "coin": "FARTCOIN",
+            "realized_pnl_usd": 0.018536,
+            "realized_roi": 0.11161961653338473,
+            "closed_trade_count": 1,
+            "fees_usd": 0.000053
+          },
+          {
+            "coin": "xyz:UNITREE",
+            "realized_pnl_usd": -5179.78817,
+            "realized_roi": -0.528613808979107,
+            "closed_trade_count": 16,
+            "fees_usd": 1.70555
+          },
+          {
+            "coin": "ETH",
+            "realized_pnl_usd": -138545.829585,
+            "realized_roi": -0.06621590777376056,
+            "closed_trade_count": 466,
+            "fees_usd": 926.288971
+          },
+          {
+            "coin": "HYPE",
+            "realized_pnl_usd": -1907980.444808,
+            "realized_roi": -0.4918039121462477,
+            "closed_trade_count": 2654,
+            "fees_usd": 1304.625174
+          }
+        ],
+        "traded_coin_count": 4,
+        "traded_times": 21,
+        "closed_trade_count": 3137,
+        "winning_trade_count": 60,
+        "realized_pnl_usd": -2051706.044027,
+        "realized_pnl_percent": -0.34299779429816807,
+        "win_rate": 0.01912655403251514,
+        "fees_usd": 2232.619748
+      }
+    }
+  ]
+}

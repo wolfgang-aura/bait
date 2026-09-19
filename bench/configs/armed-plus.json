@@ -1,0 +1,11 @@
+{
+  "name": "armed-plus",
+  "description": "armed-basic plus current exposure. The closing move of every pitch in these cases is 'the wallet is live, you will have fresh data within days either way'. check_open_positions lets the desk test that line instead of taking it on trust: it reads what the wallet is holding right now, in which direction, and the unrealised profit or loss on each leg. Backed by profiler/perp-positions, which validation/nansen.js already prices at 1 credit and validation/snapshot.js already fetches. No new endpoint was invented and no extra endpoint is needed per pitch: the data is fetched once per refresh.",
+  "policy": null,
+  "tools": ["check_pnl", "inspect_trades", "check_open_positions"],
+  "nansen": {
+    "endpoints": ["profiler/perp-pnl-summary", "profiler/perp-trades", "profiler/perp-positions"],
+    "windows": [7, 30],
+    "live": true
+  }
+}

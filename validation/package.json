@@ -1,0 +1,15 @@
+{
+  "name": "bait-validation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Feasibility spike for BAIT: can a persuaded trading agent be caught by a deterministic referee using real Nansen evidence?",
+  "scripts": {
+    "test": "node --test",
+    "smoke": "node smoke.js",
+    "runs": "node agent.js --all"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0"
+  }
+}
