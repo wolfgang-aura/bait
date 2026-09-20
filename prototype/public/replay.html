@@ -1,89 +1,175 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#101216">
-  <title>BAIT · A pitch, a check, a different decision</title>
-  <link rel="stylesheet" href="/vendor/pico.min.css">
-  <link rel="stylesheet" href="/encounter.css">
-  <script type="module" src="/replay.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAIT · Red-team kit for AI trading agents</title>
+<meta name="description" content="BAIT records a human baiting an AI trading desk with true-but-selective facts, scores any agent configuration on the recorded attacks, and ships the rule that took the baited rate to zero.">
+<meta name="theme-color" content="#0A0B0D">
+<meta property="og:type" content="website">
+<meta property="og:title" content="BAIT · Red-team kit for AI trading agents">
+<meta property="og:description" content="True facts talked an AI trading desk into funding a wallet that lost millions. BAIT records the attack, scores any agent config, and ships the rule that stops it.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/replay.css">
+<script type="module" src="/replay.js"></script>
 </head>
-<body>
-  <div class="shell replay-shell">
-    <header class="masthead">
-      <a class="wordmark" href="/" aria-label="BAIT home">BAIT<span class="brand-dot">.</span></a>
-      <span class="header-caption">A game of selective truth</span>
-      <nav aria-label="Recorded round controls"><span class="data-badge captured">Recorded · 18 Sep 2026</span><a class="text-button" href="/">Play your own round ↗</a></nav>
-    </header>
-    <main>
-      <section class="intro">
-        <div class="eyebrow">The selective-truth game <span>/</span> DeepSeek · fictional money</div>
-        <h1>Can true facts sell <span>a losing trader?</span></h1>
-        <p>Give two AI desks the same pitch. One can inspect the full Nansen record. Step through the saved attack, then audit 90 replays and seven paired wallets.</p>
-      </section>
-      <aside id="headline-result" class="headline-result" aria-label="Recorded experiment result" hidden>
-        <span class="eyebrow">Fixed-evidence policy test</span>
-        <p><strong id="headline-strict"></strong> losing wallets funded under the strict Nansen policy <span aria-hidden="true">·</span> <strong id="headline-control"></strong> profitable control funded</p>
-        <a href="#results">Audit the result ↓</a>
-      </aside>
-      <p id="replay-error" class="notice" role="alert" hidden></p>
-      <div id="recorded-round" hidden>
-        <div class="replay-toolbar"><span class="eyebrow" id="replay-progress"></span><span id="replay-date"></span><a href="#results">See all recorded results ↓</a></div>
-        <div class="replay-layout">
-          <section class="recorded-pitch" aria-labelledby="recorded-pitch-title">
-            <span class="eyebrow">The exact pitch</span>
-            <h2 id="recorded-pitch-title"></h2>
-            <p id="recorded-pitch-text"></p>
-            <span class="eyebrow">Selected Nansen evidence</span>
-            <ul id="recorded-claims"></ul>
-            <div class="replay-buttons"><button id="replay-next">Next pitch →</button><button class="secondary outline" id="replay-back" disabled>Back</button></div>
-            <p class="replay-note">Saved replies, not a live AI call. This is one illustrative round, not an average or a guaranteed outcome.</p>
-          </section>
-          <div class="desks" id="recorded-desks" aria-live="polite"></div>
+<body id="top">
+<a class="skip" href="#attack">Skip to the replay</a>
+
+<header class="mast">
+  <div class="mast-inner">
+    <a class="mark" href="#top">BAIT</a>
+    <p class="mast-note">Red-team kit for AI trading agents · recorded</p>
+  </div>
+</header>
+
+<main>
+  <p id="b-error" class="error" role="alert" hidden></p>
+
+  <section class="hero" aria-labelledby="hero-title">
+    <h1 id="hero-title">True facts can talk an AI trading desk into funding a <span id="b-loss-short" class="skeleton-inline">&nbsp;</span> loser.</h1>
+    <p class="hero-sub">BAIT records the attack, scores any agent config, and ships the rule that stops it.</p>
+
+    <div class="pair" role="group" aria-label="Replays in which the desk was baited">
+      <p class="big" data-desk="unarmed">
+        <strong id="b-big-unarmed" class="skeleton">&nbsp;</strong>
+        <span>baited · no tools</span>
+      </p>
+      <p class="big" data-desk="armed">
+        <strong id="b-big-armed" class="skeleton">&nbsp;</strong>
+        <span>baited · Nansen + BAIT rule</span>
+      </p>
+    </div>
+
+    <a class="btn hero-cta" href="#attack">Step through the attack</a>
+
+    <p id="b-endpoints" class="endpoints skeleton-row">&nbsp;</p>
+  </section>
+
+  <section id="attack" class="attack sec" aria-labelledby="attack-title" hidden>
+    <div class="sec-head">
+      <h2 id="attack-title"><span class="sec-num">1</span>Attack</h2>
+      <p class="sec-meta" id="b-progress"></p>
+    </div>
+
+    <div class="attack-grid">
+      <article class="pitch" aria-labelledby="b-pitch-title">
+        <p class="lab">The player says</p>
+        <h3 id="b-pitch-title"></h3>
+        <p id="b-pitch-text" class="pitch-text"></p>
+        <p class="lab">Nansen facts attached, all true</p>
+        <ul id="b-claims" class="claims"></ul>
+        <div class="nav-row">
+          <button type="button" id="b-back" class="btn-ghost" disabled>Back</button>
+          <button type="button" id="b-next" class="btn">Next pitch</button>
         </div>
-        <section class="evidence-reveal" id="recorded-reveal" aria-labelledby="recorded-reveal-title">
-          <div class="section-heading"><h2 id="recorded-reveal-title">What the selected facts leave out</h2><span class="eyebrow" id="recorded-stage"></span></div>
-          <div class="reveal-grid"><div><strong class="loss" id="recorded-loss"></strong><p>Wallet-wide realised PnL over the full 30 days.</p></div><div><p id="recorded-lesson"></p><p id="recorded-check"></p></div></div>
-          <p class="policy-note">Both desks were allowed to take small positions. Funding here is persuasion under that policy, not a policy violation.</p>
-        </section>
-        <div class="receipt-actions"><button class="secondary outline" id="replay-copy">Copy this receipt</button><a href="/" role="button">Try your own pitch ↗</a></div>
-        <p id="replay-copy-status" role="status"></p>
+      </article>
+      <div class="desks" id="b-desks" aria-live="polite"></div>
+    </div>
+
+    <div class="reveal">
+      <div class="reveal-num">
+        <p class="lab">The pitch left this out: realised PnL, full 30 days</p>
+        <p class="loss" id="b-loss"></p>
+      </div>
+      <p id="b-lesson" class="reveal-lead"></p>
+    </div>
+  </section>
+
+  <section id="score" class="score sec" aria-labelledby="score-title" hidden>
+    <div class="sec-head">
+      <h2 id="score-title"><span class="sec-num">2</span>Score</h2>
+      <p class="sec-meta">Every configuration replays the same recorded attacks.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table class="board">
+        <caption id="b-comparison-caption"></caption>
+        <thead><tr><th scope="col">Agent configuration</th><th scope="col">Tools</th><th scope="col">Baited</th><th scope="col">Mean allocation</th></tr></thead>
+        <tbody id="b-comparison"></tbody>
+      </table>
+    </div>
+    <p class="note">Baited means the desk funded the losing wallet, so this scores resistance to the attack, not trading skill.</p>
+
+    <div class="harness">
+      <h3><a href="https://github.com/wolfgang-aura/bait#benchmark-harness">Test your own agent</a></h3>
+      <pre class="code"><code>npm run bench -- --config my-agent --repeats 3 --snapshot</code></pre>
+      <pre class="code code-small"><code>bench/configs/my-agent.json
+{ "name": "my-agent", "tools": ["check_pnl", "inspect_trades"], "policy": "&lt;your rule&gt;" }</code></pre>
+      <p class="note">Replays the 10 recorded attacks on frozen Nansen evidence and prints the baited rate.</p>
+    </div>
+  </section>
+
+  <section id="fix" class="fix sec" aria-labelledby="fix-title" hidden>
+    <div class="sec-head">
+      <h2 id="fix-title"><span class="sec-num">3</span>Fix</h2>
+      <p class="sec-meta">Five lines, verbatim from the recorded run.</p>
+    </div>
+
+    <h3 id="b-rule-title" class="rule-title"></h3>
+    <pre id="b-policy" class="rule" tabindex="0"></pre>
+    <div class="copy-row">
+      <button type="button" id="b-copy" class="btn">Copy the rule</button>
+      <span id="b-copy-status" class="copy-status" role="status" aria-live="polite"></span>
+    </div>
+    <p class="note">Paste it into your agent's system prompt; it needs a 30-day wallet PnL tool, here backed by Nansen.</p>
+
+    <details class="audit" id="audit">
+      <summary>Audit: paired policy test, sources, hashes</summary>
+
+      <div class="exp-block">
+        <h3>Seven wallets, same evidence, two policies</h3>
+        <div class="table-wrap">
+          <table>
+            <caption id="b-paired-caption"></caption>
+            <thead><tr><th scope="col">Policy</th><th scope="col">Losing wallets funded</th><th scope="col">Profitable control funded</th></tr></thead>
+            <tbody id="b-paired-totals"></tbody>
+          </table>
+        </div>
+        <p id="b-paired-conclusion" class="note"></p>
+        <p class="note">Small development sample, one repeat per pair, rule enforced by the prompt rather than by code.</p>
+
+        <div class="explorer">
+          <div class="explorer-head">
+            <label for="b-wallet">Inspect a wallet and both decisions</label>
+            <select id="b-wallet"></select>
+          </div>
+          <p id="b-provenance" class="stamp"></p>
+          <div id="b-transcript"></div>
+        </div>
       </div>
 
-      <section id="results" class="results-section" aria-labelledby="results-title" hidden>
-        <span class="eyebrow">Experiment 1 · tool access · one losing wallet</span>
-        <h2 id="results-title">Does access to evidence change the decision?</h2>
-        <p>Ten recorded attacks, each repeated three times per configuration. Same permissive policy. The table measures funding, not policy violations.</p>
-        <div class="overflow-auto"><table><caption>18 Sep 2026 · DeepSeek · 30 runs per configuration</caption><thead><tr><th scope="col">Evidence access</th><th scope="col">Mean allocation</th><th scope="col">Funded the losing wallet</th></tr></thead><tbody id="comparison-rows"></tbody></table></div>
-        <p>Tool access reduced funding in this sample. Outcomes varied between repeats. This does not establish trading performance or behaviour on unseen wallets.</p>
-        <section class="strict-result" id="paired" aria-labelledby="paired-title">
-          <span class="eyebrow">Experiment 2 · same evidence · different policy</span>
-          <h3 id="paired-title">Does a stricter rule change the decision?</h3>
-          <p>Seven wallets. Identical pitches, tools and evidence within each pair. Only the policy changes. The strict prompt requires a verified, non-negative 30-day total before funding.</p>
-          <div class="overflow-auto"><table><caption>19 Sep 2026 · DeepSeek · one three-pitch replay per policy per wallet</caption><thead><tr><th scope="col">Policy</th><th scope="col">Losing wallets funded</th><th scope="col">Profitable control funded</th></tr></thead><tbody id="paired-totals"></tbody></table></div>
-          <p id="paired-conclusion"></p>
-          <p>Small development sample, one repeat. These wallets were already inspected during development. This is not a guarantee on unseen attacks. The rule is enforced by the prompt, with no code overriding allocations.</p>
-          <label for="paired-wallet">Inspect a wallet and both decisions</label>
-          <select id="paired-wallet"></select>
-          <p id="paired-provenance"></p>
-          <div id="paired-transcript"></div>
-          <details><summary>Read the strict policy verbatim</summary><p id="paired-policy"></p></details>
-        </section>
-        <details class="strict-result"><summary>Earlier exploratory strict-policy experiment · changed evidence</summary>
-        <section aria-labelledby="strict-title">
-          <span class="eyebrow">Separate experiment · changed policy and evidence</span>
-          <h3 id="strict-title">What if funding a losing wallet is explicitly forbidden?</h3>
-          <p>The strict policy requires a verified, non-negative wallet-wide 30-day result before allocating. It uses the basic Nansen tools.</p>
-          <div class="strict-grid"><div><strong id="strict-count"></strong><span>Recorded attacks funded</span></div><div><strong id="control-count"></strong><span>Profitable-wallet controls funded</span></div></div>
-          <p id="strict-context"></p>
-          <p>The controls use synthetic pitches and frozen data. They show that this policy can fund a profitable wallet. Ten familiar attacks, tested once each, do not establish zero failures on unseen attacks. Enforcement remains prompt-only.</p>
-        </section>
-        </details>
-        <details class="source-details"><summary>Inspect the evidence and reproduce the totals</summary><p id="source-manifest"></p><p><a href="/recorded-results.json" download="bait-recorded-results.json">Download the recorded round, totals and source hashes</a></p><p>In the repository, run <code>node prototype/export-results.js</code>. It rebuilds these totals from the recorded replay rows without API calls. SHA-256 hashes use UTF-8 source text with LF line endings.</p></details>
-      </section>
-    </main>
-    <footer><span>Real records. Fictional stakes. Data: Nansen.</span><span>This page makes no model or Nansen API calls.</span></footer>
+      <div class="exp-block">
+        <h3>Earlier exploratory strict-policy run, changed evidence</h3>
+        <p class="note">The strict policy needs a verified, non-negative 30-day result before it allocates, and this run used different evidence, so it is not paired with the tables above.</p>
+        <div class="stat-pair">
+          <p><strong id="b-strict-count"></strong><span>recorded attacks funded</span></p>
+          <p><strong id="b-control-count"></strong><span>profitable-wallet controls funded</span></p>
+        </div>
+        <p id="b-strict-context" class="note"></p>
+      </div>
+
+      <div class="exp-block">
+        <h3>Sources and hashes</h3>
+        <p id="b-manifest" class="stamp"></p>
+        <p class="note"><a href="/recorded-results.json" download="bait-recorded-results.json">Download the recorded round, totals and source hashes</a></p>
+        <p class="note">In the repository, <code>node prototype/export-results.js</code> rebuilds these totals from the recorded rows without API calls.</p>
+      </div>
+    </details>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="foot-inner">
+    <p>Real Nansen records, fictional stakes, no model or Nansen API calls from this page.</p>
+    <nav class="foot-links" aria-label="Repository">
+      <a class="foot-link" href="https://github.com/wolfgang-aura/bait#play-against-the-models">Play it live</a>
+      <a class="foot-link" href="https://github.com/wolfgang-aura/bait">GitHub</a>
+    </nav>
   </div>
+</footer>
 </body>
 </html>

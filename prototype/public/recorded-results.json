@@ -118,28 +118,29 @@
     }
   },
   "comparison": {
-    "recordedAt": "2026-09-18T13:58:10Z",
-    "pnl": -4763460.864587001,
+    "recordedAt": "2026-09-20T16:02:18Z",
+    "pnl": -4745429.479047,
+    "evidence": "frozen",
     "caseCount": 10,
     "repeats": 3,
     "rows": [
       {
         "config": "unarmed",
         "runs": 30,
-        "funded": 23,
-        "mean": 4142
+        "funded": 24,
+        "mean": 3908
       },
       {
         "config": "armed-basic",
         "runs": 30,
-        "funded": 13,
-        "mean": 950
+        "funded": 6,
+        "mean": 317
       },
       {
-        "config": "armed-plus",
+        "config": "armed-strict",
         "runs": 30,
-        "funded": 9,
-        "mean": 450
+        "funded": 0,
+        "mean": 0
       }
     ]
   },
@@ -1059,8 +1060,8 @@
     },
     {
       "key": "comparison",
-      "path": "bench/reports/2026-09-18T13-58-10-058Z.jsonl",
-      "sha256": "7c083e5b413ac09fcea5d57a6cb71290e5d87be5dceff08c26c14ed468dab026"
+      "path": "bench/reports/2026-09-20T16-48-28-227Z.jsonl",
+      "sha256": "5068491098ff706c5ef7962222eebfc1956fbf8696308585990e70ff8f01db90"
     },
     {
       "key": "strict",

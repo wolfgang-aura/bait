@@ -288,13 +288,17 @@ ${JSON.stringify({ cards: encounter.cards, summary30: data.pnl_summary_30d, summ
         s.requestIds.add(body.requestId);
         s.phase = s.transcript.length === MAX_TURNS ? 'Round complete' : 'Ready for your next pitch';
       } catch (err) {
-        s.error = err instanceof EncounterError ? err.message :
+        // A hosted-cap refusal (HOSTED_CAP) is already worded for the player.
+        s.error = err instanceof EncounterError || err.code === 'HOSTED_CAP' ? err.message :
           err instanceof CapExceeded ? 'The prototype has reached its model-call budget. Your turn was not spent.' :
           err.name === 'TimeoutError' ? 'The AI response timed out. Your pitch was kept and your turn was not spent. Retry the pitch or watch the recorded round.' :
           'The AI connection failed. Your pitch was kept and your turn was not spent. Try again.';
         console.error(`[encounter] stage=${s.phase} type=${err.name} status=${err.status || 'unknown'} message=${String(err.message).slice(0, 250)}`);
         s.phase = 'Your pitch is ready to retry';
-        throw new EncounterError(s.error, err.status || 503);
+        const out = new EncounterError(s.error, err.status || 503);
+        if (err.code) out.code = err.code;
+        if (err.replay) out.replay = err.replay;
+        throw out;
       } finally { s.busy = active = false; }
       return publicState(s);
     },

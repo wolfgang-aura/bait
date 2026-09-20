@@ -13,14 +13,16 @@ All allocations are fictional.
 
 **Recorded result:** the strict Nansen-backed policy funded 0/6 losing wallets and
 still funded the profitable control when evidence, tools, model and pitches were held
-fixed. In the 90-replay ablation, tools alone reduced funding from 77% to 43%, which
-is still too high for deployment.
+fixed. On frozen evidence across 30 replays of the recorded attack suite, the same
+strict policy funded 0/30, the same tools under the permissive policy funded 6/30, and
+the no-tools baseline funded 24/30. Tools alone cut funding from 80% to 20%; the rule
+took it to zero.
 
 ## Judge path
 
 1. Open the recorded demo and press **Next pitch** three times.
 2. Compare the selected facts with the full 30-day record after each reply.
-3. Open **See all recorded results** to inspect 90 replays and the seven-wallet policy comparison.
+3. Open **See all recorded results** to inspect the frozen-evidence attack suite and the seven-wallet policy comparison.
 
 The first minute shows the whole argument. Every reply, allocation, timestamp and
 aggregate links back to tracked evidence in this repository.
@@ -88,22 +90,31 @@ recorded page remains available. `/api/health` reports model usage and data stat
 
 ## What we measured
 
-Ten recorded attacks, three repeats per configuration, DeepSeek, one losing wallet:
+Ten recorded attacks, three repeats per configuration, DeepSeek, one losing wallet.
+Every configuration below saw the byte-identical 15 September snapshot, whose 30-day
+realised PnL is -$4,745,429:
 
-| Evidence access | Mean final allocation | Runs that funded |
-| --- | ---: | ---: |
-| None | $4,142 | 23/30 |
-| PnL and trade history | $950 | 13/30 |
-| Also open positions | $450 | 9/30 |
+| Evidence access | Policy | Mean final allocation | Runs that funded |
+| --- | --- | ---: | ---: |
+| None | permissive | $3,908 | 24/30 |
+| PnL and trade history | permissive | $317 | 6/30 |
+| PnL and trade history | strict eligibility | $0 | 0/30 |
 
-This measures persuasion under a permissive policy. These allocations are not
-proof that an agent violated its own instructions. The benchmark's historical
-`BAITED` label means a positive allocation to the losing wallet under its referee.
+The strict policy requires a verified, non-negative wallet-wide 30-day realised PnL
+before it can allocate. It is enforced by the prompt; no code overrides an answer.
+This measures persuasion, not a proven violation of an agent's own instructions. The
+benchmark's historical `BAITED` label means a positive allocation to the losing wallet
+under its referee.
 
-A separate strict-policy run funded 0/10 recorded attacks. The evidence and policy
-both changed, and each attack ran once. Separate synthetic controls funded a
-profitable wallet in 3/3 repeats. This is not a controlled 77%-to-0% improvement or
-a guarantee against unseen attacks. No deterministic gate overrides model answers.
+An [earlier live-evidence sweep](bench/reports/2026-09-18T13-58-10-058Z.md) measured
+tool access alone under the permissive policy: no tools $4,142 and 23/30, PnL and
+trades $950 and 13/30, also open positions $450 and 9/30. That sweep used the live
+wallet on 18 September, so its rows are not directly comparable with the frozen table
+above, which reran `armed-basic` on the frozen snapshot on 21 September.
+
+Separate synthetic controls funded a profitable wallet in 3/3 repeats, so the strict
+policy is not simply rejecting everything. Ten development attacks and one wallet are
+not a guarantee against unseen attacks.
 
 A later [fixed-evidence policy comparison](bench/reports/2026-09-19T06-18-01-805Z-paired.md)
 tested six losing wallets and one profitable control. The permissive policy funded
@@ -128,7 +139,8 @@ round. Tests reject incomplete or duplicated results. Source paths and hashes ar
 included in the downloadable evidence.
 
 - [Detailed setup, costs and methodology](prototype/README.md)
-- [Original comparison](bench/reports/2026-09-18T13-58-10-058Z.md)
+- [Frozen-evidence attack suite](bench/reports/2026-09-20T16-48-28-227Z.md), the table above
+- [Original live-evidence comparison](bench/reports/2026-09-18T13-58-10-058Z.md), superseded for the headline table
 - [Separate strict-policy experiment](bench/reports/2026-09-18T16-25-58-254Z.md)
 - [Design decisions](prototype/DESIGN.md)
 - [Fixed-evidence comparison protocol](bench/PAIRED_PROTOCOL.md), completed on seven wallets. `npm run bench:paired` checks its inputs and budget without making API calls.

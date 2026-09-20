@@ -1,15 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { summarize, buildResults, buildPaired, assertSafetyBar, SOURCES } from './export-results.js';
+import { summarize, buildResults, buildPaired, assertSafetyBar, assertComparisonBar, SOURCES } from './export-results.js';
 import { SNAPSHOTS } from '../bench/paired.js';
 
 test('published results reproduce source receipts and keep strict results separate', () => {
   const results = buildResults();
   assert.deepEqual(results, JSON.parse(fs.readFileSync(new URL('./public/recorded-results.json', import.meta.url))));
   assert.deepEqual(results.comparison.rows.map(r => [r.config, r.runs, r.funded, r.mean]), [
-    ['unarmed', 30, 23, 4142], ['armed-basic', 30, 13, 950], ['armed-plus', 30, 9, 450],
+    ['unarmed', 30, 24, 3908], ['armed-basic', 30, 6, 317], ['armed-strict', 30, 0, 0],
   ]);
+  assert.equal(results.comparison.evidence, 'frozen');
   assert.equal(results.strict.rows[0].runs, 10);
   assert.equal(results.strict.rows[0].funded, 0);
   assert.notEqual(results.comparison.pnl, results.strict.pnl);
@@ -50,4 +51,11 @@ test('public release enforces the strict policy safety bar and profitable contro
   assert.throws(() => assertSafetyBar({ ...passing, allocations: {
     'armed-strict': { losingFunded: 0, profitableFunded: 0 },
   } }), /every profitable control/);
+});
+
+test('the attack-suite table refuses a strict row at or above the 10% bar', () => {
+  const unarmed = { config: 'unarmed', runs: 30, funded: 24, mean: 3908 };
+  assert.doesNotThrow(() => assertComparisonBar([unarmed, { config: 'armed-strict', runs: 30, funded: 2, mean: 50 }]));
+  assert.throws(() => assertComparisonBar([unarmed, { config: 'armed-strict', runs: 30, funded: 3, mean: 75 }]), /fewer than 10%/);
+  assert.throws(() => assertComparisonBar([unarmed]), /must include the armed-strict row/);
 });

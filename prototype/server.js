@@ -5,6 +5,9 @@
  *                            session start, at most once per LIVE_TTL_MS, <=5 credits
  *   NANSEN_LIVE=0 npm start  snapshot only    - zero Nansen credits, labelled as captured
  *   LIVE=1 npm start         also re-freezes the on-disk snapshot at startup (slow)
+ *   HOSTED=1 npm start       hosted demo - binds 0.0.0.0, serves the frozen snapshot
+ *                            unless NANSEN_LIVE=1, enforces per-IP and daily model
+ *                            call caps (see hosted-guard.js), trusts X-Forwarded-For
  *
  * Every module that does real work is imported from ../validation. Nothing is copied.
  */
@@ -22,12 +25,27 @@ import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
 import { createEncounterService } from './encounter.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
+import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const VALIDATION = path.resolve(HERE, '..', 'validation');
 const RUNS_DIR = path.join(HERE, 'runs');
 const PUBLIC_DIR = path.join(HERE, 'public');
-const PORT = Number(process.env.PORT || 3000);
+// A string check, not Number(...)||, so PORT=0 (pick a free port, used by tests) works.
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const HOSTED = process.env.HOSTED === '1';
+// Local runs stay on loopback. A host like Render routes traffic to 0.0.0.0.
+const HOST = process.env.HOST || (HOSTED ? '0.0.0.0' : '127.0.0.1');
+
+/**
+ * Hosted spend guard. Counts in every mode so /healthz can report it; only HOSTED=1
+ * enforces the limits. Both caps live in memory and reset on restart.
+ */
+const guard = createHostedGuard({
+  enabled: HOSTED,
+  roundsPerIp: Number(process.env.HOSTED_ROUNDS_PER_IP || 3),
+  dailyCalls: Number(process.env.HOSTED_DAILY_CALLS || 300),
+});
 
 const MODELS = ['claude-sonnet-5', 'deepseek-chat'];
 
@@ -133,7 +151,10 @@ function latestByMode(runs) {
 
 // ------------------------------------------------------------- live Nansen
 
-const LIVE_ENABLED = process.env.NANSEN_LIVE !== '0';
+// Locally, live is the default and NANSEN_LIVE=0 turns it off. Hosted, the default
+// flips: play runs on the frozen 15 Sep capture and spends no Nansen credits unless
+// the operator sets NANSEN_LIVE=1 on purpose.
+const LIVE_ENABLED = HOSTED ? process.env.NANSEN_LIVE === '1' : process.env.NANSEN_LIVE !== '0';
 
 /**
  * The player flow's data source. It prefers a live Nansen refresh of the encounter
@@ -291,15 +312,26 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const encounterService = createEncounterService({
   dataSource,
   onEvent: event => console.info(`[desk] ${JSON.stringify(event)}`),
-  provider: { model: 'deepseek-chat', chat: input => deepseekProvider({ maxTokens: 600, timeoutMs: 20_000 }).chat(input) },
+  provider: {
+    model: 'deepseek-chat',
+    // The hosted daily cap is charged before the provider's own ledger cap, so a
+    // refused attempt never reaches DeepSeek and never touches the ledger.
+    chat: async input => {
+      guard.chargeCall();
+      return deepseekProvider({ maxTokens: 600, timeoutMs: 20_000 }).chat(input);
+    },
+  },
   health: () => {
     const env = loadEnv();
-    const remaining = Math.max(0, CAPS.deepseek - modelCallsUsed('deepseek'));
+    const remaining = Math.min(Math.max(0, CAPS.deepseek - modelCallsUsed('deepseek')), guard.callsRemaining());
     // Six calls is the worst case for one pitch: fact check + unarmed + armed x 3.
     const ready = !!(process.env.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY) && remaining >= 6;
     const quota = nansenQuota();
     return {
       ready, model: 'DeepSeek', remainingCalls: remaining,
+      // True only when the hosted daily cap, not a missing key, is what stops play.
+      capReached: HOSTED && guard.callsRemaining() < 6,
+      replay: REPLAY_PATH,
       nansenCallsSince: quota.calls_since,
       nansenSince: quota.since,
       nansenLastSuccess: quota.last_success_at,
@@ -325,6 +357,19 @@ async function readEncounterBody(req) {
   catch { const err = new Error('Invalid request.'); err.status = 400; throw err; }
 }
 
+/**
+ * Cross-site POSTs are refused. Locally that means the two loopback origins; hosted,
+ * the page's own origin, which is whatever hostname the proxy handed us.
+ */
+function originAllowed(req) {
+  const origin = req.headers.origin;
+  if (!origin) return true;
+  if (HOSTED) {
+    try { return new URL(origin).host === req.headers.host; } catch { return false; }
+  }
+  return [`http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`].includes(origin);
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const send = (code, body, type = 'application/json') => {
@@ -333,12 +378,28 @@ const server = http.createServer(async (req, res) => {
   };
 
   try {
+    if (url.pathname === '/healthz') {
+      const s = guard.stats();
+      return send(200, {
+        ok: true,
+        evidence: dataSource.status().live ? 'live' : 'frozen',
+        roundsToday: s.roundsToday,
+        callsToday: s.callsToday,
+        startedAt: s.startedAt,
+      });
+    }
+
     if (url.pathname.startsWith('/api/encounter')) {
-      if (req.headers.origin && ![`http://localhost:${PORT}`, `http://127.0.0.1:${PORT}`].includes(req.headers.origin)) {
-        return send(403, { error: 'This prototype only accepts local requests.' });
+      if (!originAllowed(req)) {
+        return send(403, { error: HOSTED ? 'Cross-site requests are not accepted.' : 'This prototype only accepts local requests.' });
       }
       if (url.pathname === '/api/encounter' && req.method === 'GET') return send(200, await encounterService.config());
-      if (url.pathname === '/api/encounter' && req.method === 'POST') return send(201, await encounterService.create());
+      if (url.pathname === '/api/encounter' && req.method === 'POST') {
+        // A round start is the unit the per-IP cap counts, whether or not the round
+        // is then played. It makes no model call itself.
+        guard.startRound(clientIp(req, { trustProxy: HOSTED }));
+        return send(201, await encounterService.create());
+      }
       const match = url.pathname.match(/^\/api\/encounter\/([a-f0-9-]{36})(\/pitch)?$/);
       if (match && req.method === 'GET' && !match[2]) return send(200, encounterService.get(match[1]));
       if (match && req.method === 'POST' && match[2]) return send(200, await encounterService.pitch(match[1], await readEncounterBody(req)));
@@ -349,6 +410,12 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === '/api/state') {
       return send(200, state(url.searchParams.get('rule') ?? DEFAULT_RULE));
+    }
+
+    // The lab runner spends model calls outside the hosted guard and the screenshot
+    // route writes to disk for anyone who asks. Neither belongs on a public host.
+    if (HOSTED && (url.pathname === '/api/play' || url.pathname === '/api/screenshot')) {
+      return send(404, { error: 'Not available on the hosted demo.' });
     }
 
     if (url.pathname === '/api/play' && req.method === 'POST') {
@@ -385,21 +452,29 @@ const server = http.createServer(async (req, res) => {
     if (!full.startsWith(PUBLIC_DIR + path.sep) || !fs.existsSync(full) || !fs.statSync(full).isFile()) return send(404, { error: 'not found' });
     return send(200, fs.readFileSync(full, 'utf8'), MIME[path.extname(full)] ?? 'text/plain');
   } catch (err) {
-    console.error('[error]', err);
-    return send(err.status || 500, { error: err.message });
+    if (err.code === 'HOSTED_CAP') console.warn(`[hosted-cap] ${req.method} ${url.pathname} refused: ${err.reason}`);
+    else console.error('[error]', err);
+    return send(err.status || 500, {
+      error: err.message,
+      ...(err.code ? { code: err.code } : {}),
+      ...(err.replay ? { replay: err.replay } : {}),
+    });
   }
 });
 
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, HOST, () => {
   const h = health();
+  const port = server.address().port;
   console.log('\n=== BAIT prototype ===');
-  console.log(`  url             http://localhost:${PORT}`);
+  console.log(`  url             http://localhost:${port}`);
+  console.log(`  listening on    ${HOST}:${port}`);
+  console.log(`  hosted          ${HOSTED ? `yes (${guard.limits.roundsPerIp} rounds/IP/24h, ${guard.limits.dailyCalls} model calls/day, in memory)` : 'no'}`);
   console.log(`  data mode       ${h.mode}`);
   console.log(`  snapshot wallet ${h.snapshot_wallet}`);
   console.log(`  snapshot age    ${h.snapshot_age_hours}h  (${h.snapshot_fills} fills, complete=${h.snapshot_complete})`);
   console.log(`  keys present    ${h.keys_present.join(', ') || 'NONE'}`);
   console.log(`  model calls     ${JSON.stringify(h.model_calls_used)} of ${JSON.stringify(h.model_call_caps)}`);
-  console.log(`  live refresh    ${LIVE_ENABLED ? `enabled (<=${MAX_REFRESH_CREDITS} credits per refresh)` : 'disabled (NANSEN_LIVE=0)'}`);
+  console.log(`  live refresh    ${LIVE_ENABLED ? `enabled (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED && process.env.NANSEN_LIVE !== '0' ? 'disabled (HOSTED=1 defaults NANSEN_LIVE to 0)' : 'disabled (NANSEN_LIVE=0)'}`);
   console.log(`  nansen quota    ${h.nansen_quota.calls_since} calls since ${h.nansen_quota.since}, ${h.nansen_quota.credits_used_local}/${h.nansen_quota.credit_budget} credits`);
   console.log(`  default rule    ${h.default_rule}`);
   console.log(`  control wallet  ${h.control_wallet ?? 'none'}`);

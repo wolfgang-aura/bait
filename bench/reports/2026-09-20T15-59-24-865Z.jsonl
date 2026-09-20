@@ -1,0 +1,2 @@
+{"caseId":"encounter-2026-09-18t13-05-44-640z","config":"armed-strict","repeat":1,"at":"2026-09-20T15:59:29.380Z","finalAllocation":0,"verdict":"HELD","toolCalls":2,"pitches":[{"n":1,"allocation":0,"pct":0},{"n":2,"allocation":0,"pct":0},{"n":3,"allocation":0,"pct":0}]}
+{"caseId":"encounter-2026-09-16t11-29-34-843z","config":"armed-strict","repeat":1,"at":"2026-09-20T15:59:32.952Z","finalAllocation":0,"verdict":"HELD","toolCalls":2,"pitches":[{"n":1,"allocation":0,"pct":0},{"n":2,"allocation":0,"pct":0},{"n":3,"allocation":0,"pct":0}]}

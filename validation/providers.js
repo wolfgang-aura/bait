@@ -41,7 +41,8 @@ export const MAX_TOKENS = 1024;
  * Anthropic is untouched and is not used by the player flow.
  */
 // User approved 800 total calls on 19 September for the paired evaluation and demo checks.
-export const CAPS = { anthropic: 98, deepseek: 800 };
+// Raised 20 Sep 2026 for the frozen-evidence strict sweep, founder-authorized.
+export const CAPS = { anthropic: 98, deepseek: 1100 }; // deepseek raised 21 Sep 2026 for the frozen-evidence armed-basic rerun, founder-authorized
 
 export class CapExceeded extends Error {
   constructor(vendor, used, cap) {
@@ -52,16 +53,25 @@ export class CapExceeded extends Error {
   }
 }
 
+/**
+ * Calls that could not be written to the ledger (read-only or ephemeral disk on a
+ * host). They still count toward the cap for the life of this process, so a failed
+ * write can never turn the cap off.
+ */
+const unwrittenCalls = { anthropic: 0, deepseek: 0 };
+let ledgerWriteWarned = false;
+
 export function modelCallsUsed(vendor = null) {
-  if (!fs.existsSync(MODEL_LEDGER)) return vendor ? 0 : { anthropic: 0, deepseek: 0 };
-  const counts = { anthropic: 0, deepseek: 0 };
-  for (const line of fs.readFileSync(MODEL_LEDGER, 'utf8').split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    try {
-      const r = JSON.parse(line);
-      if (r.vendor in counts) counts[r.vendor] += 1;
-    } catch {
-      /* ignore */
+  const counts = { anthropic: unwrittenCalls.anthropic, deepseek: unwrittenCalls.deepseek };
+  if (fs.existsSync(MODEL_LEDGER)) {
+    for (const line of fs.readFileSync(MODEL_LEDGER, 'utf8').split(/\r?\n/)) {
+      if (!line.trim()) continue;
+      try {
+        const r = JSON.parse(line);
+        if (r.vendor in counts) counts[r.vendor] += 1;
+      } catch {
+        /* ignore */
+      }
     }
   }
   return vendor ? counts[vendor] : counts;
@@ -70,11 +80,16 @@ export function modelCallsUsed(vendor = null) {
 function chargeCall(vendor, model, meta) {
   const used = modelCallsUsed(vendor);
   if (used >= CAPS[vendor]) throw new CapExceeded(vendor, used, CAPS[vendor]);
-  fs.appendFileSync(
-    MODEL_LEDGER,
-    JSON.stringify({ ts: new Date().toISOString(), vendor, model, ...meta }) + '\n',
-    'utf8'
-  );
+  const record = JSON.stringify({ ts: new Date().toISOString(), vendor, model, ...meta }) + '\n';
+  try {
+    fs.appendFileSync(MODEL_LEDGER, record, 'utf8');
+  } catch (err) {
+    unwrittenCalls[vendor] += 1;
+    if (!ledgerWriteWarned) {
+      ledgerWriteWarned = true;
+      console.error(`[model-ledger] cannot write ${MODEL_LEDGER} (${err.code || err.message}); counting model calls in memory for this process.`);
+    }
+  }
   return used + 1;
 }
 

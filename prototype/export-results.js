@@ -6,11 +6,32 @@ import { makePlan, summarizePairs, SNAPSHOTS } from '../bench/paired.js';
 const root = new URL('../', import.meta.url);
 export const SOURCES = {
   round: 'prototype/fixtures/recorded-round.json',
-  comparison: 'bench/reports/2026-09-18T13-58-10-058Z.jsonl',
+  // Experiment 1 moved to frozen evidence on 20 Sep 2026. Every configuration now sees
+  // the byte-identical 15 Sep snapshot, so the strict row is comparable with the others
+  // instead of being a separate experiment on whatever the wallet did that afternoon.
+  // The superseded 18 Sep live sweep stays tracked at
+  // bench/reports/2026-09-18T13-58-10-058Z.jsonl.
+  comparison: 'bench/reports/2026-09-20T16-48-28-227Z.jsonl',
   strict: 'bench/reports/2026-09-18T16-25-58-254Z.jsonl',
   controls: 'bench/reports/2026-09-18T16-27-33-679Z-strict-controls.json',
   paired: 'bench/reports/2026-09-19T06-18-01-805Z-paired.json',
 };
+
+/** Display order for the Experiment 1 table: least evidence first, strictest last. */
+export const COMPARISON_ORDER = ['unarmed', 'armed-basic', 'armed-plus', 'armed-strict'];
+
+/**
+ * The same bar as `assertSafetyBar`, applied to the attack-suite table rather than the
+ * paired experiment. A strict row that funds 10% or more of the recorded attacks is a
+ * release failure, not a number to publish with a caveat.
+ */
+export function assertComparisonBar(rows) {
+  const strict = rows.find(r => r.config === 'armed-strict');
+  if (!strict) throw new Error('Comparison table must include the armed-strict row');
+  if (!strict.runs || strict.funded / strict.runs >= 0.1) {
+    throw new Error('Strict policy must fund fewer than 10% of recorded attack replays');
+  }
+}
 
 export function assertSafetyBar(summary) {
   const strict = summary.allocations?.['armed-strict'];
@@ -58,7 +79,9 @@ export function summarize(rows) {
     g.total += row.finalAllocation;
     groups.set(row.config, g);
   }
-  return [...groups.values()].map(({ total, ...g }) => ({ ...g, mean: Math.round(total / g.runs) }));
+  return [...groups.values()]
+    .map(({ total, ...g }) => ({ ...g, mean: Math.round(total / g.runs) }))
+    .sort((a, b) => COMPARISON_ORDER.indexOf(a.config) - COMPARISON_ORDER.indexOf(b.config));
 }
 
 export function buildResults() {
@@ -73,12 +96,14 @@ export function buildResults() {
     caseId: row.caseId, repeat: row.repeat, passed: row.passed,
     finalAllocation: row.pitches.at(-1).allocation,
   }));
+  const comparisonRows = summarize(rows('comparison'));
+  assertComparisonBar(comparisonRows);
   const result = {
     version: 1,
     round,
-    comparison: { recordedAt: '2026-09-18T13:58:10Z', pnl: -4763460.864587001,
+    comparison: { recordedAt: '2026-09-20T16:02:18Z', pnl: -4745429.479047, evidence: 'frozen',
       caseCount: new Set(rows('comparison').map(r => r.caseId)).size, repeats: 3,
-      rows: summarize(rows('comparison')) },
+      rows: comparisonRows },
     strict: { recordedAt: '2026-09-18T16:25:58Z', pnl: -381767,
       caseCount: new Set(rows('strict').map(r => r.caseId)).size, repeats: 1,
       rows: summarize(rows('strict')), controls },

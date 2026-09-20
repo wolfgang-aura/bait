@@ -23,10 +23,24 @@ async function request(path, body) {
     ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(100_000),
   });
   const data = await response.json();
-  if (!response.ok) { const err = new Error(data.error || 'The desks could not answer. Try again.'); err.status = response.status; throw err; }
+  if (!response.ok) {
+    const err = new Error(data.error || 'The desks could not answer. Try again.');
+    err.status = response.status; err.code = data.code; err.replay = data.replay;
+    throw err;
+  }
   return data;
 }
-function showError(message) { $('pitch-error').textContent = message; $('pitch-error').hidden = !message; }
+// The hosted demo refuses with this text once its daily budget is spent. The server
+// sends the replay path alongside; the prefix match covers the polled state.error copy.
+const CAP_MESSAGE = "Today's live rounds are used up. Watch the recorded attack instead.";
+function replayLink(href) { const a = document.createElement('a'); a.href = href; a.textContent = 'Open the recorded attack →'; return a; }
+function showError(message, replay) {
+  const el = $('pitch-error');
+  el.textContent = message;
+  const href = replay || (message && message.startsWith(CAP_MESSAGE) ? '/replay.html' : null);
+  if (href) { el.append(' ', replayLink(href)); }
+  el.hidden = !message;
+}
 const deskEl = (deskId, selector) => document.querySelector(`.desk[data-desk="${deskId}"] ${selector}`);
 
 function syncControls() {
@@ -130,7 +144,10 @@ function render() {
   }
   $('connection').className = `connection ${state.health.ready ? 'ready' : 'offline'}`;
   $('connection').textContent = state.health.ready ? 'Live AI' : 'AI unavailable';
-  if (!state.health.ready && !state.finished && !state.busy) showError('The AI is unavailable or its prototype call budget is exhausted. No turn has been spent.');
+  if (!state.health.ready && !state.finished && !state.busy) {
+    if (state.health.capReached) showError(CAP_MESSAGE, state.health.replay || '/replay.html');
+    else showError('The AI is unavailable or its prototype call budget is exhausted. No turn has been spent.');
+  }
   renderDataLabel();
   renderTranscript();
   const reveal = evidenceReveal(state);
@@ -252,7 +269,7 @@ $('pitch-form').addEventListener('submit', async e => {
     const next = await request(`/api/encounter/${id}/pitch`, { requestId: crypto.randomUUID(), turn: state.turn, text: $('pitch').value, cards: [...selected] });
     applyState(next);
   } catch (err) {
-    showError(err.status ? err.message : 'Connection interrupted. Your pitch is saved. Checking whether the desks finished…');
+    showError(err.status ? err.message : 'Connection interrupted. Your pitch is saved. Checking whether the desks finished…', err.replay);
     try { applyState(await request(`/api/encounter/${id}`)); }
     catch { showError('The local server is unreachable. Your pitch is saved in this browser. Reload after reconnecting.'); }
   } finally {
@@ -277,7 +294,7 @@ $('restart').addEventListener('click', async () => {
     save(sessionKey, state.id); saveDraft(); showError('');
     $('deck-hint').textContent = 'Pick one or two cards, then make your case.';
     render();
-  } catch (err) { showError(err.message); }
+  } catch (err) { showError(err.message, err.replay); }
   finally { $('restart').disabled = false; }
 });
 $('copy-receipt').addEventListener('click', async () => {
@@ -317,10 +334,17 @@ async function init() {
     if (!storageAvailable) showError('Browser storage is unavailable. Keep this tab open to preserve your round.');
     if (state.busy) startPolling();
   } catch (err) {
-    $('connection').textContent = 'Desks offline'; $('connection').className = 'connection offline';
     $('startup-error').hidden = false;
-    $('startup-error').innerHTML = `Could not load the encounter. Check the local server and retry.<br><button id="retry-start">Retry connection</button>`;
-    $('retry-start').addEventListener('click', () => { $('startup-error').hidden = true; init(); });
+    if (err.code === 'HOSTED_CAP') {
+      // The page itself loaded; this visitor is over the hosted round cap.
+      $('connection').textContent = 'Rounds used up'; $('connection').className = 'connection offline';
+      $('startup-error').textContent = err.message;
+      $('startup-error').append(' ', replayLink(err.replay || '/replay.html'));
+    } else {
+      $('connection').textContent = 'Desks offline'; $('connection').className = 'connection offline';
+      $('startup-error').innerHTML = `Could not load the encounter. Check the local server and retry.<br><button id="retry-start">Retry connection</button>`;
+      $('retry-start').addEventListener('click', () => { $('startup-error').hidden = true; init(); });
+    }
     $('game').setAttribute('aria-busy', 'false');
   }
 }

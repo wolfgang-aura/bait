@@ -1,0 +1,30 @@
+# Render Blueprint for the hosted BAIT demo. One free web service, frozen evidence,
+# hard spend caps. PORT is injected by Render; the server reads it.
+#
+# The two API keys are declared with sync: false, so Render prompts for them in the
+# dashboard on first deploy and never stores them in this file or in Git.
+services:
+  - type: web
+    name: bait
+    runtime: node
+    plan: free
+    # Runtime dependencies live in validation/package.json (the root has no lockfile).
+    buildCommand: npm ci --omit=dev --prefix validation
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: HOSTED
+        value: "1"
+      - key: NANSEN_LIVE
+        value: "0"
+      - key: HOSTED_ROUNDS_PER_IP
+        value: "3"
+      - key: HOSTED_DAILY_CALLS
+        value: "300"
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: NANSEN_API_KEY
+        sync: false

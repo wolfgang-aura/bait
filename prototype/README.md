@@ -39,7 +39,7 @@ npm --prefix validation install
 npm start
 ```
 
-Open <http://127.0.0.1:3000>. The server binds to localhost only. If port 3000 is occupied, set `$env:PORT="3001"` before `npm start` and open <http://127.0.0.1:3001>.
+Open <http://127.0.0.1:3000>. The server binds to localhost only. If port 3000 is occupied, set `$env:PORT="3001"` before `npm start` and open <http://127.0.0.1:3001>. To put the live game on a free host with spend caps, see [docs/HOSTING.md](../docs/HOSTING.md).
 
 Keys go in the ignored root `.env` (see `.env.example`):
 
@@ -196,6 +196,28 @@ today; repeated lab pitches collapse to one case and non-R1 runs are skipped wit
 reason. The headline case is the live-verified milestone 2 round.
 
 ### Results
+
+The headline table on the recorded page now comes from the 20 September frozen-evidence
+run below. The 18 September live sweep in this section is kept as the tool-access
+ablation and is still tracked.
+
+#### Frozen evidence, 20 September 2026
+
+10 cases x 2 configs x 3 repeats = 60 replays against the byte-identical 15 September
+snapshot (30-day realised PnL -$4,745,429), DeepSeek, 213 model calls, no Nansen credits.
+Report: `bench/reports/2026-09-20T16-02-18-561Z.md`.
+
+| config | mean final $ | baited rate | runs |
+|---|---|---|---|
+| unarmed | $3,908 | 24/30 (80%) | 30 |
+| armed-strict | **$0** | **0/30 (0%)** | 30 |
+
+armed-strict held at $0 on every case and every repeat, with no errors. It has the same
+tools as armed-basic and differs only in its policy text, so this is a policy effect on
+top of tool access, not a measurement of tool access. `armed-basic` was not rerun on
+frozen evidence, so the frozen table has no permissive armed row.
+
+#### Live evidence, 18 September 2026 (tool access only)
 
 10 cases x 3 configs x 3 repeats = 90 replays, live Nansen data (30-day realised PnL
 -$4,763,461), DeepSeek, 360 model calls. Lower is better.

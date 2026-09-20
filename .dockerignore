@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+**/node_modules
+scratch
+.env
+.env.*
+*.log
+validation/call_ledger.jsonl
+validation/model_ledger.jsonl
+prototype/runs
+prototype/screenshots
+bench/reports

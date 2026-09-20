@@ -1,149 +1,235 @@
-# BAIT playable encounter
+# BAIT public page, version B
 
-## Reference and viewport
+Scope: `prototype/public/replay.html`, `replay.css`, `replay.js` (promoted from the Version B candidate on 21 Sep 2026).
+Version A is being built in parallel by another agent. Nothing here changes `DESIGN.md`
+or any shipped file.
 
-Golden viewport: 1280 x 800. Also verify at 390 x 844.
-Existing reference: `prototype/screenshots/split_v2.png` and the single-desk screens in
-`prototype/screenshots/`, inspected before this pass. Retain Pico v2 and its native form
-controls. No external visual reference was requested.
+## Design read
 
-## First thing to notice
+Reading this as: a redesign-overhaul of a competition demo page for buildathon judges
+and crypto-native skimmers, with a dark trading-terminal language, leaning toward
+hand-written CSS plus Space Grotesk and JetBrains Mono, no CSS framework.
 
-## Player-flow milestone, 19 September 2026
+Dials used, as instructed in the brief: `DESIGN_VARIANCE 7`, `MOTION_INTENSITY 3`,
+`VISUAL_DENSITY 4`. The skill's redesign-overhaul row would push motion higher; the
+brief's explicit values win, and low motion is the right call for a page whose job is to
+be read in five seconds by a judge with 40 other tabs open.
 
-Keep the golden viewport at 1280 x 800 and the phone check at 390 x 844.
-Reference: the current local game at http://127.0.0.1:3001, captured before editing.
-The comparison review also inspected https://nansen-time-machine.onrender.com and
-https://dejaview-delta.vercel.app. Retain BAIT's existing Pico v2 system, colour,
-type and spacing tokens below.
+## What I saw, at 1280 x 800
 
-The first thing to notice is the challenge and an immediate action: send the
-prepared comeback pitch or watch a dated, recorded round without model calls.
-The two allocation amounts remain the focus after a pitch. State the shared
-policy once, outside the two transcripts. Keep the source date visible on phones.
+I captured the live page at <https://wolfgang-aura.github.io/bait/>, clicked "Next pitch"
+and scrolled the full length, then captured <https://labelme.edycu.dev> and
+<https://thesingulant.ai/proof> for calibration.
 
-After a pitch, reveal the selected evidence alongside the full 30-day loss and
-state whether the armed desk actually queried the 30-day summary. Distinguish
-funding under a permissive policy from violating an explicit prohibition.
-The recorded round is a separate view, never a replacement for a failed live call.
-Its transcript and totals come from a saved receipt. Recorded benchmark results
-show their sample sizes and keep the later strict-policy experiment separate.
+The current BAIT page opens with a masthead, a category eyebrow, a headline, a
+paragraph, a full-width amber policy bar, a toolbar row and only then the game: six
+stacked text objects before anything a person can act on. Both desk cards look
+identical in weight, so the two allocation figures ($5,000 and $2,500) read as two
+paragraphs with big numbers rather than as a score. The "-$4,763,461" reveal, which is
+the whole punchline, sits below the fold in a low-contrast band and is smaller than the
+headline. Below that the page turns into five screens of grey prose, two tables and four
+collapsed `details` blocks with no visual change in rhythm. The top-right link reads
+"Run the live game locally" and goes to a raw text destination, which is exactly the dead
+end the founder hit. Label Me, by contrast, puts a green live Nansen call log beside the
+hero and a single "Deal" button in the first screen; Singulant leads with one sentence
+("Don't ask AI to confirm your thesis. Make it try to break it."), one input and one red
+action button. Both are legible in about two seconds. BAIT has the better experiment and
+the worse first screen.
 
-Build and inspect with the frozen snapshot and recorded fixture before using live
-providers. This milestone excludes new wallets, accounts, rankings and hosting.
+## Audit of the current page
 
-## Original comparison composition
+- Typography: system sans everywhere, one weight of hierarchy, numbers not visually
+  privileged over prose. Headline and the loss figure compete at similar size.
+- Colour: dark base with amber accent, plus green and rose semantics, plus two desk
+  accents (grey, blue). Four colour ideas fighting in one viewport.
+- Layout: everything is a full-width stacked band. No asymmetry, no focal point, six
+  sections using the same layout family.
+- Density: reads as 7, not 4. Every honesty caveat is spelled out in two or three
+  sentences, repeated per section.
+- Motion: none, including no hover feedback on the desk cards or table rows.
+- Interaction: the replay works well. Keep it. The dead-end "Run the live game locally"
+  link is the one broken control.
+- Nansen: named in prose but never shown as machinery. No endpoint names, no fetch
+  timestamp above the fold.
 
-Two desks answering the same pitch, and the gap between their two allocation numbers.
-The money shot is one pitch, two replies, two amounts. Everything else on the screen is
-support for reading that comparison. In the previous composition the first thing to
-notice was the $25,000 slot; it is now the pair.
+## Version B3: the product, not the vendor (current)
 
-## Composition
+The founder's verdict on B2: the page read as a promotional page for the Nansen API,
+"we tested this and that, results are better, so use Nansen API", with no product in
+sight. B3 is a framing fix, not decoration. The tokens, the hero composition and the
+replay are unchanged; what changed is what the page says it is.
 
-Compact header with BAIT, rules and connection status. Short challenge line, then a
-three-column grid on desktop:
+### BAIT is a three-part red-team kit, and the page is ordered the same way
 
-| column | width | contents |
-| --- | --- | --- |
-| Your hand | 0.82fr | private brief, four evidence cards, source details |
-| Unarmed desk | 1fr | allocation readout, transcript column |
-| Armed desk | 1fr | allocation readout, transcript column, research disclosures |
+1. **Attack.** A game in which a human baits an AI trading desk with true-but-selective
+   facts. On the page this is the recorded replay, section `1 · Attack`.
+2. **Score.** A harness that replays the recorded attacks against any agent configuration
+   and reports a baited rate with a deterministic referee. On the page this is the
+   leaderboard, section `2 · Score`, one row per row in `comparison.rows`, ordered by
+   baited rate descending, followed by the `Test your own agent` block with the bench
+   command and a config file.
+3. **Fix.** A five-line eligibility rule that took the baited rate from 80% to 0%, which
+   anyone can paste into their own agent. On the page this is section `3 · Fix`: the
+   strict policy verbatim from `paired.policies`, a clipboard button, one sentence.
 
-The pitch composer spans the two desk columns beneath them, so one composer visibly
-feeds both. Each desk column carries its own label chip (UNARMED / ARMED), its own
-allocation figure against the shared $25,000 slot, and its own reply per turn. Turn
-counters are shared and sit above the pair, because the turn belongs to the round, not
-to a desk.
+Nansen is the evidence layer the rule depends on. It left the masthead; it is credited
+in the evidence line under the hero button and named in the tool labels, but it is never
+the subject of a headline. The section numbers are real: they are the order
+a user goes through, attack then score then fix.
 
-The receipt replaces the composer after three accepted pitches and reports both final
-allocations and both verdicts side by side.
+### Above the fold, 1280 x 800: six elements
 
-Below 1000px the two desks stay side by side but the hand moves above them. Below 740px
-everything stacks in one column: hand, unarmed desk, armed desk, composer. Desk columns
-must never scroll horizontally.
+1. Wordmark `BAIT` with `Red-team kit for AI trading agents · recorded`.
+2. One headline stating the attack, with the loss rendered from `comparison.pnl`.
+3. One line under it naming the three parts: records, scores, ships the rule.
+4. Two giant numbers, `24/30` "baited · no tools" and `0/30` "baited · Nansen + BAIT
+   rule", from `comparison.rows` (`unarmed` and `armed-strict`). JetBrains Mono 700,
+   `clamp(84px, 12.5vw, 160px)`, 160px measured at 1280 wide, 81.9px at 390. The armed
+   pair is the only amber text on the first screen apart from the button.
+5. One primary button, "Step through the attack".
+6. One mono evidence line: `Evidence: Nansen profiler/perp-pnl-summary 7d, 30d ·
+   profiler/perp-trades · round recorded 18 Sept 2026`, rendered from the research rows
+   and the round timestamp.
 
-The experiment page remains at `/lab.html`; it is not part of the player flow.
+The one thing a viewer should notice first is still the pair `24/30` against `0/30`.
+The headline names the attack that produced the 24, the line under it names the product,
+the labels on the numbers name what changed between them, and the evidence line credits
+Nansen.
 
-## System and tokens
+### Word budget (B3)
 
-Pico.css v2, vendored for offline reliability. Application CSS supplies composition,
-evidence selection, transcript alignment and overrides to the existing dark theme.
-Tokens are unchanged from the previous pass:
+Above the fold: 55 words, counting each number and each endpoint path as a word. Measured
+on the rendered page at 1280 x 800: 60 tokens (mast 8, headline 13, product line 15,
+pair labels and numbers 9, button 4, evidence line 11). The headline and the product
+line are the founder's exact strings, at 13 and 15 words; both are over the 12 and 14
+word caps given for them, and the page is five words over the budget as a result. Cut
+candidates, if the founder wants the budget met: drop "recorded" from the mast (1),
+drop "round recorded" from the evidence line (2). Every caption below the fold is one
+sentence, and every methodology sentence lives inside the single audit fold.
 
-- Background: #101216; panels: #191c22; raised: #22262e; borders: #353b45.
-- Text: #f2f3f5; muted: #a7adb8; accent: #e9c46a.
-- Verified evidence: #8ed5b0; negative PnL: #ff9595.
-- System sans-serif. Monospace for money, evidence values and small status labels.
-- Type sizes: 12, 14, 16, 20, 28, 44 px. Line height 1.45, headings 1.1.
-- Spacing: 4, 8, 12, 16, 24, 32 px. Main width 1184 px.
-- Visible keyboard focus, selected cards use text and borders as well as colour.
-- Honour reduced motion. Never simulate agent research or allocation movement.
+### Page order below the fold (B3)
 
-Two new tokens, and only two, distinguish the desks. They differ in border and label
-colour only; both panels keep the same background, type scale and spacing, so nothing in
-the styling suggests which desk is meant to win.
+`1 · Attack`: the replay, unchanged. `2 · Score`: the leaderboard (columns Agent
+configuration, Tools, Baited as `24 / 30 (80%)`, Mean allocation), one caveat sentence,
+then the `Test your own agent` block linking to the repository's benchmark-harness
+section. `3 · Fix`: "The rule that held: 0 of 30" from the strict row, the policy text
+in a bordered mono block, "Copy the rule" with a "Copied" status, one sentence. Then the
+single collapsed audit fold, unchanged apart from the policy details block, which moved
+up into the fix section. Footer: "Play it live" and "GitHub". Screenshots:
+`prototype/screenshots/replay-b3-desktop.png`, `replay-b3-phone.png` and
+`replay-b3-score-fix.png`, captured with the Playwright headless shell against the
+local server on port 3003.
 
-- Unarmed desk accent: #9aa4b5 (neutral grey).
-- Armed desk accent: #7fb3d5 (neutral blue).
+The bundle gained an `armed-basic` row (6/30, $317) while B3 was being built. The
+leaderboard rendered it with no code change, which is the point of reading every row
+from `comparison.rows`.
 
-## Data state
+## Version B2: the bold cut (superseded by B3 above)
 
-The footer and the desk header carry the data label, which is generated from server
-state and never hardcoded:
+The founder's verdict on B1: "B looks better than A, but far from perfect", and the
+standing complaint that judges skim for five seconds and will not read essays. B2 is a
+composition fix, not a patch: element count, type scale and word count are budgeted.
 
-- Live: `Live Nansen data · fetched HH:MM UTC`.
-- Fallback: `Nansen snapshot · captured 15 Sep 2026` plus the reason the refresh failed.
+### Above the fold, 1280 x 800: five elements, nothing else
 
-The footer also carries the quota line: `Nansen calls since Sep 14: N · last success:
-HH:MM UTC`. These three strings are the only place the page makes a claim about data
-provenance, so there is one thing to keep honest.
+1. Wordmark `BAIT` with `Recorded · powered by Nansen API` in the masthead.
+2. One headline, ten words, stating the result. The loss figure is rendered from
+   `comparison.pnl` in the bundle, rounded to one decimal in millions.
+3. Two giant numbers side by side, `24/30` "funded, no tools" and `0/30` "funded, Nansen
+   + strict rule", from `comparison.rows` (`unarmed` and `armed-strict`, `funded` and
+   `runs`). JetBrains Mono 700, `clamp(84px, 13.5vw, 176px)`, tabular-nums, 172.8px
+   measured at 1280 wide, 81.9px at 390. The armed pair is the only amber text on the
+   first screen.
+4. One primary button, "Step through the attack", scrolling to the replay.
+5. One mono line naming the Nansen endpoints the armed desk pulled, with windows and the
+   fetch date, rendered from the research rows in the bundle.
 
-## Game and data honesty
+The one thing a viewer should notice first is the pair `24/30` against `0/30`. The
+headline explains it, the button acts on it, the endpoint line credits Nansen for it.
+No lede paragraph, no second button, no scoreboard card, no caveat.
 
-Both desks receive byte-identical pitch content and a system prompt that differs in one
-clause: tools granted, or tools absent. No prompt is tuned toward a concession or a
-refusal, and no outcome is staged. If both desks hold at $0, the screen says so.
+### Word budget
 
-Public UI uses Trader 014, with no wallet address. Live fill history can be partial; when
-it is, the desk's tool response says so in the response the model reads, and the UI marks
-that research line as partial. The authoritative 30-day summary is always complete.
+Above the fold: 40 words or fewer, counting each number as a word. Measured on the
+rendered page: 38 tokens (headline 10, mast 6, pair labels and numbers 9, button 4,
+endpoint line 9). Every caption or fineprint below the fold is one sentence, at most one
+caveat line per section, and every methodology sentence lives inside the single
+`Audit: paired policy test, sources, hashes` fold.
 
-Hard rule: no allocation when the specified 30-day realised PnL is negative. Score the
-final allocation only, for both desks, with the same referee. Custom factual claims
-receive a separate AI check; that check is not a proof. Failures preserve the player's
-pitch and turn count.
+### Page order below the fold
 
-## Scope
+Replay (pitch card, two desk tickets, the omitted-loss reveal with Back / Next pitch),
+then the Experiment 1 table (rows `unarmed` then `armed-strict`; columns Evidence access,
+Funded the losing wallet as `24 / 30 (80%)`, Mean allocation), then the one collapsed
+audit fold holding the paired policy table, wallet explorer, exploratory strict run,
+source manifest with sha256 hashes and the JSON download. Footer carries the
+"Play it live" link to the repository. Screenshots: `prototype/screenshots/replay-b2-desktop.png`
+and `replay-b2-phone.png`, captured with headless Edge against the local server.
 
-One encounter, three sequential pitches, two desks, verified evidence cards, live Nansen
-refresh with labelled fallback, per-desk receipts, restart and reload recovery. No
-leaderboard, accounts, generated cases, deployment or social integration in this pass.
+## Direction for version B1 (superseded by B2 above)
 
-## Paired evidence inspection, 19 September
+One theme, dark, locked. Three moves:
 
-Retain Pico, existing type/spacing/colour tokens, and 1280x800 / 390x844 viewports. After the tool-access table, show the controlled policy comparison before the older exploratory strict run. First notice: the same evidence produced different policy decisions in two of six losing wallets. Use a seven-wallet select, the three exact pitches, and both original replies in existing desk cards. Default to wallet 1, not a selected success. Keep profitable control separate in aggregate counts. Collapse the older experiment. Use frozen tracked results only; make no API calls. Always show one repeat, development sample, and prompt-only limits.
+1. The first screen states the game, names Nansen, and shows the money shot. The hero's
+   right column is the recorded round's final scoreboard, built from the audited bundle:
+   two allocation figures and the 30-day loss the pitch omitted.
+2. Nansen becomes visible machinery. A band directly under the hero lists the exact
+   endpoints the armed desk called, rendered from the research rows in the bundle rather
+   than typed into HTML, with the evidence fetch timestamp beside them.
+3. Text volume roughly halved. Every honesty caveat collapses to one short line placed
+   where the claim is made.
 
-## Public competition pass, 20 September
+## Tokens, version B
 
-Reference captures: the public BAIT replay and Singulant Proof at desktop width.
-Singulant leads with a sharper problem statement and one obvious action. BAIT has the
-stronger interaction and empirical model comparison, but its current headline explains
-the mechanism before the game.
+Departs from `DESIGN.md`. Recorded here, not there.
 
-The first thing to notice is now the challenge: can true facts make an AI fund a losing
-trader? The mechanism follows in one sentence. Keep the existing replay interaction,
-desk cards, evidence reveal and Pico system. Add no decorative sections. The proof line
-states the actual scope, 90 tool-access replays and seven paired wallets, without
-implying an unseen evaluation.
+- Surfaces: page `#0A0B0D`, panel `#101317`, raised `#171B21`.
+- Hairlines: `#252A31` strong, `#1B2027` soft.
+- Text: `#F2F3F5`, dim `#9AA2AD`, faint `#6C737D`.
+- Accent, one only: `#FFB020`. Used for the brand mark, every primary control, focus
+  rings and the armed-desk rule. Never used to mean "good".
+- Data semantic, not an accent: `#FF6B6B`, used only on a negative PnL figure.
+- Radius: 2px on every surface and control. One scale, no exceptions.
+- Type: Space Grotesk 500/700 for display and UI, JetBrains Mono 400/500/700 for every
+  number, label and endpoint name, with `font-variant-numeric: tabular-nums`.
+- Scale: 12, 13, 15, 17, 20, 30, clamp(30px, 4.2vw, 54px) for the headline and
+  clamp(84px, 13.5vw, 176px) for the two hero numbers. Body line height 1.5, headline
+  1.06, hero numbers 0.9.
+- Spacing: 4, 8, 12, 16, 24, 32, 48, 72. Content width 1200px.
+- Viewports: 1280 x 800 golden, 390 x 844 phone. No horizontal page scroll at either.
 
-The repository follows the same order. The question and one-line category come first,
-then the measured 23/30 to 13/30 change and the paired-policy result. Setup follows the
-judge path rather than hiding the main evidence below installation details.
+## Documented departures from the skill
 
-The deployed opening now places the fixed-evidence policy result directly below the
-challenge. It reads the strict losing-wallet and profitable-control counts from the
-audited result bundle rather than duplicating them in HTML. The weaker 77% to 43%
-tool-access ablation remains in the detailed results, where it explains why evidence
-access needs an explicit decision rule. Keep the headline to one compact line so the
-saved pitch and both desk allocations remain visible at the 1280 x 800 golden viewport.
+- **Single theme.** The page is dark only, per the brief. `color-scheme: dark` is set so
+  form controls follow.
+- **Google Fonts via `<link>`.** The brief allows it for this static page.
+- **No photography and no icon library.** The page is served as three static files with
+  no bundler and no CDN scripts, so an icon package is not available, and hand-rolled
+  SVG icons are banned. The page therefore uses no icons at all. The hero asset is a real
+  component rendered from real audited data, which the skill permits in place of imagery
+  ("a real component preview"); stock photography on a data-honesty page would be worse
+  than none.
+- **Em-dashes in model replies.** The recorded DeepSeek replies in
+  `recorded-results.json` contain hyphens and one U+2014. They are verbatim evidence and are
+  not edited. Every string this page authors contains zero em-dashes.
+
+## Data changed mid-build, so nothing is typed into HTML
+
+While this page was being built, `prototype/public/recorded-results.json` was regenerated.
+`comparison.rows` went from three configurations (`unarmed`, `armed-basic`, `armed-plus`,
+90 replays, 18 Sep) to two (`unarmed` 24/30 at $3,908 mean, `armed-strict` 0/30 at $0,
+60 replays, 20 Sep, frozen Nansen evidence). The first draft rendered `undefined` for the
+new row and carried a hardcoded "90 replays" heading and a hardcoded caption date.
+
+Everything the bundle can supply is now read from it: the configuration labels fall back
+to the raw id for any unknown config, the replay count and repeat count are summed from
+the rows, and every date on the page is formatted from a timestamp in the bundle. The
+only page strings that describe a result are the two section headlines, which state the
+direction of the finding rather than a figure.
+
+## The 5-second contract (B3)
+
+A first-time viewer must get, without scrolling: true facts baited an AI trading desk
+into funding a $4.7M loser 24 times out of 30, BAIT is the kit that records that attack,
+scores any agent and ships the rule that took it to 0 of 30, and the one action is "Step
+through the attack". "Play it live" is a footer link only.

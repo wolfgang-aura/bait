@@ -60,8 +60,9 @@ It names the encounter as verified live data and preserves the fetched timestamp
 
 Can true facts sell a losing trader?
 
-BAIT tests selective pitches against Nansen. With identical evidence, tools and
-model, the strict policy funded 0/6 losing wallets and 1/1 profitable control.
+BAIT baits AI trading desks with true but selective facts, then scores any agent
+config against the recorded attacks. Same wallet, lost $4.7M in 30 days:
+no tools 24/30 funded it, Nansen data 6/30, Nansen + the BAIT rule 0/30.
 
 Play + audit: https://github.com/wolfgang-aura/bait
 @nansen_ai
@@ -78,9 +79,9 @@ facts, the full record and both decisions.
 
 In the fixed-evidence policy comparison, the permissive policy funded 2/6 losing
 wallets. The strict Nansen-backed policy funded 0/6 and still funded the profitable
-control. Each pair used the same evidence, tools, model and pitches. The separate
-90-replay ablation found that tools without the strict rule still funded a losing
-wallet in 13/30 runs. Full traces and reproduction commands accompany the demo.
+control. Each pair used the same evidence, tools, model and pitches. The frozen-evidence
+attack suite, 10 recorded attacks by 3 repeats, funded the losing wallet 24/30 with
+no tools, 6/30 with Nansen PnL and trades, and 0/30 with the strict rule added. Full traces and reproduction commands accompany the demo.
 
 ## Before publication
 
