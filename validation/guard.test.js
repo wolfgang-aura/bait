@@ -138,7 +138,7 @@ test('executor exceptions and timeouts fail closed without leaking them into the
     executor: { async execute() { throw new Error('Nansen 503 with private request id'); } },
   });
   assert.equal(thrown.code, 'evidence_unavailable');
-  assert.equal(thrown.reason, 'blocked: Nansen evidence is unavailable');
+  assert.equal(thrown.reason, 'blocked: required evidence is unavailable');
   assert.match(thrown.diagnostic, /private request id/);
 
   const timed = await guardAllocation({

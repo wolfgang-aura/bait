@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "generated_at": "2026-09-20T21:23:21.180Z",
+  "window_days": 30,
+  "policy": "Allow only when independently observed 30-day realised PnL is finite and non-negative.",
+  "notice": "A pass is an eligibility result, not a recommendation. Figures are dated snapshots and can change.",
+  "venues": [
+    {
+      "id": "fomo",
+      "name": "Fomo",
+      "scope": "Fomo-linked Robinhood Chain execution wallets",
+      "source_label": "Fomo Radar public API; independently observed Robinhood Chain fills",
+      "source_url": "https://fomoradar.app/docs",
+      "coverage_note": "This is Robinhood Chain activity observed by Fomo Radar, not every chain in a Fomo profile. Fomo headline PnL is shown separately because it can include open positions and disagree with realised results.",
+      "wallets": [
+        {
+          "handle": "econoar",
+          "address": "0x1605b59dfe3c1742c815d604aab6a2faa3a5c91f",
+          "expected": "allow",
+          "profile_url": "https://fomo.family/profile/econoar",
+          "evidence_url": "https://fomoradar.app/trader/econoar",
+          "explorer_url": "https://robinhoodchain.blockscout.com/address/0x1605b59dfe3c1742c815d604aab6a2faa3a5c91f",
+          "headline_pnl_usd": 1397660.7120497825,
+          "evidence": { "wallet": "0x1605b59dfe3c1742c815d604aab6a2faa3a5c91f", "window_days": 30, "realized_pnl_usd": 30698.121404775247, "closed_trade_count": 69, "win_rate": 0.3188405797101449, "retrieved_at": "2026-09-20T21:23:21.180Z", "source": "Fomo Radar /api/trader (Robinhood Chain on-chain realised PnL)" }
+        },
+        {
+          "handle": "iruletrenches",
+          "address": "0xddd462bb053b57d5d73c9615e11a7284cfee9233",
+          "expected": "allow",
+          "profile_url": "https://fomo.family/profile/iruletrenches",
+          "evidence_url": "https://fomoradar.app/trader/iruletrenches",
+          "explorer_url": "https://robinhoodchain.blockscout.com/address/0xddd462bb053b57d5d73c9615e11a7284cfee9233",
+          "headline_pnl_usd": 616556.114968949,
+          "evidence": { "wallet": "0xddd462bb053b57d5d73c9615e11a7284cfee9233", "window_days": 30, "realized_pnl_usd": 14605.451018275022, "closed_trade_count": 79, "win_rate": 0.4177215189873418, "retrieved_at": "2026-09-20T21:23:21.180Z", "source": "Fomo Radar /api/trader (Robinhood Chain on-chain realised PnL)" }
+        },
+        {
+          "handle": "himgajria",
+          "address": "0xd4cf04bc9d7c80b49c6c30a633f7b9bd5370b4d6",
+          "expected": "allow",
+          "profile_url": "https://fomo.family/profile/himgajria",
+          "evidence_url": "https://fomoradar.app/trader/himgajria",
+          "explorer_url": "https://robinhoodchain.blockscout.com/address/0xd4cf04bc9d7c80b49c6c30a633f7b9bd5370b4d6",
+          "headline_pnl_usd": 655999.0251033934,
+          "evidence": { "wallet": "0xd4cf04bc9d7c80b49c6c30a633f7b9bd5370b4d6", "window_days": 30, "realized_pnl_usd": 8987.757339265872, "closed_trade_count": 5, "win_rate": 0.4, "retrieved_at": "2026-09-20T21:23:21.180Z", "source": "Fomo Radar /api/trader (Robinhood Chain on-chain realised PnL)" }
+        },
+        {
+          "handle": "andy",
+          "address": "0x3ecbecb8e47702249842c29cc5aed564ad1fa84b",
+          "expected": "block",
+          "profile_url": "https://fomo.family/profile/andy",
+          "evidence_url": "https://fomoradar.app/trader/andy",
+          "explorer_url": "https://robinhoodchain.blockscout.com/address/0x3ecbecb8e47702249842c29cc5aed564ad1fa84b",
+          "headline_pnl_usd": 442935,
+          "evidence": { "wallet": "0x3ecbecb8e47702249842c29cc5aed564ad1fa84b", "window_days": 30, "realized_pnl_usd": -252876.3327243295, "closed_trade_count": 166, "win_rate": 0.3373493975903614, "retrieved_at": "2026-09-20T21:23:21.180Z", "source": "Fomo Radar /api/trader (Robinhood Chain on-chain realised PnL)" }
+        },
+        {
+          "handle": "RuneCrypto_",
+          "address": "0x180906a0ef400e4747eac35d4e02ffa18979e328",
+          "expected": "block",
+          "profile_url": "https://fomo.family/profile/RuneCrypto_",
+          "evidence_url": "https://fomoradar.app/trader/RuneCrypto_",
+          "explorer_url": "https://robinhoodchain.blockscout.com/address/0x180906a0ef400e4747eac35d4e02ffa18979e328",
+          "headline_pnl_usd": 17578,
+          "evidence": { "wallet": "0x180906a0ef400e4747eac35d4e02ffa18979e328", "window_days": 30, "realized_pnl_usd": -198965.2637137162, "closed_trade_count": 11, "win_rate": 0.36363636363636365, "retrieved_at": "2026-09-20T21:23:21.180Z", "source": "Fomo Radar /api/trader (Robinhood Chain on-chain realised PnL)" }
+        }
+      ]
+    },
+    {
+      "id": "hyperliquid",
+      "name": "Hyperliquid",
+      "scope": "Hyperliquid perpetual-trading addresses",
+      "source_label": "Nansen Hyperliquid leaderboard plus independent address PnL summary",
+      "source_url": "https://docs.nansen.ai/api/hyperliquid/address-perp-pnl-summary",
+      "coverage_note": "Discovery used total PnL, but BAIT classified each address only from the independently fetched 30-day realised-PnL summary.",
+      "wallets": [
+        {
+          "address": "0x9546b9d4103be41ce13483a8f299d0df0eeb181c",
+          "label": "HL Perps Whale",
+          "expected": "allow",
+          "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0x9546b9d4103be41ce13483a8f299d0df0eeb181c",
+          "evidence": { "wallet": "0x9546b9d4103be41ce13483a8f299d0df0eeb181c", "window_days": 30, "realized_pnl_usd": 2450809.467724999, "closed_trade_count": 213725, "win_rate": 0.43664990057316644, "retrieved_at": "2026-09-20T21:22:27.175Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+        },
+        {
+          "address": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
+          "label": "HL Perps Whale",
+          "expected": "allow",
+          "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
+          "evidence": { "wallet": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e", "window_days": 30, "realized_pnl_usd": 4372641.27342, "closed_trade_count": 534, "win_rate": 1, "retrieved_at": "2026-09-20T21:22:27.934Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+        },
+        {
+          "address": "0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508",
+          "label": "Uses TRADEXYZ1 referral code",
+          "expected": "allow",
+          "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508",
+          "evidence": { "wallet": "0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508", "window_days": 30, "realized_pnl_usd": 4752152.401368, "closed_trade_count": 37257, "win_rate": 0.6800869635236332, "retrieved_at": "2026-09-20T21:22:33.943Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+        },
+        {
+          "address": "0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd",
+          "label": "HL Perps Whale",
+          "expected": "block",
+          "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd",
+          "evidence": { "wallet": "0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd", "window_days": 30, "realized_pnl_usd": -847025.384273, "closed_trade_count": 2075, "win_rate": 0.042891566265060244, "retrieved_at": "2026-09-20T21:22:35.005Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+        },
+        {
+          "address": "0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d",
+          "label": "HL Perps Whale",
+          "expected": "block",
+          "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d",
+          "evidence": { "wallet": "0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d", "window_days": 30, "realized_pnl_usd": -399225.514954, "closed_trade_count": 2726, "win_rate": 0.008070432868672046, "retrieved_at": "2026-09-20T21:23:02.620Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+        }
+      ]
+    }
+  ]
+}

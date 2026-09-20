@@ -447,6 +447,10 @@ const server = http.createServer(async (req, res) => {
       return send(200, { ok: true, path: out });
     }
 
+    if (url.pathname === '/wallets.json') {
+      return send(200, fs.readFileSync(path.join(VALIDATION, 'wallet-navigator.json'), 'utf8'));
+    }
+
     const file = url.pathname === '/' ? 'index.html' : url.pathname.replace(/^\//, '');
     const full = path.resolve(PUBLIC_DIR, file);
     if (!full.startsWith(PUBLIC_DIR + path.sep) || !fs.existsSync(full) || !fs.statSync(full).isFile()) return send(404, { error: 'not found' });

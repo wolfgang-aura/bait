@@ -47,6 +47,19 @@ repository contains the attack rows, frozen evidence, source hashes, determinist
 referee, reproduction command, production contract, and failure tests. The 45-second
 video shows the attack, score, guard contract, and recorded status without narration.
 
+## Wallet-panel objection: "You picked winners and losers from whichever metric suited you"
+
+The navigator uses one rule for every address: independently observed 30-day realised
+PnL at or above zero allows; negative blocks. Discovery metrics do not decide the label.
+One Hyperliquid candidate found through a negative total-PnL result was excluded because
+its independently fetched realised PnL was positive. Conversely, two Fomo profiles with
+positive headline PnL remain blocked because their observed closed-trade realised PnL
+is negative. The page exposes both Fomo figures rather than hiding the disagreement.
+
+`validation/wallet-navigator.test.js` reruns the guard over all ten frozen records and
+asserts five addresses per venue, with exactly three allows and two blocks in each.
+The evidence table records addresses, timestamps, sources, trade counts, and links.
+
 ## Remaining external steps
 
 The repository, page, video, post copy, and preflight can be completed locally. The

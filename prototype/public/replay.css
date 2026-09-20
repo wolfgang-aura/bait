@@ -213,7 +213,7 @@ h1 .skeleton-inline { height: 0.85em; }
   color: var(--ink-dim);
 }
 
-.hero-cta { align-self: flex-start; margin-bottom: 24px; }
+.hero-actions { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
 
 .endpoints {
   font: 400 13px/1.5 var(--mono);
@@ -567,6 +567,50 @@ select:hover { border-color: var(--ink-faint); }
 code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
 .audit a { color: var(--accent); }
 
+/* ---------- wallet navigator ---------- */
+
+.wallets-lead { color: var(--ink-dim); font-size: 17px; max-width: 68ch; margin-bottom: 24px; }
+.wallet-controls {
+  display: flex; align-items: end; gap: 16px; flex-wrap: wrap;
+  padding: 16px; margin-bottom: 24px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r);
+}
+.wallet-controls label { display: grid; gap: 7px; font: 500 12px/1.2 var(--mono); color: var(--ink-faint); }
+.wallet-controls select { min-width: 180px; }
+.wallet-controls .stamp { margin-left: auto; padding-bottom: 11px; }
+.wallet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.wallet-card {
+  min-width: 0; padding: 20px;
+  border: 1px solid var(--line); border-radius: var(--r); background: var(--panel);
+}
+.wallet-card[hidden] { display: none; }
+.wallet-card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.venue-tag, .decision {
+  font: 700 11px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+}
+.venue-tag { color: var(--ink-faint); }
+.decision { padding: 6px 8px; border: 1px solid var(--line); }
+.decision[data-state="allow"] { color: var(--accent); border-color: rgb(255 176 32 / 0.45); }
+.decision[data-state="block"] { color: var(--loss); border-color: rgb(255 107 107 / 0.45); }
+.wallet-card h3 { font-size: 20px; margin-bottom: 10px; overflow-wrap: anywhere; }
+.address-row { display: flex; align-items: center; gap: 10px; min-width: 0; margin-bottom: 22px; }
+.address-row code { color: var(--ink-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.copy-address {
+  flex: 0 0 auto; padding: 5px 7px; color: var(--ink-dim); background: transparent;
+  border: 1px solid var(--line); border-radius: var(--r); font: 500 11px/1 var(--mono); cursor: pointer;
+}
+.copy-address:hover { color: var(--ink); border-color: var(--ink-faint); }
+.wallet-pnl { font: 700 32px/1 var(--mono); letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+.wallet-pnl[data-state="allow"] { color: var(--accent); }
+.wallet-pnl[data-state="block"] { color: var(--loss); }
+.wallet-pnl-label { margin-top: 7px; color: var(--ink-faint); font: 400 12px/1.5 var(--mono); }
+.headline-compare, .wallet-reason { margin-top: 16px; font-size: 13px; color: var(--ink-dim); }
+.headline-compare[data-warning="true"] { color: var(--loss); }
+.wallet-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 18px; }
+.wallet-links a { color: var(--accent); font: 500 13px/1.2 var(--sans); text-decoration: none; border-bottom: 1px solid rgb(255 176 32 / 0.35); }
+.wallet-links a:hover { border-bottom-color: var(--accent); }
+.wallet-method { margin-top: 20px; }
+
 /* ---------- footer ---------- */
 
 .foot { margin-top: 64px; border-top: 1px solid var(--line-soft); background: var(--panel); }
@@ -605,7 +649,7 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
   .pair { gap: 16px; margin-bottom: 28px; }
   .big strong { font-size: clamp(64px, 21vw, 84px); }
   .big > span { font-size: 13px; margin-top: 10px; }
-  .hero-cta { align-self: stretch; }
+  .hero-actions { align-items: stretch; flex-direction: column; }
   .endpoints { font-size: 12px; overflow-wrap: anywhere; }
 
   .sec { padding: 52px 16px 16px; }
@@ -628,6 +672,10 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
   tbody th, tbody td { font-size: 13px; }
   .explorer { padding: 16px; }
   .stat-pair { gap: 20px; }
+  .wallet-grid { grid-template-columns: 1fr; }
+  .wallet-controls { align-items: stretch; }
+  .wallet-controls label, .wallet-controls select { width: 100%; }
+  .wallet-controls .stamp { margin-left: 0; padding-bottom: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

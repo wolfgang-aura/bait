@@ -141,7 +141,7 @@ export async function guardAllocation({
       policy,
       evidence: blank,
       code: timedOut ? 'evidence_timeout' : 'evidence_unavailable',
-      reason: timedOut ? 'blocked: Nansen evidence check timed out' : 'blocked: Nansen evidence is unavailable',
+      reason: timedOut ? 'blocked: evidence check timed out' : 'blocked: required evidence is unavailable',
       diagnostic: safeError(error),
     });
   }
@@ -165,7 +165,7 @@ export async function guardAllocation({
     return result({ attempted, policy, evidence, code: 'window_mismatch', reason: `blocked: evidence does not cover the required ${policy.windowDays}-day window` });
   }
   if (evidence.source !== policy.source) {
-    return result({ attempted, policy, evidence, code: 'source_mismatch', reason: 'blocked: evidence source is not the required Nansen endpoint' });
+    return result({ attempted, policy, evidence, code: 'source_mismatch', reason: 'blocked: evidence source does not match the policy' });
   }
 
   const retrievedAt = Date.parse(evidence.retrieved_at ?? '');
@@ -177,7 +177,7 @@ export async function guardAllocation({
     return result({ attempted, policy, evidence, code: 'future_evidence', reason: 'blocked: evidence timestamp is in the future' });
   }
   if (policy.maxEvidenceAgeMs !== null && evaluatedAt - retrievedAt > policy.maxEvidenceAgeMs) {
-    return result({ attempted, policy, evidence, code: 'stale_evidence', reason: 'blocked: Nansen evidence is stale' });
+    return result({ attempted, policy, evidence, code: 'stale_evidence', reason: 'blocked: evidence is stale' });
   }
   if (evidence.realized_pnl_usd < policy.minimumRealizedPnlUsd) {
     const reason = policy.minimumRealizedPnlUsd === 0

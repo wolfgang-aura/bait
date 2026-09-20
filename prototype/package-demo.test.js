@@ -4,7 +4,7 @@ import { demoFiles } from './package-demo.js';
 
 test('recorded package contains only audited assets and resolves its local dependencies', () => {
   const files = demoFiles();
-  assert.equal(files.size, 6);
+  assert.equal(files.size, 7);
   for (const [name, body] of files) {
     assert.doesNotMatch(name, /\.env|server|ledger|encounter-app/);
     if (!name.endsWith('.html')) continue;
@@ -17,7 +17,9 @@ test('recorded package contains only audited assets and resolves its local depen
   }
   assert.doesNotMatch(files.get('replay.js'), /fetch\(['"]\/api\//);
   assert.match(files.get('replay.js'), /fetch\('\.\/recorded-results\.json'/);
+  assert.match(files.get('replay.js'), /fetch\('\.\/wallets\.json'/);
   assert.equal(JSON.parse(files.get('recorded-results.json')).paired.summary.complete, true);
+  assert.equal(JSON.parse(files.get('wallets.json')).venues.flatMap(v => v.wallets).length, 10);
 });
 
 test('recorded page ships the guard as section 3 and reads the guarded row from the bundle', () => {

@@ -71,6 +71,24 @@ rendered from the local server at 1280 x 800 and 390 x 844 with zero console err
 The one thing a viewer should understand after the score is what they can integrate:
 an allow-or-block decision between an AI proposal and wallet-allocation execution.
 
+## Version B5: ten-wallet navigator (current)
+
+Section `4 · Navigate` turns the guard contract into a reviewable user flow. At the
+golden 1280 x 800 viewport it uses a two-column card grid; at 390 x 844 it collapses
+to one column without horizontal overflow. Two native selects filter by venue and
+decision. Each card gives the decision first, then the full address, 30-day realised
+PnL, trade count, win rate, reason, and links to the profile, evidence, or explorer.
+
+The visual language stays frozen: existing type, spacing, colour, radius, and focus
+tokens only. Amber means an eligible result, red means a blocked result, and neither
+is presented as a return forecast. Fomo cards also show its headline PnL; disagreement
+with observed realised PnL is red so the viewer sees the measurement trap immediately.
+
+The one thing a viewer should notice first in this section is that BAIT applies one
+explicit rule to both profitable and losing examples. The source limitation is visible
+below the cards: Fomo coverage is limited to Fomo-linked Robinhood Chain execution
+wallets and uses public Fomo Radar data; Hyperliquid uses Nansen summaries.
+
 ## Version B3: the product, not the vendor (superseded by B4 above)
 
 The founder's verdict on B2: the page read as a promotional page for the Nansen API,

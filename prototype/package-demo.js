@@ -11,9 +11,12 @@ export function demoFiles() {
   const html = read('replay.html').replaceAll('="/', '="./');
   files.set('index.html', html);
   files.set('replay.html', html);
-  files.set('replay.js', read('replay.js').replace("fetch('/recorded-results.json'", "fetch('./recorded-results.json'"));
+  files.set('replay.js', read('replay.js')
+    .replace("fetch('/recorded-results.json'", "fetch('./recorded-results.json'")
+    .replace("fetch('/wallets.json'", "fetch('./wallets.json'"));
   for (const name of ['replay.css', 'player-summary.js']) files.set(name, read(name));
   files.set('recorded-results.json', JSON.stringify(buildResults(), null, 2) + '\n');
+  files.set('wallets.json', fs.readFileSync(path.join(root, 'validation', 'wallet-navigator.json'), 'utf8'));
   return files;
 }
 

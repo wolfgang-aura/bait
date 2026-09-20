@@ -44,7 +44,10 @@
       </p>
     </div>
 
-    <a class="btn hero-cta" href="#attack">Step through the attack</a>
+    <div class="hero-actions">
+      <a class="btn" href="#attack">Step through the attack</a>
+      <a class="btn-ghost" href="#wallets">Explore 10 wallets</a>
+    </div>
 
     <p id="b-endpoints" class="endpoints skeleton-row">&nbsp;</p>
   </section>
@@ -184,6 +187,21 @@ if (decision.decision === 'allow') {
         <p class="note">In the repository, <code>node prototype/export-results.js</code> rebuilds these totals from the recorded rows without API calls.</p>
       </div>
     </details>
+  </section>
+
+  <section id="wallets" class="wallets sec" aria-labelledby="wallets-title" hidden>
+    <div class="sec-head">
+      <h2 id="wallets-title"><span class="sec-num">4</span>Navigate</h2>
+      <p class="sec-meta">10 dated examples · 3 allow + 2 block per venue</p>
+    </div>
+    <p class="wallets-lead">Inspect the evidence behind each decision, then continue to the profile or chain explorer.</p>
+    <div class="wallet-controls" aria-label="Wallet filters">
+      <label for="b-venue-filter">Venue<select id="b-venue-filter"><option value="all">All venues</option><option value="fomo">Fomo</option><option value="hyperliquid">Hyperliquid</option></select></label>
+      <label for="b-decision-filter">Decision<select id="b-decision-filter"><option value="all">Allow + block</option><option value="allow">Allow</option><option value="block">Block</option></select></label>
+      <p id="b-wallet-count" class="stamp" aria-live="polite"></p>
+    </div>
+    <div id="b-wallet-grid" class="wallet-grid"></div>
+    <p id="b-wallet-method" class="wallet-method note"></p>
   </section>
 </main>
 

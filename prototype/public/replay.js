@@ -35,6 +35,7 @@ const LESSONS = [
 ];
 
 let results;
+let walletData;
 let step = 0;
 
 /* ---------- hero: headline figure, the two big numbers, evidence line ---------- */
@@ -238,13 +239,77 @@ function renderAudit() {
   $('b-manifest').textContent = results.sources.map(s => `${s.path}${s.sha256 ? ` sha256 ${s.sha256}` : ''}`).join('\n');
 }
 
+/* ---------- 4 · navigate: recorded wallet decisions ---------- */
+
+const signedMoney = n => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+const walletName = wallet => wallet.handle ? `@${wallet.handle}` : wallet.label;
+
+function walletCard(venue, wallet) {
+  const evidence = wallet.evidence;
+  const disagreement = venue.id === 'fomo'
+    && wallet.headline_pnl_usd >= 0
+    && evidence.realized_pnl_usd < 0;
+  const links = [
+    wallet.profile_url && `<a href="${escape(wallet.profile_url)}" target="_blank" rel="noopener">Open profile</a>`,
+    wallet.evidence_url && `<a href="${escape(wallet.evidence_url)}" target="_blank" rel="noopener">Inspect evidence</a>`,
+    `<a href="${escape(wallet.explorer_url)}" target="_blank" rel="noopener">Open explorer</a>`,
+  ].filter(Boolean).join('');
+  return `<article class="wallet-card" data-venue="${escape(venue.id)}" data-decision="${escape(wallet.expected)}">
+    <div class="wallet-card-head"><span class="venue-tag">${escape(venue.name)}</span><span class="decision" data-state="${escape(wallet.expected)}">${escape(wallet.expected)}</span></div>
+    <h3>${escape(walletName(wallet))}</h3>
+    <div class="address-row"><code title="${escape(wallet.address)}">${escape(wallet.address)}</code><button type="button" class="copy-address" data-address="${escape(wallet.address)}">Copy</button></div>
+    <p class="wallet-pnl" data-state="${escape(wallet.expected)}">${signedMoney(evidence.realized_pnl_usd)}</p>
+    <p class="wallet-pnl-label">30-day realised PnL · ${evidence.closed_trade_count.toLocaleString('en-US')} closed trades · ${(evidence.win_rate * 100).toFixed(1)}% win rate</p>
+    ${venue.id === 'fomo' ? `<p class="headline-compare" data-warning="${disagreement}">Fomo headline ${signedMoney(wallet.headline_pnl_usd)}${disagreement ? `, but observed realised ${signedMoney(evidence.realized_pnl_usd)}` : ''}</p>` : ''}
+    <p class="wallet-reason">${wallet.expected === 'allow' ? 'Eligible: independently observed realised PnL is non-negative.' : 'Blocked: independently observed realised PnL is negative.'}</p>
+    <nav class="wallet-links" aria-label="Open ${escape(walletName(wallet))}">${links}</nav>
+  </article>`;
+}
+
+function filterWallets() {
+  const venue = $('b-venue-filter').value;
+  const decision = $('b-decision-filter').value;
+  let shown = 0;
+  for (const card of document.querySelectorAll('.wallet-card')) {
+    const visible = (venue === 'all' || card.dataset.venue === venue)
+      && (decision === 'all' || card.dataset.decision === decision);
+    card.hidden = !visible;
+    if (visible) shown += 1;
+  }
+  $('b-wallet-count').textContent = `${shown} of 10 wallets shown`;
+}
+
+function renderWallets() {
+  const wallets = walletData.venues.flatMap(venue => venue.wallets.map(wallet => ({ venue, wallet })));
+  if (walletData.version !== 1 || wallets.length !== 10) throw new Error('Wallet evidence has an unsupported format');
+  $('b-wallet-grid').innerHTML = wallets.map(({ venue, wallet }) => walletCard(venue, wallet)).join('');
+  $('b-wallet-method').textContent = `${walletData.notice} Fomo coverage is limited to linked Robinhood Chain execution wallets and uses Fomo Radar public data; Hyperliquid decisions use Nansen address PnL summaries. Evidence captured ${day(walletData.generated_at)}.`;
+  filterWallets();
+}
+
+for (const id of ['b-venue-filter', 'b-decision-filter']) $(id).addEventListener('change', filterWallets);
+$('b-wallet-grid').addEventListener('click', async event => {
+  const button = event.target.closest('.copy-address');
+  if (!button) return;
+  try {
+    await navigator.clipboard.writeText(button.dataset.address);
+    button.textContent = 'Copied';
+  } catch {
+    button.textContent = 'Copy failed';
+  }
+  setTimeout(() => { button.textContent = 'Copy'; }, 1600);
+});
+
 /* ---------- boot ---------- */
 
 async function init() {
   try {
-    const response = await fetch('/recorded-results.json', { signal: AbortSignal.timeout(10000) });
-    if (!response.ok) throw new Error(`Evidence file returned HTTP ${response.status}`);
-    results = await response.json();
+    const [response, walletResponse] = await Promise.all([
+      fetch('/recorded-results.json', { signal: AbortSignal.timeout(10000) }),
+      fetch('/wallets.json', { signal: AbortSignal.timeout(10000) }),
+    ]);
+    if (!response.ok || !walletResponse.ok) throw new Error(`Evidence file returned HTTP ${response.status}/${walletResponse.status}`);
+    [results, walletData] = await Promise.all([response.json(), walletResponse.json()]);
     if (results.version !== 1 || results.round?.transcript?.length !== 3) throw new Error('Recorded evidence has an unsupported format');
 
     renderHero();
@@ -253,8 +318,9 @@ async function init() {
     renderScore();
     renderGuard();
     renderAudit();
+    renderWallets();
 
-    for (const id of ['attack', 'score', 'guard']) $(id).hidden = false;
+    for (const id of ['attack', 'score', 'guard', 'wallets']) $(id).hidden = false;
   } catch (err) {
     $('b-error').hidden = false;
     $('b-error').textContent = `Recorded results could not load. ${err.message}. Reload to retry.`;

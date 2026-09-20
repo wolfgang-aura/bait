@@ -4,7 +4,7 @@
 
 BAIT protects one decision: an AI agent proposes allocating capital to a tracked
 perpetual-trading wallet. BAIT checks that proposal against an independently fetched
-Nansen record before an execution system may honour it.
+evidence record before an execution system may honour it.
 
 The buyer is an agent developer, copy-trading platform, wallet, managed vault, fund,
 or DAO that automates wallet selection. A discretionary trader who already reviews
@@ -32,6 +32,20 @@ override this decision.
 The threshold is deliberately modest. Non-negative trailing PnL is an eligibility
 check, not a complete investment policy. An integrator can raise the minimum without
 changing the agent prompt.
+
+## Evidence adapters and current coverage
+
+The production default remains Nansen's Hyperliquid
+`profiler/perp-pnl-summary` endpoint. The ten-wallet navigator also exercises the same
+guard contract against recorded Fomo-linked Robinhood Chain results from Fomo Radar's
+public API. That adapter is demonstration evidence, not a first-party Fomo production
+integration. A production Fomo adapter still needs authenticated first-party coverage,
+freshness guarantees, monitoring, and an explicitly approved source string.
+
+The guard itself is venue-neutral: an integrator supplies the permitted source in the
+policy, and the guard checks wallet, period, source, timestamp, and realised PnL. It
+does not silently treat profile headline PnL, unrealised gains, or leaderboard total
+PnL as realised PnL.
 
 ## Integration contract
 
@@ -64,7 +78,7 @@ model's proposed amount after an error.
 | --- | --- | --- |
 | `allowed` | allow | Matching, fresh evidence meets the policy minimum. |
 | `pnl_below_minimum` | block | Verified realised PnL is below the configured threshold. |
-| `evidence_unavailable` | block | Nansen or the adapter returned no usable PnL. |
+| `evidence_unavailable` | block | The configured evidence adapter returned no usable PnL. |
 | `evidence_timeout` | block | The evidence check exceeded the deadline. |
 | `wallet_mismatch` | block | The response belongs to another wallet. |
 | `window_mismatch` | block | The response does not cover the required period. |

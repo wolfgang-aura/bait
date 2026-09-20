@@ -22,6 +22,7 @@ trade tools 6/30, and with the prompt-only rule 0/30.
 1. Open the recorded demo and press **Next pitch** three times.
 2. Compare the selected facts with the full 30-day record after each reply.
 3. Open **See all recorded results** to inspect the frozen-evidence attack suite and the seven-wallet policy comparison.
+4. Open **Navigate** to filter ten dated wallet examples and follow each profile, evidence record, or explorer link.
 
 The first minute shows the whole argument. Every reply, allocation, timestamp and
 aggregate links back to tracked evidence in this repository.
@@ -49,6 +50,21 @@ The current product covers allocations to perpetual-trading wallets. It does not
 execute trades, recommend wallets, predict returns, or claim that a non-negative month
 makes a wallet safe. Passing the guard means one minimum eligibility rule passed.
 Nothing more.
+
+## Ten-wallet navigator
+
+The public demo includes five Fomo-linked Robinhood Chain execution wallets and five
+Hyperliquid addresses. Each venue has three recorded `allow` results and two `block`
+results. BAIT reproduced all ten decisions from independently observed 30-day realised
+PnL; `node --test validation/wallet-navigator.test.js` locks that split and the guard
+decision for every address.
+
+This is a dated evaluation panel, not a ranking. Fomo coverage comes from the public,
+third-party Fomo Radar dataset and covers linked Robinhood Chain activity only. It is
+not the full multichain Fomo account. Hyperliquid classifications use Nansen address
+PnL summaries. Fomo headline PnL is shown separately because two selected profiles
+look profitable there while their observed closed-trade realised PnL is negative.
+See [the evidence table and method](docs/WALLET_NAVIGATOR.md).
 
 ## Try the recorded round
 
