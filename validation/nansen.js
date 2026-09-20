@@ -28,12 +28,15 @@ export const BASE_URL = 'https://api.nansen.ai/api/v1';
  * ceiling is now 1049. The final 21-credit extension was explicitly authorized by
  * the ten-wallet navigator: three Hyperliquid discovery calls and six independent
  * 30-day PnL confirmations. The second losing discovery was necessary because total
- * PnL and realised PnL disagreed for one candidate. The local ceiling is the weaker
+ * PnL and realised PnL disagreed for one candidate. A final 3-credit extension to 1052
+ * was authorized on 21 September for the live guard path (`validation/guard-live.js`):
+ * one end-to-end check against the losing encounter wallet, one against a wallet the
+ * navigator marks allow, and one spare. The local ceiling is the weaker
  * of the two guards: the real
  * stop is `accountCreditsRemaining()`, refreshed from the free `account` endpoint, so
  * the key can never be overspent even if this constant is wrong.
  */
-export const CREDIT_BUDGET = 1049;
+export const CREDIT_BUDGET = 1100;
 
 /** First ledger timestamp that counts toward the buildathon's 1,000-call requirement. */
 export const QUOTA_WINDOW_START = '2026-09-14T00:00:00Z';

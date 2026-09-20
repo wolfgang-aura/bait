@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#101216">
+  <title>BAIT · Check a wallet live</title>
+  <link rel="stylesheet" href="/vendor/pico.min.css">
+  <link rel="stylesheet" href="/encounter.css">
+  <style>
+    .guard-layout { display: grid; grid-template-columns: .82fr 2fr; gap: 28px; align-items: start; }
+    .guard-form { border: 1px solid var(--line); border-radius: 12px; background: #191c22; padding: 20px; }
+    .guard-form label { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--pico-muted-color); }
+    .guard-form input { font-family: var(--mono); font-size: 13px; }
+    .guard-form #run { width: 100%; margin: 0; }
+    .presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
+    .presets button { flex: 1; margin: 0; font-size: 11px; padding: 7px 11px; white-space: nowrap; }
+    .guard-note { font-size: 11px; color: var(--pico-muted-color); margin: 14px 0 0; line-height: 1.6; }
+    .receipt .verdict { font-family: var(--mono); font-size: 44px; line-height: 1; letter-spacing: -1.2px; margin: 6px 0 0; }
+    .receipt .verdict.allow { color: var(--positive); }
+    .receipt .verdict.block { color: var(--negative); }
+    .receipt .verdict-code { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--pico-muted-color); margin: 8px 0 0; }
+    .receipt .verdict-reason { font-size: 14px; color: var(--pico-color); margin: 12px 0 18px; }
+    .receipt-cell span { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--pico-muted-color); }
+    .receipt-cell strong.small { font-size: 15px; letter-spacing: -.2px; word-break: break-all; }
+    .receipt .guard-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 16px 0 0; font-family: var(--mono); font-size: 11px; color: var(--pico-muted-color); }
+    .guard-meta b { font-weight: 400; color: var(--pico-color); }
+    .guard-idle { border: 1px dashed var(--line); border-radius: 12px; padding: 32px 20px; text-align: center; font-size: 13px; color: var(--pico-muted-color); }
+    @media (max-width: 900px) { .guard-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="masthead">
+      <a class="wordmark" href="/" aria-label="BAIT home">BAIT<span class="brand-dot">.</span></a>
+      <span class="header-caption">The guard, on live data</span>
+      <nav aria-label="Pages">
+        <a class="text-button" href="/">Play the game</a>
+        <a class="text-button" href="/replay.html">Recorded round</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div class="eyebrow">The product <span>/</span> Execution guard</div>
+        <h1>Check a wallet <span>live.</span></h1>
+        <p>BAIT fetches one Nansen 30-day PnL summary itself and either keeps your amount or forces it to
+          <strong>$0</strong>. One check costs one Nansen credit.</p>
+      </section>
+
+      <div class="guard-layout">
+        <form class="guard-form" id="guard-form">
+          <div class="presets" aria-label="Example wallets">
+            <button type="button" class="secondary outline" data-wallet="0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd">Losing wallet</button>
+            <button type="button" class="secondary outline" data-wallet="0x9546b9d4103be41ce13483a8f299d0df0eeb181c">Profitable wallet</button>
+          </div>
+          <label for="wallet">Wallet</label>
+          <input id="wallet" name="wallet" type="text" spellcheck="false" autocomplete="off"
+                 placeholder="0x..." value="0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd" required>
+          <label for="allocation">Proposed allocation, USD</label>
+          <input id="allocation" name="allocation" type="number" min="0" step="1" value="5000" required>
+          <button id="run" type="submit">Run the guard</button>
+          <p class="guard-note">Policy <code>wallet-realized-pnl-30d-v1</code>: the response must match the wallet and the
+            30-day window, come from Nansen, be under 15 minutes old, and show realised PnL at or above $0. Anything else
+            blocks. This is an eligibility check, not advice.</p>
+        </form>
+
+        <div>
+          <div class="guard-idle" id="idle">No check has run yet. Pick a wallet and press Run the guard.</div>
+          <div class="notice" id="error" role="alert" hidden></div>
+          <section class="receipt" id="result" aria-live="polite" hidden>
+            <span class="eyebrow">Guard decision</span>
+            <p class="verdict" id="verdict"></p>
+            <p class="verdict-code" id="code"></p>
+            <p class="verdict-reason" id="reason"></p>
+            <div class="receipt-grid">
+              <div class="receipt-cell"><span>Attempted</span><strong id="attempted"></strong></div>
+              <div class="receipt-cell"><span>Enforced</span><strong id="enforced"></strong></div>
+              <div class="receipt-cell"><span>Realised PnL, 30 days</span><strong id="pnl"></strong></div>
+              <div class="receipt-cell"><span>Wallet</span><strong class="small" id="checked-wallet"></strong></div>
+            </div>
+            <p class="guard-meta">
+              <span id="fetched"></span>
+              <span>Source <b id="source"></b></span>
+              <span>Policy <b id="policy"></b></span>
+              <span>Credits <b id="credits"></b></span>
+            </p>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <span>Real records. Fictional stakes. Data: Nansen</span>
+      <span>Same check from the command line: <code>npm run guard -- --wallet 0x... --allocation 5000</code></span>
+    </footer>
+  </div>
+
+  <script type="module">
+    const $ = id => document.getElementById(id);
+    const form = $('guard-form');
+    const usd = n => typeof n === 'number' && Number.isFinite(n)
+      ? `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : 'unavailable';
+    const utc = iso => {
+      const t = Date.parse(iso ?? '');
+      if (!Number.isFinite(t)) return null;
+      const d = new Date(t);
+      return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+    };
+
+    for (const button of document.querySelectorAll('.presets button')) {
+      button.addEventListener('click', () => { $('wallet').value = button.dataset.wallet; });
+    }
+
+    function showError(message) {
+      $('result').hidden = true;
+      $('idle').hidden = true;
+      $('error').hidden = false;
+      $('error').textContent = message;
+    }
+
+    function show(decision) {
+      $('idle').hidden = true;
+      $('error').hidden = true;
+      $('result').hidden = false;
+      const allowed = decision.decision === 'allow';
+      $('verdict').textContent = allowed ? 'ALLOW' : 'BLOCK';
+      $('verdict').className = `verdict ${allowed ? 'allow' : 'block'}`;
+      $('code').textContent = decision.code;
+      $('reason').textContent = decision.reason;
+      $('attempted').textContent = usd(decision.attempted);
+      $('enforced').textContent = usd(decision.allocation);
+      $('pnl').textContent = usd(decision.evidence.realized_pnl_usd);
+      $('checked-wallet').textContent = decision.evidence.wallet ?? 'unverified';
+      const at = utc(decision.evidence.retrieved_at);
+      $('fetched').textContent = at ? `Live Nansen data · fetched ${at} UTC` : 'No evidence was retrieved';
+      $('source').textContent = decision.evidence.source ?? 'none';
+      $('policy').textContent = decision.policy.id;
+      $('credits').textContent = `${decision.creditsCharged ?? '?'} charged, ${decision.creditsRemaining ?? '?'} left`;
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      $('run').setAttribute('aria-busy', 'true');
+      $('run').disabled = true;
+      try {
+        const response = await fetch('/api/guard', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ wallet: $('wallet').value.trim(), allocation: Number($('allocation').value) }),
+        });
+        const body = await response.json();
+        if (!response.ok) showError(body.message ?? body.error ?? 'The guard route refused the request.');
+        else show(body);
+      } catch (err) {
+        showError(`Could not reach the local server: ${err.message}. Nothing was authorized.`);
+      } finally {
+        $('run').removeAttribute('aria-busy');
+        $('run').disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

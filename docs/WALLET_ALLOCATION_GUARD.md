@@ -72,6 +72,54 @@ The guard returns a decision. It never submits a transaction itself. Integrators
 send only `decision.allocation` to their execution layer and must never fall back to the
 model's proposed amount after an error.
 
+## Run it live
+
+`validation/guard-live.js` is the evidence adapter that points the guard at Nansen
+instead of at a frozen snapshot. `createLiveGuardExecutor` serves `get_pnl_summary`
+with exactly one `profiler/perp-pnl-summary` call and maps the response into the same
+evidence shape `validation/tools.js` serves from disk, so the number judged live is the
+number the benchmark judged frozen. Any other tool name throws. One check costs one
+credit, and the credit guard in `validation/nansen.js` stays in the path.
+
+`runLiveGuard` wraps that adapter with the production policy, so evidence freshness is
+enforced at 15 minutes, and adds `creditsCharged` and `creditsRemaining` to the decision.
+
+Three ways to run it, all needing only `NANSEN_API_KEY` in `.env`:
+
+```powershell
+npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000
+npm run guard -- --wallet 0x9546b9d4103be41ce13483a8f299d0df0eeb181c --allocation 5000 --json
+```
+
+The CLI exits 0 on allow, 2 on block or bad usage, 3 with no API key, and 1 on an
+unexpected crash. Every Nansen request carries the guard's 10-second deadline, so the
+command cannot hang.
+
+`POST /api/guard` on the local prototype takes `{ wallet, allocation }` and returns the
+same decision object with status 200. A rejected wallet or amount is still a guard
+decision, so it returns 200 with an `invalid_request` block; only unreadable JSON is a
+400. Under `HOSTED=1` the route returns 403 `guard_disabled_hosted`, because a public
+visitor must not be able to spend the key's credits. `/api/health` reports the route,
+the page and the policy id under `live_guard`.
+
+`prototype/public/guard.html` is the form for the same route, linked from the local
+index footer.
+
+Two real checks on 21 September 2026, one credit each:
+
+| Wallet | Realised PnL, 30d | Decision | Code | Enforced | Retrieved |
+| --- | ---: | --- | --- | ---: | --- |
+| `0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd` | -$847,025.38 | block | `pnl_below_minimum` | $0.00 | `2026-09-20T22:13:01.052Z` |
+| `0x9546b9d4103be41ce13483a8f299d0df0eeb181c` | $995,387.17 | allow | `allowed` | $5,000.00 | `2026-09-20T22:12:53.217Z` |
+
+A third live check, on the encounter wallet
+`0xc26cbb6483229e0d0f9a1cab675271eda535b8f4`, returned allow with a realised 30-day PnL
+of $247,619.77 at `2026-09-20T22:11:37.570Z`. That wallet lost $4.7M over the frozen 15
+September window. The guard reports what the current window says, not what the recorded
+round says. The recorded benchmark numbers are unchanged, because they are tied to the
+frozen snapshot, and a wallet that has climbed back above water is a real outcome rather
+than a fault.
+
 ## Decision codes
 
 | Code | Result | Meaning |
@@ -86,6 +134,22 @@ model's proposed amount after an error.
 | `stale_evidence` | block | The response is older than the production limit. |
 | `invalid_timestamp` or `future_evidence` | block | Evidence time cannot be trusted. |
 | `invalid_request` | block | Wallet, amount, executor, or timeout input is invalid. |
+
+## Decision output fields
+
+| Field | Meaning |
+| --- | --- |
+| `decision` | `allow` or `block`. The only field an execution layer needs to branch on. |
+| `code` | Stable machine code from the table above. |
+| `allocation` | The enforced amount. Send this, never `attempted`. |
+| `attempted` | What the caller proposed, kept for the audit trail. |
+| `blocked` | True when a positive proposal was forced to zero. |
+| `reason` | One operator-safe sentence. Contains no provider detail. |
+| `diagnostic` | Provider detail on a failure, or null. Log it, do not show it. |
+| `policy` | `id`, `window_days`, `minimum_realized_pnl_usd`, `max_evidence_age_ms`. |
+| `evidence` | `wallet`, `window_days`, `realized_pnl_usd`, `realized_pnl_30d_usd`, `retrieved_at`, `source`. Every field is null when the check could not read it. |
+| `creditsCharged` | Nansen credits this check spent. Added by `runLiveGuard`, one per check. |
+| `creditsRemaining` | Account balance last reported by Nansen, or null if unknown. |
 
 ## Benchmark versus production
 
@@ -116,7 +180,8 @@ blocked-decision counts.
 Run the contract tests with:
 
 ```powershell
-node --test validation/guard.test.js
+node --test validation/guard.test.js validation/guard-live.test.js scripts/guard.test.mjs
 ```
 
-The tests cover the allow path and every fail-closed branch listed above.
+The tests cover the allow path and every fail-closed branch listed above. The live
+tests stub the Nansen client, so they make no network call and spend no credits.

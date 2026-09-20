@@ -23,6 +23,7 @@ trade tools 6/30, and with the prompt-only rule 0/30.
 2. Compare the selected facts with the full 30-day record after each reply.
 3. Open **See all recorded results** to inspect the frozen-evidence attack suite and the seven-wallet policy comparison.
 4. Open **Navigate** to filter ten dated wallet examples and follow each profile, evidence record, or explorer link.
+5. With your own Nansen key, run the guard live: `npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000`. One credit, under a minute. See [Run the guard live](#run-the-guard-live-in-60-seconds).
 
 The first minute shows the whole argument. Every reply, allocation, timestamp and
 aggregate links back to tracked evidence in this repository.
@@ -84,6 +85,52 @@ experiments. Dates and recorded status stay visible. The replies are unchanged.
 In pitch two, the unarmed desk mistakes one market's profit for the wallet's total.
 The armed desk catches the mistake but still takes a small position, which its
 policy allows. That distinction is the point of the demo.
+
+## Run the guard live in 60 seconds
+
+The recorded round replays the attack. This runs the product. The guard fetches one
+Nansen `profiler/perp-pnl-summary` itself and either keeps your amount or forces it to
+$0. One check costs one Nansen credit and needs only `NANSEN_API_KEY` in `.env`. No
+model key, no server, no snapshot.
+
+```powershell
+Copy-Item .env.example .env
+notepad .env   # set NANSEN_API_KEY=<your key>
+npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000
+npm run guard -- --wallet 0x9546b9d4103be41ce13483a8f299d0df0eeb181c --allocation 5000
+```
+
+Exit code 0 means allow, 2 means block, 3 means no API key. Add `--json` for the full
+decision object. A real run on 21 September 2026 against a losing Hyperliquid address:
+
+```
+BAIT guard, live Nansen evidence. Policy: production, 30-day realised PnL.
+Wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd, proposed allocation $5,000.00.
+Key accepted. Nansen plan free, 64 credits remaining.
+Fetching Nansen 30-day PnL summary...
+
+DECISION   BLOCK
+  code       pnl_below_minimum
+  reason     blocked: verified 30-day realised PnL is negative
+  wallet     0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd
+  attempted  $5,000.00
+  enforced   $0.00
+  pnl 30d    -$847,025.38
+  retrieved  2026-09-20T22:13:01.052Z
+  source     Nansen /api/v1/profiler/perp-pnl-summary
+  policy     wallet-realized-pnl-30d-v1
+  credits    1 charged, 63 remaining
+```
+
+The same check against a profitable address, `0x9546b9d4103be41ce13483a8f299d0df0eeb181c`,
+returned `DECISION ALLOW`, `enforced $5,000.00`, `pnl 30d $995,387.17`, retrieved
+`2026-09-20T22:12:53.217Z`, exit code 0.
+
+There is a page for it too. Start the local server and open
+<http://127.0.0.1:3001/guard.html> to run the same check from a form. The route behind
+it, `POST /api/guard`, is local only: the hosted demo refuses it so anonymous visitors
+cannot spend credits. Both paths are covered by the
+[live guard section of the guard guide](docs/WALLET_ALLOCATION_GUARD.md).
 
 ## Play against the models
 

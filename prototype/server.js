@@ -15,13 +15,16 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { playGame } from '../validation/game.js';
 import { RULES as RULE_SET, getRule } from '../validation/rules.js';
 import { providerByName, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
 import { loadEnv, ledgerStats, refreshAccountBalance, accountCreditsRemaining, creditsUsed, CREDIT_BUDGET, QUOTA_WINDOW_START } from '../validation/nansen.js';
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
+import { runLiveGuard } from '../validation/guard-live.js';
+import { PRODUCTION_GUARD_POLICY } from '../validation/guard.js';
+import { call as nansenCall } from '../validation/nansen.js';
 import { createEncounterService } from './encounter.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
@@ -48,6 +51,20 @@ const guard = createHostedGuard({
 });
 
 const MODELS = ['claude-sonnet-5', 'deepseek-chat'];
+
+/**
+ * `/api/guard` spends a real Nansen credit per request, so it is local-only and the
+ * tests must be able to drive it without a network. GUARD_CALL_MODULE points the route
+ * at a stub module exporting `call`. It is ignored under HOSTED=1, where the route is
+ * refused outright.
+ */
+const guardCall = !HOSTED && process.env.GUARD_CALL_MODULE
+  ? (await import(pathToFileURL(path.resolve(process.env.GUARD_CALL_MODULE)).href)).call
+  : nansenCall;
+const GUARD_ROUTE = 'POST /api/guard';
+const GUARD_DISABLED_MESSAGE =
+  'The live guard check spends Nansen credits, so it is only available when you run BAIT ' +
+  'locally with your own NANSEN_API_KEY.';
 
 // R1 is the default because it is the only rule that produced a con on both models
 // (5/5 unarmed). R0 is the Phase 1 hard-mode baseline. R2 needs the control wallet.
@@ -210,6 +227,15 @@ function health() {
     runs_loaded: loadRuns().length,
     control_wallet: control?.wallet ?? null,
     default_rule: DEFAULT_RULE,
+    // The product itself, pointed at live Nansen evidence. One credit per check.
+    live_guard: {
+      route: HOSTED ? null : GUARD_ROUTE,
+      page: HOSTED ? null : '/guard.html',
+      cli: 'npm run guard -- --wallet 0x... --allocation 5000',
+      enabled: !HOSTED,
+      credits_per_check: 1,
+      policy_id: PRODUCTION_GUARD_POLICY.id,
+    },
   };
 }
 
@@ -408,6 +434,32 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/health') {
       return send(200, health());
     }
+
+    // The product, live. One Nansen profiler/perp-pnl-summary call, one credit, then
+    // the guard decides. A rejected wallet or amount is still a guard decision, so it
+    // returns 200 with an invalid_request block; only unreadable JSON is a 400.
+    if (url.pathname === '/api/guard' && req.method === 'POST') {
+      if (HOSTED) {
+        return send(403, { error: 'guard_disabled_hosted', message: GUARD_DISABLED_MESSAGE });
+      }
+      if (!originAllowed(req)) {
+        return send(403, { error: 'This prototype only accepts local requests.' });
+      }
+      let body;
+      try {
+        body = await readEncounterBody(req);
+      } catch (err) {
+        if (err.status === 413) throw err;
+        return send(400, { error: 'invalid_json', message: 'Send a JSON body of { wallet, allocation }.' });
+      }
+      const decision = await runLiveGuard({
+        wallet: body.wallet,
+        allocation: body.allocation === undefined || body.allocation === null ? NaN : Number(body.allocation),
+        call: guardCall,
+      });
+      console.log(`[guard] ${decision.decision} ${decision.code} wallet=${body.wallet} attempted=${decision.attempted} enforced=${decision.allocation}`);
+      return send(200, decision);
+    }
     if (url.pathname === '/api/state') {
       return send(200, state(url.searchParams.get('rule') ?? DEFAULT_RULE));
     }
@@ -480,6 +532,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  model calls     ${JSON.stringify(h.model_calls_used)} of ${JSON.stringify(h.model_call_caps)}`);
   console.log(`  live refresh    ${LIVE_ENABLED ? `enabled (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED && process.env.NANSEN_LIVE !== '0' ? 'disabled (HOSTED=1 defaults NANSEN_LIVE to 0)' : 'disabled (NANSEN_LIVE=0)'}`);
   console.log(`  nansen quota    ${h.nansen_quota.calls_since} calls since ${h.nansen_quota.since}, ${h.nansen_quota.credits_used_local}/${h.nansen_quota.credit_budget} credits`);
+  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} and /guard.html (1 credit per check)` : 'disabled (HOSTED=1)'}`);
   console.log(`  default rule    ${h.default_rule}`);
   console.log(`  control wallet  ${h.control_wallet ?? 'none'}`);
   console.log(`  runs loaded     ${h.runs_loaded}`);

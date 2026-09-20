@@ -6,7 +6,8 @@
   "description": "BAIT: red-team and fail-closed protection for AI wallet-allocation decisions, backed by Nansen evidence.",
   "scripts": {
     "start": "node prototype/server.js",
-    "test": "node --test \"validation/**/*.test.js\" \"prototype/*.test.js\" \"bench/*.test.js\"",
+    "test": "node --test \"validation/**/*.test.js\" \"prototype/*.test.js\" \"bench/*.test.js\" \"scripts/*.test.mjs\"",
+    "guard": "node scripts/guard.mjs",
     "bench": "node bench/run.js",
     "bench:paired": "node bench/paired.js",
     "bench:export": "node bench/export.js",

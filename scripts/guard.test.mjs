@@ -1,0 +1,128 @@
+/**
+ * CLI contract for `npm run guard`. No network: the Nansen call is injected.
+ *
+ * The exit code is the integration surface. A shell that reads 0 may allocate; every
+ * other code means it may not.
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { USAGE, main, parseArgs } from './guard.mjs';
+
+const WALLET = '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4';
+const NOW = () => new Date('2026-09-21T09:00:00.000Z');
+const ENV = { NANSEN_API_KEY: 'test-key' };
+
+const pnl = realized_pnl_usd => async () => ({ status: 200, headers: {}, data: { data: { realized_pnl_usd } } });
+
+function capture() {
+  let text = '';
+  return { write: chunk => { text += chunk; }, text: () => text };
+}
+
+test('parseArgs reads the wallet, the amount and the json flag', () => {
+  assert.deepEqual(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--json']), {
+    wallet: WALLET, allocation: 5000, json: true, timeoutMs: 10_000,
+  });
+  assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--timeout', '2500']).timeoutMs, 2500);
+});
+
+test('parseArgs refuses missing, unknown and non-numeric arguments', () => {
+  assert.match(parseArgs([]).error, /--wallet is required/);
+  assert.match(parseArgs(['--wallet', WALLET]).error, /--allocation is required/);
+  assert.match(parseArgs(['--wallet', WALLET, '--allocation', 'lots']).error, /non-negative number/);
+  assert.match(parseArgs(['--wallet', WALLET, '--allocation', '-5']).error, /non-negative number/);
+  assert.match(parseArgs(['--walet', WALLET]).error, /Unknown argument/);
+  assert.match(parseArgs(['--wallet']).error, /needs a value/);
+  assert.match(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--timeout', '0']).error, /positive number/);
+});
+
+test('a bad invocation prints the usage line and exits 2, never 0', async () => {
+  const out = capture();
+  const code = await main({ argv: ['--allocation', '5000'], env: ENV, write: out.write, now: NOW, call: pnl(1) });
+  assert.equal(code, 2);
+  assert.match(out.text(), /--wallet is required/);
+  assert.ok(out.text().includes(USAGE));
+});
+
+test('a missing API key exits 3 with the one-line fix and makes no call', async () => {
+  const out = capture();
+  let called = 0;
+  const code = await main({
+    argv: ['--wallet', WALLET, '--allocation', '5000'],
+    env: {},
+    write: out.write,
+    now: NOW,
+    call: async () => { called += 1; return { data: { data: { realized_pnl_usd: 1 } } }; },
+  });
+  assert.equal(code, 3);
+  assert.equal(called, 0);
+  assert.match(out.text(), /NANSEN_API_KEY=<your key> to \.env/);
+});
+
+test('a profitable wallet prints ALLOW, the enforced amount and the credit line, and exits 0', async () => {
+  const out = capture();
+  const code = await main({
+    argv: ['--wallet', WALLET, '--allocation', '5000'],
+    env: ENV, write: out.write, now: NOW, call: pnl(2_450_809.467724999),
+  });
+  assert.equal(code, 0);
+  assert.match(out.text(), /Fetching Nansen 30-day PnL summary\.\.\./);
+  assert.match(out.text(), /DECISION\s+ALLOW/);
+  assert.match(out.text(), /enforced\s+\$5,000\.00/);
+  assert.match(out.text(), /pnl 30d\s+\$2,450,809\.47/);
+  assert.match(out.text(), /credits\s+1 charged/);
+  assert.match(out.text(), /policy\s+wallet-realized-pnl-30d-v1/);
+});
+
+test('a losing wallet prints BLOCK with a zero enforced amount and exits 2', async () => {
+  const out = capture();
+  const code = await main({
+    argv: ['--wallet', WALLET, '--allocation', '5000'],
+    env: ENV, write: out.write, now: NOW, call: pnl(-4_745_429.48),
+  });
+  assert.equal(code, 2);
+  assert.match(out.text(), /DECISION\s+BLOCK/);
+  assert.match(out.text(), /code\s+pnl_below_minimum/);
+  assert.match(out.text(), /enforced\s+\$0\.00/);
+  assert.match(out.text(), /pnl 30d\s+-\$4,745,429\.48/);
+});
+
+test('a provider failure exits 2 with a blocked decision, not 0 and not a crash', async () => {
+  const out = capture();
+  const code = await main({
+    argv: ['--wallet', WALLET, '--allocation', '5000'],
+    env: ENV, write: out.write, now: NOW,
+    call: async () => { throw new Error('Nansen 503 on profiler/perp-pnl-summary'); },
+  });
+  assert.equal(code, 2);
+  assert.match(out.text(), /DECISION\s+BLOCK/);
+  assert.match(out.text(), /code\s+evidence_unavailable/);
+  assert.match(out.text(), /enforced\s+\$0\.00/);
+});
+
+test('--json prints the decision object only and keeps the same exit code', async () => {
+  const out = capture();
+  const code = await main({
+    argv: ['--wallet', WALLET, '--allocation', '5000', '--json'],
+    env: ENV, write: out.write, now: NOW, call: pnl(-1),
+  });
+  assert.equal(code, 2);
+  const printed = out.text().slice(out.text().indexOf('{'));
+  const decision = JSON.parse(printed);
+  assert.equal(decision.decision, 'block');
+  assert.equal(decision.allocation, 0);
+  assert.equal(decision.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
+  assert.equal(decision.creditsCharged, 1);
+});
+
+test('the guard deadline is honoured, so a hanging provider cannot hang the command', async () => {
+  const out = capture();
+  const code = await main({
+    argv: ['--wallet', WALLET, '--allocation', '5000', '--timeout', '30'],
+    env: ENV, write: out.write, now: NOW,
+    call: () => new Promise(resolve => setTimeout(resolve, 5000).unref?.()),
+  });
+  assert.equal(code, 2);
+  assert.match(out.text(), /code\s+evidence_timeout/);
+});
