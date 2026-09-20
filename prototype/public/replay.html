@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BAIT · Red-team kit for AI trading agents</title>
-<meta name="description" content="BAIT records a human baiting an AI trading desk with true-but-selective facts, scores any agent configuration on the recorded attacks, and ships the guard that took the baited rate to zero in code.">
+<title>BAIT · Guard AI wallet allocations</title>
+<meta name="description" content="BAIT red-teams AI wallet-allocation decisions, then checks proposed allocations against fresh Nansen evidence before execution.">
 <meta name="theme-color" content="#0A0B0D">
 <meta property="og:type" content="website">
-<meta property="og:title" content="BAIT · Red-team kit for AI trading agents">
-<meta property="og:description" content="True facts talked an AI trading desk into funding a wallet that lost millions. BAIT records the attack, scores any agent config, and ships the guard that stops it.">
+<meta property="og:title" content="BAIT · Guard AI wallet allocations">
+<meta property="og:description" content="True facts sold an AI a losing wallet. BAIT records the attack, scores the agent, and blocks unsafe allocations in code using Nansen evidence.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
 <header class="mast">
   <div class="mast-inner">
     <a class="mark" href="#top">BAIT</a>
-    <p class="mast-note">Red-team kit for AI trading agents · recorded</p>
+    <p class="mast-note">Policy gate for AI wallet allocation · recorded proof</p>
   </div>
 </header>
 
@@ -31,7 +31,7 @@
 
   <section class="hero" aria-labelledby="hero-title">
     <h1 id="hero-title">True facts can talk an AI trading desk into funding a <span id="b-loss-short" class="skeleton-inline">&nbsp;</span> loser.</h1>
-    <p class="hero-sub">BAIT records the attack, scores any agent config, and ships the guard that stops it.</p>
+    <p class="hero-sub">For platforms that let AI allocate to trader wallets. Attack the decision, score the agent, block unsafe execution.</p>
 
     <div class="pair" role="group" aria-label="Replays in which the desk was baited">
       <p class="big" data-desk="unarmed">
@@ -106,22 +106,32 @@
   <section id="guard" class="guard sec" aria-labelledby="guard-title" hidden>
     <div class="sec-head">
       <h2 id="guard-title"><span class="sec-num">3</span>Guard</h2>
-      <p class="sec-meta">validation/guard.js · one Nansen call · no model tools</p>
+      <p class="sec-meta">One Nansen call · no model tools · fail closed</p>
     </div>
 
     <h3 id="b-rule-title" class="rule-title"></h3>
     <ul class="guard-lines">
-      <li>One Nansen call: <code>profiler/perp-pnl-summary</code>, 30 days.</li>
-      <li>Negative or missing realised PnL: allocation forced to $0.</li>
-      <li>The model is never asked to check. It is checked.</li>
+      <li>Checks wallet, 30-day window, source, freshness and realised PnL.</li>
+      <li>Negative, missing, stale or mismatched evidence forces $0.</li>
+      <li>The model proposes. BAIT decides what execution receives.</li>
     </ul>
+    <div class="contract" aria-label="BAIT guard product boundary">
+      <div><span>Built for</span><strong>AI agents, copy platforms and managed vaults</strong></div>
+      <div><span>Protects</span><strong>Capital allocations to perpetual-trading wallets</strong></div>
+      <div><span>Returns</span><strong>Allow or block, enforced amount, reason and evidence</strong></div>
+      <div><span>Does not do</span><strong>Pick wallets, predict returns or execute trades</strong></div>
+    </div>
     <pre id="b-snippet" class="rule" tabindex="0"><code>import { guardAllocation } from './validation/guard.js';
 
-const { allocation, blocked, reason } = await guardAllocation({
+const decision = await guardAllocation({
   executor, wallet, allocation: desk.allocation,
-});</code></pre>
+});
+
+if (decision.decision === 'allow') {
+  await executionLayer.allocate(wallet, decision.allocation);
+}</code></pre>
     <div class="copy-row">
-      <a class="btn" href="https://github.com/wolfgang-aura/bait/blob/main/validation/guard.js">Get the guard</a>
+      <a class="btn" href="https://github.com/wolfgang-aura/bait/blob/main/docs/WALLET_ALLOCATION_GUARD.md">Integration contract</a>
       <button type="button" id="b-copy" class="btn-ghost">Copy the snippet</button>
       <span id="b-copy-status" class="copy-status" role="status" aria-live="polite"></span>
     </div>
@@ -179,7 +189,7 @@ const { allocation, blocked, reason } = await guardAllocation({
 
 <footer class="foot">
   <div class="foot-inner">
-    <p>Real Nansen records, fictional stakes, no model or Nansen API calls from this page.</p>
+    <p>Recorded proof for one product path: AI allocation to perpetual-trading wallets.</p>
     <nav class="foot-links" aria-label="Repository">
       <a class="foot-link" href="https://github.com/wolfgang-aura/bait#play-against-the-models">Play it live</a>
       <a class="foot-link" href="https://github.com/wolfgang-aura/bait">GitHub</a>

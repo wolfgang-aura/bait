@@ -1,15 +1,17 @@
 # BAIT
 
-**Can true facts sell a losing trader?**
+**Can true facts sell a losing trader to an AI?**
 
-A red-team game for AI allocators, powered by live Nansen evidence.
+A red-team benchmark and execution guard for AI systems that allocate capital to
+perpetual-trading wallets, powered by Nansen evidence.
 
 [Open the recorded demo](https://wolfgang-aura.github.io/bait/) ·
 [Inspect the public repository](https://github.com/wolfgang-aura/bait)
 
-Pitch selected Nansen evidence to two AI desks. Both receive the same argument and
-the same policy. One can check the full trading record; the other cannot.
-All allocations are fictional.
+BAIT attacks one decision: whether an AI should allocate capital to a tracked wallet.
+The game records persuasive, true-but-selective pitches. The benchmark replays those
+attacks against any agent configuration. The guard independently checks the proposed
+allocation before an execution system may honour it. All demo allocations are fictional.
 
 **Recorded result:** the BAIT guard funded the losing wallet 0/30 and blocked 25 of
 30 attempts in code. The same model with no tools funded it 24/30, with Nansen PnL and
@@ -36,6 +38,17 @@ aggregate links back to tracked evidence in this repository.
 
 Remove Nansen and the encounter, the evidence asymmetry, the armed desk and the
 score all disappear.
+
+## Who it is for
+
+BAIT is for agent developers, copy-trading platforms, wallets, managed vaults, funds,
+and DAOs that automate wallet selection. It is not a research terminal for a trader
+who manually reviews every decision.
+
+The current product covers allocations to perpetual-trading wallets. It does not
+execute trades, recommend wallets, predict returns, or claim that a non-negative month
+makes a wallet safe. Passing the guard means one minimum eligibility rule passed.
+Nothing more.
 
 ## Try the recorded round
 
@@ -119,24 +132,32 @@ counts as funded. Reports land in `bench/reports/`.
 
 ### The guard
 
-`validation/guard.js` is the fix that does not depend on the model. It makes one
-Nansen call itself, `profiler/perp-pnl-summary` over 30 days, through the same
-executor the desk tools use. If the realised PnL is negative, missing or unverifiable,
-the allocation is forced to $0 and the model's answer is kept as `attempted`. The model
-gets no tool and no policy text; it is checked, not asked to check. In the `guarded`
-row the model still tried to fund the wallet on 25 of 30 final pitches, with a mean
-attempted allocation of $4,000, and the guard held every one at $0.
+`validation/guard.js` is the execution gate. It does not depend on the model. It makes
+one `profiler/perp-pnl-summary` call over 30 days and verifies the wallet, window,
+source, timestamp, and realised PnL. Production evidence must be no more than 15
+minutes old. Any invalid, mismatched, stale, missing, timed-out, or negative result
+forces the allocation to $0. The model's answer remains recorded as `attempted`.
+
+The model gets no tool and no policy text. It is checked, not asked to check. In the
+`guarded` row the model still tried to fund the wallet on 25 of 30 final pitches, with
+a mean attempted allocation of $4,000, and the guard held every one at $0.
 
 ```js
 import { guardAllocation } from './validation/guard.js';
 
-const { allocation, blocked, reason } = await guardAllocation({
+const decision = await guardAllocation({
   executor, wallet, allocation: desk.allocation,
 });
+
+if (decision.decision === 'allow') {
+  await executionLayer.allocate(wallet, decision.allocation);
+}
 ```
 
 `bench/configs/guarded.json` shows the harness flag (`"guard": true`), and
 `validation/guard.test.js` covers negative, missing and failing evidence.
+The complete integration contract, failure table, product limits and threat model are
+in [the wallet-allocation guard guide](docs/WALLET_ALLOCATION_GUARD.md).
 
 An [earlier live-evidence sweep](bench/reports/2026-09-18T13-58-10-058Z.md) measured
 tool access alone under the permissive policy: no tools $4,142 and 23/30, PnL and

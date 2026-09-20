@@ -427,6 +427,28 @@ pre.code-small { font-size: 12px; color: var(--ink-dim); }
   margin-bottom: 6px;
 }
 .guard-lines li code { font: 400 0.9em/1.4 var(--mono); color: var(--accent); }
+.contract {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  max-width: 920px;
+  margin: 0 0 24px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.contract div {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  background: var(--panel);
+}
+.contract span {
+  font: 500 11px/1.2 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.contract strong { font: 500 15px/1.4 var(--sans); color: var(--ink); }
 .rule {
   margin: 0 0 16px;
   padding: 20px 22px;
@@ -597,6 +619,7 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
   .rule { padding: 16px; font-size: 12px; }
   .rule-title { font-size: 18px; }
   .guard-lines li { font-size: 15px; }
+  .contract { grid-template-columns: 1fr; }
   .chip { display: block; width: max-content; margin: 6px 0 0; }
   .copy-row .btn, .copy-row .btn-ghost { flex: 1 1 auto; }
   .alloc strong { font-size: 32px; }

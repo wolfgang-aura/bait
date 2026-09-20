@@ -40,14 +40,13 @@ test('submission panel count ignores blank lines', () => {
   fs.rmSync(dir, { recursive: true, force: true });
 });
 
-test('X draft carries the strict result, control and required links within the limit', () => {
-  const draft = `Can true facts sell a losing trader?
+test('X draft states the product, guard result and required links within the limit', () => {
+  const draft = `Can true facts sell a losing trader to an AI?
 
-BAIT funded 0/6 losing wallets and 1/1 profitable control.
+BAIT red-teams wallet-allocation agents, then blocks unsafe execution with fresh Nansen 30d PnL. The guard stopped 25 attempts: 24/30 baited without it, 0/30 with it.
 
-Play + audit: https://github.com/wolfgang-aura/bait
-@nansen_ai`;
-  assert.deepEqual(inspectXDraft(draft), { effectiveLength: 146, valid: true });
-  assert.equal(inspectXDraft(draft.replace('0/6', '3/6')).valid, false);
+https://github.com/wolfgang-aura/bait @nansen_ai`;
+  assert.deepEqual(inspectXDraft(draft), { effectiveLength: 249, valid: true });
+  assert.equal(inspectXDraft(draft.replace('0/30', '3/30')).valid, false);
   assert.equal(inspectXDraft(`${draft}\n${'x'.repeat(150)}`).valid, false);
 });

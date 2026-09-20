@@ -28,11 +28,13 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   assert.equal(typeof guarded?.blocked, 'number');
   assert.match(html, /<span class="sec-num">3<\/span>Guard</);
   assert.match(html, /baited · BAIT guard/);
-  assert.match(html, /ships the guard that stops it/);
+  assert.match(html, /For platforms that let AI allocate to trader wallets/);
+  assert.match(html, /Checks wallet, 30-day window, source, freshness and realised PnL/);
+  assert.match(html, /Does not do<\/span><strong>Pick wallets, predict returns or execute trades/);
   assert.match(html, /import \{ guardAllocation \} from '\.\/validation\/guard\.js';/);
-  assert.match(html, /href="https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/validation\/guard\.js"[^>]*>Get the guard</);
+  assert.match(html, /href="https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/docs\/WALLET_ALLOCATION_GUARD\.md"[^>]*>Integration contract</);
   assert.match(html, /Copy the snippet/);
-  assert.doesNotMatch(html, /Copy the rule|3<\/span>Fix|BAIT rule/);
+  assert.doesNotMatch(html, /Copy the rule|3<\/span>Fix|BAIT rule|Red-team kit for AI trading agents/);
   assert.match(js, /row\('guarded'\)/);
   assert.match(js, /The guard that held: \$\{guarded\.funded\} of \$\{guarded\.runs\}\. Blocked \$\{guarded\.blocked\} attempts\./);
   assert.match(js, /guarded: 'BAIT guard · code, no model tools'/);

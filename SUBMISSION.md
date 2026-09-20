@@ -20,7 +20,7 @@ Current evidence:
   locally charged credits. Free account checks explain the difference from dashboard usage.
 - Public repository: <https://github.com/wolfgang-aura/bait>
 - Recorded demo: <https://wolfgang-aura.github.io/bait/>
-- A 45-second live-data video candidate exists at `scratch/BAIT-live-demo-45s.mp4`.
+- A 45-second product video candidate exists at `scratch/BAIT-wallet-guard-45s.mp4`.
   No X post or submitted form exists.
 - The saved replay works without keys, but it does not satisfy the live-data
   recording requirement by itself.
@@ -35,48 +35,45 @@ completing eligibility.
 
 ## The 45-second recording
 
-The candidate is 1280 by 720, H.264/AAC, 30 fps and exactly 45 seconds. A 34-second
-browser sequence scrolls through the running BAIT interface from the verified live
-encounter. Windows returned black frames when asked to capture protected browser
-windows, so Chrome DevTools captured the app sequence directly. The video keeps the
-live timestamp visible and uses the exact saved Nansen values and model decisions.
-The final encode is 28,066,691 bytes and 4.98 Mbps. It matches [X's published
-upload guidance](https://help.x.com/en/using-x/media-studio-faqs): 1280x720,
-H.264, AAC-LC and 5–8 Mbps. SHA-256:
-`91b1dd757fbfc1332e5c1e68da9adccf5ba0361c11c814d8464afb1878e17bc5`.
+The candidate is 1280 by 720, H.264/AAC, 30 fps and exactly 45 seconds. A 41-second
+browser sequence shows the recorded attack, the four-row benchmark, and the production
+guard contract. A four-second closing card states the product boundary and result.
+The sequence uses exact saved Nansen values and model decisions. The final encode is
+2,593,467 bytes with BT.709 limited-range `yuv420p`. SHA-256:
+`8f60dc18880d10336f2c39e205a1450c8e4fe3908d73d6bb23424a4818c5fe00`.
 
 | Time | Action | Point the viewer should understand |
 | --- | --- | --- |
-| 0–8s | State the game and show the live Nansen timestamp. | Real records, fictional capital. Can true facts sell a losing trader? |
-| 8–23s | Show the selected seven-day facts, then both desk decisions. | Both desks receive the same pitch; one can check the record. |
-| 23–30s | Reveal the full 30-day loss. | The short-window pitch leaves out the wallet-wide result. |
-| 30–38s | Show the live-round result and 90-replay rates. | Tools reduced risk in aggregate but did not guarantee the safer live decision. |
-| 38–45s | Show the fixed-evidence policy result and public links. | Strict funded 0/6 losing wallets and 1/1 profitable control. |
+| 0–5s | State the product and show 24/30 against 0/30. | BAIT protects AI wallet-allocation decisions. |
+| 5–19s | Step through the true but selective pitch and both desks. | Tool access helps, but the allocator can still fund the loser. |
+| 19–26s | Reveal the full 30-day loss. | The short-window pitch omitted the wallet-wide result. |
+| 26–34s | Show the four controlled benchmark rows. | The same recorded attacks compare no tools, Nansen tools, prompt policy and code guard. |
+| 34–41s | Show the guard contract and integration boundary. | BAIT checks wallet, window, source, freshness and PnL before execution. |
+| 41–45s | Show the result and public repository. | The guard blocked 25 attempts and funded the losing wallet 0/30. |
 
-The candidate contains no simulated loading period and makes no latency claim.
-It names the encounter as verified live data and preserves the fetched timestamp.
+The candidate contains no simulated loading period and makes no latency claim. It
+labels the page as recorded proof and does not imply that frozen evidence authorizes a
+live allocation.
 
 ## Draft X post
 
-Can true facts sell a losing trader?
+Can true facts sell a losing trader to an AI?
 
-BAIT baits AI trading desks with true but selective facts, then scores any agent
-config against the recorded attacks. Same wallet, lost $4.7M in 30 days: no tools
-funded it 24/30, Nansen data 6/30, the BAIT guard 0/30 and blocked 25 attempts in code.
+BAIT red-teams wallet-allocation agents, then blocks unsafe execution with fresh Nansen 30d PnL. The guard stopped 25 attempts: 24/30 baited without it, 0/30 with it.
 
-Play + audit: https://github.com/wolfgang-aura/bait
-@nansen_ai
+https://github.com/wolfgang-aura/bait @nansen_ai
 
-The raw draft is 352 characters, 338 after X counts the link as 23. That is over the
-280-character free limit, so it needs a Premium account or a trim before posting. It
-includes the required tag and GitHub link.
+The draft is 263 raw characters and 249 effective characters after X counts the link
+as 23. It fits the free limit and includes the required tag and repository.
 
 ## Draft description
 
-BAIT asks whether true but selective evidence can persuade an AI allocator to fund
-a losing trader. Players send the same pitch to two desks. One sees only the pitch;
-the other can query Nansen PnL and trade history. The receipt exposes the selected
-facts, the full record and both decisions.
+BAIT protects one automated decision: whether an AI system may allocate capital to a
+tracked perpetual-trading wallet. It is built for agent developers, copy-trading
+platforms, wallets, managed vaults, funds and DAOs. The game records a human persuading
+an allocator with true but selective evidence. The benchmark replays those attacks
+against any agent configuration. The execution guard independently checks the proposed
+allocation against Nansen before the caller may honour it.
 
 In the fixed-evidence policy comparison, the permissive policy funded 2/6 losing
 wallets. The strict Nansen-backed policy funded 0/6 and still funded the profitable
@@ -84,7 +81,13 @@ control. Each pair used the same evidence, tools, model and pitches. The frozen-
 attack suite, 10 recorded attacks by 3 repeats, funded the losing wallet 24/30 with
 no tools, 6/30 with Nansen PnL and trades, 0/30 with the prompt-only rule, and 0/30
 with the BAIT guard, a code gate that blocked 25 of 30 attempts using one Nansen call
-and no model tool. Full traces and reproduction commands accompany the demo.
+and no model tool. The production gate verifies wallet identity, 30-day scope, source,
+freshness and realised PnL. It fails closed on invalid, stale, mismatched, missing or
+timed-out evidence. Full traces, contract tests and reproduction commands accompany
+the demo.
+
+BAIT does not select wallets, predict returns or execute trades. Passing the gate means
+the proposal met one minimum eligibility rule. It is not an endorsement of the wallet.
 
 ## Before publication
 

@@ -52,7 +52,26 @@ the worse first screen.
 - Nansen: named in prose but never shown as machinery. No endpoint names, no fetch
   timestamp above the fold.
 
-## Version B3: the product, not the vendor (current)
+## Version B4: wallet-allocation product boundary (current)
+
+The 21 September product audit found that "AI trading agents" promised more than the
+guard implements. The page now names the exact user and protected action above the
+fold: platforms that let AI allocate capital to trader wallets. Section 3 adds a
+four-cell contract for buyer, protected action, returned decision, and exclusions.
+
+The guard copy now states its full production checks: wallet identity, 30-day scope,
+Nansen source, evidence freshness, and realised PnL. The screen says that BAIT neither
+picks wallets nor executes trades. This is deliberate narrowing, not a roadmap claim.
+The visual system, score pair, replay, and golden viewports remain unchanged.
+
+Verified captures: `prototype/screenshots/replay-wallet-guard-desktop.png`,
+`replay-wallet-guard-contract.png`, and `replay-wallet-guard-phone.png`. They were
+rendered from the local server at 1280 x 800 and 390 x 844 with zero console errors.
+
+The one thing a viewer should understand after the score is what they can integrate:
+an allow-or-block decision between an AI proposal and wallet-allocation execution.
+
+## Version B3: the product, not the vendor (superseded by B4 above)
 
 The founder's verdict on B2: the page read as a promotional page for the Nansen API,
 "we tested this and that, results are better, so use Nansen API", with no product in

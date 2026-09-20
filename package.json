@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "BAIT: test how selective evidence persuades two AI desks, with real Nansen records and reproducible comparisons.",
+  "description": "BAIT: red-team and fail-closed protection for AI wallet-allocation decisions, backed by Nansen evidence.",
   "scripts": {
     "start": "node prototype/server.js",
     "test": "node --test \"validation/**/*.test.js\" \"prototype/*.test.js\" \"bench/*.test.js\"",

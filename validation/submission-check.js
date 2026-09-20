@@ -35,8 +35,9 @@ export function inspectXDraft(text = '') {
   const effectiveLength = draft.replace(/https?:\/\/\S+/g, 'x'.repeat(23)).length;
   return {
     effectiveLength,
-    valid: effectiveLength <= 280 && /Can true facts sell a losing trader\?/i.test(draft) &&
+    valid: effectiveLength <= 280 && /Can true facts sell a losing trader to an AI\?/i.test(draft) &&
       draft.includes('@nansen_ai') && draft.includes('https://github.com/wolfgang-aura/bait') &&
-      draft.includes('0/6 losing wallets') && draft.includes('1/1 profitable control'),
+      /wallet-allocation/i.test(draft) && /Nansen 30d PnL/i.test(draft) &&
+      draft.includes('24/30') && draft.includes('0/30') && /stopped 25 attempts/i.test(draft),
   };
 }

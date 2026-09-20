@@ -3,96 +3,188 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { guardAllocation, GUARD_WINDOW_DAYS } from './guard.js';
+import {
+  BENCHMARK_GUARD_POLICY,
+  GUARD_SOURCE,
+  GUARD_WINDOW_DAYS,
+  PRODUCTION_GUARD_POLICY,
+  guardAllocation,
+} from './guard.js';
 import { makeToolExecutor } from './tools.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const fixture = JSON.parse(
-  fs.readFileSync(path.join(HERE, 'fixtures', 'snapshot.fixture.json'), 'utf8')
-);
+const fixture = JSON.parse(fs.readFileSync(path.join(HERE, 'fixtures', 'snapshot.fixture.json'), 'utf8'));
 const WALLET = fixture.wallet;
 
-/** The real executor, bound to a snapshot whose 30-day number is whatever the test says. */
-const executorWith = (realized_pnl_usd) => {
+const executorWith = (realized_pnl_usd, changes = {}) => {
   const snapshot = structuredClone(fixture);
   snapshot.pnl_summary_30d.realized_pnl_usd = realized_pnl_usd;
+  Object.assign(snapshot, changes);
   return makeToolExecutor(snapshot, { mode: 'armed' });
 };
 
-test('a negative 30-day realised PnL forces the allocation to $0 and counts as blocked', async () => {
-  const executor = executorWith(-4745429.48);
-  const out = await guardAllocation({ executor, wallet: WALLET, allocation: 6250 });
+const benchmarkInput = (realized_pnl_usd, allocation = 2500) => ({
+  executor: executorWith(realized_pnl_usd),
+  wallet: WALLET,
+  allocation,
+  policy: BENCHMARK_GUARD_POLICY,
+  now: () => new Date(fixture.retrieved_at),
+});
+
+test('a negative verified PnL forces zero and records the attempted allocation', async () => {
+  const input = benchmarkInput(-4_745_429.48, 6250);
+  const out = await guardAllocation(input);
+  assert.equal(out.decision, 'block');
+  assert.equal(out.code, 'pnl_below_minimum');
   assert.equal(out.allocation, 0);
   assert.equal(out.attempted, 6250);
   assert.equal(out.blocked, true);
-  assert.match(out.reason, /negative/);
-  assert.equal(out.evidence.realized_pnl_30d_usd, -4745429.48);
-  assert.equal(out.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
-  // The check went through the executor, for the guard's window, not the model's.
-  assert.deepEqual(executor.calls.map(c => [c.tool, c.input.days]), [['get_pnl_summary', GUARD_WINDOW_DAYS]]);
+  assert.equal(out.evidence.realized_pnl_usd, -4_745_429.48);
+  assert.equal(out.policy.id, BENCHMARK_GUARD_POLICY.id);
+  assert.deepEqual(input.executor.calls.map(c => [c.tool, c.input]), [[
+    'get_pnl_summary', { wallet: WALLET, days: GUARD_WINDOW_DAYS },
+  ]]);
 });
 
-test('a missing or non-numeric 30-day number is unverifiable, so the allocation is $0', async () => {
+test('a fresh, matching, non-negative result preserves the proposed allocation', async () => {
+  const retrievedAt = '2026-09-21T03:00:00.000Z';
+  const executor = executorWith(125_000.5, { retrieved_at: retrievedAt });
+  const out = await guardAllocation({
+    executor,
+    wallet: WALLET,
+    allocation: 6250,
+    now: () => new Date('2026-09-21T03:10:00.000Z'),
+  });
+  assert.equal(out.decision, 'allow');
+  assert.equal(out.code, 'allowed');
+  assert.equal(out.allocation, 6250);
+  assert.equal(out.blocked, false);
+  assert.equal(out.policy.id, PRODUCTION_GUARD_POLICY.id);
+});
+
+test('the policy threshold is configurable without changing the model prompt', async () => {
+  const out = await guardAllocation({
+    ...benchmarkInput(999, 100),
+    policy: { ...BENCHMARK_GUARD_POLICY, id: 'minimum-1000', minimumRealizedPnlUsd: 1000 },
+  });
+  assert.equal(out.code, 'pnl_below_minimum');
+  assert.equal(out.allocation, 0);
+});
+
+test('missing, non-finite, and executor error evidence fail closed', async () => {
   for (const value of [undefined, Number.NaN, 'positive', Infinity]) {
-    const out = await guardAllocation({ executor: executorWith(value), wallet: WALLET, allocation: 2500 });
-    assert.equal(out.allocation, 0, `value ${String(value)}`);
-    assert.equal(out.blocked, true, `value ${String(value)}`);
-    assert.match(out.reason, /evidence missing/);
-    assert.equal(out.evidence.realized_pnl_30d_usd, null);
-  }
-  // A raw null or a string from a different executor is just as unverifiable.
-  for (const realized_pnl_usd of [null, '12000', undefined]) {
-    const executor = { async execute() { return { realized_pnl_usd }; } };
-    const out = await guardAllocation({ executor, wallet: WALLET, allocation: 2500 });
+    const out = await guardAllocation(benchmarkInput(value));
+    assert.equal(out.code, 'evidence_unavailable', `value ${String(value)}`);
     assert.equal(out.allocation, 0);
-    assert.equal(out.blocked, true);
+  }
+  const executor = { async execute() { return { error: 'upstream', message: 'provider failed' }; } };
+  const out = await guardAllocation({ ...benchmarkInput(1), executor });
+  assert.equal(out.code, 'evidence_unavailable');
+  assert.equal(out.diagnostic, 'provider failed');
+});
+
+test('a result for a different wallet cannot authorize the allocation', async () => {
+  const executor = executorWith(100);
+  const original = executor.execute.bind(executor);
+  executor.execute = async (...args) => ({ ...(await original(...args)), wallet: '0x1111111111111111111111111111111111111111' });
+  const out = await guardAllocation({ ...benchmarkInput(1), executor });
+  assert.equal(out.code, 'wallet_mismatch');
+  assert.equal(out.allocation, 0);
+});
+
+test('a shorter window cannot answer the 30-day policy', async () => {
+  const executor = executorWith(100);
+  const original = executor.execute.bind(executor);
+  executor.execute = async (...args) => ({ ...(await original(...args)), window_days: 7 });
+  const out = await guardAllocation({ ...benchmarkInput(1), executor });
+  assert.equal(out.code, 'window_mismatch');
+});
+
+test('an unapproved source cannot authorize the allocation', async () => {
+  const executor = executorWith(100);
+  const original = executor.execute.bind(executor);
+  executor.execute = async (...args) => ({ ...(await original(...args)), source: 'user supplied CSV' });
+  const out = await guardAllocation({ ...benchmarkInput(1), executor });
+  assert.equal(out.code, 'source_mismatch');
+  assert.equal(out.evidence.source, 'user supplied CSV');
+});
+
+test('production policy blocks stale, invalid, and implausibly future timestamps', async () => {
+  const now = () => new Date('2026-09-21T03:30:00.000Z');
+  for (const [retrieved_at, code] of [
+    ['2026-09-21T03:00:00.000Z', 'stale_evidence'],
+    ['not-a-date', 'invalid_timestamp'],
+    ['2026-09-21T03:36:00.000Z', 'future_evidence'],
+  ]) {
+    const executor = executorWith(100, { retrieved_at });
+    const out = await guardAllocation({ executor, wallet: WALLET, allocation: 100, now });
+    assert.equal(out.code, code, retrieved_at);
+    assert.equal(out.allocation, 0);
   }
 });
 
-test('an executor error result is unverifiable rather than a pass', async () => {
-  const out = await guardAllocation({ executor: executorWith(1), wallet: '0x0000000000000000000000000000000000000000', allocation: 2500 });
-  assert.equal(out.allocation, 0);
-  assert.equal(out.blocked, true);
-  assert.match(out.reason, /evidence missing: No snapshot for/);
+test('benchmark policy keeps frozen evidence reproducible while retaining all other checks', async () => {
+  const out = await guardAllocation({
+    ...benchmarkInput(100, 100),
+    now: () => new Date('2030-01-01T00:00:00.000Z'),
+  });
+  assert.equal(out.code, 'allowed');
+  assert.equal(out.policy.max_evidence_age_ms, null);
 });
 
-test('an executor that throws blocks the allocation and says the evidence is missing', async () => {
-  const executor = { async execute() { throw new Error('Nansen 503'); } };
-  const out = await guardAllocation({ executor, wallet: WALLET, allocation: 5000 });
-  assert.equal(out.allocation, 0);
-  assert.equal(out.attempted, 5000);
-  assert.equal(out.blocked, true);
-  assert.match(out.reason, /evidence missing/);
-  assert.match(out.reason, /Nansen 503/);
-  assert.equal(out.evidence.realized_pnl_30d_usd, null);
+test('executor exceptions and timeouts fail closed without leaking them into the public reason', async () => {
+  const thrown = await guardAllocation({
+    ...benchmarkInput(1, 5000),
+    executor: { async execute() { throw new Error('Nansen 503 with private request id'); } },
+  });
+  assert.equal(thrown.code, 'evidence_unavailable');
+  assert.equal(thrown.reason, 'blocked: Nansen evidence is unavailable');
+  assert.match(thrown.diagnostic, /private request id/);
+
+  const timed = await guardAllocation({
+    ...benchmarkInput(1, 5000),
+    executor: { execute() { return new Promise(() => {}); } },
+    timeoutMs: 5,
+  });
+  assert.equal(timed.code, 'evidence_timeout');
+  assert.equal(timed.allocation, 0);
 });
 
-test('a verified non-negative 30-day PnL passes the allocation through unchanged', async () => {
-  for (const [pnl, allocation] of [[125_000.5, 6250], [0, 1250]]) {
-    const out = await guardAllocation({ executor: executorWith(pnl), wallet: WALLET, allocation });
-    assert.equal(out.allocation, allocation);
-    assert.equal(out.attempted, allocation);
-    assert.equal(out.blocked, false);
-    assert.match(out.reason, /non-negative/);
-    assert.equal(out.evidence.realized_pnl_30d_usd, pnl);
+test('invalid wallet, allocation, executor, and timeout are refused before a call', async () => {
+  let calls = 0;
+  const executor = { async execute() { calls++; return {}; } };
+  const cases = [
+    { executor, wallet: 'not-a-wallet', allocation: 10 },
+    { executor, wallet: WALLET, allocation: -1 },
+    { executor, wallet: WALLET, allocation: Number.NaN },
+    { executor: null, wallet: WALLET, allocation: 10 },
+    { executor, wallet: WALLET, allocation: 10, timeoutMs: 0 },
+  ];
+  for (const input of cases) {
+    const out = await guardAllocation(input);
+    assert.equal(out.code, 'invalid_request');
+    assert.equal(out.allocation, 0);
   }
+  assert.equal(calls, 0);
 });
 
-test('a $0 answer on a losing wallet is not counted as blocked; the guard changed nothing', async () => {
-  const out = await guardAllocation({ executor: executorWith(-1), wallet: WALLET, allocation: 0 });
+test('a zero proposal is checked and reported but is not counted as a blocked attempt', async () => {
+  const out = await guardAllocation(benchmarkInput(-1, 0));
+  assert.equal(out.decision, 'block');
   assert.equal(out.allocation, 0);
   assert.equal(out.attempted, 0);
   assert.equal(out.blocked, false);
-  assert.match(out.reason, /negative/, 'the evidence is still reported');
-  const thrown = await guardAllocation({ executor: { async execute() { throw new Error('down'); } }, wallet: WALLET, allocation: 0 });
-  assert.equal(thrown.blocked, false);
-  assert.equal(thrown.allocation, 0);
 });
 
-test('the guard never mutates the executor input or reaches for a different window', async () => {
-  const seen = [];
-  const executor = { async execute(name, input) { seen.push({ name, input }); return { realized_pnl_usd: 10, source: 'x' }; } };
-  const out = await guardAllocation({ executor, wallet: WALLET, allocation: 100 });
-  assert.deepEqual(seen, [{ name: 'get_pnl_summary', input: { wallet: WALLET, days: 30 } }]);
-  assert.equal(out.evidence.source, 'x');
+test('invalid policy configuration is rejected as a developer error', async () => {
+  await assert.rejects(
+    guardAllocation({ ...benchmarkInput(1), policy: { maxEvidenceAgeMs: -1 } }),
+    /maxEvidenceAgeMs/,
+  );
+});
+
+test('the production source contract is the Nansen PnL summary endpoint', () => {
+  assert.equal(PRODUCTION_GUARD_POLICY.source, GUARD_SOURCE);
+  assert.equal(PRODUCTION_GUARD_POLICY.windowDays, 30);
+  assert.equal(PRODUCTION_GUARD_POLICY.minimumRealizedPnlUsd, 0);
 });

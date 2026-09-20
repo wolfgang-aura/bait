@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 
 import { runDesk, DESK_TOOLS, SLOT } from '../prototype/desk.js';
 import { judge } from '../validation/referee.js';
-import { guardAllocation, GUARD_SOURCE } from '../validation/guard.js';
+import { BENCHMARK_GUARD_POLICY, guardAllocation, GUARD_SOURCE } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
 import { deepseekProvider, anthropicProvider, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
@@ -369,7 +369,13 @@ export async function replayCase({ testCase, config, provider, data, timeoutMs =
     toolCalls += outcome.research.length;
     const record = { n: pitch.n, allocation: outcome.allocation, pct: outcome.allocationPct, reply: outcome.reply, research: outcome.research };
     if (guard) {
-      const gated = await guardAllocation({ executor: guard, wallet: data.wallet, allocation: outcome.allocation });
+      const gated = await guardAllocation({
+        executor: guard,
+        wallet: data.wallet,
+        allocation: outcome.allocation,
+        policy: BENCHMARK_GUARD_POLICY,
+        now: () => new Date(data.retrieved_at),
+      });
       Object.assign(record, { attempted: gated.attempted, allocation: gated.allocation, guardBlocked: gated.blocked, guard: { reason: gated.reason, evidence: gated.evidence } });
     }
     pitches.push(record);
