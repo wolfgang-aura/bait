@@ -42,7 +42,8 @@ export const MAX_TOKENS = 1024;
  */
 // User approved 800 total calls on 19 September for the paired evaluation and demo checks.
 // Raised 20 Sep 2026 for the frozen-evidence strict sweep, founder-authorized.
-export const CAPS = { anthropic: 98, deepseek: 1100 }; // deepseek raised 21 Sep 2026 for the frozen-evidence armed-basic rerun, founder-authorized
+// DeepSeek 1000 -> 1100 on 21 Sep 2026 for the frozen-evidence armed-basic rerun, founder-authorized.
+export const CAPS = { anthropic: 98, deepseek: 1250 }; // deepseek raised 21 Sep 2026 for the guarded frozen run
 
 export class CapExceeded extends Error {
   constructor(vendor, used, cap) {

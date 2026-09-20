@@ -18,9 +18,10 @@ const CONFIG_TOOLS = {
   unarmed: 'No tools',
   'armed-basic': 'Nansen PnL + trades',
   'armed-plus': 'Nansen PnL + trades + positions',
-  'armed-strict': 'Nansen PnL + trades + BAIT rule',
+  'armed-strict': 'Nansen PnL + trades + prompt rule',
+  guarded: 'BAIT guard · code, no model tools',
 };
-const CONFIG_ORDER = ['unarmed', 'armed-basic', 'armed-plus', 'armed-strict'];
+const CONFIG_ORDER = ['unarmed', 'armed-basic', 'armed-plus', 'armed-strict', 'guarded'];
 const configTools = id => CONFIG_TOOLS[id] ?? String(id);
 const configRank = id => { const i = CONFIG_ORDER.indexOf(id); return i === -1 ? CONFIG_ORDER.length : i; };
 
@@ -42,14 +43,14 @@ function renderHero() {
   const cmp = results.comparison;
   const row = id => cmp.rows.find(r => r.config === id);
   const unarmed = row('unarmed');
-  const strict = row('armed-strict');
-  if (!unarmed || !strict) throw new Error('Comparison rows for unarmed and armed-strict are missing');
+  const guarded = row('guarded');
+  if (!unarmed || !guarded) throw new Error('Comparison rows for unarmed and guarded are missing');
 
   const loss = $('b-loss-short');
   loss.classList.remove('skeleton-inline');
   loss.textContent = millions(cmp.pnl);
 
-  for (const [key, r] of [['unarmed', unarmed], ['armed', strict]]) {
+  for (const [key, r] of [['unarmed', unarmed], ['armed', guarded]]) {
     const cell = $(`b-big-${key}`);
     cell.classList.remove('skeleton');
     cell.innerHTML = `${r.funded}<small>/${r.runs}</small>`;
@@ -134,18 +135,21 @@ function renderScore() {
     `<tr data-config="${escape(r.config)}">
       <th scope="row"><code>${escape(r.config)}</code></th>
       <td>${escape(configTools(r.config))}</td>
-      <td><strong>${r.funded} / ${r.runs}</strong> <em>(${percent(r)})</em></td>
+      <td><strong>${r.funded} / ${r.runs}</strong> <em>(${percent(r)})</em>${typeof r.blocked === 'number' ? ` <span class="chip">blocked ${r.blocked}/${r.runs}</span>` : ''}</td>
       <td>${money(r.mean)}</td>
     </tr>`).join('');
 }
 
-/* ---------- 3 · fix: the strict rule, verbatim, with a clipboard button ---------- */
+/* ---------- 3 · guard: the code gate, its snippet, and the prompt-only rule in the audit fold ---------- */
 
-function renderFix() {
+function renderGuard() {
+  const guarded = results.comparison.rows.find(r => r.config === 'guarded');
   const strict = results.comparison.rows.find(r => r.config === 'armed-strict');
   const policy = results.paired.policies.find(p => p.id === 'armed-strict');
-  if (!policy?.text) throw new Error('The strict policy text is missing from the bundle');
-  $('b-rule-title').textContent = `The rule that held: ${strict.funded} of ${strict.runs}`;
+  if (typeof guarded?.blocked !== 'number') throw new Error('The guarded row has no block count in the bundle');
+  if (!strict || !policy?.text) throw new Error('The strict policy text is missing from the bundle');
+  $('b-rule-title').textContent = `The guard that held: ${guarded.funded} of ${guarded.runs}. Blocked ${guarded.blocked} attempts.`;
+  $('b-policy-note').textContent = `Prompt-only version of the same rule also held ${strict.funded}/${strict.runs}; the guard does not depend on the model reading it.`;
   $('b-policy').textContent = policy.text;
 }
 
@@ -158,7 +162,7 @@ function setCopyStatus(text) {
 }
 
 $('b-copy').addEventListener('click', async () => {
-  const text = $('b-policy').textContent;
+  const text = $('b-snippet').textContent;
   try {
     if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
     await navigator.clipboard.writeText(text);
@@ -167,7 +171,7 @@ $('b-copy').addEventListener('click', async () => {
     // Clipboard API refused: select the block and try the legacy copy command,
     // leaving the selection in place so a manual copy is one keystroke away.
     const range = document.createRange();
-    range.selectNodeContents($('b-policy'));
+    range.selectNodeContents($('b-snippet'));
     const selection = window.getSelection();
     selection.removeAllRanges();
     selection.addRange(range);
@@ -247,10 +251,10 @@ async function init() {
     renderEndpoints();
     renderRound();
     renderScore();
-    renderFix();
+    renderGuard();
     renderAudit();
 
-    for (const id of ['attack', 'score', 'fix']) $(id).hidden = false;
+    for (const id of ['attack', 'score', 'guard']) $(id).hidden = false;
   } catch (err) {
     $('b-error').hidden = false;
     $('b-error').textContent = `Recorded results could not load. ${err.message}. Reload to retry.`;

@@ -68,9 +68,13 @@ replay are unchanged; what changed is what the page says it is.
    leaderboard, section `2 · Score`, one row per row in `comparison.rows`, ordered by
    baited rate descending, followed by the `Test your own agent` block with the bench
    command and a config file.
-3. **Fix.** A five-line eligibility rule that took the baited rate from 80% to 0%, which
-   anyone can paste into their own agent. On the page this is section `3 · Fix`: the
-   strict policy verbatim from `paired.policies`, a clipboard button, one sentence.
+3. **Guard.** A code gate, `validation/guard.js`, that makes one Nansen
+   `profiler/perp-pnl-summary` call itself and forces the allocation to $0 on negative
+   or missing 30-day realised PnL. It held 0/30 and blocked 25 of 30 attempts with no
+   model tools and no policy text. On the page this is section `3 · Guard`: the
+   headline from the `guarded` row, three one-line facts, the import snippet, "Get the
+   guard" and "Copy the snippet". The prompt-only strict policy (also 0/30) moved into
+   the audit fold; the guard does not depend on the model reading it.
 
 Nansen is the evidence layer the rule depends on. It left the masthead; it is credited
 in the evidence line under the hero button and named in the tool labels, but it is never
@@ -82,8 +86,8 @@ a user goes through, attack then score then fix.
 1. Wordmark `BAIT` with `Red-team kit for AI trading agents · recorded`.
 2. One headline stating the attack, with the loss rendered from `comparison.pnl`.
 3. One line under it naming the three parts: records, scores, ships the rule.
-4. Two giant numbers, `24/30` "baited · no tools" and `0/30` "baited · Nansen + BAIT
-   rule", from `comparison.rows` (`unarmed` and `armed-strict`). JetBrains Mono 700,
+4. Two giant numbers, `24/30` "baited · no tools" and `0/30` "baited · BAIT guard",
+   from `comparison.rows` (`unarmed` and `guarded`). JetBrains Mono 700,
    `clamp(84px, 12.5vw, 160px)`, 160px measured at 1280 wide, 81.9px at 390. The armed
    pair is the only amber text on the first screen apart from the button.
 5. One primary button, "Step through the attack".
@@ -93,8 +97,8 @@ a user goes through, attack then score then fix.
 
 The one thing a viewer should notice first is still the pair `24/30` against `0/30`.
 The headline names the attack that produced the 24, the line under it names the product,
-the labels on the numbers name what changed between them, and the evidence line credits
-Nansen.
+the labels on the numbers name what changed between them (no tools against the BAIT
+guard, since 21 Sep 2026), and the evidence line credits Nansen.
 
 ### Word budget (B3)
 
@@ -112,13 +116,16 @@ sentence, and every methodology sentence lives inside the single audit fold.
 `1 · Attack`: the replay, unchanged. `2 · Score`: the leaderboard (columns Agent
 configuration, Tools, Baited as `24 / 30 (80%)`, Mean allocation), one caveat sentence,
 then the `Test your own agent` block linking to the repository's benchmark-harness
-section. `3 · Fix`: "The rule that held: 0 of 30" from the strict row, the policy text
-in a bordered mono block, "Copy the rule" with a "Copied" status, one sentence. Then the
-single collapsed audit fold, unchanged apart from the policy details block, which moved
-up into the fix section. Footer: "Play it live" and "GitHub". Screenshots:
-`prototype/screenshots/replay-b3-desktop.png`, `replay-b3-phone.png` and
-`replay-b3-score-fix.png`, captured with the Playwright headless shell against the
-local server on port 3003.
+section; the `guarded` row carries a "blocked 25/30" chip rendered only when the row
+has a numeric `blocked`. `3 · Guard` (21 Sep 2026, replacing `3 · Fix`): "The guard
+that held: 0 of 30. Blocked 25 attempts." from the guarded row, three one-line facts,
+the `guardAllocation` import snippet in a bordered mono block, an amber "Get the guard"
+link to `validation/guard.js` and a ghost "Copy the snippet" with a "Copied" status.
+Then the single collapsed audit fold, which now opens with the prompt-only strict rule
+verbatim under a line stating it also held 0/30. Footer: "Play it live" and "GitHub".
+Screenshots: `prototype/screenshots/replay-guard-desktop.png`, `replay-guard-phone.png`
+and `replay-guard-section3.png`, captured with the Playwright headless shell against a
+static serve of the packaged demo.
 
 The bundle gained an `armed-basic` row (6/30, $317) while B3 was being built. The
 leaderboard rendered it with no code change, which is the point of reading every row
@@ -231,5 +238,5 @@ direction of the finding rather than a figure.
 
 A first-time viewer must get, without scrolling: true facts baited an AI trading desk
 into funding a $4.7M loser 24 times out of 30, BAIT is the kit that records that attack,
-scores any agent and ships the rule that took it to 0 of 30, and the one action is "Step
+scores any agent and ships the guard that took it to 0 of 30, and the one action is "Step
 through the attack". "Play it live" is a footer link only.

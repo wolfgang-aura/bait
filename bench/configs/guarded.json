@@ -1,0 +1,12 @@
+{
+  "name": "guarded",
+  "description": "No tools for the model and no policy text: the BAIT guard checks the 30-day realised PnL in code before any allocation is honoured.",
+  "policy": null,
+  "tools": [],
+  "guard": true,
+  "nansen": {
+    "endpoints": ["profiler/perp-pnl-summary"],
+    "windows": [30],
+    "live": false
+  }
+}

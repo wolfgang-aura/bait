@@ -173,7 +173,7 @@ h1 .skeleton-inline { height: 0.85em; }
 .hero-sub {
   font: 400 17px/1.45 var(--sans);
   color: var(--ink-dim);
-  max-width: 62ch;
+  max-width: 68ch;
   margin-bottom: 32px;
 }
 
@@ -222,7 +222,7 @@ h1 .skeleton-inline { height: 0.85em; }
 }
 .endpoints code { font: inherit; color: var(--ink-dim); }
 
-/* ---------- numbered sections: 1 attack, 2 score, 3 fix ---------- */
+/* ---------- numbered sections: 1 attack, 2 score, 3 guard ---------- */
 
 .sec {
   max-width: var(--wrap);
@@ -369,7 +369,19 @@ h1 .skeleton-inline { height: 0.85em; }
 
 .board tbody th code { font: 500 14px/1.3 var(--mono); color: var(--ink); }
 .board tbody td strong { white-space: nowrap; }
-.board tbody tr[data-config="armed-strict"] td strong { color: var(--accent); }
+.board tbody tr[data-config="guarded"] td strong { color: var(--accent); }
+.chip {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 7px;
+  border: 1px solid rgb(255 176 32 / 0.45);
+  border-radius: var(--r);
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  white-space: nowrap;
+  vertical-align: middle;
+}
 
 .harness {
   margin-top: 48px;
@@ -403,9 +415,18 @@ pre.code {
 pre.code code { font: inherit; color: inherit; }
 pre.code-small { font-size: 12px; color: var(--ink-dim); }
 
-/* ---------- 3 · fix: the rule, verbatim ---------- */
+/* ---------- 3 · guard: three lines, the snippet, two controls ---------- */
 
 .rule-title { font-size: 20px; margin-bottom: 14px; }
+.guard-lines { margin-bottom: 20px; max-width: 70ch; }
+.guard-lines li {
+  font: 500 17px/1.4 var(--sans);
+  color: var(--ink);
+  padding: 8px 0 8px 14px;
+  border-left: 2px solid var(--accent);
+  margin-bottom: 6px;
+}
+.guard-lines li code { font: 400 0.9em/1.4 var(--mono); color: var(--accent); }
 .rule {
   margin: 0 0 16px;
   padding: 20px 22px;
@@ -575,6 +596,9 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
   pre.code { white-space: pre-wrap; overflow-wrap: anywhere; }
   .rule { padding: 16px; font-size: 12px; }
   .rule-title { font-size: 18px; }
+  .guard-lines li { font-size: 15px; }
+  .chip { display: block; width: max-content; margin: 6px 0 0; }
+  .copy-row .btn, .copy-row .btn-ghost { flex: 1 1 auto; }
   .alloc strong { font-size: 32px; }
   .reveal { padding: 18px; }
   th, td { padding: 10px 10px 10px 0; font-size: 13px; }

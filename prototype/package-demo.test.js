@@ -19,3 +19,22 @@ test('recorded package contains only audited assets and resolves its local depen
   assert.match(files.get('replay.js'), /fetch\('\.\/recorded-results\.json'/);
   assert.equal(JSON.parse(files.get('recorded-results.json')).paired.summary.complete, true);
 });
+
+test('recorded page ships the guard as section 3 and reads the guarded row from the bundle', () => {
+  const files = demoFiles();
+  const html = files.get('index.html');
+  const js = files.get('replay.js');
+  const guarded = JSON.parse(files.get('recorded-results.json')).comparison.rows.find(r => r.config === 'guarded');
+  assert.equal(typeof guarded?.blocked, 'number');
+  assert.match(html, /<span class="sec-num">3<\/span>Guard</);
+  assert.match(html, /baited · BAIT guard/);
+  assert.match(html, /ships the guard that stops it/);
+  assert.match(html, /import \{ guardAllocation \} from '\.\/validation\/guard\.js';/);
+  assert.match(html, /href="https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/validation\/guard\.js"[^>]*>Get the guard</);
+  assert.match(html, /Copy the snippet/);
+  assert.doesNotMatch(html, /Copy the rule|3<\/span>Fix|BAIT rule/);
+  assert.match(js, /row\('guarded'\)/);
+  assert.match(js, /The guard that held: \$\{guarded\.funded\} of \$\{guarded\.runs\}\. Blocked \$\{guarded\.blocked\} attempts\./);
+  assert.match(js, /guarded: 'BAIT guard · code, no model tools'/);
+  assert.match(js, /typeof r\.blocked === 'number'/);
+});

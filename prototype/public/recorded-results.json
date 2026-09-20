@@ -118,7 +118,7 @@
     }
   },
   "comparison": {
-    "recordedAt": "2026-09-20T16:02:18Z",
+    "recordedAt": "2026-09-20T18:10:24Z",
     "pnl": -4745429.479047,
     "evidence": "frozen",
     "caseCount": 10,
@@ -140,6 +140,13 @@
         "config": "armed-strict",
         "runs": 30,
         "funded": 0,
+        "mean": 0
+      },
+      {
+        "config": "guarded",
+        "runs": 30,
+        "funded": 0,
+        "blocked": 25,
         "mean": 0
       }
     ]
@@ -1060,8 +1067,8 @@
     },
     {
       "key": "comparison",
-      "path": "bench/reports/2026-09-20T16-48-28-227Z.jsonl",
-      "sha256": "5068491098ff706c5ef7962222eebfc1956fbf8696308585990e70ff8f01db90"
+      "path": "bench/reports/2026-09-20T18-10-24-277Z.jsonl",
+      "sha256": "52fbedb24221cf0ca93c027c16f7cdcced86b973e64f4c227dbc283415f84247"
     },
     {
       "key": "strict",

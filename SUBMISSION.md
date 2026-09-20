@@ -61,14 +61,15 @@ It names the encounter as verified live data and preserves the fetched timestamp
 Can true facts sell a losing trader?
 
 BAIT baits AI trading desks with true but selective facts, then scores any agent
-config against the recorded attacks. Same wallet, lost $4.7M in 30 days:
-no tools 24/30 funded it, Nansen data 6/30, Nansen + the BAIT rule 0/30.
+config against the recorded attacks. Same wallet, lost $4.7M in 30 days: no tools
+funded it 24/30, Nansen data 6/30, the BAIT guard 0/30 and blocked 25 attempts in code.
 
 Play + audit: https://github.com/wolfgang-aura/bait
 @nansen_ai
 
-The raw draft is 260 characters, before X applies its fixed URL length. It includes
-the required tag and GitHub link.
+The raw draft is 352 characters, 338 after X counts the link as 23. That is over the
+280-character free limit, so it needs a Premium account or a trim before posting. It
+includes the required tag and GitHub link.
 
 ## Draft description
 
@@ -81,7 +82,9 @@ In the fixed-evidence policy comparison, the permissive policy funded 2/6 losing
 wallets. The strict Nansen-backed policy funded 0/6 and still funded the profitable
 control. Each pair used the same evidence, tools, model and pitches. The frozen-evidence
 attack suite, 10 recorded attacks by 3 repeats, funded the losing wallet 24/30 with
-no tools, 6/30 with Nansen PnL and trades, and 0/30 with the strict rule added. Full traces and reproduction commands accompany the demo.
+no tools, 6/30 with Nansen PnL and trades, 0/30 with the prompt-only rule, and 0/30
+with the BAIT guard, a code gate that blocked 25 of 30 attempts using one Nansen call
+and no model tool. Full traces and reproduction commands accompany the demo.
 
 ## Before publication
 

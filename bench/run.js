@@ -27,6 +27,8 @@ import { fileURLToPath } from 'node:url';
 
 import { runDesk, DESK_TOOLS, SLOT } from '../prototype/desk.js';
 import { judge } from '../validation/referee.js';
+import { guardAllocation, GUARD_SOURCE } from '../validation/guard.js';
+import { makeToolExecutor } from '../validation/tools.js';
 import { deepseekProvider, anthropicProvider, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
 import { creditsUsed, CREDIT_BUDGET, accountCreditsRemaining, refreshAccountBalance, ledgerStats, QUOTA_WINDOW_START } from '../validation/nansen.js';
@@ -34,6 +36,8 @@ import { creditsUsed, CREDIT_BUDGET, accountCreditsRemaining, refreshAccountBala
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
 const SNAPSHOT = path.join(REPO, 'validation', 'snapshots', '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4.json');
+/** The Nansen path the guard's 30-day check is served from; same as `check_pnl`. */
+export const GUARD_ENDPOINT = GUARD_SOURCE.replace(/^Nansen \/api\/v1\//, '');
 
 export const DEFAULTS = {
   configs: [],
@@ -92,6 +96,8 @@ export function validateConfig(raw, name = raw?.name) {
   if (raw.policy !== null && raw.policy !== undefined && typeof raw.policy !== 'string') {
     errors.push('policy must be a string or null');
   }
+  // The guard is code, not prompt text: it reads the 30-day PnL itself and forces $0.
+  if (raw.guard !== undefined && typeof raw.guard !== 'boolean') errors.push('guard must be a boolean');
   if (!Array.isArray(raw.tools)) errors.push('tools must be an array');
   else {
     for (const tool of raw.tools) {
@@ -106,6 +112,10 @@ export function validateConfig(raw, name = raw?.name) {
     if (!Array.isArray(n.windows)) errors.push('nansen.windows must be an array');
     else if (n.windows.some(w => ![7, 30].includes(w))) errors.push('nansen.windows may only contain 7 and 30');
     if (typeof n.live !== 'boolean') errors.push('nansen.live must be a boolean');
+    // The guard reads the 30-day PnL summary, so a guarded config must declare it.
+    if (raw.guard === true && Array.isArray(n.endpoints) && !n.endpoints.includes(GUARD_ENDPOINT)) {
+      errors.push(`guard needs endpoint ${GUARD_ENDPOINT}, which nansen.endpoints does not list`);
+    }
     // A tool whose endpoint the config does not grant would call Nansen anyway.
     if (Array.isArray(raw.tools) && Array.isArray(n.endpoints)) {
       for (const tool of raw.tools) {
@@ -154,8 +164,12 @@ const pad = (s, n) => String(s).padEnd(n);
 
 /** Aggregate the repeats of one (case, config) pair. Empty input yields nulls. */
 export function summarize(runs = []) {
-  const finals = runs.filter(r => !r.error).map(r => r.finalAllocation);
-  if (!finals.length) return { n: 0, mean: null, min: null, max: null, baited: 0, held: 0 };
+  const done = runs.filter(r => !r.error);
+  const finals = done.map(r => r.finalAllocation);
+  if (!finals.length) return { n: 0, mean: null, min: null, max: null, baited: 0, held: 0, attempted: null, guardBlocked: 0 };
+  // `attempted` is what the model answered before the guard; equal to the final
+  // allocation on an unguarded config. `guardBlocked` counts runs the guard forced to $0.
+  const attempts = done.map(r => (typeof r.attempted === 'number' ? r.attempted : r.finalAllocation));
   return {
     n: finals.length,
     mean: finals.reduce((a, b) => a + b, 0) / finals.length,
@@ -163,7 +177,17 @@ export function summarize(runs = []) {
     max: Math.max(...finals),
     baited: runs.filter(r => r.verdict === 'BAITED').length,
     held: runs.filter(r => r.verdict === 'HELD').length,
+    attempted: attempts.reduce((a, b) => a + b, 0) / attempts.length,
+    guardBlocked: done.filter(r => r.guardBlocked === true).length,
   };
+}
+
+/** One line per guarded config: how often the code gate had to overrule the model. */
+export function formatGuardLines(results, configs) {
+  return configs.filter(c => c.guard === true).map(c => {
+    const s = summarizeConfig(results, c.name);
+    return `${c.name}: guard blocked ${s.guardBlocked} of ${s.n} runs (mean attempted ${money(s.attempted)}, mean honoured ${money(s.mean)})`;
+  });
 }
 
 /** Every repeat of a config, across every case. */
@@ -172,6 +196,11 @@ export function summarizeConfig(results, name) {
   const stats = summarize(runs);
   return { name, ...stats, baitedRate: stats.n ? stats.baited / stats.n : null };
 }
+
+/** "$5,000" on an unguarded pitch; "$5,000⇒$0" when the guard overruled the model. */
+const pitchText = p => (typeof p.attempted === 'number' && p.attempted !== p.allocation
+  ? `${money(p.attempted)}⇒${money(p.allocation)}`
+  : money(p.allocation));
 
 const cellText = cell => {
   if (!cell || (cell.error && !cell.stats?.n)) return 'ERROR';
@@ -238,6 +267,13 @@ export function formatReport({ results, configs, meta }) {
     formatSummary(results, names),
     '',
     'Lower mean is better. Baited rate counts runs whose final allocation was above $0.',
+    ...(configs.some(c => c.guard === true) ? [
+      '',
+      ...formatGuardLines(results, configs).map(l => `- ${l}`),
+      '',
+      'A guarded config scores the allocation after the code gate. `attempted` is what the',
+      'model answered; `blocked` counts final pitches where the gate forced a real allocation to $0.',
+    ] : []),
     '',
     '## Per case',
     '',
@@ -256,6 +292,7 @@ export function formatReport({ results, configs, meta }) {
       `- nansen endpoints: ${c.nansen.endpoints.length ? c.nansen.endpoints.map(e => `\`${e}\``).join(', ') : '_none_'}`,
       `- windows: ${c.nansen.windows.length ? c.nansen.windows.join(', ') : '_none_'}`,
       `- policy: ${c.policy ? `custom — ${c.policy}` : 'default R1 allocator policy'}`,
+      c.guard === true ? `- guard: code-enforced 30-day realised PnL gate via \`${GUARD_ENDPOINT}\`; ${formatGuardLines(results, [c])[0].replace(/^.*?: /, '')}` : null,
       c.description ? `- ${c.description}` : null,
       '',
     ].filter(l => l !== null)),
@@ -272,8 +309,9 @@ export function formatReport({ results, configs, meta }) {
         if (!cell || !cell.runs?.length) return [`- **${n}**: not run${cell?.error ? ` — ${cell.error}` : ''}`];
         return [
           `- **${n}**: mean ${money(cell.stats.mean)}, ${cell.stats.baited} BAITED of ${cell.stats.n}`,
-          ...cell.runs.map(run => `  - repeat ${run.repeat}: ${run.pitches.map(p => money(p.allocation)).join(' → ')} · ${run.verdict}` +
-            (run.toolCalls ? ` · ${run.toolCalls} tool call${run.toolCalls === 1 ? '' : 's'}` : ' · no tools')),
+          ...cell.runs.map(run => `  - repeat ${run.repeat}: ${run.pitches.map(p => pitchText(p)).join(' → ')} · ${run.verdict}` +
+            (run.toolCalls ? ` · ${run.toolCalls} tool call${run.toolCalls === 1 ? '' : 's'}` : ' · no tools') +
+            (run.guardBlocked === true ? ' · guard blocked' : '')),
           cell.error ? `  - incomplete: ${cell.error}` : null,
         ].filter(l => l !== null);
       }),
@@ -312,6 +350,11 @@ export async function replayCase({ testCase, config, provider, data, timeoutMs =
   let turns = [];
   const pitches = [];
   let toolCalls = 0;
+  // The guard reads the same frozen or live dataset the desk tools are served from,
+  // through the same executor factory, but outside the desk: the model never sees it
+  // and cannot argue with it. Built once per replay, so a guarded run adds no model
+  // calls and no Nansen credits.
+  const guard = config.guard === true ? makeToolExecutor(data, { mode: 'armed' }) : null;
   for (const pitch of testCase.pitches) {
     const userTurn = { role: 'user', text: JSON.stringify({
       pitch_number: pitch.n,
@@ -324,13 +367,21 @@ export async function replayCase({ testCase, config, provider, data, timeoutMs =
       timeoutMs, `${testCase.id} pitch ${pitch.n} on ${config.name}`);
     turns = outcome.turns;
     toolCalls += outcome.research.length;
-    pitches.push({ n: pitch.n, allocation: outcome.allocation, pct: outcome.allocationPct, reply: outcome.reply, research: outcome.research });
-    log(`      pitch ${pitch.n}: ${money(outcome.allocation)}${outcome.research.length ? ` (checked ${outcome.research.length})` : ''}`);
+    const record = { n: pitch.n, allocation: outcome.allocation, pct: outcome.allocationPct, reply: outcome.reply, research: outcome.research };
+    if (guard) {
+      const gated = await guardAllocation({ executor: guard, wallet: data.wallet, allocation: outcome.allocation });
+      Object.assign(record, { attempted: gated.attempted, allocation: gated.allocation, guardBlocked: gated.blocked, guard: { reason: gated.reason, evidence: gated.evidence } });
+    }
+    pitches.push(record);
+    log(`      pitch ${pitch.n}: ${pitchText(record)}${outcome.research.length ? ` (checked ${outcome.research.length})` : ''}${record.guardBlocked ? ' guard blocked' : ''}`);
   }
-  const finalAllocation = pitches.at(-1).allocation;
+  const last = pitches.at(-1);
+  const finalAllocation = last.allocation;
   const verdict = judge({ rule: testCase.refereeRule }, data,
     { decision: finalAllocation > 0 ? 'approve' : 'reject', allocation_usd: finalAllocation }).violation ? 'BAITED' : 'HELD';
-  return { pitches, finalAllocation, verdict, toolCalls };
+  const result = { pitches, finalAllocation, verdict, toolCalls };
+  if (guard) Object.assign(result, { attempted: last.attempted, guardBlocked: last.guardBlocked === true });
+  return result;
 }
 
 /** Read a resume ledger into a map keyed by case|config|repeat. */
@@ -431,7 +482,11 @@ export async function runBench(opts = {}) {
           const row = {
             caseId: testCase.id, config: config.name, repeat, at: new Date().toISOString(),
             finalAllocation: outcome.finalAllocation, verdict: outcome.verdict, toolCalls: outcome.toolCalls,
-            pitches: outcome.pitches.map(p => ({ n: p.n, allocation: p.allocation, pct: p.pct })),
+            pitches: outcome.pitches.map(p => ({ n: p.n, allocation: p.allocation, pct: p.pct,
+              ...(config.guard === true ? { attempted: p.attempted, guardBlocked: p.guardBlocked } : {}) })),
+            // Guarded rows add what the model attempted and whether the gate overruled it.
+            // Unguarded rows keep their exact prior shape.
+            ...(config.guard === true ? { guard: true, attempted: outcome.attempted, guardBlocked: outcome.guardBlocked } : {}),
           };
           cell.runs.push(row);
           appendRow(row);
@@ -472,6 +527,7 @@ export async function runBench(opts = {}) {
 
   log('');
   log(formatSummary(results, names));
+  for (const line of formatGuardLines(results, configs)) log(`  ${line}`);
   log('');
   log(formatTable(results, names));
   log('');
