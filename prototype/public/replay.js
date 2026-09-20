@@ -90,6 +90,11 @@ async function init() {
     $('source-manifest').textContent = results.sources.map(s => s.path).join(' · ');
     const paired = results.paired;
     if (!paired?.summary?.complete || paired.wallets.length !== 7) throw new Error('Paired evidence is incomplete');
+    const strictPaired = paired.summary.allocations['armed-strict'];
+    if (!strictPaired || paired.summary.losingPairs !== 6 || paired.summary.profitablePairs !== 1) throw new Error('Headline policy result is incomplete');
+    $('headline-strict').textContent = `${strictPaired.losingFunded} / ${paired.summary.losingPairs}`;
+    $('headline-control').textContent = `${strictPaired.profitableFunded} / ${paired.summary.profitablePairs}`;
+    $('headline-result').hidden = false;
     $('paired-totals').innerHTML = Object.entries(paired.summary.allocations).map(([id, counts]) => `<tr><th scope="row">${policyName(id)}</th><td>${counts.losingFunded} / ${paired.summary.losingPairs}</td><td>${counts.profitableFunded} / ${paired.summary.profitablePairs}</td></tr>`).join('');
     $('paired-conclusion').textContent = `Mean final allocation to losing wallets changed by ${money(paired.summary.meanLosingAllocationChange)} under the strict policy. The permissive policy already rejected four of the six losing wallets.`;
     $('paired-wallet').innerHTML = paired.wallets.map((w, i) => `<option value="${escape(w.id)}">${w.cohort === 'profitable-control' ? 'Profitable control' : `Losing wallet ${i + 1}`} · ${money(w.pnl)} over 30 days</option>`).join('');

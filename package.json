@@ -12,7 +12,6 @@
     "bench:export": "node bench/export.js",
     "results:export": "node prototype/export-results.js",
     "demo:package": "node prototype/package-demo.js",
-    "release:prepare": "node scripts/prepare-public-source.mjs",
     "quota": "node validation/quota.js",
     "quota:report": "node validation/analyze-robustness.js",
     "validate:smoke": "node validation/smoke.js",

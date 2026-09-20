@@ -29,3 +29,18 @@ the live game.
 The public repository exposes the intended code, blockchain evidence, model replies
 and benchmark reports. It excludes local credentials, usage ledgers, scratch output
 and the development repository's Git history.
+
+## Pending final refresh
+
+The release exporter now updates an existing clean Git staging clone instead of
+failing after the first publication. It refuses a dirty checkout, refuses outputs
+outside `scratch`, preserves `.git`, removes stale tracked files, and reruns the
+credential scan. A fresh 263-file export and a second in-place export both passed.
+After installing the pinned validation dependency, all 154 tests passed and both
+evidence and demo exporters completed in the isolated tree. This refresh is not yet
+published; issue #3 remains open until the eligibility gate, Pages workflow and live
+page all pass.
+
+Private release commands are removed from the exported `package.json`; their video and
+ledger inputs are intentionally absent from the public repository. Shared validators
+remain public, and the exported test suite covers them without importing private files.

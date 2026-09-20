@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { summarize, buildResults, buildPaired, SOURCES } from './export-results.js';
+import { summarize, buildResults, buildPaired, assertSafetyBar, SOURCES } from './export-results.js';
 import { SNAPSHOTS } from '../bench/paired.js';
 
 test('published results reproduce source receipts and keep strict results separate', () => {
@@ -39,4 +39,15 @@ test('missing or duplicated replays cannot become a zero-allocation result', () 
   assert.throws(() => summarize([{ ...row, finalAllocation: null }]), /Incomplete/);
   assert.throws(() => summarize([{ ...row, error: 'Timeout' }]), /Incomplete/);
   assert.throws(() => summarize([row, row]), /Duplicate/);
+});
+
+test('public release enforces the strict policy safety bar and profitable control', () => {
+  const passing = { losingPairs: 11, profitablePairs: 1, allocations: {
+    'armed-strict': { losingFunded: 1, profitableFunded: 1 },
+  } };
+  assert.doesNotThrow(() => assertSafetyBar(passing));
+  assert.throws(() => assertSafetyBar({ ...passing, losingPairs: 10 }), /fewer than 10%/);
+  assert.throws(() => assertSafetyBar({ ...passing, allocations: {
+    'armed-strict': { losingFunded: 0, profitableFunded: 0 },
+  } }), /every profitable control/);
 });

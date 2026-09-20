@@ -4,7 +4,8 @@
  * The buildathon requires 1,000+ API calls logged on our key between 14 and 27
  * September. This script builds a historical robustness panel for every wallet in the
  * experiment. Each call measures a distinct 7-day or 30-day window. Responses can be
- * saved as JSONL for later analysis, and the request ledger remains the campaign count.
+ * saved as JSONL for later analysis. Eligibility follows Nansen's Usage Analytics;
+ * the local ledger also contains free account checks that do not increase that total.
  *
  *   node validation/quota.js --max-calls 10
  *   node validation/quota.js --max-calls 200 --daily-cap 300
@@ -36,8 +37,21 @@ import {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SNAPSHOT_DIR = path.join(HERE, 'snapshots');
 export const ENCOUNTER_WALLET = '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4';
+export const ELIGIBILITY_TARGET = 1000;
+export const DASHBOARD_BASELINE = Object.freeze({
+  verifiedAt: '2026-09-20T11:12:53Z',
+  totalUsage: 1033,
+  ledgerCreditsUsedSince: 1028,
+});
 
 export const DEFAULTS = { maxCalls: 25, dailyCap: 400, timeoutMs: 45_000, dryRun: false, wallets: [], output: null };
+
+/** Project the dashboard's Total Usage from its last visual check and local charged credits. */
+export function estimatedDashboardUsage(stats) {
+  const charged = Number(stats?.credits_used_since);
+  if (!Number.isFinite(charged)) return null;
+  return DASHBOARD_BASELINE.totalUsage + charged - DASHBOARD_BASELINE.ledgerCreditsUsedSince;
+}
 
 /** Parse argv. Unknown flags and bad numbers are errors, not silent defaults. */
 export function parseArgs(argv = []) {
@@ -249,15 +263,17 @@ export async function runQuota(opts = {}) {
   log(`  elapsed              ${Math.round((Date.now() - started) / 1000)}s`);
   log(`  calls since ${QUOTA_WINDOW_START}   ${after.calls_since} (was ${before.calls_since})`);
   log(`  successful of those  ${after.successful_calls_since}`);
+  const dashboardUsage = estimatedDashboardUsage(after);
+  log(`  dashboard usage est. ${dashboardUsage ?? 'unknown'} (verified ${DASHBOARD_BASELINE.totalUsage} at ${DASHBOARD_BASELINE.verifiedAt})`);
   log(`  last success         ${after.last_success_at ?? 'none'}`);
   log(`  credits used locally ${creditsUsed()}/${CREDIT_BUDGET}`);
   log(`  credits remaining    ${remaining?.credits_remaining ?? 'unknown'} (Nansen account endpoint)`);
-  // The entry needs 1,000+ logged calls and nearly every useful endpoint costs one
-  // credit, so the free-tier balance is the binding constraint, not the rate limit.
-  // Say so plainly instead of discovering it at call 900.
-  const shortfall = 1000 - after.calls_since;
+  // Free account checks appear in the local ledger but do not increase Nansen's
+  // dashboard Total Usage. Anchor the estimate to the visually verified dashboard
+  // value instead of claiming eligibility from raw ledger rows.
+  const shortfall = dashboardUsage === null ? null : ELIGIBILITY_TARGET - dashboardUsage;
   if (shortfall > 0 && typeof remaining?.credits_remaining === 'number') {
-    log(`  to reach 1000 calls  ${shortfall} more; ${remaining.credits_remaining} credits left` +
+    log(`  to reach dashboard ${ELIGIBILITY_TARGET}  ${shortfall} more usage; ${remaining.credits_remaining} credits left` +
       (remaining.credits_remaining < shortfall
         ? ` -> SHORT by about ${shortfall - remaining.credits_remaining} at 1 credit per call`
         : ' -> enough at 1 credit per call'));

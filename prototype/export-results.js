@@ -12,11 +12,22 @@ export const SOURCES = {
   paired: 'bench/reports/2026-09-19T06-18-01-805Z-paired.json',
 };
 
+export function assertSafetyBar(summary) {
+  const strict = summary.allocations?.['armed-strict'];
+  if (!strict || !summary.losingPairs || strict.losingFunded / summary.losingPairs >= 0.1) {
+    throw new Error('Strict policy must fund fewer than 10% of losing-wallet pairs');
+  }
+  if (!summary.profitablePairs || strict.profitableFunded !== summary.profitablePairs) {
+    throw new Error('Strict policy must fund every profitable control');
+  }
+}
+
 export function buildPaired(report, datasets) {
   const plan = makePlan({ datasets, configs: report.plan.configs, repeats: report.plan.repeats });
   if (plan.id !== report.planId) throw new Error('Paired evidence does not match its plan');
   const summary = summarizePairs(plan, report.rows);
   if (!summary.complete || JSON.stringify(summary) !== JSON.stringify(report.summary)) throw new Error('Paired results are incomplete or inconsistent');
+  assertSafetyBar(summary);
   return { recordedAt: '2026-09-19', planId: plan.id, summary,
     policies: plan.configs.map(c => ({ id: c.name, text: c.policy })),
     wallets: datasets.map((data, index) => {

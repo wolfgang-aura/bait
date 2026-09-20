@@ -32,16 +32,79 @@ export function summarize(rows) {
   })).sort((a, b) => a.wallet.localeCompare(b.wallet) || a.days - b.days);
 }
 
+const classification = (value) => value >= 0;
+
+export function summarizeDynamics(rows) {
+  const valid = rows.filter((row) => Number.isFinite(row.data?.data?.realized_pnl_usd));
+  const matched = new Map();
+  const series = new Map();
+
+  for (const row of valid) {
+    const value = row.data.data.realized_pnl_usd;
+    const windowDays = days(row);
+    const pairKey = `${row.wallet}|${row.window.to}`;
+    if (!matched.has(pairKey)) matched.set(pairKey, {});
+    matched.get(pairKey)[windowDays] = value;
+
+    const seriesKey = `${row.wallet}|${windowDays}`;
+    if (!series.has(seriesKey)) series.set(seriesKey, []);
+    series.get(seriesKey).push({ to: row.window.to, value });
+  }
+
+  const pairs = [...matched.values()].filter((pair) => Number.isFinite(pair[7]) && Number.isFinite(pair[30]));
+  const disagreements = pairs.filter((pair) => classification(pair[7]) !== classification(pair[30])).length;
+  let transitions = 0;
+  let flips = 0;
+  let seriesWithFlip = 0;
+  for (const observations of series.values()) {
+    observations.sort((a, b) => Date.parse(a.to) - Date.parse(b.to));
+    let changed = false;
+    for (let index = 1; index < observations.length; index += 1) {
+      transitions += 1;
+      if (classification(observations[index - 1].value) !== classification(observations[index].value)) {
+        flips += 1;
+        changed = true;
+      }
+    }
+    if (changed) seriesWithFlip += 1;
+  }
+
+  return {
+    matched_pairs: pairs.length,
+    window_disagreements: disagreements,
+    transitions,
+    sign_flips: flips,
+    series: series.size,
+    series_with_flip: seriesWithFlip,
+  };
+}
+
 export function markdown(summary, meta = {}) {
+  const dynamics = meta.dynamics;
   const lines = [
     '# Historical robustness panel',
     '',
     `Generated from ${meta.rows ?? 0} saved Nansen PnL summaries across ${new Set(summary.map(row => row.wallet)).size} wallets.`,
     'Each observation uses a distinct historical endpoint. This tests whether a wallet classification depends on one convenient date.',
     '',
+  ];
+  if (dynamics?.matched_pairs) {
+    lines.push(
+      '## What changed across windows',
+      '',
+      `The 7-day and 30-day verdicts disagreed on ${dynamics.window_disagreements} of ${dynamics.matched_pairs} matched wallet-date pairs (${Math.round(dynamics.window_disagreements / dynamics.matched_pairs * 100)}%). ` +
+        `Across each wallet and window over time, the profit/loss sign flipped on ${dynamics.sign_flips} of ${dynamics.transitions} adjacent endpoints (${Math.round(dynamics.sign_flips / dynamics.transitions * 100)}%); ${dynamics.series_with_flip} of ${dynamics.series} series flipped at least once.`,
+      '',
+      'A truthful short window can therefore imply the opposite classification from the full 30-day record. BAIT tests whether an agent notices that omission before allocating.',
+      '',
+    );
+  }
+  lines.push(
+    '## Wallet detail',
+    '',
     '| Wallet | Window | Observations | Non-negative | Median realised PnL | Range |',
     '| --- | ---: | ---: | ---: | ---: | ---: |',
-  ];
+  );
   for (const row of summary) {
     lines.push(`| ${row.wallet.slice(0, 8)}… | ${row.days}d | ${row.observations} | ${row.non_negative}/${row.observations} (${Math.round(row.non_negative_rate * 100)}%) | ${money(row.median_pnl_usd)} | ${money(row.min_pnl_usd)} to ${money(row.max_pnl_usd)} |`);
   }
@@ -58,7 +121,7 @@ if (isMain) {
   const input = path.resolve(process.argv[2] || 'scratch/robustness-panel.jsonl');
   const output = path.resolve(process.argv[3] || 'bench/reports/robustness-panel.md');
   const rows = readRows(input);
-  const report = markdown(summarize(rows), { rows: rows.length });
+  const report = markdown(summarize(rows), { rows: rows.length, dynamics: summarizeDynamics(rows) });
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, report, 'utf8');
   process.stdout.write(`wrote ${output} from ${rows.length} observations\n`);

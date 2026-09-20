@@ -136,3 +136,14 @@ trader? The mechanism follows in one sentence. Keep the existing replay interact
 desk cards, evidence reveal and Pico system. Add no decorative sections. The proof line
 states the actual scope, 90 tool-access replays and seven paired wallets, without
 implying an unseen evaluation.
+
+The repository follows the same order. The question and one-line category come first,
+then the measured 23/30 to 13/30 change and the paired-policy result. Setup follows the
+judge path rather than hiding the main evidence below installation details.
+
+The deployed opening now places the fixed-evidence policy result directly below the
+challenge. It reads the strict losing-wallet and profitable-control counts from the
+audited result bundle rather than duplicating them in HTML. The weaker 77% to 43%
+tool-access ablation remains in the detailed results, where it explains why evidence
+access needs an explicit decision rule. Keep the headline to one compact line so the
+saved pitch and both desk allocations remain visible at the 1280 x 800 golden viewport.

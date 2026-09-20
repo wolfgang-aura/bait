@@ -1,6 +1,8 @@
 # BAIT
 
-Can you sell a losing trader using true facts?
+**Can true facts sell a losing trader?**
+
+A red-team game for AI allocators, powered by live Nansen evidence.
 
 [Open the recorded demo](https://wolfgang-aura.github.io/bait/) ·
 [Inspect the public repository](https://github.com/wolfgang-aura/bait)
@@ -8,6 +10,33 @@ Can you sell a losing trader using true facts?
 Pitch selected Nansen evidence to two AI desks. Both receive the same argument and
 the same policy. One can check the full trading record; the other cannot.
 All allocations are fictional.
+
+**Recorded result:** the strict Nansen-backed policy funded 0/6 losing wallets and
+still funded the profitable control when evidence, tools, model and pitches were held
+fixed. In the 90-replay ablation, tools alone reduced funding from 77% to 43%, which
+is still too high for deployment.
+
+## Judge path
+
+1. Open the recorded demo and press **Next pitch** three times.
+2. Compare the selected facts with the full 30-day record after each reply.
+3. Open **See all recorded results** to inspect 90 replays and the seven-wallet policy comparison.
+
+The first minute shows the whole argument. Every reply, allocation, timestamp and
+aggregate links back to tracked evidence in this repository.
+
+## Why Nansen is structural
+
+- Live 7-day and 30-day PnL decide whether a wallet can enter the game. The server
+  refuses a wallet that is no longer losing instead of changing the story around it.
+- Every evidence card comes from Nansen PnL summaries or trade history.
+- The armed desk can query PnL, fills and, in the extended configuration, open
+  positions before it allocates fictional capital.
+- The deterministic referee uses the complete 30-day result. The historical panel
+  checks whether the same wallet changes classification across distinct time windows.
+
+Remove Nansen and the encounter, the evidence asymmetry, the armed desk and the
+score all disappear.
 
 ## Try the recorded round
 
@@ -81,10 +110,11 @@ tested six losing wallets and one profitable control. The permissive policy fund
 2/6 losing wallets; the strict policy funded 0/6. Both funded the profitable control.
 Each wallet-policy pair ran once, so this remains a small development sample.
 
-The [historical robustness panel](bench/reports/robustness-panel.md) currently contains
-230 distinct Nansen PnL observations across the same seven development wallets. Several
-wallets switch between gains and losses across periods. This is why BAIT treats a
-carefully selected date window as an argument, not proof of a durable edge.
+The [historical robustness panel](bench/reports/robustness-panel.md) contains 840
+distinct Nansen PnL observations across the same seven development wallets. The
+7-day and 30-day verdicts disagree on 103 of 420 matched wallet-date pairs (25%).
+All 14 wallet-window series change sign at least once. A carefully selected date
+window is an argument, not proof of a durable edge.
 
 ## Evidence and checks
 
@@ -104,8 +134,8 @@ included in the downloadable evidence.
 - [Fixed-evidence comparison protocol](bench/PAIRED_PROTOCOL.md), completed on seven wallets. `npm run bench:paired` checks its inputs and budget without making API calls.
 - [Submission status and recording plan](SUBMISSION.md)
 
-The recorded demo is public. The final live-data recording, X post and buildathon
-entry are still in progress.
+The recorded demo is public, and the 45-second live-data submission video is prepared.
+The X post and buildathon entry are still in progress.
 Data: Nansen.
 
 ## Recorded demo package

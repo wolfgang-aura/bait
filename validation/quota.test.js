@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { appendObservation, completedObservationKeys, parseArgs, planSteps, runQuota, walletsOnDisk, DEFAULTS, ENCOUNTER_WALLET } from './quota.js';
+import { appendObservation, completedObservationKeys, estimatedDashboardUsage, parseArgs, planSteps, runQuota, walletsOnDisk, DEFAULTS, ENCOUNTER_WALLET } from './quota.js';
 import { BudgetExceeded } from './nansen.js';
 
 const WALLETS = ['0x1111111111111111111111111111111111111111', ENCOUNTER_WALLET];
@@ -64,13 +64,19 @@ const harness = (overrides = {}) => {
       wallets: WALLETS,
       accountCheck: async () => ({ plan: 'free', credits_remaining: 900 }),
       balance: () => ({ credits_remaining: 900, checked_at: '2026-09-18T12:00:00Z' }),
-      stats: () => ({ calls_since: 61, successful_calls_since: 60, credits_used_total: 74, last_success_at: '2026-09-18T12:00:00Z' }),
+      stats: () => ({ calls_since: 61, successful_calls_since: 60, billable_calls_since: 59, credits_used_since: 815, credits_used_total: 815, last_success_at: '2026-09-18T12:00:00Z' }),
       today: () => 0,
       log: l => lines.push(l),
       ...overrides,
     },
   };
 };
+
+test('dashboard usage estimate excludes free ledger rows and advances with charged credits', () => {
+  assert.equal(estimatedDashboardUsage({ credits_used_since: 815 }), 820);
+  assert.equal(estimatedDashboardUsage({ credits_used_since: 995 }), 1000);
+  assert.equal(estimatedDashboardUsage({}), null);
+});
 
 test('--max-calls is the hard stop on a run', async () => {
   const calls = [];
@@ -82,6 +88,7 @@ test('--max-calls is the hard stop on a run', async () => {
   assert.equal(result.stoppedBy, '--max-calls 4');
   assert.ok(h.lines.some(l => l.includes('calls since 2026-09-14T00:00:00Z')));
   assert.ok(h.lines.some(l => l.includes('credits remaining    900')));
+  assert.ok(h.lines.some(l => l.includes('dashboard usage est. 820')));
 });
 
 test('--daily-cap stops a run before it starts and mid-run', async () => {

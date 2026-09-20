@@ -25,11 +25,13 @@ export const BASE_URL = 'https://api.nansen.ai/api/v1';
 /**
  * Spike budget history: Phase 1/2 was 70 (used 25), Phase 3 raised it to 82.
  * The buildathon entry needs a live data path and 1,000+ logged calls, so the local
- * ceiling is now 1000. The local ceiling is the weaker of the two guards: the real
+ * ceiling is now 1030. This narrow extension was explicitly authorized to finish
+ * the 840-row panel after eligibility crossed 1,000. The local ceiling is the weaker
+ * of the two guards: the real
  * stop is `accountCreditsRemaining()`, refreshed from the free `account` endpoint, so
  * the key can never be overspent even if this constant is wrong.
  */
-export const CREDIT_BUDGET = 1000;
+export const CREDIT_BUDGET = 1030;
 
 /** First ledger timestamp that counts toward the buildathon's 1,000-call requirement. */
 export const QUOTA_WINDOW_START = '2026-09-14T00:00:00Z';
@@ -215,6 +217,8 @@ export function ledgerStats(since = QUOTA_WINDOW_START) {
     total_calls: 0,
     calls_since: 0,
     successful_calls_since: 0,
+    billable_calls_since: 0,
+    credits_used_since: 0,
     credits_used_total: 0,
     last_success_at: null,
     last_call_at: null,
@@ -239,6 +243,8 @@ export function ledgerStats(since = QUOTA_WINDOW_START) {
     if (t >= cut) {
       out.calls_since += 1;
       if (rec.status >= 200 && rec.status < 300) out.successful_calls_since += 1;
+      if ((rec.credits_charged || 0) > 0) out.billable_calls_since += 1;
+      out.credits_used_since += rec.credits_charged || 0;
     }
   }
   return out;
