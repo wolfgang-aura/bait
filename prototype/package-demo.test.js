@@ -29,8 +29,10 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   const guarded = JSON.parse(files.get('recorded-results.json')).comparison.rows.find(r => r.config === 'guarded');
   assert.equal(typeof guarded?.blocked, 'number');
   assert.match(html, /<span class="sec-num">3<\/span>Guard</);
-  assert.match(html, /baited · BAIT guard/);
-  assert.match(html, /For platforms that let AI allocate to trader wallets/);
+  assert.match(html, /A win rate that holds across a sample that size is a process, not luck/);
+  assert.match(html, /baited · no data/);
+  assert.match(html, /baited · with Nansen data, no rule/);
+  assert.match(html, /baited · behind BAIT&rsquo;s gate/);
   assert.match(html, /Checks wallet, 30-day window, source, freshness and realised PnL/);
   assert.match(html, /Does not do<\/span><strong>Pick wallets, predict returns or execute trades/);
   assert.match(html, /import \{ guardAllocation \} from '\.\/validation\/guard\.js';/);

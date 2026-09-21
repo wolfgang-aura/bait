@@ -1,7 +1,25 @@
-# Five-judge audit
+# Judge audit
 
-This audit asks what five skeptical Meridian judges can reject. It is not a prediction
+This audit asks what a skeptical Meridian judge can reject. It is not a prediction
 of their votes. Each answer links to code or tracked evidence.
+
+## First objection: "This is just a PnL check; Nansen could build it in an afternoon"
+
+Correct, and the check is deliberately that simple. One `profiler/perp-pnl-summary`
+call, one rule: negative 30-day realised PnL forces the allocation to $0. A rule an
+auditor cannot read in a minute is a rule nobody will deploy.
+
+The check is not the product. The product is what surrounds it: a corpus of ten
+recorded attacks in which every stated fact is true, a benchmark harness that replays
+them against any agent configuration with a deterministic referee, and the measurement
+that having the data is not the fix. In the frozen-evidence table the `armed-basic`
+row had Nansen PnL and trade history in hand, with no rule, and still funded a wallet
+whose 30-day realised PnL was -$4,745,429 on 6 of 30 replays. The same model with no
+data funded it 24 of 30; behind the code gate, 0 of 30 while it still tried 25 times.
+
+Nansen supplies the evidence and could ship the same one-line check tomorrow. What
+would still be missing is the attack corpus, the score, and the demonstration that an
+allocator reads true facts and funds the loser anyway.
 
 ## Judge 1: "This is a game, not a product"
 

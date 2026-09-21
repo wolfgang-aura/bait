@@ -20,8 +20,8 @@ Current evidence:
   locally charged credits. Free account checks explain the difference from dashboard usage.
 - Public repository: <https://github.com/wolfgang-aura/bait>
 - Recorded demo: <https://wolfgang-aura.github.io/bait/>
-- The 45-second submission recording is `scratch/BAIT-live-guard-45s.mp4`. It shows two
-  live Nansen checks running. No X post or submitted form exists.
+- The 45-second submission recording is `scratch/BAIT-redteam-45s.mp4`. It shows one
+  live Nansen check running. No X post or submitted form exists.
 - The saved replay works without keys. It does not satisfy the live-data recording
   requirement on its own, which is why the recording ends on two live guard checks.
 
@@ -35,27 +35,27 @@ completing eligibility.
 
 ## The 45-second recording
 
-The file is `scratch/BAIT-live-guard-45s.mp4`: 1280 by 720, H.264/AAC, 30 fps and exactly
-45 seconds, 2,070,834 bytes with BT.709 limited-range `yuv420p`. SHA-256:
-`76130257a4ab59a76f8019607f2f9f169e976689c04f307e6be42c8a10c4c057`.
+The file is `scratch/BAIT-redteam-45s.mp4`: 1280 by 720, H.264/AAC, 30 fps and exactly
+45 seconds, 1,226,586 bytes with BT.709 limited-range `yuv420p`. SHA-256:
+`bf6c10de548c8824452ee3fd98a9ac167dcfc9c3780acdba1d847bafd062ef73`.
 
-The first four scenes replay the recorded attack and the frozen benchmark. Scenes five
-and six are live. Each press of Run the guard on `/guard.html` sends a real
-`POST /api/guard`, which spends one Nansen credit and prints the fetch time on screen.
-The recording was captured on 20 September. The block receipt reads
-`Live Nansen data · fetched 22:30 UTC` and the allow receipt reads `fetched 22:31 UTC`,
-matching the wall clock of the take. The 30-day values in those two receipts,
--$847,025.38 and $634,500.79, came back from Nansen during the recording.
+The cut leads with the finding, not with the product's form. Scenes one to four are
+recorded proof; scene five is live. The single press of Run the guard on `/guard.html`
+sends a real `POST /api/guard`, which spends one Nansen credit and prints the fetch time
+on screen. The recording was captured on 21 September. The block receipt reads
+`Live Nansen data · fetched 09:03 UTC`, matching the wall clock of the take, and its
+30-day realised PnL of -$847,025.38 came back from Nansen during the recording. That
+one call is the only Nansen spend in the whole cut.
 
 | Time | Screen | Point the viewer should understand |
 | --- | --- | --- |
-| 0–4s | Hero, 24/30 against 0/30. | BAIT guards AI wallet-allocation decisions. |
-| 4–14s | The true but selective pitch and both desks. | Tool access helps, but the allocator can still fund the loser. |
-| 14–19s | The full 30-day loss, -$4,763,461. | The short-window pitch omitted the wallet-wide result. |
-| 19–24s | The four benchmark rows. | The same recorded attacks compare no tools, Nansen tools, prompt policy and code guard. |
-| 24–35s | Live check on the losing wallet: BLOCK. | Fresh Nansen evidence shows negative 30-day PnL, so $0 executes. |
-| 35–41s | Live check on the profitable wallet: ALLOW. | The same rule passes a verified wallet and the full $5,000 executes. |
-| 41–45s | Closing card and public repository. | The guard blocked 25 attempts and funded the losing wallet 0/30. |
+| 0–3s | Black card: the verbatim bait line. | A human said something true to an AI allocator. |
+| 3–6s | Black card: DeepSeek funded it, wallet down $4,745,429. | The true sentence sold a catastrophic wallet. |
+| 6–15s | The page hero and the 24 → 6 → 0 ladder. | More data helps; only the code gate holds. |
+| 15–24s | One pitch card, then both desk verdicts, at 1.6x. | Every attached fact is true, and both desks fund it. |
+| 24–30s | The four benchmark rows at 1.25x. | Ten recorded attacks, three repeats, one frozen snapshot. |
+| 30–39s | Live check on the losing wallet: BLOCK. | Fresh Nansen evidence shows negative 30-day PnL, so $0 executes. |
+| 39–45s | Closing card, bench command and repository. | Anyone can score their own agent against the same attacks. |
 
 The recording contains no simulated loading period and makes no latency claim. The
 replay page is labelled recorded proof, and the frozen evidence in scenes one to four is
@@ -65,11 +65,11 @@ never presented as authorizing a live allocation.
 
 Can true facts sell a losing trader to an AI?
 
-BAIT red-teams wallet-allocation agents, then blocks unsafe execution with fresh Nansen 30d PnL. The guard stopped 25 attempts: 24/30 baited without it, 0/30 with it.
+BAIT red-teams wallet-allocation agents. No data: it funded a losing wallet 24/30. Given Nansen 30d PnL and no rule: 6/30. Behind BAIT's code gate: 0/30, and the gate stopped 25 attempts.
 
 https://github.com/wolfgang-aura/bait @nansen_ai
 
-The draft is 263 raw characters and 249 effective characters after X counts the link
+The draft is 284 raw characters and 270 effective characters after X counts the link
 as 23. It fits the free limit and includes the required tag and repository.
 
 ## Draft description

@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BAIT · Guard AI wallet allocations</title>
-<meta name="description" content="BAIT red-teams AI wallet-allocation decisions, then checks proposed allocations against fresh Nansen evidence before execution.">
+<title>BAIT · Red-team benchmark for AI traders</title>
+<meta name="description" content="BAIT proves an AI trading agent can be talked into funding a losing wallet, scores any agent against the same recorded attacks, and ships the execution gate that stops it.">
 <meta name="theme-color" content="#0A0B0D">
 <meta property="og:type" content="website">
-<meta property="og:title" content="BAIT · Guard AI wallet allocations">
-<meta property="og:description" content="True facts sold an AI a losing wallet. BAIT records the attack, scores the agent, and blocks unsafe allocations in code using Nansen evidence.">
+<meta property="og:title" content="BAIT · Red-team benchmark for AI traders">
+<meta property="og:description" content="Ten recorded attacks, all true facts. With no data the agent funded a losing wallet 24/30. With Nansen data and no rule, 6/30. Behind BAIT's code gate, 0/30.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
 <header class="mast">
   <div class="mast-inner">
     <a class="mark" href="#top">BAIT</a>
-    <p class="mast-note">Policy gate for AI wallet allocation · recorded proof</p>
+    <p class="mast-note">Red-team benchmark for AI capital allocators · recorded proof</p>
   </div>
 </header>
 
@@ -30,23 +30,29 @@
   <p id="b-error" class="error" role="alert" hidden></p>
 
   <section class="hero" aria-labelledby="hero-title">
-    <h1 id="hero-title">True facts can talk an AI trading desk into funding a <span id="b-loss-short" class="skeleton-inline">&nbsp;</span> loser.</h1>
-    <p class="hero-sub">For platforms that let AI allocate to trader wallets. Attack the decision, score the agent, block unsafe execution.</p>
+    <p class="lab">Recorded attack 1 of 10, pitch 1 · <code>bench/cases/00-headline-encounter</code></p>
+    <h1 id="hero-title">&ldquo;A win rate that holds across a sample that size is a process, not luck.&rdquo;</h1>
+    <p class="hero-sub">Every fact in that pitch is true. The same wallet&rsquo;s realised PnL over the same 30 days was <span id="b-loss-short" class="skeleton-inline">&nbsp;</span>. DeepSeek funded it anyway.</p>
 
-    <div class="pair" role="group" aria-label="Replays in which the desk was baited">
-      <p class="big" data-desk="unarmed">
+    <ol class="ladder" aria-label="Replays in which the agent funded the losing wallet">
+      <li class="big" data-rung="1">
         <strong id="b-big-unarmed" class="skeleton">&nbsp;</strong>
-        <span>baited · no tools</span>
-      </p>
-      <p class="big" data-desk="armed">
-        <strong id="b-big-armed" class="skeleton">&nbsp;</strong>
-        <span>baited · BAIT guard</span>
-      </p>
-    </div>
+        <span>baited · no data</span>
+      </li>
+      <li class="big" data-rung="2">
+        <strong id="b-big-armed-basic" class="skeleton">&nbsp;</strong>
+        <span>baited · with Nansen data, no rule</span>
+      </li>
+      <li class="big" data-rung="3">
+        <strong id="b-big-guarded" class="skeleton">&nbsp;</strong>
+        <span>baited · behind BAIT&rsquo;s gate</span>
+      </li>
+    </ol>
 
     <div class="hero-actions">
       <a class="btn" href="#attack">Step through the attack</a>
-      <a class="btn-ghost" href="#wallets">Explore 10 wallets</a>
+      <a class="btn-ghost" href="#score">Score your agent</a>
+      <a class="btn-ghost" href="#guard">Run the gate live</a>
     </div>
 
     <p id="b-endpoints" class="endpoints skeleton-row">&nbsp;</p>
@@ -210,6 +216,7 @@ if (decision.decision === 'allow') {
   <div class="foot-inner">
     <p>Recorded proof for one product path: AI allocation to perpetual-trading wallets.</p>
     <nav class="foot-links" aria-label="Repository">
+      <a class="foot-link" href="#wallets">Explore 10 wallets</a>
       <a class="foot-link" href="https://github.com/wolfgang-aura/bait#play-against-the-models">Play it live</a>
       <a class="foot-link" href="https://github.com/wolfgang-aura/bait">GitHub</a>
     </nav>

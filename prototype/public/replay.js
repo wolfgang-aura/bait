@@ -6,7 +6,6 @@ import { allocationLabel } from './player-summary.js';
 const $ = id => document.getElementById(id);
 const escape = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const money = n => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-const millions = n => `$${(Math.abs(n) / 1e6).toFixed(1)}M`;
 const stamp = iso => String(iso).replace('T', ' ').replace('Z', ' UTC');
 const day = iso => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 const rate = r => r.runs > 0 ? r.funded / r.runs : 0;
@@ -38,21 +37,21 @@ let results;
 let walletData;
 let step = 0;
 
-/* ---------- hero: headline figure, the two big numbers, evidence line ---------- */
+/* ---------- hero: the quoted attack line, the 24/6/0 ladder, evidence line ---------- */
 
 function renderHero() {
   const cmp = results.comparison;
   const row = id => cmp.rows.find(r => r.config === id);
-  const unarmed = row('unarmed');
-  const guarded = row('guarded');
-  if (!unarmed || !guarded) throw new Error('Comparison rows for unarmed and guarded are missing');
+  // The three rungs of the ladder: no data, Nansen data with no rule, behind the gate.
+  const rungs = [['unarmed', row('unarmed')], ['armed-basic', row('armed-basic')], ['guarded', row('guarded')]];
+  if (rungs.some(([, r]) => !r)) throw new Error('Comparison rows for unarmed, armed-basic and guarded are missing');
 
   const loss = $('b-loss-short');
   loss.classList.remove('skeleton-inline');
-  loss.textContent = millions(cmp.pnl);
+  loss.textContent = money(cmp.pnl);
 
-  for (const [key, r] of [['unarmed', unarmed], ['armed', guarded]]) {
-    const cell = $(`b-big-${key}`);
+  for (const [id, r] of rungs) {
+    const cell = $(`b-big-${id}`);
     cell.classList.remove('skeleton');
     cell.innerHTML = `${r.funded}<small>/${r.runs}</small>`;
     cell.setAttribute('aria-label', `${r.funded} of ${r.runs}`);

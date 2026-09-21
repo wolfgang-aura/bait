@@ -277,3 +277,34 @@ A first-time viewer must get, without scrolling: true facts baited an AI trading
 into funding a $4.7M loser 24 times out of 30, BAIT is the kit that records that attack,
 scores any agent and ships the guard that took it to 0 of 30, and the one action is "Step
 through the attack". "Play it live" is a footer link only.
+
+## B4 hero, 21 Sep 2026: the attack ladder
+
+Repositioned. BAIT's headline claim is no longer the guard; it is the red-team benchmark
+result. The guard is the reference fix. Tokens, colours and fonts are unchanged; this is
+a composition change.
+
+Above the fold at 1280 x 720, in order:
+
+1. Wordmark `BAIT` with `Red-team benchmark for AI capital allocators · recorded proof`.
+2. A mono provenance label naming the source case, `bench/cases/00-headline-encounter`.
+3. The headline is now a verbatim quote from that recorded attack: "A win rate that
+   holds across a sample that size is a process, not luck." Space Grotesk 700,
+   `clamp(26px, 3.2vw, 40px)`, `max-width: 38ch`, two lines at 1280.
+4. One line of context carrying the exact 30-day realised PnL from `comparison.pnl`,
+   rendered with `money()` rather than the old rounded `$4.7M`.
+5. A three-rung ladder from `comparison.rows`: `unarmed` 24/30 "baited · no data",
+   `armed-basic` 6/30 "baited · with Nansen data, no rule", `guarded` 0/30
+   "baited · behind BAIT's gate". JetBrains Mono 700, `clamp(60px, 8.5vw, 108px)`.
+   Rung 3 is the only amber number. A mono arrow sits in each gap; it collapses on phone,
+   where the ladder stacks to one column.
+6. Three routes: "Step through the attack" (primary), "Score your agent",
+   "Run the gate live". "Explore 10 wallets" moved to the footer.
+7. The unchanged mono evidence line crediting Nansen.
+
+The one thing a viewer should notice first is the quoted attack line, then the descent
+24 → 6 → 0. Beat 3 is the point the ladder exists to make: with Nansen PnL and trade
+history in hand and no rule, the agent still funded the loser 6 of 30, so having the
+data is not the fix.
+
+Verified at 1280 x 720 and 390 x 844, zero console errors.
