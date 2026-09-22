@@ -4,12 +4,15 @@
  * `validation/guard.js` is the product. Until now it only ever read frozen evidence
  * from `bench/run.js` and the tests, so nobody could point it at a wallet and watch it
  * decide. This module gives it a real adapter: one Nansen
- * `profiler/perp-pnl-summary` call per check, mapped into the exact evidence shape
+ * `profiler/perp-pnl-summary` call per window, mapped into the exact evidence shape
  * `validation/tools.js` serves from a snapshot, so the number the guard judges live is
  * the same field the benchmark judged frozen.
  *
- * Cost: 1 credit per check. Nothing else is fetched. The credit guard in
- * `validation/nansen.js` stays in the path, so a live check can never overspend the key.
+ * Cost: 1 credit per window read. `wallet-realized-pnl-30d-v1` reads the 30-day
+ * summary only, so one credit. `wallet-copy-risk-v2` reads the 7-day summary as well,
+ * so two, and it buys the second only after the first passes. Nothing else is fetched.
+ * The credit guard in `validation/nansen.js` stays in the path, so a live check can
+ * never overspend the key.
  *
  * Fail closed is the rule. A provider error, a missing number, a wrong wallet, a wrong
  * window or a stale timestamp all reach `guardAllocation` as unusable evidence and it
@@ -20,7 +23,7 @@ import {
   GUARD_SOURCE,
   GUARD_WINDOW_DAYS,
   DEFAULT_GUARD_TIMEOUT_MS,
-  PRODUCTION_GUARD_POLICY,
+  PRODUCTION_GUARD_POLICY_V1,
   guardAllocation,
 } from './guard.js';
 import {
@@ -65,7 +68,8 @@ export function createLiveGuardExecutor({
 
     calls.push({ path: GUARD_ENDPOINT, body, at: at.toISOString() });
 
-    // One call. Any throw here reaches guardAllocation, which blocks with a diagnostic.
+    // One call per window. Any throw here reaches guardAllocation, which blocks with
+    // a diagnostic and never turns a failure into a number.
     const response = await call(GUARD_ENDPOINT, body, {
       note: `guard live ${days}d summary`,
       timeoutMs,
@@ -82,10 +86,17 @@ export function createLiveGuardExecutor({
       };
     }
 
+    // win_rate and closed_trade_count are fields the same response already carries and
+    // the frozen `validation/tools.js` path already serves. Passing them through is
+    // what lets `wallet-copy-risk-v2` judge sample size and win rate live instead of
+    // reporting them as not assessed. Nothing is derived and nothing is invented: a
+    // field Nansen omits arrives as undefined and the gate records "not assessed".
     return {
       wallet,
       window_days: days,
       realized_pnl_usd: round2(summary.realized_pnl_usd),
+      win_rate: finite(summary.win_rate) ? summary.win_rate : undefined,
+      closed_trade_count: Number.isInteger(summary.closed_trade_count) ? summary.closed_trade_count : undefined,
       retrieved_at: at.toISOString(),
       source: GUARD_SOURCE,
     };
@@ -99,10 +110,21 @@ export function createLiveGuardExecutor({
 }
 
 /**
- * Run the production guard against live Nansen evidence.
+ * Run the guard against live Nansen evidence.
  *
- * Freshness stays on: the production policy requires evidence no older than 15
+ * Freshness stays on: both production policies require evidence no older than 15
  * minutes, which a live fetch satisfies by construction and a broken clock does not.
+ *
+ * Cost follows the policy, one credit per window. `wallet-realized-pnl-30d-v1` reads
+ * the 30-day summary and costs one credit. `wallet-copy-risk-v2` reads the 7-day
+ * summary too and costs two, and it buys the second window only after the first one
+ * passes identity, window, source and freshness, so a dead check still costs one.
+ *
+ * The default here is pinned to v1 rather than to the library default. `/api/guard` in
+ * `prototype/server.js` calls this function and its contract test asserts one credit
+ * and the v1 policy id; the game screens are owned elsewhere this session. Pass
+ * `policy: PRODUCTION_GUARD_POLICY_V2` for the two-window gate, as `scripts/guard.mjs`
+ * now does by default.
  *
  * @param {{
  *   wallet: string,
@@ -117,7 +139,7 @@ export function createLiveGuardExecutor({
 export async function runLiveGuard({
   wallet,
   allocation,
-  policy = PRODUCTION_GUARD_POLICY,
+  policy = PRODUCTION_GUARD_POLICY_V1,
   call = nansenCall,
   now = () => new Date(),
   timeoutMs = DEFAULT_GUARD_TIMEOUT_MS,

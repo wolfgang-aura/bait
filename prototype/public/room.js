@@ -1,13 +1,14 @@
 /**
  * The Pitch Room front end.
  *
- * Four screens and one rule: nothing on screen is invented here. The tiles carry only
+ * Five screens and one rule: nothing on screen is invented here. The cold open carries
+ * only what /api/opener sends, the tiles carry only
  * what the server sends as hype, the truth screen carries only what the server sends
  * after the pick, and the evidence log prints an endpoint only when the server reports
  * a tool call that really happened. The desk's full reply lives in the transcript
  * drawer so the short bubble line stays auditable.
  *
- * `?state=roster|truth|shot2|final` renders a frozen state without starting a round or
+ * `?state=opener|opener-reveal|roster|truth|shot2|final` renders a frozen state without starting a round or
  * making a model call, so a headless browser that cannot click can still capture every
  * screen. `&prospect=<id>` picks whose screen it renders. Documented in
  * prototype/DESIGN.md, Version D.
@@ -22,6 +23,9 @@ const freeze = () => { reduced = true; document.documentElement.dataset.frozen =
 
 const el = {
   badge: $('evidence-badge'),
+  openerEyebrow: $('opener-eyebrow'), openerGrid: $('opener-grid'), openerHint: $('opener-hint'),
+  openerRanked: $('opener-ranked'), openerAfter: $('opener-after'), openerPunchline: $('opener-punchline'),
+  openerPunchlineSub: $('opener-punchline-sub'), openerGo: $('opener-go'), openerFoot: $('opener-foot'),
   grid: $('roster-grid'), caller: $('caller'), callerLine: $('caller-line'), callerMeta: $('caller-meta'),
   truthScreen: $('truth-screen'), truthPortrait: $('truth-portrait'), truthName: $('truth-name'),
   truthHandle: $('truth-handle'), truthHype: $('truth-hype'), truthHypeCaption: $('truth-hype-caption'),
@@ -38,18 +42,24 @@ const el = {
   clean: $('clean'),
   composer: $('composer'), line: $('line'), go: $('go'), count: $('count'), status: $('status'),
   wireWho: $('wire-who'), wireAmount: $('wire-amount'), stamp: $('stamp'),
-  finalHead: $('final-head'), finalSub: $('final-sub'), agentLine: $('agent-line'), finalReport: $('final-report'),
+  finalHead: $('final-head'), finalSub: $('final-sub'), agentLine: $('agent-line'), finalReport: $('final-report'), finalGate: $('final-gate'),
   initials: $('initials'), submitScore: $('submit-score'), scoreStatus: $('score-status'),
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
   transcript: $('transcript-body'), bootError: $('boot-error'),
 };
 
-const SCREENS = { roster: 'roster-screen', truth: 'truth-screen', playing: 'stage-screen', final: 'final-screen' };
+const SCREENS = {
+  opener: 'opener-screen', roster: 'roster-screen',
+  truth: 'truth-screen', playing: 'stage-screen', final: 'final-screen',
+};
 
 const dollars = n => `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`;
 const text = (node, value) => { node.textContent = value ?? ''; };
 
 let roster = [];
+let opener = null;
+let openerFocus = 0;
+let openerPick = null;
 let focused = 0;
 let chosen = null;
 let dossier = null;
@@ -84,6 +94,164 @@ function show(phase) {
 /** One accent drives the tile, the wash, the rim light and the name plate. */
 function setAccent(accent) {
   document.documentElement.style.setProperty('--accent', accent);
+}
+
+// ------------------------------------------------------- 0. the cold open
+
+/**
+ * The pick screen. Seven cards carrying exactly what Fomo carries about these accounts:
+ * the handle, the follower count and the profile headline PnL. Nothing is computed here
+ * and nothing about the tape is drawn until the player has chosen.
+ */
+function renderOpener(data) {
+  opener = data;
+  text(el.openerEyebrow, [
+    `${data.pick.length} of the most followed traders on Fomo`,
+    data.scope,
+    `recorded ${data.capturedRange}`,
+  ].join('  ·  '));
+  text(el.openerFoot, [
+    `Follower count and headline PnL are the account's own Fomo profile figures.`,
+    `The ranking below them is recomputed from the recorded ${data.source} tape:`,
+    `realised PnL is the sum of the positions that were actually sold, and a tape with fewer`,
+    `than ${data.minSoldToRank} sold positions is labelled a thin sample rather than ranked.`,
+  ].join(' '));
+
+  el.openerGrid.replaceChildren();
+  // The bar under each follower count is that count against the biggest one on the
+  // board. It is the same number drawn twice, so a viewer sees the order at a glance
+  // without reading seven figures.
+  const widest = Math.max(...data.pick.map(t => t.followers));
+  data.pick.forEach((t, i) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'card';
+    card.setAttribute('role', 'option');
+    card.setAttribute('aria-selected', 'false');
+    card.dataset.handle = t.handle;
+    for (const [cls, value, tag] of [
+      ['at', `@${t.handle}`, 'span'],
+      ['crowd', t.followersLabel, 'span'],
+      ['crowd-label', 'followers', 'span'],
+    ]) {
+      const node = document.createElement(tag);
+      node.className = cls;
+      node.textContent = value;
+      card.append(node);
+    }
+    const bar = document.createElement('span');
+    bar.className = 'crowd-bar';
+    const fill = document.createElement('i');
+    fill.style.width = `${(t.followers / widest) * 100}%`;
+    bar.append(fill);
+    card.append(bar);
+    for (const [cls, value] of [['head-pnl', t.headlineLabel], ['head-label', 'Fomo profile PnL']]) {
+      const node = document.createElement('span');
+      node.className = cls;
+      node.textContent = value;
+      card.append(node);
+    }
+    card.addEventListener('mouseenter', () => focusOpener(i));
+    card.addEventListener('focus', () => focusOpener(i));
+    card.addEventListener('click', () => { focusOpener(i); revealOpener(); });
+    el.openerGrid.append(card);
+  });
+  focusOpener(0);
+}
+
+function focusOpener(index) {
+  if (!opener?.pick.length) return;
+  openerFocus = (index + opener.pick.length) % opener.pick.length;
+  [...el.openerGrid.children].forEach((card, i) => {
+    card.setAttribute('aria-selected', String(i === openerFocus));
+  });
+}
+
+/**
+ * The flip. The same seven, reordered by realised PnL on sold positions, each carrying
+ * one hard truth generated from its own tape and the source and capture date behind it.
+ */
+function revealOpener() {
+  if (!opener || openerPick) return;
+  openerPick = opener.pick[openerFocus].handle;
+
+  // The line under the reveal answers the pick: the server sent one per handle, so a
+  // player who found the one tape that sells is told so instead of being lectured.
+  const said = opener.punchlines?.[openerPick];
+  text(el.openerPunchline, said?.lead ?? opener.punchline);
+  el.openerPunchline.classList.toggle('right', said?.id === 'found_it');
+  el.openerPunchlineSub.hidden = !said?.tail;
+  text(el.openerPunchlineSub, said?.tail);
+
+  el.openerGrid.hidden = true;
+  el.openerHint.hidden = true;
+  el.openerRanked.hidden = false;
+  el.openerAfter.hidden = false;
+  el.openerRanked.replaceChildren();
+
+  opener.reveal.forEach((t, i) => {
+    const row = document.createElement('li');
+    row.className = [
+      t.thinSample ? 'thin' : t.realised < 0 ? 'down' : 'up',
+      t.handle === openerPick ? 'mine' : '',
+    ].filter(Boolean).join(' ');
+    if (!reduced) row.style.animationDelay = `${i * 70}ms`;
+
+    const place = document.createElement('span');
+    place.className = 'place';
+    place.textContent = t.rankLabel;
+    if (t.best) {
+      const chip = document.createElement('b');
+      chip.className = 'best-chip';
+      chip.textContent = 'best on the tape';
+      place.append(document.createElement('br'), chip);
+    }
+    const who = document.createElement('span');
+    who.className = 'who-at';
+    who.textContent = `@${t.handle}`;
+    const crowd = document.createElement('em');
+    // The player's own choice is named beside the handle rather than stacked under the
+    // rank, so the row it lands on is no taller than the other six.
+    crowd.textContent = t.handle === openerPick
+      ? `${t.followersLabel} followers  ·  your pick`
+      : `${t.followersLabel} followers`;
+    who.append(crowd);
+
+    const got = document.createElement('span');
+    got.className = `got ${t.realised > 0 ? 'pos' : t.realised < 0 ? 'neg' : ''}`.trim();
+    got.textContent = t.realisedLabel;
+    const gotSub = document.createElement('em');
+    gotSub.textContent = `realised, ${t.sold} sold`;
+    got.append(gotSub);
+
+    const truth = document.createElement('span');
+    truth.className = 'truth';
+    const label = document.createElement('b');
+    label.textContent = t.hardTruth.label;
+    const line = document.createElement('span');
+    line.textContent = t.hardTruth.line;
+    truth.append(label, line);
+
+    // The supporting figures and the provenance, full width under the four columns, so
+    // every card names the source and the capture date its numbers came out of.
+    const meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = [
+      `headline ${t.headlineLabel}`,
+      `paper ${t.paperLabel} across ${t.open} open`,
+      `${t.fullyClosed} of ${t.sold} fully closed`,
+      `win rate ${t.winRateLabel}`,
+      t.sourceLine,
+    ].join('  ·  ');
+
+    row.append(place, who, got, truth, meta);
+    el.openerRanked.append(row);
+  });
+
+  // The reveal is the whole point of the screen, so the page stays at the top of it
+  // rather than jumping to the button that has just taken focus.
+  el.openerGo.focus({ preventScroll: true });
+  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
 }
 
 // ------------------------------------------------------- 1. pick a hero
@@ -249,6 +417,37 @@ function renderReport(host, risk) {
     risk.basis,
     risk.coverage,
     risk.not_assessed.length ? `Not assessed: ${risk.not_assessed.map(n => n.id.replace(/_/g, ' ')).join(', ')}.` : '',
+  ].filter(Boolean).join('  ·  ');
+  host.append(foot);
+}
+
+/**
+ * The gate's own check table: one row per named check, pass, fail or not assessed,
+ * in the order the policy ran them. This is the part a judge reads to see that BAIT
+ * is a rule set and not a single sign test.
+ */
+function renderGate(host, gate) {
+  host.replaceChildren();
+  const label = { pass: 'pass', fail: 'block' };
+  // Rows the gate could not look at are named once in the footer, so the table stays
+  // the length of what was actually decided.
+  const skipped = (gate.checks ?? []).filter(c => c.result === 'not_assessed');
+  for (const check of (gate.checks ?? []).filter(c => c.result !== 'not_assessed')) {
+    const row = document.createElement('div');
+    row.className = `flagline check ${check.result}`;
+    const b = document.createElement('b');
+    b.textContent = `${label[check.result] ?? check.result} · ${check.id.replace(/_/g, ' ')}`;
+    const span = document.createElement('span');
+    span.textContent = check.plain;
+    row.append(b, span);
+    host.append(row);
+  }
+  const foot = document.createElement('p');
+  foot.className = 'report-foot';
+  const windows = gate.shortWindowDays ? `${gate.shortWindowDays}-day and ${gate.windowDays}-day` : `${gate.windowDays}-day`;
+  foot.textContent = [
+    `Policy ${gate.policyId} · ${windows} · ${gate.source} · ${gate.reason}`,
+    skipped.length ? `Not assessed by the gate, covered by the report below: ${skipped.map(c => c.id.replace(/_/g, ' ')).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
 }
@@ -487,6 +686,7 @@ function showFinal(final, entries, mineAt = null) {
   text(el.finalHead, final.headline);
   text(el.finalSub, final.subline);
   text(el.agentLine, final.agentLine);
+  renderGate(el.finalGate, final.gate);
   renderReport(el.finalReport, final.risk);
   renderBoard(entries, mineAt);
   if (final.verdict === 'block' && !reduced) {
@@ -578,6 +778,11 @@ function fail(message) {
  */
 async function fixture(name, prospectId) {
   freeze();
+  // Every fixture state except the cold open itself starts from the roster screen,
+  // which is no longer the first screen on the page.
+  if (name === 'opener') { show('opener'); return; }
+  if (name === 'opener-reveal') { show('opener'); revealOpener(); return; }
+  show('roster');
   const target = roster.find(p => p.id === prospectId) ?? roster[0];
   focus(roster.indexOf(target));
   if (name === 'roster') return;
@@ -637,6 +842,15 @@ async function boot() {
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); el.composer.requestSubmit(); }
   });
   el.composer.addEventListener('submit', event => { event.preventDefault(); pitch(); });
+  // The cold open takes the same keys as the roster, so the two screens behave alike.
+  el.openerGrid.addEventListener('keydown', event => {
+    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 1, ArrowUp: -1 }[event.key];
+    if (step) { event.preventDefault(); focusOpener(openerFocus + step); el.openerGrid.children[openerFocus].focus(); return; }
+    if (event.key === 'Home') { event.preventDefault(); focusOpener(0); el.openerGrid.children[0].focus(); }
+    if (event.key === 'End') { event.preventDefault(); focusOpener(-1); el.openerGrid.children[openerFocus].focus(); }
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); revealOpener(); }
+  });
+  el.openerGo.addEventListener('click', () => { show('roster'); focus(focused); el.grid.focus(); });
   el.grid.addEventListener('keydown', event => {
     const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 4, ArrowUp: -4 }[event.key];
     if (step) { event.preventDefault(); focus(focused + step); el.grid.children[focused].focus(); return; }
@@ -650,7 +864,11 @@ async function boot() {
   el.again.addEventListener('click', () => { window.location.href = window.location.pathname; });
 
   try {
-    const config = await api('/api/room');
+    // The cold open is read-only and costs nothing, so it is fetched alongside the room
+    // config rather than behind it. A failure here is fatal: the screen it draws is the
+    // first thing a stranger sees and a blank one is worse than an error.
+    const [config, openerData] = await Promise.all([api('/api/room'), api('/api/opener')]);
+    renderOpener(openerData);
     renderRoster(config.roster);
     boardEntries = config.leaderboard ?? [];
     renderBoard(boardEntries);

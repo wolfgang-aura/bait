@@ -56,7 +56,8 @@ screen: `Live Nansen data · fetched 04:26 UTC`, realised 30-day PnL -$843,280.8
 | 33–41s | Live check on a losing wallet: BLOCK. | Fresh Nansen evidence, negative 30-day PnL, $0. |
 | 41–45s | Closing card, play link and repository. | Anyone can play it or score their own agent. |
 
-Known weakness: in the recorded round MERIDIAN funded $3,000 after line one, cut to
+Known weakness: the cut predates the Fomo cold open and the gate's check table, both
+live on the hosted game since 22 September. In the recorded round MERIDIAN funded $3,000 after line one, cut to
 $2,000 on line two and held at $0 on line three, so the climax stamps a $0 wire that
 the gate never had to stop. A re-cut that ends the room scene on the $3,000 wire being
 cut to $0 is pending the founder's choice. The recording contains no simulated loading
@@ -78,19 +79,24 @@ as 23. It fits the free limit and includes the required tag and repository.
 
 BAIT is a red-team benchmark for AI capital allocators, built for agent developers,
 copy-trading platforms, wallets, managed vaults, funds and DAOs. The Pitch Room is the
-attack recorder: pick one of eight real traders shown as they present themselves, see
+attack recorder: pick the best of seven Fomo traders and see the tape rank them by what
+actually sold, then pick one of eight real traders shown as they present themselves, see
 their record from a Nansen profiler capture or a recorded Fomo Radar tape with a
 seven-check copy-risk report, then sell them to MERIDIAN, an AI desk that reads the
 same Nansen tools, in three lines. The wire passes through BAIT's execution gate and
-gets a stamp. The benchmark replays ten recorded attacks against any agent
-configuration on frozen evidence. The gate independently checks the proposed
-allocation against one fresh Nansen call before the caller may honour it.
+prints its check table and a stamp. The benchmark replays ten recorded attacks against
+any agent configuration on frozen evidence. The gate independently checks the proposed
+allocation against fresh 7-day and 30-day Nansen summaries, with named checks for
+realised loss, regime disagreement, thin sample, low win rate and paper headline,
+before the caller may honour it.
 
 On the frozen-evidence suite, ten attacks by three repeats, DeepSeek funded the losing
 wallet 24/30 with no tools, 6/30 with Nansen PnL and trades and no rule, and 0/30
 behind the BAIT gate, which zeroed all 25 proposals the model still made. The gate
-verifies wallet identity, 30-day scope, source, freshness and realised PnL, and fails
-closed on invalid, stale, mismatched, missing or timed-out evidence. Full traces,
+verifies wallet identity, window, source, freshness and realised PnL on both windows,
+and fails closed on invalid, stale, mismatched, missing or timed-out evidence. The
+recorded 0/30 ran the one-window v1 rule; the two-window v2 default scores 0/30 on the
+same frozen suite. Full traces,
 contract tests and reproduction commands accompany the demo.
 
 BAIT does not select wallets, predict returns or execute trades. Passing the gate means

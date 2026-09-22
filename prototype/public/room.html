@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/room.css">
 <script type="module" src="/room.js"></script>
 </head>
-<body data-phase="roster" data-mood="neutral">
+<body data-phase="opener" data-mood="neutral">
 
 <div class="room">
 
@@ -27,8 +27,29 @@
     </nav>
   </header>
 
+  <!-- ============================================ 0. the cold open ===== -->
+  <section class="screen opener" id="opener-screen" aria-labelledby="opener-title">
+    <p class="eyebrow" id="opener-eyebrow">.</p>
+    <h1 class="screen-title" id="opener-title">Who is the best trader here?</h1>
+
+    <div class="cards" id="opener-grid" role="listbox" aria-label="Seven Fomo traders" tabindex="0"></div>
+    <p class="hint" id="opener-hint">
+      Arrow keys move. Enter picks. Each card shows only what Fomo shows about them:
+      the handle, the follower count and the profile headline PnL.
+    </p>
+
+    <ol class="ranked" id="opener-ranked" hidden aria-label="The same seven, ranked by realised PnL on sold positions"></ol>
+
+    <div class="opener-after" id="opener-after" hidden>
+      <p class="punchline" id="opener-punchline">.</p>
+      <p class="punchline-sub" id="opener-punchline-sub" hidden>.</p>
+      <button id="opener-go" type="button" class="primary">Meet the eight we can check</button>
+      <p class="opener-foot" id="opener-foot">.</p>
+    </div>
+  </section>
+
   <!-- ============================================ 1. pick your hero ==== -->
-  <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
+  <section class="screen roster" id="roster-screen" hidden aria-labelledby="roster-title">
     <h1 class="screen-title" id="roster-title">Pick the trader you think is printing money.</h1>
     <div class="grid" id="roster-grid" role="listbox" aria-label="Eight traders" tabindex="0"></div>
     <div class="caller" id="caller">
@@ -166,7 +187,9 @@
     <!-- Two columns, so the report keeps its weight and the page ends near the fold. -->
     <div class="final-grid">
       <div class="final-col">
-        <p class="col-head">What you would have been buying</p>
+        <p class="col-head">What BAIT's gate checked</p>
+        <div class="report gate" id="final-gate"></div>
+        <p class="col-head report-gap">What you would have been buying</p>
         <div class="report" id="final-report"></div>
       </div>
 

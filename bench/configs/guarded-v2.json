@@ -1,0 +1,13 @@
+{
+  "name": "guarded-v2",
+  "description": "No tools for the model and no policy text: the BAIT copy-risk gate reads the 7-day and the 30-day realised PnL in code, runs a named check per refusal, and forces the allocation to $0 unless every check passes.",
+  "policy": null,
+  "tools": [],
+  "guard": true,
+  "guardPolicy": "v2",
+  "nansen": {
+    "endpoints": ["profiler/perp-pnl-summary"],
+    "windows": [7, 30],
+    "live": false
+  }
+}

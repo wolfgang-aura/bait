@@ -27,14 +27,18 @@ five the model proposed nothing. Source: the
 
 ## What BAIT is
 
-**The Pitch Room** is the attack recorder. Pick one of eight real traders, each shown
-exactly as they present themselves: a Hyperliquid leaderboard line or a Fomo profile
-headline. BAIT then puts their record next to it, from a Nansen profiler capture or a
-recorded Fomo Radar tape, and prints a copy-risk report with seven plain checks
-(realised loss, paper headline, thin sample, low win rate, concentration, tail loss,
-drawdown). You get three lines to sell that trader to MERIDIAN, an AI allocation desk
-that can read the same Nansen tools. Every claim you make is checked against the record.
-Then the wire goes through BAIT's gate and gets a stamp: KO, CAUTION or ALLOW. Your con
+**The Pitch Room** is the attack recorder. It opens on seven of the most-followed
+traders on Fomo, shown as Fomo shows them: handle, follower count, profile headline.
+Pick the best one. The reveal ranks them by realised PnL on sold positions from a
+recorded Fomo Radar tape and names one hard truth each; the +$10.8M headline has sold
+nine positions, the +$5.6M headline two. Then the room: pick one of eight real traders,
+each shown as they present themselves, a Hyperliquid leaderboard line or a Fomo profile
+headline. BAIT puts their record next to it, from a Nansen profiler capture or the Fomo
+tape, with a copy-risk report of seven plain checks (realised loss, paper headline, thin
+sample, low win rate, concentration, tail loss, drawdown). You get three lines to sell
+that trader to MERIDIAN, an AI allocation desk that reads the same Nansen tools. Every
+claim you make is checked against the record. Then the wire goes through BAIT's gate,
+which prints its full check table and a stamp: BLOCKED, CAUTION or CLEARED. Your con
 lands on a shared leaderboard.
 
 **The benchmark** replays the ten recorded attacks against any agent configuration on
@@ -44,11 +48,18 @@ frozen evidence, with a deterministic referee. Zero Nansen credits:
 npm run bench -- --config my-agent --repeats 3 --snapshot
 ```
 
-**The gate** is `validation/guard.js`. It sits outside the model. One Nansen
-`profiler/perp-pnl-summary` call over 30 days; it verifies the wallet, window, source,
-timestamp and realised PnL, and forces the allocation to $0 on anything invalid, stale,
-mismatched, missing, timed out or negative. The model is checked, not asked to check.
-One credit per live check:
+**The gate** is `validation/guard.js`. It sits outside the model. The default policy,
+`wallet-copy-risk-v2`, reads the 7-day and the 30-day Nansen `profiler/perp-pnl-summary`
+and runs named checks, each with a number and a bar: wallet, window, source and freshness
+for both windows; 30-day realised loss; regime disagreement, a week that moves against
+the month by 10% or more of it (the two windows disagree on 25% of 840 saved wallet-dates);
+fewer than 20 closed trades; win rate under 40%; a headline over 80% unsold where the
+summary carries it. Every decision returns the whole table, pass, fail or not assessed,
+and forces the allocation to $0 on anything invalid, stale, mismatched, missing or timed
+out. The model is checked, not asked to check. The recorded 0/30 row ran the original
+one-window rule, `wallet-realized-pnl-30d-v1`, still reachable by id; v2 on the same
+frozen suite is [also 0/30](bench/reports/2026-09-22T10-00-23-863Z.md). One credit per
+live check, two when the 30-day evidence passes and the week is bought:
 
 ```powershell
 npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000
@@ -67,15 +78,16 @@ allocator with the data in hand still funds the loser. The
 
 ## Judge path
 
-1. Open the [Pitch Room](https://bait-wyqr.onrender.com/) and pick THE GRINDER. The
+1. Open the [Pitch Room](https://bait-wyqr.onrender.com/). Pick the best of seven Fomo
+   traders; the reveal ranks them by what actually sold. Then pick THE GRINDER. The
    hype says +$35,723 and a 100% week. The record says -$4,745,429 over 30 days.
 2. Sell them anyway. Three lines. Watch the suspicion meter and the evidence checks
    MERIDIAN runs against the Nansen capture.
-3. Read the stamp and the report under it. Post your initials.
+3. Read the stamp, the gate's check table and the report under it. Post your initials.
 4. Open the [recorded proof page](https://wolfgang-aura.github.io/bait/) for the ten
    attacks, the 24 → 6 → 0 ladder and the four-row score table.
-5. With your own Nansen key, run the gate live with the command above. One credit,
-   under a minute.
+5. With your own Nansen key, run the gate live with the command above. One or two
+   credits, under a minute.
 
 ## Why Nansen is structural
 

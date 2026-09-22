@@ -3,23 +3,59 @@
 This audit asks what a skeptical Meridian judge can reject. It is not a prediction
 of their votes. Each answer links to code or tracked evidence.
 
-## First objection: "This is just a PnL check; Nansen could build it in an afternoon"
+## First objection: "This is just a 30-day PnL checker"
 
-Correct, and the check is deliberately that simple. One `profiler/perp-pnl-summary`
-call, one rule: negative 30-day realised PnL forces the allocation to $0. A rule an
-auditor cannot read in a minute is a rule nobody will deploy.
+It was, until 22 September. The default gate is now `wallet-copy-risk-v2`, and it
+publishes its whole reasoning on every decision, allow or block:
 
-The check is not the product. The product is what surrounds it: a corpus of ten
-recorded attacks in which every stated fact is true, a benchmark harness that replays
-them against any agent configuration with a deterministic referee, and the measurement
-that having the data is not the fix. In the frozen-evidence table the `armed-basic`
-row had Nansen PnL and trade history in hand, with no rule, and still funded a wallet
-whose 30-day realised PnL was -$4,745,429 on 6 of 30 replays. The same model with no
-data funded it 24 of 30; behind the code gate, 0 of 30 while it still tried 25 times.
+| Check | Reads | Bar |
+| --- | --- | --- |
+| `evidence_30d` | 30-day summary: wallet, window, source | Matches the request and the approved endpoint |
+| `evidence_freshness` | Age of that evidence | At most 15 minutes, not future-dated |
+| `evidence_7d` | 7-day summary: wallet, window, source, age | Same bars |
+| `realised_pnl_30d` | 30-day realised PnL | At or above $0 |
+| `regime_agreement` | Sign of the 7-day vs the 30-day | Same sign, or the week is under 10% of the month |
+| `thin_sample` | 30-day closed trades | At least 20 |
+| `low_win_rate` | 30-day win rate | At least 40% |
+| `paper_headline` | Unrealised share of the headline | At most 80% |
+| `concentration`, `tail_loss`, `max_drawdown` | Per-fill tape | Reported `not_assessed`: the gate reads summaries, not fills |
 
-Nansen supplies the evidence and could ship the same one-line check tomorrow. What
-would still be missing is the attack corpus, the score, and the demonstration that an
-allocator reads true facts and funds the loser anyway.
+Every row carries the number it read, the bar it wanted and one plain sentence. A
+block names the first row that failed. A row the evidence could not answer says so
+rather than passing quietly. The bars are the same `COPY_RISK_THRESHOLDS` the game's
+copy-risk report uses, so the report and the gate cannot drift.
+
+`regime_agreement` is the one that answers this objection directly, and it exists
+because of a measurement rather than an intuition. Across 840 saved Nansen summaries,
+the 7-day and 30-day verdicts disagreed on 103 of 420 matched wallet-date pairs, 25%
+([the robustness panel](../bench/reports/robustness-panel.md)). A gate that reads one
+window is reading a window the other contradicts about a quarter of the time, so v2
+reads both and refuses when they point opposite ways. A week that gives back less than
+10% of the month is treated as noise, not a regime: the control wallet made +$35,083 in
+30 days and gave back $1,208 in the last 7, and a gate that blocks on that is a gate
+nobody keeps switched on.
+
+Two honest limits. On the recorded ten-case corpus both gates score 0 funded of 30,
+because the benchmark wallet lost $4.7M over 30 days and fails the first check either
+way; v2 is not catching a wallet v1 missed there. And three of the eleven checks need
+the fill tape the gate does not fetch, so they report `not_assessed` and are covered
+by the separate copy-risk report instead.
+
+The earlier rule, `wallet-realized-pnl-30d-v1`, is still shipped by id, because the
+recorded `guarded` benchmark row depends on exactly that rule and a number whose rule
+moved underneath it is not reproducible.
+
+The gate is also not the whole product. Around it sit a corpus of ten recorded attacks
+in which every stated fact is true, a benchmark harness that replays them against any
+agent configuration with a deterministic referee, and the measurement that having the
+data is not the fix. In the frozen-evidence table the `armed-basic` row had Nansen PnL
+and trade history in hand, with no rule, and still funded that wallet on 6 of 30
+replays. The same model with no data funded it 24 of 30; behind the code gate, 0 of 30
+while it still tried 25 times (v1) and 26 times (v2).
+
+Nansen supplies the evidence and could ship any of these checks. What would still be
+missing is the attack corpus, the score, and the demonstration that an allocator reads
+true facts and funds the loser anyway.
 
 ## Judge 1: "This is a game, not a product"
 

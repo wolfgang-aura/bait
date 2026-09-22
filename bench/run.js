@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 
 import { runDesk, DESK_TOOLS, SLOT } from '../prototype/desk.js';
 import { judge } from '../validation/referee.js';
-import { BENCHMARK_GUARD_POLICY, guardAllocation, GUARD_SOURCE } from '../validation/guard.js';
+import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, guardAllocation, GUARD_SOURCE, GUARD_WINDOW_DAYS } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
 import { deepseekProvider, anthropicProvider, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
@@ -38,6 +38,14 @@ const REPO = path.resolve(HERE, '..');
 const SNAPSHOT = path.join(REPO, 'validation', 'snapshots', '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4.json');
 /** The Nansen path the guard's 30-day check is served from; same as `check_pnl`. */
 export const GUARD_ENDPOINT = GUARD_SOURCE.replace(/^Nansen \/api\/v1\//, '');
+
+/**
+ * The gates a config may name with `guardPolicy`. Both are the frozen-evidence
+ * variants, which disable only the freshness limit; wallet, window, source and every
+ * numeric check still run. `v1` is the one-window rule the recorded 0/30 row is tied
+ * to. `v2` reads the 7-day window from the same snapshot, so it still costs nothing.
+ */
+export const BENCH_GUARD_POLICIES = { v1: BENCHMARK_GUARD_POLICY, v2: BENCHMARK_GUARD_POLICY_V2 };
 
 export const DEFAULTS = {
   configs: [],
@@ -96,8 +104,14 @@ export function validateConfig(raw, name = raw?.name) {
   if (raw.policy !== null && raw.policy !== undefined && typeof raw.policy !== 'string') {
     errors.push('policy must be a string or null');
   }
-  // The guard is code, not prompt text: it reads the 30-day PnL itself and forces $0.
+  // The guard is code, not prompt text: it reads the PnL itself and forces $0.
   if (raw.guard !== undefined && typeof raw.guard !== 'boolean') errors.push('guard must be a boolean');
+  // Which gate. `v1` is the recorded one-window rule; `v2` is the two-window named-check
+  // gate. Both run on frozen evidence in the bench, so neither spends a Nansen credit.
+  if (raw.guardPolicy !== undefined && !(raw.guardPolicy in BENCH_GUARD_POLICIES)) {
+    errors.push(`guardPolicy must be one of ${Object.keys(BENCH_GUARD_POLICIES).join(', ')}`);
+  }
+  if (raw.guardPolicy !== undefined && raw.guard !== true) errors.push('guardPolicy needs guard: true');
   if (!Array.isArray(raw.tools)) errors.push('tools must be an array');
   else {
     for (const tool of raw.tools) {
@@ -292,7 +306,7 @@ export function formatReport({ results, configs, meta }) {
       `- nansen endpoints: ${c.nansen.endpoints.length ? c.nansen.endpoints.map(e => `\`${e}\``).join(', ') : '_none_'}`,
       `- windows: ${c.nansen.windows.length ? c.nansen.windows.join(', ') : '_none_'}`,
       `- policy: ${c.policy ? `custom — ${c.policy}` : 'default R1 allocator policy'}`,
-      c.guard === true ? `- guard: code-enforced 30-day realised PnL gate via \`${GUARD_ENDPOINT}\`; ${formatGuardLines(results, [c])[0].replace(/^.*?: /, '')}` : null,
+      c.guard === true ? `- guard: code-enforced \`${BENCH_GUARD_POLICIES[c.guardPolicy ?? 'v1'].id}\` gate via \`${GUARD_ENDPOINT}\`, reading ${(BENCH_GUARD_POLICIES[c.guardPolicy ?? 'v1'].shortWindowDays ? [BENCH_GUARD_POLICIES[c.guardPolicy ?? 'v1'].shortWindowDays, GUARD_WINDOW_DAYS] : [GUARD_WINDOW_DAYS]).join(' and ')} days; ${formatGuardLines(results, [c])[0].replace(/^.*?: /, '')}` : null,
       c.description ? `- ${c.description}` : null,
       '',
     ].filter(l => l !== null)),
@@ -355,6 +369,8 @@ export async function replayCase({ testCase, config, provider, data, timeoutMs =
   // and cannot argue with it. Built once per replay, so a guarded run adds no model
   // calls and no Nansen credits.
   const guard = config.guard === true ? makeToolExecutor(data, { mode: 'armed' }) : null;
+  // Default v1, so a config written before the two-window gate scores exactly as before.
+  const guardPolicy = BENCH_GUARD_POLICIES[config.guardPolicy ?? 'v1'];
   for (const pitch of testCase.pitches) {
     const userTurn = { role: 'user', text: JSON.stringify({
       pitch_number: pitch.n,
@@ -373,7 +389,7 @@ export async function replayCase({ testCase, config, provider, data, timeoutMs =
         executor: guard,
         wallet: data.wallet,
         allocation: outcome.allocation,
-        policy: BENCHMARK_GUARD_POLICY,
+        policy: guardPolicy,
         now: () => new Date(data.retrieved_at),
       });
       Object.assign(record, { attempted: gated.attempted, allocation: gated.allocation, guardBlocked: gated.blocked, guard: { reason: gated.reason, evidence: gated.evidence } });

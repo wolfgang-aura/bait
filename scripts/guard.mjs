@@ -4,26 +4,38 @@
  *   npm run guard -- --wallet 0xc26cbb6483229e0d0f9a1cab675271eda535b8f4 --allocation 5000
  *   npm run guard -- --wallet 0x9546b9d4103be41ce13483a8f299d0df0eeb181c --allocation 5000 --json
  *
- * One check makes exactly one Nansen `profiler/perp-pnl-summary` call and costs one
- * credit. The guard, not this script, decides. Exit codes: 0 allow, 2 block or bad
- * usage, 3 no API key, 1 unexpected crash. Nothing but $0 is ever reported on an error.
+ * The default policy is `wallet-copy-risk-v2`: it reads the 7-day AND the 30-day
+ * `profiler/perp-pnl-summary` and costs two credits, one per window, and it buys the
+ * second window only after the first one passes. `--policy v1` is the older one-window
+ * rule the recorded benchmark row is tied to, at one credit.
+ *
+ * The guard, not this script, decides. Exit codes: 0 allow, 2 block or bad usage, 3 no
+ * API key, 1 unexpected crash. Nothing but $0 is ever reported on an error.
  */
 
 import { loadEnv, call as nansenCall, refreshAccountBalance } from '../validation/nansen.js';
 import { runLiveGuard } from '../validation/guard-live.js';
-import { DEFAULT_GUARD_TIMEOUT_MS, GUARD_WINDOW_DAYS } from '../validation/guard.js';
+import {
+  DEFAULT_GUARD_TIMEOUT_MS,
+  GUARD_WINDOW_DAYS,
+  PRODUCTION_GUARD_POLICY_V1,
+  PRODUCTION_GUARD_POLICY_V2,
+} from '../validation/guard.js';
 
 export const USAGE =
-  'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--json] [--timeout <ms>]';
+  'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2] [--json] [--timeout <ms>]';
 
-const FLAGS_WITH_VALUES = new Set(['--wallet', '--allocation', '--timeout']);
+/** v2 is the default gate. v1 stays selectable so a recorded result can be rerun. */
+export const POLICIES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2 };
+
+const FLAGS_WITH_VALUES = new Set(['--wallet', '--allocation', '--timeout', '--policy']);
 
 /**
  * Parse argv. Unknown flags, missing values and non-numeric amounts are usage errors,
  * never silent defaults: a guard that guesses its own input is not a guard.
  */
 export function parseArgs(argv = []) {
-  const out = { wallet: null, allocation: null, json: false, timeoutMs: DEFAULT_GUARD_TIMEOUT_MS };
+  const out = { wallet: null, allocation: null, json: false, timeoutMs: DEFAULT_GUARD_TIMEOUT_MS, policy: 'v2' };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     if (flag === '--json') {
@@ -44,6 +56,10 @@ export function parseArgs(argv = []) {
       if (!Number.isFinite(n) || n <= 0) return { error: `--timeout must be a positive number of milliseconds, got "${value}".` };
       out.timeoutMs = n;
     }
+    if (flag === '--policy') {
+      if (!(value in POLICIES)) return { error: `--policy must be v1 or v2, got "${value}".` };
+      out.policy = value;
+    }
   }
   if (!out.wallet) return { error: '--wallet is required.' };
   if (out.allocation === null) return { error: '--allocation is required.' };
@@ -54,6 +70,8 @@ const usd = n =>
   typeof n === 'number' && Number.isFinite(n)
     ? `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
     : 'unavailable';
+
+const MARK = { pass: 'PASS', fail: 'FAIL', not_assessed: '  - ' };
 
 /** The compact operator view. One decision, then the facts it rests on. */
 function report(decision, write) {
@@ -66,11 +84,22 @@ function report(decision, write) {
   row('attempted', usd(decision.attempted));
   row('enforced', usd(decision.allocation));
   row(`pnl ${GUARD_WINDOW_DAYS}d`, usd(decision.evidence.realized_pnl_usd));
+  if (decision.policy.short_window_days) {
+    row(`pnl ${decision.policy.short_window_days}d`, usd(decision.evidence.realized_pnl_7d_usd));
+  }
   row('retrieved', decision.evidence.retrieved_at ?? 'no evidence');
   row('source', decision.evidence.source ?? 'none');
   row('policy', decision.policy.id);
   row('credits', `${decision.creditsCharged ?? 'unknown'} charged, ${decision.creditsRemaining ?? 'unknown'} remaining`);
   if (decision.diagnostic) row('diagnostic', String(decision.diagnostic).slice(0, 200));
+  // The table is the answer to "so this is just a PnL check": every check the policy
+  // ran, what it read, what it wanted, and the ones it honestly could not assess.
+  if (decision.checks?.length) {
+    write('\nCHECKS\n');
+    for (const check of decision.checks) {
+      write(`  ${MARK[check.result] ?? '  ? '} ${check.id.padEnd(19)}${check.plain}\n`);
+    }
+  }
   write('\n');
 }
 
@@ -96,7 +125,9 @@ export async function main({
     return 3;
   }
 
-  write(`BAIT guard, live Nansen evidence. Policy: production, ${GUARD_WINDOW_DAYS}-day realised PnL.\n`);
+  const policy = POLICIES[args.policy];
+  const windows = policy.shortWindowDays ? [policy.shortWindowDays, policy.windowDays] : [policy.windowDays];
+  write(`BAIT guard, live Nansen evidence. Policy: ${policy.id}.\n`);
   write(`Wallet ${args.wallet}, proposed allocation ${usd(args.allocation)}.\n`);
 
   // The free `account` endpoint costs nothing and proves the key works before a
@@ -112,13 +143,14 @@ export async function main({
     }
   }
 
-  write(`Fetching Nansen ${GUARD_WINDOW_DAYS}-day PnL summary...\n`);
+  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary, at most ${windows.length} credit${windows.length === 1 ? '' : 's'}...\n`);
 
   let decision;
   try {
     decision = await runLiveGuard({
       wallet: args.wallet,
       allocation: args.allocation,
+      policy,
       call,
       now,
       timeoutMs: args.timeoutMs,

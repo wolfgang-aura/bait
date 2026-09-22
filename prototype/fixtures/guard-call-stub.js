@@ -20,7 +20,7 @@ export async function call(pathName, body) {
       data: {
         address: body?.address ?? null,
         realized_pnl_usd,
-        win_rate: 0.33,
+        win_rate: Number(process.env.GUARD_STUB_WIN_RATE ?? 0.33),
         closed_trade_count: 120,
       },
     },

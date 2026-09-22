@@ -2,13 +2,20 @@
  * Contract tests for the live evidence path. No network: every Nansen call is a stub.
  *
  * What these lock down: the guard sees exactly the same evidence shape live as it sees
- * from a frozen snapshot, one check costs one call, and every provider failure reaches
- * the guard as unusable evidence rather than as a number.
+ * from a frozen snapshot, a check costs one call per window it reads and never more,
+ * and every provider failure reaches the guard as unusable evidence, not as a number.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { GUARD_SOURCE, GUARD_WINDOW_DAYS, PRODUCTION_GUARD_POLICY, guardAllocation } from './guard.js';
+import {
+  GUARD_SOURCE,
+  GUARD_WINDOW_DAYS,
+  PRODUCTION_GUARD_POLICY,
+  PRODUCTION_GUARD_POLICY_V1,
+  PRODUCTION_GUARD_POLICY_V2,
+  guardAllocation,
+} from './guard.js';
 import { GUARD_ENDPOINT, createLiveGuardExecutor, runLiveGuard } from './guard-live.js';
 
 const WALLET = '0xC26CBB6483229E0D0F9A1CAB675271EDA535B8F4';
@@ -41,6 +48,10 @@ test('a live summary maps into the exact evidence shape the snapshot tools serve
     wallet: WALLET.toLowerCase(),
     window_days: 30,
     realized_pnl_usd: 12_345.68,
+    // Same response, same two fields the frozen snapshot path serves, so the sample
+    // size and win-rate checks read the same numbers live as they do in the bench.
+    win_rate: 0.41,
+    closed_trade_count: 88,
     retrieved_at: NOW,
     source: GUARD_SOURCE,
   });
@@ -52,7 +63,7 @@ test('a live summary maps into the exact evidence shape the snapshot tools serve
   });
 });
 
-test('one check makes exactly one Nansen call and charges one credit', async () => {
+test('the v1 check makes exactly one Nansen call and charges one credit', async () => {
   const call = stubCall(() => summary(500));
   const decision = await runLiveGuard({
     wallet: WALLET,
@@ -61,12 +72,59 @@ test('one check makes exactly one Nansen call and charges one credit', async () 
     now: () => new Date(NOW),
   });
 
-  assert.equal(call.calls.length, 1, 'the guard may spend exactly one credit per check');
+  assert.equal(call.calls.length, 1, 'the v1 guard may spend exactly one credit per check');
   assert.equal(decision.creditsCharged, 1);
   assert.equal(decision.decision, 'allow');
   assert.equal(decision.allocation, 5000);
-  assert.equal(decision.policy.id, PRODUCTION_GUARD_POLICY.id);
+  // runLiveGuard is pinned to v1 by default; `/api/guard` and its contract test in
+  // prototype/ depend on that. v2 is opt-in here and is the default in scripts/guard.mjs.
+  assert.equal(decision.policy.id, PRODUCTION_GUARD_POLICY_V1.id);
   assert.equal(decision.evidence.realized_pnl_usd, 500);
+});
+
+test('the v2 check reads both windows, charges two credits and publishes the table', async () => {
+  const call = stubCall(n => summary(n === 1 ? 500 : 120));
+  const decision = await runLiveGuard({
+    wallet: WALLET,
+    allocation: 5000,
+    policy: PRODUCTION_GUARD_POLICY_V2,
+    call,
+    now: () => new Date(NOW),
+  });
+
+  assert.equal(call.calls.length, 2, 'one call per window, never more');
+  assert.equal(decision.creditsCharged, 2);
+  assert.equal(decision.decision, 'allow');
+  assert.equal(decision.execution_authorized, true);
+  assert.equal(decision.policy.id, PRODUCTION_GUARD_POLICY.id, 'v2 is the library default');
+  assert.equal(decision.evidence.realized_pnl_30d_usd, 500);
+  assert.equal(decision.evidence.realized_pnl_7d_usd, 120);
+  // The 30-day request is asked first, and the 7-day window covers seven days.
+  assert.deepEqual(call.calls.map(c => c.body.date.from), ['2026-08-22T09:00:00Z', '2026-09-14T09:00:00Z']);
+  assert.ok(decision.checks.some(c => c.id === 'regime_agreement' && c.result === 'pass'));
+});
+
+test('v2 refuses on a 7-day window that contradicts the 30-day one', async () => {
+  const call = stubCall(n => summary(n === 1 ? 500 : -120));
+  const decision = await runLiveGuard({
+    wallet: WALLET, allocation: 5000, policy: PRODUCTION_GUARD_POLICY_V2, call, now: () => new Date(NOW),
+  });
+
+  assert.equal(decision.decision, 'block');
+  assert.equal(decision.code, 'regime_disagreement');
+  assert.equal(decision.allocation, 0);
+  assert.equal(decision.creditsCharged, 2);
+});
+
+test('a 30-day refusal under v2 never buys the second window', async () => {
+  const call = stubCall(() => summary(-4_745_429.48));
+  const decision = await runLiveGuard({
+    wallet: WALLET, allocation: 5000, policy: PRODUCTION_GUARD_POLICY_V2, call, now: () => new Date(NOW),
+  });
+
+  assert.equal(decision.code, 'pnl_below_minimum');
+  assert.equal(call.calls.length, 1, 'a decided refusal must not spend a second credit');
+  assert.equal(decision.creditsCharged, 1);
 });
 
 test('a negative live result blocks and reports the attempted amount', async () => {

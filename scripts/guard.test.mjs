@@ -13,7 +13,9 @@ const WALLET = '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4';
 const NOW = () => new Date('2026-09-21T09:00:00.000Z');
 const ENV = { NANSEN_API_KEY: 'test-key' };
 
-const pnl = realized_pnl_usd => async () => ({ status: 200, headers: {}, data: { data: { realized_pnl_usd } } });
+/** Every window answers with the same numbers unless a test says otherwise. */
+const pnl = (realized_pnl_usd, extra = { win_rate: 0.54, closed_trade_count: 4007 }) =>
+  async () => ({ status: 200, headers: {}, data: { data: { realized_pnl_usd, ...extra } } });
 
 function capture() {
   let text = '';
@@ -22,9 +24,11 @@ function capture() {
 
 test('parseArgs reads the wallet, the amount and the json flag', () => {
   assert.deepEqual(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--json']), {
-    wallet: WALLET, allocation: 5000, json: true, timeoutMs: 10_000,
+    wallet: WALLET, allocation: 5000, json: true, timeoutMs: 10_000, policy: 'v2',
   });
   assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--timeout', '2500']).timeoutMs, 2500);
+  assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v1']).policy, 'v1');
+  assert.match(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v3']).error, /--policy must be v1 or v2/);
 });
 
 test('parseArgs refuses missing, unknown and non-numeric arguments', () => {
@@ -67,12 +71,46 @@ test('a profitable wallet prints ALLOW, the enforced amount and the credit line,
     env: ENV, write: out.write, now: NOW, call: pnl(2_450_809.467724999),
   });
   assert.equal(code, 0);
-  assert.match(out.text(), /Fetching Nansen 30-day PnL summary\.\.\./);
+  assert.match(out.text(), /Fetching Nansen 7- and 30-day PnL summary, at most 2 credits\.\.\./);
   assert.match(out.text(), /DECISION\s+ALLOW/);
   assert.match(out.text(), /enforced\s+\$5,000\.00/);
   assert.match(out.text(), /pnl 30d\s+\$2,450,809\.47/);
+  assert.match(out.text(), /pnl 7d\s+\$2,450,809\.47/);
+  // Two windows, two credits, and the named check table is printed under the decision.
+  assert.match(out.text(), /credits\s+2 charged/);
+  assert.match(out.text(), /policy\s+wallet-copy-risk-v2/);
+  assert.match(out.text(), /CHECKS/);
+  assert.match(out.text(), /PASS regime_agreement/);
+  assert.match(out.text(), /PASS thin_sample/);
+  assert.match(out.text(), /-  max_drawdown/);
+});
+
+test('--policy v1 reruns the recorded one-window rule at one credit', async () => {
+  const out = capture();
+  const code = await main({
+    argv: ['--wallet', WALLET, '--allocation', '5000', '--policy', 'v1'],
+    env: ENV, write: out.write, now: NOW, call: pnl(2_450_809.467724999),
+  });
+  assert.equal(code, 0);
+  assert.match(out.text(), /Fetching Nansen 30-day PnL summary, at most 1 credit\.\.\./);
   assert.match(out.text(), /credits\s+1 charged/);
   assert.match(out.text(), /policy\s+wallet-realized-pnl-30d-v1/);
+});
+
+test('a 7-day window that contradicts the 30-day window blocks with a named reason', async () => {
+  const out = capture();
+  let n = 0;
+  const code = await main({
+    argv: ['--wallet', WALLET, '--allocation', '5000'],
+    env: ENV, write: out.write, now: NOW,
+    call: async () => ({ status: 200, headers: {}, data: { data: {
+      realized_pnl_usd: ++n === 1 ? 900_000 : -120_000, win_rate: 0.54, closed_trade_count: 4007,
+    } } }),
+  });
+  assert.equal(code, 2);
+  assert.match(out.text(), /code\s+regime_disagreement/);
+  assert.match(out.text(), /enforced\s+\$0\.00/);
+  assert.match(out.text(), /FAIL regime_agreement/);
 });
 
 test('a losing wallet prints BLOCK with a zero enforced amount and exits 2', async () => {
@@ -113,7 +151,10 @@ test('--json prints the decision object only and keeps the same exit code', asyn
   assert.equal(decision.decision, 'block');
   assert.equal(decision.allocation, 0);
   assert.equal(decision.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
+  // The 30-day window already refused, so the second window was never bought.
   assert.equal(decision.creditsCharged, 1);
+  assert.equal(decision.execution_authorized, false);
+  assert.ok(Array.isArray(decision.checks) && decision.checks.length > 0);
 });
 
 test('the guard deadline is honoured, so a hanging provider cannot hang the command', async () => {

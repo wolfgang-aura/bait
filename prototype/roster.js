@@ -31,7 +31,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BENCHMARK_GUARD_POLICY, assessCopyRisk } from '../validation/guard.js';
+import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, assessCopyRisk } from '../validation/guard.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -182,7 +182,7 @@ export function fomoExecutor(record) {
  * round trips. `stats.realized_pnl` in the same file disagrees with that list, so the
  * list wins: it is the part a reader can add up themselves.
  */
-function readFomo(file) {
+export function readFomo(file) {
   const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
   const s = raw.stats;
   // Every row in `closed[]` has realised PnL, but not every row is a finished round
@@ -714,7 +714,7 @@ export function loadRoster({
         },
       },
       executor: null,
-      guardPolicy: BENCHMARK_GUARD_POLICY,
+      guardPolicy: BENCHMARK_GUARD_POLICY_V2,
       checkerNote: null,
     };
     const risk = copyRiskReport(loaded);

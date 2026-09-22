@@ -24,8 +24,12 @@ test('BAIT independently reproduces every published wallet decision', async () =
         executor: { execute: async () => wallet.evidence },
         wallet: wallet.address,
         allocation: 1_000,
+        // Recorded rows hold one 30-day summary each, so they are judged by the v1
+        // rule by name. The default gate is `wallet-copy-risk-v2`, which reads two
+        // windows and would have nothing to read here.
         policy: {
           id: `wallet-realized-pnl-30d-${venue.id}-recorded-v1`,
+          version: 'v1',
           source: wallet.evidence.source,
           maxEvidenceAgeMs: null,
         },

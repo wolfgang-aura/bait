@@ -1,30 +1,98 @@
 /**
  * BAIT's execution gate for AI-proposed wallet allocations.
  *
- * The model proposes an amount. This module independently reads one authoritative
- * Nansen result and either preserves that amount or forces it to zero. It fails
- * closed when the request or evidence is invalid, mismatched, stale, unavailable,
- * or below the policy threshold.
+ * The model proposes an amount. This module independently reads authoritative Nansen
+ * results and either preserves that amount or forces it to zero. It fails closed when
+ * the request or evidence is invalid, mismatched, stale, unavailable, or below a
+ * policy threshold.
+ *
+ * Two policies ship.
+ *
+ * `wallet-realized-pnl-30d-v1` is one `profiler/perp-pnl-summary` call and one sign
+ * test on 30-day realised PnL. It is kept, by id, because the recorded 0/30 benchmark
+ * row is tied to exactly that rule.
+ *
+ * `wallet-copy-risk-v2` is the default. It reads the 7-day AND the 30-day summary and
+ * runs a named check per refusal, so a block says which number failed which bar. The
+ * second window is not decoration: across 840 saved summaries the 7-day and 30-day
+ * verdicts disagreed on 103 of 420 matched wallet-date pairs, 25%
+ * (`bench/reports/robustness-panel.md`). A gate that reads one window is, by that
+ * measurement, reading the wrong window a quarter of the time.
+ *
+ * Neither policy ever emits a size of its own. The answer is the caller's amount or $0.
  */
 
 export const GUARD_WINDOW_DAYS = 30;
+export const GUARD_SHORT_WINDOW_DAYS = 7;
 export const GUARD_SOURCE = 'Nansen /api/v1/profiler/perp-pnl-summary';
 export const DEFAULT_GUARD_TIMEOUT_MS = 10_000;
 
-export const PRODUCTION_GUARD_POLICY = Object.freeze({
+/** The measured reason the short window is read at all. Quoted in the refusal line. */
+export const REGIME_DISAGREEMENT_RATE = '25%';
+
+/**
+ * Thresholds shared by the gate and by the game's copy-risk report. One table, so a
+ * wallet the report calls thin is a wallet the gate refuses for the same reason at the
+ * same number.
+ */
+export const COPY_RISK_THRESHOLDS = Object.freeze({
+  paperShareOfHeadline: 0.8,
+  paperShareOfTotal: 0.8,
+  minClosedTrades: 20,
+  minWinRate: 0.4,
+  maxEarlyEntryShare: 0.2,
+  maxTopPositionShare: 0.5,
+  maxTopCoinPnlShare: 0.6,
+  maxTailLossShare: 0.25,
+  maxDrawdownShareOfPeak: 0.3,
+  maxDrawdownShareOfAccount: 0.15,
+});
+
+export const PRODUCTION_GUARD_POLICY_V1 = Object.freeze({
   id: 'wallet-realized-pnl-30d-v1',
+  version: 'v1',
   windowDays: GUARD_WINDOW_DAYS,
+  shortWindowDays: null,
   minimumRealizedPnlUsd: 0,
   maxEvidenceAgeMs: 15 * 60 * 1000,
   maxFutureSkewMs: 5 * 60 * 1000,
   source: GUARD_SOURCE,
 });
 
+export const PRODUCTION_GUARD_POLICY_V2 = Object.freeze({
+  id: 'wallet-copy-risk-v2',
+  version: 'v2',
+  windowDays: GUARD_WINDOW_DAYS,
+  shortWindowDays: GUARD_SHORT_WINDOW_DAYS,
+  minimumRealizedPnlUsd: 0,
+  maxEvidenceAgeMs: 15 * 60 * 1000,
+  maxFutureSkewMs: 5 * 60 * 1000,
+  source: GUARD_SOURCE,
+  minClosedTrades: COPY_RISK_THRESHOLDS.minClosedTrades,
+  minWinRate: COPY_RISK_THRESHOLDS.minWinRate,
+  maxPaperShareOfHeadline: COPY_RISK_THRESHOLDS.paperShareOfHeadline,
+  // A week that moves against the month only counts as a regime change when it is
+  // material: at least this share of the 30-day figure. Below it, the sign flip is
+  // noise, and a gate that blocks on noise gets switched off.
+  maxShortWindowGivebackShare: 0.10,
+});
+
+/** The default gate. v1 stays reachable as `PRODUCTION_GUARD_POLICY_V1`. */
+export const PRODUCTION_GUARD_POLICY = PRODUCTION_GUARD_POLICY_V2;
+
 export const BENCHMARK_GUARD_POLICY = Object.freeze({
-  ...PRODUCTION_GUARD_POLICY,
+  ...PRODUCTION_GUARD_POLICY_V1,
   id: 'wallet-realized-pnl-30d-benchmark-v1',
   maxEvidenceAgeMs: null,
 });
+
+export const BENCHMARK_GUARD_POLICY_V2 = Object.freeze({
+  ...PRODUCTION_GUARD_POLICY_V2,
+  id: 'wallet-copy-risk-benchmark-v2',
+  maxEvidenceAgeMs: null,
+});
+
+const POLICY_BASES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2 };
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const walletPattern = /^0x[a-fA-F0-9]{40}$/;
@@ -44,8 +112,15 @@ async function within(promise, ms) {
   }
 }
 
-function normalizePolicy(policy = PRODUCTION_GUARD_POLICY) {
-  const merged = { ...PRODUCTION_GUARD_POLICY, ...policy };
+/**
+ * Merge a caller policy onto its own family's base. A policy declares its family with
+ * `version`; without one it inherits the current default, which is v2. This is what
+ * keeps `BENCHMARK_GUARD_POLICY` a one-window rule after the default moved: it carries
+ * `version: 'v1'`, so no v2 field can leak into the recorded benchmark row.
+ */
+function normalizePolicy(policy) {
+  const base = POLICY_BASES[policy?.version] ?? PRODUCTION_GUARD_POLICY;
+  const merged = { ...base, ...policy };
   if (!merged.id || !Number.isInteger(merged.windowDays) || merged.windowDays < 1) {
     throw new TypeError('Guard policy needs an id and a positive integer windowDays');
   }
@@ -58,7 +133,64 @@ function normalizePolicy(policy = PRODUCTION_GUARD_POLICY) {
   if (!finite(merged.maxFutureSkewMs) || merged.maxFutureSkewMs < 0 || typeof merged.source !== 'string') {
     throw new TypeError('Guard policy source and maxFutureSkewMs are invalid');
   }
+  if (merged.version === 'v2') {
+    if (!Number.isInteger(merged.shortWindowDays) || merged.shortWindowDays < 1 || merged.shortWindowDays >= merged.windowDays) {
+      throw new TypeError('Guard policy shortWindowDays must be a positive integer shorter than windowDays');
+    }
+    for (const key of ['minClosedTrades', 'minWinRate', 'maxPaperShareOfHeadline']) {
+      if (!finite(merged[key]) || merged[key] < 0) throw new TypeError(`Guard policy ${key} must be a non-negative number`);
+    }
+  }
   return merged;
+}
+
+// ------------------------------------------------------------- the check table
+
+/**
+ * Every check the gate can run, in the order it runs them, on every decision. A block
+ * names the first row that failed. A row it could not look at says `not_assessed` with
+ * the reason, so nobody reads a silent field as a green light.
+ */
+export const V2_CHECK_IDS = Object.freeze([
+  'evidence_30d',
+  'evidence_freshness',
+  'evidence_7d',
+  'realised_pnl_30d',
+  'regime_agreement',
+  'thin_sample',
+  'low_win_rate',
+  'paper_headline',
+  'concentration',
+  'tail_loss',
+  'max_drawdown',
+]);
+
+/** Checks the guard's own evidence path cannot reach: they need per-fill history. */
+const FILL_ONLY_CHECKS = {
+  concentration: 'Not assessed. Position and per-coin concentration needs the fill tape, which this gate does not fetch. The copy-risk report covers it.',
+  tail_loss: 'Not assessed. The worst single closed trade needs the fill tape, which this gate does not fetch. The copy-risk report covers it.',
+  max_drawdown: 'Not assessed. Peak-to-trough drawdown needs the time-ordered fill tape, which this gate does not fetch. The copy-risk report covers it.',
+};
+
+/** Collect check rows in evaluation order and emit them in the canonical order. */
+function checkTable() {
+  const rows = new Map();
+  return {
+    set(id, result, value, threshold, plain) {
+      rows.set(id, { id, result, value, threshold, plain });
+    },
+    pass(id, value, threshold, plain) { this.set(id, 'pass', value, threshold, plain); },
+    fail(id, value, threshold, plain) { this.set(id, 'fail', value, threshold, plain); },
+    skip(id, plain, value = null, threshold = null) { this.set(id, 'not_assessed', value, threshold, plain); },
+    /** The first failing row, which is the one the public reason is allowed to name. */
+    firstFailure() {
+      for (const id of V2_CHECK_IDS) if (rows.get(id)?.result === 'fail') return rows.get(id);
+      return null;
+    },
+    finish(fallback = 'Not assessed. An earlier check already decided this request.') {
+      return V2_CHECK_IDS.map(id => rows.get(id) ?? { id, result: 'not_assessed', value: null, threshold: null, plain: fallback });
+    },
+  };
 }
 
 function emptyEvidence(policy) {
@@ -67,31 +199,47 @@ function emptyEvidence(policy) {
     window_days: policy.windowDays,
     realized_pnl_usd: null,
     realized_pnl_30d_usd: null,
+    realized_pnl_7d_usd: null,
+    closed_trade_count_30d: null,
+    win_rate_30d: null,
     retrieved_at: null,
+    short_window_days: policy.shortWindowDays ?? null,
+    short_window_retrieved_at: null,
     source: policy.source,
   };
 }
 
-function result({ attempted, policy, evidence, code, reason, diagnostic = null }) {
+function result({ attempted, policy, evidence, code, reason, diagnostic = null, checks = [] }) {
   const allowed = code === 'allowed';
   const allocation = allowed ? attempted : 0;
   return {
     decision: allowed ? 'allow' : 'block',
     code,
+    // Never a size of its own: the caller's amount, or nothing. Issue #7 removed
+    // implied calibrated sizing on purpose, and it is not coming back through here.
     allocation,
     attempted,
     blocked: !allowed && attempted > 0,
+    execution_authorized: allowed,
     reason,
     diagnostic,
+    checks,
     policy: {
       id: policy.id,
+      version: policy.version ?? 'v1',
       window_days: policy.windowDays,
+      short_window_days: policy.shortWindowDays ?? null,
       minimum_realized_pnl_usd: policy.minimumRealizedPnlUsd,
       max_evidence_age_ms: policy.maxEvidenceAgeMs,
     },
     evidence,
   };
 }
+
+/** Sign test used by the regime check. Zero counts as non-negative, same as the gate. */
+const signOf = n => (n < 0 ? 'negative' : 'non-negative');
+const money = n => `${n < 0 ? '-' : '+'}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
+const pct = n => `${(n * 100).toFixed(1)}%`;
 
 /**
  * @param {{
@@ -112,81 +260,255 @@ export async function guardAllocation({
   now = () => new Date(),
 } = {}) {
   const policy = normalizePolicy(policyInput);
+  const twoWindow = policy.version === 'v2';
   const attempted = finite(allocation) && allocation > 0 ? allocation : 0;
   const blank = emptyEvidence(policy);
+  const t = checkTable();
 
+  const stop = (code, reason, evidence = blank, diagnostic = null) =>
+    result({ attempted, policy, evidence, code, reason, diagnostic, checks: t.finish() });
+
+  // ------------------------------------------------------- the request itself
   if (!walletPattern.test(String(wallet ?? ''))) {
-    return result({ attempted, policy, evidence: blank, code: 'invalid_request', reason: 'blocked: wallet must be a 0x-prefixed 20-byte address' });
+    return stop('invalid_request', 'blocked: wallet must be a 0x-prefixed 20-byte address');
   }
   if (!finite(allocation) || allocation < 0) {
-    return result({ attempted: 0, policy, evidence: blank, code: 'invalid_request', reason: 'blocked: allocation must be a non-negative finite number' });
+    return result({ attempted: 0, policy, evidence: blank, code: 'invalid_request', reason: 'blocked: allocation must be a non-negative finite number', checks: t.finish() });
   }
   if (!executor || typeof executor.execute !== 'function') {
-    return result({ attempted, policy, evidence: blank, code: 'invalid_request', reason: 'blocked: evidence executor is unavailable' });
+    return stop('invalid_request', 'blocked: evidence executor is unavailable');
   }
   if (!finite(timeoutMs) || timeoutMs <= 0) {
-    return result({ attempted, policy, evidence: blank, code: 'invalid_request', reason: 'blocked: timeoutMs must be positive' });
+    return stop('invalid_request', 'blocked: timeoutMs must be positive');
   }
 
-  let raw;
-  try {
-    raw = await within(
-      Promise.resolve(executor.execute('get_pnl_summary', { wallet, days: policy.windowDays })),
-      timeoutMs,
-    );
-  } catch (error) {
-    const timedOut = /timed out/.test(safeError(error));
-    return result({
-      attempted,
-      policy,
-      evidence: blank,
-      code: timedOut ? 'evidence_timeout' : 'evidence_unavailable',
-      reason: timedOut ? 'blocked: evidence check timed out' : 'blocked: required evidence is unavailable',
-      diagnostic: safeError(error),
-    });
+  /** One summary fetch. A throw or a hang is unusable evidence, never a number. */
+  const fetchSummary = async days => {
+    try {
+      return { raw: await within(Promise.resolve(executor.execute('get_pnl_summary', { wallet, days })), timeoutMs) };
+    } catch (error) {
+      const timedOut = /timed out/.test(safeError(error));
+      return {
+        failure: {
+          code: timedOut ? 'evidence_timeout' : 'evidence_unavailable',
+          reason: timedOut ? 'blocked: evidence check timed out' : 'blocked: required evidence is unavailable',
+          diagnostic: safeError(error),
+        },
+      };
+    }
+  };
+
+  // ------------------------------------------------------------ 30-day window
+  const long = await fetchSummary(policy.windowDays);
+  if (long.failure) {
+    t.fail('evidence_30d', null, `${policy.windowDays}-day summary from ${policy.source}`,
+      `The ${policy.windowDays}-day summary could not be read, so nothing below could be judged.`);
+    return stop(long.failure.code, long.failure.reason, blank, long.failure.diagnostic);
   }
+  const raw = long.raw;
 
   const evidence = {
     wallet: typeof raw?.wallet === 'string' ? raw.wallet : null,
     window_days: Number.isInteger(raw?.window_days) ? raw.window_days : null,
     realized_pnl_usd: finite(raw?.realized_pnl_usd) ? raw.realized_pnl_usd : null,
     realized_pnl_30d_usd: finite(raw?.realized_pnl_usd) ? raw.realized_pnl_usd : null,
+    realized_pnl_7d_usd: null,
+    closed_trade_count_30d: Number.isInteger(raw?.closed_trade_count) ? raw.closed_trade_count : null,
+    win_rate_30d: finite(raw?.win_rate) ? raw.win_rate : null,
     retrieved_at: typeof raw?.retrieved_at === 'string' ? raw.retrieved_at : null,
+    short_window_days: policy.shortWindowDays ?? null,
+    short_window_retrieved_at: null,
     source: typeof raw?.source === 'string' ? raw.source : null,
   };
+  const longBar = `${policy.windowDays}-day summary from ${policy.source}`;
 
   if (!raw || typeof raw !== 'object' || raw.error || evidence.realized_pnl_usd === null) {
-    return result({ attempted, policy, evidence, code: 'evidence_unavailable', reason: 'blocked: verified 30-day realised PnL is unavailable', diagnostic: raw?.message ?? raw?.error ?? null });
+    t.fail('evidence_30d', null, longBar, `The ${policy.windowDays}-day summary carried no usable realised PnL.`);
+    return stop('evidence_unavailable', `blocked: verified ${policy.windowDays}-day realised PnL is unavailable`, evidence, raw?.message ?? raw?.error ?? null);
   }
   if (evidence.wallet?.toLowerCase() !== wallet.toLowerCase()) {
-    return result({ attempted, policy, evidence, code: 'wallet_mismatch', reason: 'blocked: evidence belongs to a different wallet' });
+    t.fail('evidence_30d', evidence.wallet, wallet, 'The summary that came back belongs to a different wallet than the one being funded.');
+    return stop('wallet_mismatch', 'blocked: evidence belongs to a different wallet', evidence);
   }
   if (evidence.window_days !== policy.windowDays) {
-    return result({ attempted, policy, evidence, code: 'window_mismatch', reason: `blocked: evidence does not cover the required ${policy.windowDays}-day window` });
+    t.fail('evidence_30d', evidence.window_days, policy.windowDays, `The summary covers ${evidence.window_days ?? 'an unstated number of'} days, not the ${policy.windowDays} the policy requires.`);
+    return stop('window_mismatch', `blocked: evidence does not cover the required ${policy.windowDays}-day window`, evidence);
   }
   if (evidence.source !== policy.source) {
-    return result({ attempted, policy, evidence, code: 'source_mismatch', reason: 'blocked: evidence source does not match the policy' });
+    t.fail('evidence_30d', evidence.source, policy.source, 'The summary did not come from the endpoint this policy trusts.');
+    return stop('source_mismatch', 'blocked: evidence source does not match the policy', evidence);
   }
+  t.pass('evidence_30d', `${policy.windowDays}d ${evidence.wallet}`, longBar,
+    `The ${policy.windowDays}-day summary is for this wallet, covers ${policy.windowDays} days and came from the approved endpoint.`);
 
+  // ------------------------------------------------------------- freshness
   const retrievedAt = Date.parse(evidence.retrieved_at ?? '');
   const evaluatedAt = now().getTime();
+  const ageBar = policy.maxEvidenceAgeMs === null ? 'no age limit (frozen evidence)' : `at most ${policy.maxEvidenceAgeMs} ms old`;
   if (!Number.isFinite(retrievedAt) || !Number.isFinite(evaluatedAt)) {
-    return result({ attempted, policy, evidence, code: 'invalid_timestamp', reason: 'blocked: evidence timestamp is invalid' });
+    t.fail('evidence_freshness', evidence.retrieved_at, ageBar, 'The evidence carries no readable timestamp, so its age cannot be checked.');
+    return stop('invalid_timestamp', 'blocked: evidence timestamp is invalid', evidence);
   }
-  if (retrievedAt - evaluatedAt > policy.maxFutureSkewMs) {
-    return result({ attempted, policy, evidence, code: 'future_evidence', reason: 'blocked: evidence timestamp is in the future' });
+  const ageMs = evaluatedAt - retrievedAt;
+  if (-ageMs > policy.maxFutureSkewMs) {
+    t.fail('evidence_freshness', ageMs, ageBar, 'The evidence is dated in the future, which means a clock that cannot be trusted.');
+    return stop('future_evidence', 'blocked: evidence timestamp is in the future', evidence);
   }
-  if (policy.maxEvidenceAgeMs !== null && evaluatedAt - retrievedAt > policy.maxEvidenceAgeMs) {
-    return result({ attempted, policy, evidence, code: 'stale_evidence', reason: 'blocked: evidence is stale' });
+  if (policy.maxEvidenceAgeMs !== null && ageMs > policy.maxEvidenceAgeMs) {
+    t.fail('evidence_freshness', ageMs, ageBar, `The evidence is ${Math.round(ageMs / 60_000)} minutes old, past the freshness limit for a live allocation.`);
+    return stop('stale_evidence', 'blocked: evidence is stale', evidence);
   }
-  if (evidence.realized_pnl_usd < policy.minimumRealizedPnlUsd) {
-    const reason = policy.minimumRealizedPnlUsd === 0
-      ? `blocked: verified ${policy.windowDays}-day realised PnL is negative`
-      : `blocked: verified ${policy.windowDays}-day realised PnL is below the policy minimum`;
-    return result({ attempted, policy, evidence, code: 'pnl_below_minimum', reason });
+  t.pass('evidence_freshness', ageMs, ageBar, 'The evidence was retrieved recently enough to act on.');
+
+  // ------------------------------------------- what the 30-day window can answer
+  // Everything the summary already in hand can decide is decided here, before a
+  // second credit is spent. A wallet that fails one of these is refused on one call.
+  const pnl30 = evidence.realized_pnl_30d_usd;
+  if (pnl30 < policy.minimumRealizedPnlUsd) {
+    t.fail('realised_pnl_30d', pnl30, policy.minimumRealizedPnlUsd,
+      `Closed trades over ${policy.windowDays} days came to ${money(pnl30)}. Copying this wallet would have lost money.`);
+  } else {
+    t.pass('realised_pnl_30d', pnl30, policy.minimumRealizedPnlUsd,
+      `Closed trades over ${policy.windowDays} days came to ${money(pnl30)}, at or above the policy minimum.`);
   }
 
-  return result({ attempted, policy, evidence, code: 'allowed', reason: `allowed: verified ${policy.windowDays}-day realised PnL meets the policy minimum` });
+  if (!twoWindow) {
+    t.skip('thin_sample', `Not assessed. Policy ${policy.id} judges realised PnL alone.`);
+    t.skip('low_win_rate', `Not assessed. Policy ${policy.id} judges realised PnL alone.`);
+    t.skip('paper_headline', `Not assessed. Policy ${policy.id} judges realised PnL alone.`);
+  } else {
+    const closed = evidence.closed_trade_count_30d;
+    if (closed === null) {
+      t.skip('thin_sample', 'Not assessed. The summary carried no closed trade count.', null, policy.minClosedTrades);
+    } else if (closed < policy.minClosedTrades) {
+      t.fail('thin_sample', closed, policy.minClosedTrades,
+        `Only ${closed} closed trades in ${policy.windowDays} days. A handful of round trips is luck or skill and the record cannot tell you which.`);
+    } else {
+      t.pass('thin_sample', closed, policy.minClosedTrades,
+        `${closed} closed trades in ${policy.windowDays} days, enough of a record to judge.`);
+    }
+
+    const winRate = evidence.win_rate_30d;
+    if (winRate === null) {
+      t.skip('low_win_rate', 'Not assessed. The summary carried no win rate.', null, policy.minWinRate);
+    } else if (winRate < policy.minWinRate) {
+      t.fail('low_win_rate', winRate, policy.minWinRate,
+        `${pct(winRate)} of closed trades were profitable. Copying this means sitting through long losing runs.`);
+    } else {
+      t.pass('low_win_rate', winRate, policy.minWinRate, `${pct(winRate)} of closed trades were profitable.`);
+    }
+
+    // Nansen's perp-pnl-summary reports realised PnL only, so on the shipped adapter
+    // this reads not_assessed. An adapter that does carry the open book gets the check.
+    const unrealized = finite(raw?.unrealized_pnl_usd) ? raw.unrealized_pnl_usd : null;
+    const headline = finite(raw?.headline_pnl_usd) ? raw.headline_pnl_usd : (unrealized === null ? null : pnl30 + unrealized);
+    if (unrealized === null) {
+      t.skip('paper_headline', 'Not assessed. This summary endpoint reports realised PnL only, so no unsold gain is being counted as a result.', null, policy.maxPaperShareOfHeadline);
+    } else if (unrealized <= 0) {
+      t.pass('paper_headline', 0, policy.maxPaperShareOfHeadline, 'The open book is marked at or below cost, so nothing unsold is inflating the headline.');
+    } else {
+      const share = headline && headline !== 0 ? unrealized / Math.abs(headline) : null;
+      if (share !== null && share > policy.maxPaperShareOfHeadline) {
+        t.fail('paper_headline', share, policy.maxPaperShareOfHeadline,
+          `${pct(share)} of the headline is unsold: it sits in open positions and can move or vanish before anyone realises it.`);
+      } else {
+        t.pass('paper_headline', share, policy.maxPaperShareOfHeadline, 'Most of the headline is money already taken off the table.');
+      }
+    }
+  }
+
+  // ------------------------------------------------------------- 7-day window
+  const already = t.firstFailure();
+  if (!twoWindow) {
+    t.skip('evidence_7d', `Not assessed. Policy ${policy.id} reads the ${policy.windowDays}-day window only.`);
+    t.skip('regime_agreement', `Not assessed. Policy ${policy.id} reads one window, so there is no second window to compare.`);
+  } else if (already) {
+    // Refused already. Buying the second window would spend a credit to decorate a
+    // decision that is made, so the table says plainly that it was not bought.
+    const note = `Not assessed. The ${policy.windowDays}-day evidence already refused this request at "${already.id}", so the second window was not fetched.`;
+    t.skip('evidence_7d', note);
+    t.skip('regime_agreement', note);
+  } else {
+    const shortBar = `${policy.shortWindowDays}-day summary from ${policy.source}`;
+    const short = await fetchSummary(policy.shortWindowDays);
+    if (short.failure) {
+      t.fail('evidence_7d', null, shortBar, `The ${policy.shortWindowDays}-day summary could not be read. Missing evidence is a refusal, not an allowance.`);
+      return stop(short.failure.code, short.failure.reason, evidence, short.failure.diagnostic);
+    }
+    const shortRaw = short.raw;
+    const shortPnl = finite(shortRaw?.realized_pnl_usd) ? shortRaw.realized_pnl_usd : null;
+    evidence.realized_pnl_7d_usd = shortPnl;
+    evidence.short_window_retrieved_at = typeof shortRaw?.retrieved_at === 'string' ? shortRaw.retrieved_at : null;
+
+    if (!shortRaw || typeof shortRaw !== 'object' || shortRaw.error || shortPnl === null) {
+      t.fail('evidence_7d', null, shortBar, `The ${policy.shortWindowDays}-day summary carried no usable realised PnL, so the recent week is unknown.`);
+      return stop('short_window_unavailable', `blocked: verified ${policy.shortWindowDays}-day realised PnL is unavailable`, evidence, shortRaw?.message ?? shortRaw?.error ?? null);
+    }
+    const mismatch = String(shortRaw.wallet ?? '').toLowerCase() !== wallet.toLowerCase() ? 'wallet'
+      : shortRaw.window_days !== policy.shortWindowDays ? 'window'
+        : shortRaw.source !== policy.source ? 'source' : null;
+    if (mismatch) {
+      t.fail('evidence_7d', mismatch, shortBar, `The ${policy.shortWindowDays}-day summary has the wrong ${mismatch}, so it cannot speak for this wallet's recent week.`);
+      return stop('short_window_mismatch', `blocked: ${policy.shortWindowDays}-day evidence does not match the requested wallet, window or source`, evidence);
+    }
+    const shortAge = evaluatedAt - Date.parse(evidence.short_window_retrieved_at ?? '');
+    if (!Number.isFinite(shortAge) || -shortAge > policy.maxFutureSkewMs
+      || (policy.maxEvidenceAgeMs !== null && shortAge > policy.maxEvidenceAgeMs)) {
+      t.fail('evidence_7d', shortAge, ageBar, `The ${policy.shortWindowDays}-day summary is stale or wrongly dated, so the two windows are not comparable.`);
+      return stop('short_window_mismatch', `blocked: ${policy.shortWindowDays}-day evidence is stale or wrongly dated`, evidence);
+    }
+    t.pass('evidence_7d', `${policy.shortWindowDays}d ${shortRaw.wallet}`, shortBar,
+      `The ${policy.shortWindowDays}-day summary is for this wallet, covers ${policy.shortWindowDays} days and came from the approved endpoint.`);
+
+    const noiseShare = finite(policy.maxShortWindowGivebackShare) ? policy.maxShortWindowGivebackShare : 0;
+    const noisePct = `${Math.round(noiseShare * 100)}%`;
+    const giveback = pnl30 === 0 ? Infinity : Math.abs(shortPnl) / Math.abs(pnl30);
+    const givebackPct = Number.isFinite(giveback) ? `${(giveback * 100).toFixed(1)}%` : 'all';
+    const bar = noiseShare > 0
+      ? `${policy.shortWindowDays}-day and ${policy.windowDays}-day signs agree, or the ${policy.shortWindowDays}-day move is under ${noisePct} of the ${policy.windowDays}-day figure`
+      : `${policy.shortWindowDays}-day and ${policy.windowDays}-day signs agree`;
+    const pair = `${policy.shortWindowDays}d ${money(shortPnl)} vs ${policy.windowDays}d ${money(pnl30)}`;
+    const opposite = signOf(shortPnl) !== signOf(pnl30);
+    if (opposite && giveback < noiseShare) {
+      t.pass('regime_agreement', pair, bar,
+        `The week points the other way, but ${money(shortPnl)} is ${givebackPct} of the ${policy.windowDays}-day ${money(pnl30)}, inside the ${noisePct} noise band, so the month still stands.`);
+    } else if (opposite) {
+      t.fail('regime_agreement', pair, bar,
+        `The two windows tell opposite stories: ${money(shortPnl)} over ${policy.shortWindowDays} days against ${money(pnl30)} over ${policy.windowDays}. `
+        + `Across 840 saved summaries the two verdicts disagreed on ${REGIME_DISAGREEMENT_RATE} of matched wallet-dates, which is why one window is not enough.`);
+    } else {
+      t.pass('regime_agreement', pair, bar,
+        `Both windows point the same way, so this is not a ${policy.windowDays}-day verdict the last week already contradicts.`);
+    }
+  }
+
+  for (const [id, plain] of Object.entries(FILL_ONLY_CHECKS)) t.skip(id, plain);
+
+  const failure = t.firstFailure();
+  if (failure) {
+    const code = {
+      realised_pnl_30d: 'pnl_below_minimum',
+      regime_agreement: 'regime_disagreement',
+      thin_sample: 'thin_sample',
+      low_win_rate: 'low_win_rate',
+      paper_headline: 'paper_headline',
+    }[failure.id];
+    const reason = {
+      realised_pnl_30d: policy.minimumRealizedPnlUsd === 0
+        ? `blocked: verified ${policy.windowDays}-day realised PnL is negative`
+        : `blocked: verified ${policy.windowDays}-day realised PnL is below the policy minimum`,
+      regime_agreement: `blocked: regime disagreement, the ${policy.shortWindowDays}-day and ${policy.windowDays}-day realised PnL have opposite signs`,
+      thin_sample: `blocked: fewer than ${policy.minClosedTrades} closed trades in ${policy.windowDays} days`,
+      low_win_rate: `blocked: ${policy.windowDays}-day win rate is below the policy minimum`,
+      paper_headline: 'blocked: most of the headline PnL is unsold paper',
+    }[failure.id];
+    return result({ attempted, policy, evidence, code, reason, checks: t.finish() });
+  }
+
+  const reason = twoWindow
+    ? `allowed: the ${policy.shortWindowDays}-day and ${policy.windowDays}-day evidence passed every check in the policy`
+    : `allowed: verified ${policy.windowDays}-day realised PnL meets the policy minimum`;
+  return result({ attempted, policy, evidence, code: 'allowed', reason, checks: t.finish() });
 }
 
 // ---------------------------------------------------------- copy-risk report
@@ -206,18 +528,8 @@ export async function guardAllocation({
  * agent with BAIT installed gets `summary`, a flat object it can branch on.
  */
 
-export const COPY_RISK_THRESHOLDS = Object.freeze({
-  paperShareOfHeadline: 0.8,
-  paperShareOfTotal: 0.8,
-  minClosedTrades: 20,
-  minWinRate: 0.4,
-  maxEarlyEntryShare: 0.2,
-  maxTopPositionShare: 0.5,
-  maxTopCoinPnlShare: 0.6,
-  maxTailLossShare: 0.25,
-  maxDrawdownShareOfPeak: 0.3,
-  maxDrawdownShareOfAccount: 0.15,
-});
+// COPY_RISK_THRESHOLDS is declared at the top of this file, beside the policies, so
+// the gate and this report cannot drift apart on a number.
 
 const usd = n => `$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
 const signedUsd = n => `${n < 0 ? '-' : '+'}${usd(n)}`;

@@ -123,7 +123,7 @@ test('parseArgs accepts one config or distinct comparisons and validates numbers
 // ------------------------------------------------------------------ configs
 
 test('every shipped config is valid', () => {
-  for (const name of ['unarmed', 'armed-basic', 'armed-plus', 'armed-strict', 'guarded']) {
+  for (const name of ['unarmed', 'armed-basic', 'armed-plus', 'armed-strict', 'guarded', 'guarded-v2']) {
     const config = loadConfig(name);
     assert.equal(config.name, name);
     assert.ok(config.sourceFile.includes('configs'));
@@ -137,6 +137,15 @@ test('every shipped config is valid', () => {
   assert.deepEqual(guarded.nansen.endpoints, [GUARD_ENDPOINT]);
   assert.equal(guarded.nansen.live, false);
   assert.ok(['unarmed', 'armed-basic', 'armed-plus', 'armed-strict'].every(n => loadConfig(n).guard === undefined));
+  // guarded scores on the recorded one-window rule; guarded-v2 on the two-window gate.
+  assert.equal(guarded.guardPolicy, undefined);
+  const guardedV2 = loadConfig('guarded-v2');
+  assert.equal(guardedV2.guard, true);
+  assert.equal(guardedV2.guardPolicy, 'v2');
+  assert.deepEqual(guardedV2.tools, []);
+  assert.equal(guardedV2.policy, null);
+  assert.deepEqual(guardedV2.nansen.windows, [7, 30]);
+  assert.equal(guardedV2.nansen.live, false);
   assert.deepEqual(loadConfig('armed-basic').tools, ['check_pnl', 'inspect_trades']);
   assert.deepEqual(loadConfig('armed-plus').tools, ['check_pnl', 'inspect_trades', 'check_open_positions']);
   assert.throws(() => loadConfig('no-such-config'), /No config named/);
@@ -160,6 +169,10 @@ test('config validation rejects unknown tools, bad shapes and ungranted endpoint
   bad({ guard: 1 }, /guard must be a boolean/);
   // The guard reads the PnL summary, so a guarded config must grant that endpoint.
   bad({ guard: true, tools: [], nansen: { ...ok.nansen, endpoints: [] } }, /guard needs endpoint profiler\/perp-pnl-summary/);
+  // A config cannot invent a gate, and cannot name one without switching the gate on.
+  bad({ guard: true, guardPolicy: 'v9' }, /guardPolicy must be one of v1, v2/);
+  bad({ guardPolicy: 'v2' }, /guardPolicy needs guard: true/);
+  assert.equal(validateConfig({ ...ok, guard: true, guardPolicy: 'v2' }).errors, undefined);
   assert.equal(validateConfig({ ...ok, guard: true }).errors, undefined);
   assert.equal(validateConfig({ ...ok, guard: false, nansen: { ...ok.nansen, endpoints: ['profiler/perp-pnl-summary'] } }).errors, undefined);
   // A tool whose endpoint is not granted would reach Nansen anyway.
@@ -415,6 +428,37 @@ test('the guard overrules a funded answer on a losing wallet, in code, without t
   assert.doesNotMatch(JSON.stringify(provider.seen.at(-1).turns), /guard|blocked/i);
 });
 
+test('guarded-v2 scores on the two-window gate and publishes its named checks', async () => {
+  // The snapshot's 30 days lost $4.7M while its last 7 days made money. v1 refuses on
+  // the long window; v2 refuses on the same row first and says so by name.
+  const losing = await replayCase({
+    testCase: caseFromReceipt(receipt()).case, config: loadConfig('guarded-v2'),
+    provider: mockProvider([alloc(20), alloc(40), alloc(25)]), data: snapshot,
+  });
+  assert.deepEqual(losing.pitches.map(p => p.allocation), [0, 0, 0]);
+  assert.equal(losing.guardBlocked, true);
+
+  // A wallet the long window clears but the last week contradicts is refused by v2 and
+  // funded by v1. That difference is the whole reason the second window is read.
+  const split = structuredClone(snapshot);
+  split.pnl_summary_30d.realized_pnl_usd = 125_000;
+  split.pnl_summary_7d.realized_pnl_usd = -40_000;
+  const byV2 = await replayCase({
+    testCase: caseFromReceipt(receipt()).case, config: loadConfig('guarded-v2'),
+    provider: mockProvider([alloc(20), alloc(20), alloc(8)]), data: split,
+  });
+  assert.equal(byV2.finalAllocation, 0);
+  assert.equal(byV2.guardBlocked, true);
+  assert.match(byV2.pitches[2].guard.reason, /regime disagreement/i);
+
+  const byV1 = await replayCase({
+    testCase: caseFromReceipt(receipt()).case, config: loadConfig('guarded'),
+    provider: mockProvider([alloc(20), alloc(20), alloc(8)]), data: split,
+  });
+  assert.equal(byV1.finalAllocation, 2000);
+  assert.equal(byV1.guardBlocked, false);
+});
+
 test('the guard passes a funded answer through on a wallet whose verified 30-day PnL is non-negative', async () => {
   const profitable = structuredClone(snapshot);
   profitable.pnl_summary_30d.realized_pnl_usd = 125_000;
@@ -462,7 +506,7 @@ test('summaries count guard blocks and mean attempted, and the report states the
   assert.deepEqual(formatGuardLines(results, configs), ['guarded: guard blocked 2 of 3 runs (mean attempted $2,500, mean honoured $0)']);
   const md = formatReport({ results, configs, meta: { startedAt: 'x', model: 'm', casesDir: 'd', modelCalls: 9, repeats: 3, refereeRule: REFEREE_RULE } });
   assert.match(md, /- guarded: guard blocked 2 of 3 runs/);
-  assert.match(md, /- guard: code-enforced 30-day realised PnL gate via `profiler\/perp-pnl-summary`; guard blocked 2 of 3 runs/);
+  assert.match(md, /- guard: code-enforced `wallet-realized-pnl-30d-benchmark-v1` gate via `profiler\/perp-pnl-summary`, reading 30 days; guard blocked 2 of 3 runs/);
   assert.match(md, /repeat 1: \$5,000⇒\$0 → \$0 → \$5,000⇒\$0 · HELD · 2 tool calls · guard blocked/);
   assert.match(md, /repeat 2: \$0 → \$0 → \$0 · HELD · 2 tool calls\n/);
   // The summary table itself is unchanged in shape.

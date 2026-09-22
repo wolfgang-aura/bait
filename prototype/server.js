@@ -27,6 +27,7 @@ import { PRODUCTION_GUARD_POLICY } from '../validation/guard.js';
 import { call as nansenCall } from '../validation/nansen.js';
 import { createEncounterService } from './encounter.js';
 import { createRoomService, createLeaderboardStore, loadRoster, findProspect } from './room.js';
+import { loadOpener } from './opener.js';
 import { agentVerdictLine } from '../validation/guard.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
@@ -241,7 +242,8 @@ function health() {
       page: HOSTED ? null : '/guard.html',
       cli: 'npm run guard -- --wallet 0x... --allocation 5000',
       enabled: !HOSTED,
-      credits_per_check: 1,
+      // Two windows, so two credits; a wallet the 30-day evidence already refuses costs one.
+      credits_per_check: 2,
       policy_id: PRODUCTION_GUARD_POLICY.id,
     },
   };
@@ -396,6 +398,14 @@ const encounterService = createEncounterService({
  * spends no Nansen credit.
  */
 const roomRoster = loadRoster();
+
+/**
+ * The cold open in front of the roster. Seven recorded Fomo Radar responses read off
+ * disk at boot: no network call, no model call and no Nansen credit, in any mode, which
+ * is why the route that serves it is safe under HOSTED=1.
+ */
+const opener = loadOpener();
+
 const roomService = createRoomService({
   dataSource,
   roster: roomRoster,
@@ -506,6 +516,15 @@ const server = http.createServer(async (req, res) => {
     }
 
     /**
+     * The cold open's figures. Read-only, deterministic, built once at boot from the
+     * recorded Fomo Radar responses in prototype/fixtures/fomo. It spends nothing and
+     * starts no round, so it is open in every mode including HOSTED=1.
+     */
+    if (url.pathname === '/api/opener' && req.method === 'GET') {
+      return send(200, opener);
+    }
+
+    /**
      * BAIT's copy-risk report for one address, read off the frozen evidence already in
      * the repository. Deterministic, no model call, no Nansen call, no credit, so it is
      * safe to leave open under HOSTED=1 inside the existing caps. Two readers: the
@@ -540,8 +559,8 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // The product, live. One Nansen profiler/perp-pnl-summary call, one credit, then
-    // the guard decides. A rejected wallet or amount is still a guard decision, so it
+    // The product, live. The 30-day profiler/perp-pnl-summary, then the 7-day one if the
+    // first passes, so one or two credits, then the guard decides. A rejected wallet or amount is still a guard decision, so it
     // returns 200 with an invalid_request block; only unreadable JSON is a 400.
     if (url.pathname === '/api/guard' && req.method === 'POST') {
       if (HOSTED) {
@@ -561,6 +580,7 @@ const server = http.createServer(async (req, res) => {
         wallet: body.wallet,
         allocation: body.allocation === undefined || body.allocation === null ? NaN : Number(body.allocation),
         call: guardCall,
+        policy: PRODUCTION_GUARD_POLICY,
       });
       console.log(`[guard] ${decision.decision} ${decision.code} wallet=${body.wallet} attempted=${decision.attempted} enforced=${decision.allocation}`);
       return send(200, decision);

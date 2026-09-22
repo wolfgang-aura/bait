@@ -202,22 +202,25 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     assert.equal(blocked.body.code, 'pnl_below_minimum');
     assert.equal(blocked.body.allocation, 0, 'a blocked check never returns the proposed amount');
     assert.equal(blocked.body.attempted, 5000);
-    assert.equal(blocked.body.policy.id, 'wallet-realized-pnl-30d-v1');
+    assert.equal(blocked.body.policy.id, 'wallet-copy-risk-v2');
+    assert.equal(blocked.body.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');
     assert.equal(blocked.body.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
-    assert.equal(blocked.body.creditsCharged, 1);
+    assert.equal(blocked.body.creditsCharged, 1, 'a wallet the 30-day evidence refuses never buys the 7-day window');
 
     const health = await s.call('/api/health');
     assert.equal(health.body.live_guard.route, 'POST /api/guard');
     assert.equal(health.body.live_guard.enabled, true);
   } finally { await s.stop(); }
 
-  const profitable = await startServer({ HOSTED: '', GUARD_CALL_MODULE: GUARD_STUB, GUARD_STUB_PNL: '2450809.47' });
+  const profitable = await startServer({ HOSTED: '', GUARD_CALL_MODULE: GUARD_STUB, GUARD_STUB_PNL: '2450809.47', GUARD_STUB_WIN_RATE: '0.55' });
   try {
     const allowed = await profitable.call('/api/guard', { method: 'POST', body: { wallet: LOSING_WALLET, allocation: 5000 } });
     assert.equal(allowed.status, 200);
     assert.equal(allowed.body.decision, 'allow');
     assert.equal(allowed.body.allocation, 5000);
     assert.equal(allowed.body.evidence.realized_pnl_usd, 2450809.47);
+    assert.equal(allowed.body.creditsCharged, 2, 'an allow read both windows');
+    assert.equal(allowed.body.checks.find(c => c.id === 'regime_agreement').result, 'pass');
   } finally { await profitable.stop(); }
 });
 

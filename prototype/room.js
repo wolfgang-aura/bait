@@ -335,8 +335,8 @@ export function createRoomService({
       executor: p.executor ?? makeToolExecutor(p.snapshot, { mode: 'armed' }),
       wallet: p.wallet,
       allocation,
-      // The benchmark policy, because the room always plays a frozen record. The
-      // freshness clause is the only difference; the PnL rule is identical.
+      // The benchmark family of the prospect's policy, because the room always plays a
+      // frozen record. The freshness clause is the only difference; the checks are identical.
       policy: p.guardPolicy ?? BENCHMARK_GUARD_POLICY,
       now,
     });
@@ -350,7 +350,11 @@ export function createRoomService({
       pnlLabel: money(decision.evidence.realized_pnl_usd ?? 0),
       source: decision.evidence.source,
       windowDays: decision.policy.window_days,
+      shortWindowDays: decision.policy.short_window_days ?? null,
       policyId: decision.policy.id,
+      // The whole check table, so the final card can show why, not just whether.
+      checks: (decision.checks ?? []).map(c => ({ id: c.id, result: c.result, plain: c.plain })),
+      failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
     };
   }
 
