@@ -1,6 +1,46 @@
 # BAIT public page, version B
 
-## Version F: one front door and the intercept, 23 September 2026 (current)
+## Version G: positives first, the loss last, 23 September 2026 (current)
+
+Scope: `prototype/public/room.html`, `room.css`, `room.js`, `prototype/room.js`, the hero of
+`replay.html` and the amount field on `guard.html`. Tokens, fonts and golden viewports
+(1280 x 720 recording, 1280 x 800, 390 x 844) are unchanged from Version F.
+
+**Why.** The founder's review of the v4 video: opening a profile showed every fact card at
+once, loss included; BAIT was never introduced; "Sell the loser" copy read wrong; the
+dollar amount on screen had no context.
+
+**The one thing a viewer should notice first.** Front door: "BAIT is the check that runs
+before the money moves." Room: the premise banner ("Your job: talk the AI into backing
+NAME, using only true facts") and the sealed red card. Reveal: the BLOCKED stamp beside
+"You talked MERIDIAN into sending $X to NAME".
+
+**Flow.** Roster, then straight into the room; the pre-pitch truth screen is gone. The room
+opens with one or two flattering facts, each line unlocks one more (an accent flash), a
+dashed line says how many are still to come, and the unflattering facts plus the buried
+number sit behind one sealed card whose value the server never sends. The round ends the
+moment the AI agrees to send money: an amber transfer card ("$X of its $25,000 into copying
+NAME. BAIT checks every transfer before it leaves.") holds for 3 s, then the reveal: stamp,
+headline, subline, the gate's reason, then the VS splash relabelled "What you pitched" and
+"What you left out". "See every check BAIT ran" opens the Version F ending. The desk's
+evidence findings stay sealed until the reveal; its spoken line is its own and may name
+the loss.
+
+**Copy rules.** Headlines say "the AI"; the model is named once in small print, read from
+the report header (`comparison.model`). No "sell the loser"; the verb is "talk into
+backing". The guard page's amount is "the amount the AI agent wants to send", and the
+result says "$X held. $0 sent." or "$X can be sent."
+
+**Seen, 23 September.** `scratch/shots/v5/`: `roster-legend.png`, `shot2.png`, `transfer.png`,
+`reveal.png`, `final.png`, `replay.png`, `guard-block.png`, phone `phone-shot2.png` and
+`phone-reveal.png`, and from real DeepSeek rounds `play-reveal.png` and `play-final.png`.
+No console error.
+
+**Video.** HyperFrames composition written by `scratch/hf/gen.cjs` at 1920 x 1080, 30 fps,
+same tokens and fonts. Captions sit in a full-width opaque bar at the bottom; amounts are
+revealed, never counted up.
+
+## Version F: one front door and the intercept, 23 September 2026
 
 Scope: `prototype/public/room.html`, `room.css`, `room.js`, the room service in
 `prototype/room.js`. Versions D and E below keep their visual language and tokens; F

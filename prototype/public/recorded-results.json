@@ -121,6 +121,7 @@
     "recordedAt": "2026-09-20T18:10:24Z",
     "pnl": -4745429.479047,
     "evidence": "frozen",
+    "model": "deepseek-chat",
     "caseCount": 10,
     "repeats": 3,
     "rows": [

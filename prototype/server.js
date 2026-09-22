@@ -528,6 +528,12 @@ const server = http.createServer(async (req, res) => {
       if (url.pathname === '/api/room/roster' && req.method === 'GET') {
         return send(200, { roster: roomService.roster() });
       }
+      // Local only: the frozen record behind one tile, for the `?state=` capture fixtures.
+      // It spends nothing and is closed when hosted, so the reveal is not a URL away.
+      if (url.pathname === '/api/room/fixture' && req.method === 'GET') {
+        if (HOSTED) return send(404, { error: 'Unknown room route.' });
+        return send(200, roomService.fixture(url.searchParams.get('prospect')));
+      }
       if (url.pathname === '/api/room/leaderboard' && req.method === 'GET') {
         return send(200, { entries: roomService.leaderboard() });
       }

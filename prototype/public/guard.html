@@ -33,6 +33,10 @@
     .receipt .verdict { font-family: var(--mono); font-size: clamp(56px, 8vw, 104px); line-height: .9; letter-spacing: -4px; margin: 16px 0 0; }
     .receipt .verdict.allow { color: var(--positive); }
     .receipt .verdict.block { color: var(--negative); }
+    .receipt .outcome { font-family: var(--mono); font-size: clamp(20px, 2.4vw, 28px); font-weight: 700; margin: 10px 0 0; }
+    .receipt .outcome.block { color: var(--negative); }
+    .receipt .outcome.allow { color: var(--positive); }
+    .allocation-note { margin: -6px 0 12px; }
     .receipt .verdict-code { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--pico-muted-color); margin: 8px 0 0; }
     .receipt .verdict-reason { font-size: 14px; color: var(--pico-color); margin: 12px 0 18px; }
     .receipt .checks { list-style: none; padding: 0; margin: 0 0 18px; font-size: 12.5px; }
@@ -78,17 +82,17 @@
     <main>
       <section class="product-hero">
         <div class="eyebrow">Pre-execution control <span>/</span> Live Nansen evidence</div>
-        <h1>Make the agent pass your rule before it funds a wallet.</h1>
-        <p>The model proposes. <strong>BAIT enforces.</strong> This gate reads the 7-day and the
-          30-day Nansen summary and runs a named check on each: realised loss, regime disagreement, thin sample, low win rate.</p>
+        <h1>BAIT checks the trader before your AI agent sends money.</h1>
+        <p>Your agent proposes an amount. <strong>BAIT sends all of it or none of it.</strong> It reads the trader's 7-day and
+          30-day record from Nansen and holds the money on a losing month, a week that contradicts the month, a thin sample or a low win rate.</p>
       </section>
 
       <section class="execution-rail" aria-label="Execution path">
-        <div class="rail-card"><span>01 · Agent proposal</span><strong>$5,000</strong><small>Model output stays recorded</small></div>
+        <div class="rail-card"><span>01 · AI agent wants to send</span><strong id="rail-ask">$5,000</strong><small>Its proposal, recorded as is</small></div>
         <div class="rail-arrow" aria-hidden="true">→</div>
         <div class="rail-card active"><span>02 · BAIT policy</span><strong>VERIFY</strong><small>Fresh evidence, fixed rule</small></div>
         <div class="rail-arrow" aria-hidden="true">→</div>
-        <div class="rail-card"><span>03 · Execution</span><strong>$5,000 or $0</strong><small>No model override</small></div>
+        <div class="rail-card"><span>03 · What actually leaves</span><strong id="rail-out">$5,000 or $0</strong><small>BAIT never resizes it; the model cannot override</small></div>
       </section>
 
       <div class="guard-layout" id="check">
@@ -101,8 +105,9 @@
           <label for="wallet">Wallet</label>
           <input id="wallet" name="wallet" type="text" spellcheck="false" autocomplete="off"
                  placeholder="0x..." value="0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd" required>
-          <label for="allocation">Proposed allocation, USD</label>
-          <input id="allocation" name="allocation" type="number" min="0" step="1" value="5000" required>
+          <label for="allocation">Amount the AI agent wants to send, USD</label>
+          <input id="allocation" name="allocation" type="number" min="0" step="1" value="5000" required aria-describedby="allocation-note">
+          <p class="guard-note allocation-note" id="allocation-note">The verdict depends on the trader, not the amount. The amount is what gets held or sent.</p>
           <button id="run" type="submit">Run the gate</button>
           <p class="guard-note">One or two live Nansen credits. Policy <code>wallet-copy-risk-v2</code> blocks a losing month, a week that
             contradicts the month, fewer than 20 closed trades, a win rate under 40%, and stale, missing, mismatched or failed evidence.</p>
@@ -118,12 +123,13 @@
           <section class="receipt" id="result" aria-live="polite" hidden>
             <span class="eyebrow">Guard decision</span>
             <p class="verdict" id="verdict"></p>
+            <p class="outcome" id="outcome"></p>
             <p class="verdict-code" id="code"></p>
             <p class="verdict-reason" id="reason"></p>
             <ul class="checks" id="checks"></ul>
             <div class="receipt-grid">
-              <div class="receipt-cell"><span>Attempted</span><strong id="attempted"></strong></div>
-              <div class="receipt-cell"><span>Enforced</span><strong id="enforced"></strong></div>
+              <div class="receipt-cell"><span>AI wanted to send</span><strong id="attempted"></strong></div>
+              <div class="receipt-cell"><span>Actually sent</span><strong id="enforced"></strong></div>
               <div class="receipt-cell"><span>Realised PnL, 30 days</span><strong id="pnl"></strong></div>
               <div class="receipt-cell"><span>Wallet</span><strong class="small" id="checked-wallet"></strong></div>
             </div>
@@ -164,6 +170,16 @@
       return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
     };
 
+    // The amount has one job: it is what gets held or sent. The rail says so as it is typed.
+    const whole = n => '$' + Math.round(Number(n) || 0).toLocaleString('en-US');
+    const syncRail = () => {
+      const ask = whole($('allocation').value);
+      $('rail-ask').textContent = ask;
+      $('rail-out').textContent = `${ask} or $0`;
+    };
+    $('allocation').addEventListener('input', syncRail);
+    syncRail();
+
     for (const button of document.querySelectorAll('.presets button')) {
       button.addEventListener('click', () => { $('wallet').value = button.dataset.wallet; });
     }
@@ -182,6 +198,12 @@
       const allowed = decision.decision === 'allow';
       $('verdict').textContent = allowed ? 'ELIGIBLE' : 'BLOCK';
       $('verdict').className = `verdict ${allowed ? 'allow' : 'block'}`;
+      const outcome = $('outcome');
+      outcome.className = `outcome ${allowed ? 'allow' : 'block'}`;
+      outcome.textContent = allowed
+        ? `${whole(decision.allocation)} can be sent.`
+        : `${whole(decision.attempted)} held. $0 sent.`;
+      $('rail-out').textContent = allowed ? `${whole(decision.allocation)} sent` : '$0 sent';
       $('code').textContent = decision.code;
       $('reason').textContent = decision.reason;
       const list = $('checks');

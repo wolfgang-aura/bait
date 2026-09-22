@@ -44,8 +44,11 @@ const el = {
   funded: $('funded'), pop: $('pop'), slotSub: $('slot-sub'), pips: $('pips'),
   meridian: $('meridian-portrait'), bubble: $('bubble'), nansen: $('nansen'), ticker: $('ticker'),
   clientPortrait: $('client-portrait'), clientName: $('client-name'), clientSub: $('client-sub'),
-  facts: $('facts'), buried: $('buried'), buriedValue: $('buried-value'), buriedLabel: $('buried-label'),
-  clean: $('clean'),
+  facts: $('facts'), nextFact: $('next-fact'), sealed: $('sealed'), sealedHead: $('sealed-head'),
+  sealedLabel: $('sealed-label'), premiseName: $('premise-name'), premiseSlot: $('premise-slot'),
+  revealStamp: $('reveal-stamp'), revealTitle: $('reveal-title'), revealSub: $('reveal-sub'),
+  revealWhy: $('reveal-why'), hypeLabel: $('hype-label'), recordLabel: $('record-label'),
+  ladderModel: $('ladder-model'),
   composer: $('composer'), line: $('line'), go: $('go'), count: $('count'), status: $('status'),
   stopped: $('stopped'), stoppedSub: $('stopped-sub'),
   intercept: $('intercept'), icptN: $('icpt-n'), icptTo: $('icpt-to'), icptAmt: $('icpt-amt'),
@@ -365,9 +368,10 @@ async function pick() {
   const p = roster[focused];
   el.grid.querySelectorAll('.tile').forEach(t => { t.disabled = true; });
   try {
+    // Straight into the room. The record is the reveal, so it waits for BAIT's check.
     const state = await api('/api/room/start', { method: 'POST', body: { prospect: p.id } });
     adopt(state);
-    showTruth(state.prospect);
+    enterRoom();
   } catch (err) {
     el.bootError.hidden = false;
     text(el.bootError, `The round could not start: ${err.message}`);
@@ -376,7 +380,31 @@ async function pick() {
   }
 }
 
-// ---------------------------------------------------------- 2. the truth
+// ------------------------------------------------ 4. the reveal: BAIT's check
+
+/**
+ * The reveal. BAIT's decision on the one transfer comes first, then what was pitched
+ * against what was left out, then the rest of the report. Every word and figure is the
+ * server's `final` object and the prospect record it sent with the verdict.
+ */
+function showReveal(p, final) {
+  const kind = final.peak === 0 ? 'none' : final.verdict === 'block' ? 'blocked' : final.verdict === 'caution' ? 'caution' : 'cleared';
+  el.revealStamp.className = `stamp ${kind === 'blocked' ? '' : kind}`.trim();
+  text(el.revealStamp, final.stamp);
+  text(el.revealTitle, final.headline);
+  text(el.revealSub, final.subline);
+  el.revealWhy.hidden = !(final.because && final.verdict === 'block' && final.peak > 0);
+  text(el.revealWhy, final.because ? `Why: ${final.because}` : '');
+  text(el.hypeLabel, 'What you pitched');
+  text(el.recordLabel, final.verdict === 'block' ? 'What you left out' : 'What the record shows');
+  showTruth(p);
+  window.scrollTo(0, 0);
+  if (final.verdict === 'block' && final.peak > 0 && !reduced) {
+    body.classList.remove('shake');
+    void body.offsetWidth;
+    body.classList.add('shake');
+  }
+}
 
 function showTruth(p) {
   chosen = p;
@@ -431,7 +459,6 @@ function showTruth(p) {
   text(el.truthDisclosure, p.truth.disclosure);
 
   renderReport(el.truthReport, p.risk);
-  text(el.sell, p.risk.verdict === 'block' ? 'Sell them anyway' : 'Sell them');
   if (!reduced) { el.turnCard.style.animation = 'none'; void el.turnCard.offsetWidth; el.turnCard.style.animation = ''; }
 }
 
@@ -502,42 +529,56 @@ function renderGate(host, gate) {
 
 function enterRoom() {
   show('playing');
-  renderDossier(dossier);
+  renderScene(dossier);
+  renderFacts(dossier);
   el.line.disabled = false;
   el.line.focus();
 }
 
-function renderDossier(d) {
+/** The cast and the premise. Drawn once per round. */
+function renderScene(d) {
   text(el.slotSub, dollars(d.slot));
+  text(el.premiseSlot, dollars(d.slot));
+  text(el.premiseName, d.name);
   el.meridian.innerHTML = portraitSvg('meridian', { mood: 'neutral', accent: d.accent, title: 'MERIDIAN, the AI allocation desk' });
   el.clientPortrait.innerHTML = portraitSvg(d.portrait, { mood: 'confident', accent: d.accent, title: d.name, crop: 'face' });
   text(el.clientName, d.name);
   text(el.clientSub, `${d.venueLabel} · ${d.trader}`);
   text(el.ticker.firstElementChild, `${d.name}   ${d.endpoints.join('   ')}   ${d.evidenceLabel ?? `captured ${String(d.capturedAt).slice(0, 10)}`}   `.repeat(3).toUpperCase());
+  updateCount();
+}
 
+/**
+ * The dossier as the server released it: the flattering facts unlocked so far, one line
+ * saying another is coming, and the sealed card whose value was never sent. A fact that
+ * was not on screen a moment ago lands with a flash, so the unlock is seen.
+ */
+function renderFacts(d) {
+  const before = new Set([...el.facts.children].map(chip => chip.dataset.id));
   el.facts.replaceChildren();
   for (const fact of d.facts) {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'fact';
+    chip.dataset.id = fact.id;
+    if (before.size && !before.has(fact.id) && !reduced) chip.classList.add('fresh');
     const value = document.createElement('strong');
     value.textContent = fact.value;
-    // A fact is ammunition whichever way it points, but a loss is never printed green.
-    if (fact.value.startsWith('-')) value.classList.add('down');
     const label = document.createElement('span');
     label.textContent = fact.label;
     chip.append(value, label);
     chip.addEventListener('click', () => insertFact(fact.insert));
     el.facts.append(chip);
   }
-  el.buried.hidden = !d.buried;
-  if (d.buried) {
-    text(el.buriedValue, d.buried.value);
-    text(el.buriedLabel, d.buried.label);
+  el.nextFact.hidden = !d.upcoming;
+  text(el.nextFact, d.upcoming
+    ? `+${d.upcoming} more true fact${d.upcoming === 1 ? '' : 's'} unlock${d.upcoming === 1 ? 's' : ''} after line ${d.nextUnlock}`
+    : '');
+  el.sealed.hidden = !d.sealed;
+  if (d.sealed) {
+    text(el.sealedHead, d.sealed.mustNotMention ? 'The fact you must not mention' : 'The number BAIT will check');
+    text(el.sealedLabel, d.sealed.label);
   }
-  el.clean.hidden = !d.clean;
-  text(el.clean, d.clean);
-  updateCount();
 }
 
 function insertFact(sentence) {
@@ -675,18 +716,21 @@ function renderState(state) {
   setSuspicion(state.suspicion);
   setMood(state.mood);
   say(state.line);
-  renderChecks(state.checks, state.shotsUsed > 0 ? 'answered' : 'idle');
+  // The server unseals the desk's findings with the verdict. The page keeps them sealed
+  // through the transfer card, so the record lands with the reveal and not a beat early.
+  renderChecks(state.finished ? state.checks.map(c => ({ ...c, finding: c.finding ? 'record read' : null })) : state.checks,
+    state.shotsUsed > 0 ? 'answered' : 'idle');
   renderPips(state.shotsUsed, shots.flatMap((s, i) => (s.caught ? [i] : [])));
   renderStopped(state);
-  // A wire the page has not drawn yet is drawn now, on the spot. Older ones stay in
-  // the tally; the card only ever shows the latest attempt.
+  if (!state.finished) renderFacts(state.dossier);
+  // The desk's one transfer, drawn the moment it agrees. BAIT's decision on it is the
+  // reveal, one screen later.
   const latest = shots[shots.length - 1];
   if (shots.length > wiresShown) {
     wiresShown = shots.length;
     if (latest?.wire) showIntercept(latest);
-    else if (!latest?.caught) hideIntercept(latest);
   }
-  el.go.textContent = state.finished ? 'See the damage' : `Pitch (${state.shotsLeft} left)`;
+  el.go.textContent = state.finished ? 'See what BAIT did' : `Pitch (${state.shotsLeft} left)`;
   el.line.disabled = state.finished;
 }
 
@@ -703,41 +747,23 @@ function renderStopped(state) {
 }
 
 /**
- * The intercept. The desk has just committed money; this is BAIT's gate deciding that
- * exact wire, in the words and figures of the gate's own decision.
+ * The transfer. The desk has just agreed to send money, and this card says how much of
+ * its fund and to whom. It is sent to BAIT before it leaves; the decision is the reveal.
  */
 function showIntercept(shot) {
   const w = shot.wire;
-  const kind = w.decision === 'block' ? 'blocked' : w.verdict === 'caution' ? 'caution' : 'cleared';
-  el.intercept.className = `intercept ${kind}`;
+  el.intercept.className = 'intercept pending';
   el.intercept.hidden = false;
-  text(el.icptN, `Line ${shot.n} · wire attempt to`);
-  text(el.icptTo, chosen?.name ?? dossier?.name ?? '');
-  text(el.icptAmt, w.attemptedLabel);
-  text(el.icptStamp, w.stamp);
-  text(el.icptWhy, w.decision === 'block'
-    ? `${w.stoppedLabel} stopped. ${w.because ?? w.reason}`
-    : `${w.executedLabel} would move. ${w.reason}`);
-  if (!reduced) { el.intercept.style.animation = 'none'; void el.intercept.offsetWidth; el.intercept.style.animation = ''; }
-  if (w.decision === 'block' && !reduced) {
-    el.intercept.classList.remove('hit');
-    void el.intercept.offsetWidth;
-    el.intercept.classList.add('hit');
-  }
-}
-
-/** A reply that committed nothing sends no wire, and the card says so. */
-function hideIntercept(shot) {
-  if (!shot || el.intercept.hidden) return;
-  el.intercept.className = 'intercept none';
-  text(el.icptN, `Line ${shot.n} · no wire`);
+  text(el.icptN, `Line ${shot.n} · MERIDIAN agreed to send`);
   text(el.icptTo, '');
-  text(el.icptAmt, '$0');
-  text(el.icptStamp, 'NO WIRE');
-  text(el.icptWhy, 'The desk committed nothing on this line. The gate still holds everything it stopped.');
+  text(el.icptAmt, w.attemptedLabel);
+  text(el.icptStamp, 'NEXT: BAIT');
+  text(el.icptWhy, `${w.attemptedLabel} of its ${dollars(dossier?.slot ?? 25000)} into copying ${chosen?.name ?? dossier?.name ?? 'this trader'}. BAIT checks every transfer before it leaves.`);
+  if (!reduced) { el.intercept.style.animation = 'none'; void el.intercept.offsetWidth; el.intercept.style.animation = ''; }
 }
 
 async function pitch() {
+  if (round?.finished) { finish(); return; }
   if (sending || !round) return;
   const line = el.line.value.trim();
   if (!line) { fail('Say something first.'); return; }
@@ -765,7 +791,8 @@ async function pitch() {
     updateCount();
     const last = state.shots[state.shots.length - 1];
     if (last?.caught) text(el.status, 'Caught. That claim is not in the record.');
-    if (state.finished) await finish();
+    // Hold on the transfer card long enough to read it, then the reveal.
+    if (state.finished) setTimeout(finish, reduced ? 0 : last?.wire ? 3000 : 1200);
   } catch (err) {
     stop();
     fail(err.message);
@@ -795,16 +822,30 @@ function watch(id) {
 
 // ----------------------------------------------------------- 4. the gate
 
-async function finish() {
-  const result = await api(`/api/room/${round.id}/finish`, { method: 'POST', body: {} });
-  showFinal(result.final, result.leaderboard);
-  renderTranscript();
+let finishing = null;
+let result = null;
+
+/** Close the round once, then show BAIT's decision and the record behind it. */
+function finish() {
+  finishing ??= (async () => {
+    try {
+      result = await api(`/api/room/${round.id}/finish`, { method: 'POST', body: {} });
+      adopt(result);
+      showReveal(result.prospect, result.final);
+      renderTranscript();
+    } catch (err) {
+      finishing = null;
+      fail(err.message);
+    }
+  })();
+  return finishing;
 }
 
 function showFinal(final, entries, mineAt = null) {
   show('final');
+  window.scrollTo(0, 0);
   text(el.wireWho, final.prospect.name);
-  text(el.wireKind, final.peak > 0 ? 'Biggest wire' : 'No wire');
+  text(el.wireKind, final.peak > 0 ? 'Transfer' : 'No transfer');
   text(el.wireAmount, final.peakLabel);
   text(el.wireStopped, final.stoppedLabel);
   el.wireStopped.classList.toggle('zero', !final.stopped);
@@ -890,10 +931,11 @@ async function renderLadder() {
   try {
     const results = await api('/recorded-results.json');
     const rows = results.comparison.rows;
+    // Plain words: the headline says "AI"; the model is named once, in the small print.
     const label = {
-      unarmed: 'no data',
-      'armed-basic': 'with Nansen data, no rule',
-      guarded: "behind BAIT's gate",
+      unarmed: 'The AI alone backed the losing trader',
+      'armed-basic': 'With Nansen data in hand, it still did',
+      guarded: "Behind BAIT's gate, no money reached him",
     };
     el.ladder.replaceChildren();
     for (const config of ['unarmed', 'armed-basic', 'guarded']) {
@@ -904,14 +946,14 @@ async function renderLadder() {
       const n = document.createElement('b');
       n.textContent = `${r.funded}/${r.runs}`;
       const s = document.createElement('span');
-      s.textContent = config === 'guarded' && r.blocked
-        ? `funded ${label[config]}, ${r.blocked} proposals stopped`
-        : `funded the loser, ${label[config]}`;
+      s.textContent = label[config];
       li.append(n, s);
       el.ladder.append(li);
     }
     const loss = Math.abs(Math.round(results.comparison.pnl));
-    text(el.ladderHead, `Recorded ${String(results.comparison.recordedAt).slice(0, 10)}: DeepSeek vs a wallet down $${loss.toLocaleString('en-US')} in 30 days`);
+    const runs = rows.find(x => x.config === 'unarmed')?.runs ?? 30;
+    text(el.ladderHead, `${runs} runs: ${results.comparison.caseCount} recorded attacks against an AI allocator, on a trader down ${loss.toLocaleString('en-US')} in 30 days`);
+    text(el.ladderModel, `Model tested: ${results.comparison.model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : results.comparison.model ?? 'not recorded'} · recorded ${String(results.comparison.recordedAt).slice(0, 10)}`);
   } catch { el.ladder.closest('.ladder-strip').hidden = true; }
 }
 
@@ -980,72 +1022,77 @@ async function fixture(name, prospectId) {
 
   const assessed = await api(`/api/assess?address=${encodeURIComponent(target.wallet ?? target.id)}&handle=${encodeURIComponent(target.handle ?? target.id)}`)
     .catch(() => null);
+  // The frozen record behind this tile, from the local-only fixture route. A played
+  // round gets the same objects from the server when BAIT has checked the transfer.
+  const frozen = await api(`/api/room/fixture?prospect=${encodeURIComponent(target.id)}`);
   const state = await api('/api/room/start', { method: 'POST', body: { prospect: target.id } });
   adopt(state);
-
-  if (name === 'truth') { showTruth(state.prospect); return; }
+  const p = frozen.prospect;
+  const block = p.risk.verdict === 'block';
+  const amount = 2500;
+  // Layout only: the amount is a fixture value shaped like the server's `wire` object.
+  const wire = {
+    attempted: amount, attemptedLabel: dollars(amount), decision: block ? 'block' : 'allow',
+    verdict: p.risk.verdict, stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[p.risk.verdict],
+    stopped: block ? amount : 0, stoppedLabel: dollars(block ? amount : 0), executedLabel: dollars(block ? 0 : amount),
+    reason: 'fixture',
+  };
+  const fixtureFinal = {
+    funded: amount, fundedLabel: dollars(amount), peak: amount, peakLabel: dollars(amount),
+    stopped: wire.stopped, stoppedLabel: wire.stoppedLabel,
+    executed: block ? 0 : amount, executedLabel: wire.executedLabel,
+    verdict: p.risk.verdict, blocked: block, stamp: wire.stamp,
+    prospect: { id: p.id, name: p.name, handle: p.handle, venueLabel: p.venueLabel },
+    headline: `You talked MERIDIAN into sending ${dollars(amount)} to ${p.name}.`,
+    subline: block
+      ? `BAIT checked ${p.venue === 'fomo' ? 'the recorded Fomo tape' : 'Nansen'} before the money moved. Blocked: ${dollars(amount)} held, $0 sent.`
+      : `BAIT checked ${p.venue === 'fomo' ? 'the recorded Fomo tape' : 'Nansen'} before the money moved. The gate let it through: ${dollars(amount)} sent.`,
+    because: block ? p.risk.flags.find(f => f.id === 'realised_negative')?.plain ?? null : null,
+    trail: null,
+    agentLine: assessed?.agent_line ?? '',
+    gate: { checks: [], policyId: 'fixture', windowDays: 30, source: 'fixture', reason: 'fixture state, no gate run' },
+    risk: p.risk,
+  };
+  const fixtureShots = [
+    { n: 1, text: state.dossier.facts[0].insert, full: 'Fixture reply.', line: 'Fixture reply.', mood: 'neutral', allocation: 0,
+      suspicionBefore: 30, suspicion: 28, checks: [], check: 'ai-checked', caught: false, wire: null },
+    { n: 2, text: state.dossier.facts[0].insert, full: 'Fixture reply.', line: 'Fixture reply.', mood: 'intrigued', allocation: amount,
+      suspicionBefore: 28, suspicion: 20, checks: [], check: 'ai-checked', caught: false, wire },
+  ];
 
   if (name === 'shot2') {
-    // Layout only: the amounts and the wire are fixture values shaped like the
-    // server's `wire` object, so the intercept card can be photographed without a round.
-    const block = state.prospect.risk.verdict === 'block';
-    const wire = amount => ({
-      attempted: amount, attemptedLabel: dollars(amount), decision: block ? 'block' : 'allow',
-      verdict: block ? 'block' : 'allow', stamp: block ? 'BLOCKED' : 'CLEARED',
-      stopped: block ? amount : 0, stoppedLabel: dollars(block ? amount : 0), executedLabel: dollars(block ? 0 : amount),
-      because: block ? `Closed trades over 30 days came to ${state.dossier.lossLabel}. Copying this wallet would have lost money.` : null,
-      reason: 'fixture',
-    });
-    renderState({
-      ...state, shotsUsed: 2, shotsLeft: 1, funded: 3750, suspicion: 24, mood: 'intrigued',
-      peak: 3750, stopped: block ? 3750 : 0, wiresAttempted: 2, wiresBlocked: block ? 2 : 0,
-      shots: [
-        { n: 1, text: state.dossier.facts[1].insert, allocation: 2500, caught: false, wire: wire(2500) },
-        { n: 2, text: state.dossier.facts[2].insert, allocation: 3750, caught: false, wire: wire(3750) },
-      ],
-      line: 'A win rate over that sample is a process, not luck.',
-      checks: [
-        { endpoint: state.dossier.endpoints[0], label: 'evidence read', finding: `${state.dossier.lossLabel} realised PnL` },
-        ...(state.dossier.endpoints[1] ? [{ endpoint: state.dossier.endpoints[1], label: 'trade history', finding: 'record returned' }] : []),
-      ],
-    });
+    // Mid-round: one line spent, the next fact unlocked, the loss still sealed.
     enterRoom();
+    renderState({
+      ...state, dossier: frozen.sealedDossier,
+      shotsUsed: 1, shotsLeft: 2, funded: 0, suspicion: 28, mood: 'intrigued', peak: 0, stopped: 0,
+      shots: fixtureShots.slice(0, 1), line: 'Fixture reply: tell me more about that record.',
+      checks: state.dossier.endpoints.slice(0, 1).map(endpoint => ({ endpoint, label: 'evidence read', finding: 'record read' })),
+    });
+    renderFacts({ ...frozen.sealedDossier, facts: frozen.dossier.facts.slice(0, Math.min(frozen.dossier.facts.length, state.dossier.facts.length + 1)),
+      upcoming: Math.max(0, frozen.dossier.facts.length - state.dossier.facts.length - 1), nextUnlock: 2 });
     el.line.value = state.dossier.facts[0].insert;
     el.line.disabled = false;
     updateCount();
     return;
   }
 
+  if (name === 'transfer') {
+    // The moment the desk agrees: the transfer card, before the reveal.
+    enterRoom();
+    renderState({ ...state, shotsUsed: 2, shotsLeft: 0, finished: true, funded: amount, suspicion: 20, mood: 'intrigued',
+      peak: amount, stopped: 0, shots: fixtureShots, line: 'Fixture reply: fine, a small probe.', checks: [] });
+    return;
+  }
+
+  if (name === 'truth' || name === 'reveal') {
+    showReveal(p, fixtureFinal);
+    return;
+  }
+
   if (name === 'final') {
-    // Layout only: the conversation and the amounts are fixture values, the
-    // prospect's report and the board are real. A played round draws this card from
-    // the server's `final` object instead.
-    const risk = state.prospect.risk;
-    const plan = [4000, 4000, 0];
-    const block = risk.verdict === 'block';
-    shots = state.dossier.facts.slice(0, 3).map((fact, i) => ({
-      n: i + 1, text: fact.insert, full: 'Fixture reply.', line: 'Fixture reply.',
-      mood: 'neutral', allocation: plan[i], suspicionBefore: 30, suspicion: 42, checks: [], check: 'ai-checked', caught: false,
-      wire: plan[i] ? {
-        attempted: plan[i], attemptedLabel: dollars(plan[i]), decision: block ? 'block' : 'allow',
-        stamp: block ? 'BLOCKED' : 'CLEARED', stopped: block ? plan[i] : 0, stoppedLabel: dollars(block ? plan[i] : 0),
-      } : null,
-    }));
-    const peak = 4000;
-    const stopped = block ? peak : 0;
-    showFinal({
-      funded: 0, fundedLabel: '$0', peak, peakLabel: dollars(peak), stopped, stoppedLabel: dollars(stopped),
-      executed: block ? 0 : peak, executedLabel: dollars(block ? 0 : peak),
-      verdict: risk.verdict, blocked: block,
-      stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[risk.verdict],
-      prospect: { id: target.id, name: target.name, handle: target.handle, venueLabel: target.venueLabel },
-      headline: block ? `You conned MERIDIAN into ${dollars(peak)}.` : `You sold MERIDIAN ${dollars(peak)} of ${target.name}.`,
-      subline: block ? `BAIT stopped all of it. 2 wire attempts, every one blocked. $0 moved.` : 'BAIT let it through. Nothing to catch.',
-      trail: block ? `MERIDIAN backed down to $0 by line 3. The gate had already stopped the ${dollars(peak)} wire on line 1.` : null,
-      agentLine: assessed?.agent_line ?? '',
-      gate: { checks: [], policyId: 'fixture', windowDays: 30, source: 'fixture', reason: 'fixture state, no gate run' },
-      risk,
-    }, boardEntries);
+    shots = fixtureShots;
+    showFinal(fixtureFinal, boardEntries);
     renderTranscript();
   }
 }
@@ -1074,8 +1121,8 @@ async function boot() {
     if (event.key === 'End') { event.preventDefault(); focus(roster.length - 1); el.grid.children[focused].focus(); }
     if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pick(); }
   });
-  el.sell.addEventListener('click', enterRoom);
-  el.back.addEventListener('click', () => { show('roster'); focus(focused); });
+  el.sell.addEventListener('click', () => { if (result) showFinal(result.final, result.leaderboard); });
+  el.back.addEventListener('click', () => { window.location.href = window.location.pathname; });
   el.submitScore.addEventListener('click', postScore);
   el.again.addEventListener('click', () => { window.location.href = window.location.pathname; });
 

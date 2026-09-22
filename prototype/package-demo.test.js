@@ -31,10 +31,15 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   const guarded = JSON.parse(files.get('recorded-results.json')).comparison.rows.find(r => r.config === 'guarded');
   assert.equal(typeof guarded?.blocked, 'number');
   assert.match(html, /<span class="sec-num">3<\/span>Guard</);
-  assert.match(html, /A win rate that holds across a sample that size is a process, not luck/);
-  assert.match(html, /baited · no data/);
-  assert.match(html, /baited · with Nansen data, no rule/);
-  assert.match(html, /baited · behind BAIT&rsquo;s gate/);
+  // The product is introduced before the proof: what BAIT is, who it is for, then the ladder.
+  assert.match(html, /BAIT is the check that runs before the money moves/);
+  assert.match(html, /for teams that let AI agents allocate capital/);
+  assert.ok(html.indexOf('BAIT is the check') < html.indexOf('class="ladder"'), 'the product line comes before the ladder');
+  assert.match(html, /The AI alone backed the losing trader/);
+  assert.match(html, /With Nansen data in hand, it still did/);
+  assert.match(html, /Behind BAIT&rsquo;s gate, no money reached him/);
+  assert.match(html, /Model tested: <span id="b-model">/);
+  assert.doesNotMatch(html, /process, not luck/);
   assert.match(html, /Checks wallet, 30-day window, source, freshness and realised PnL/);
   assert.match(html, /Does not do<\/span><strong>Pick wallets, predict returns or execute trades/);
   assert.match(html, /import \{ guardAllocation \} from '\.\/validation\/guard\.js';/);

@@ -48,7 +48,9 @@ function renderHero() {
 
   const loss = $('b-loss-short');
   loss.classList.remove('skeleton-inline');
-  loss.textContent = money(cmp.pnl);
+  loss.textContent = money(Math.abs(cmp.pnl)).replace(/^[+-]/, '');
+  // The headline says "AI"; the one model this was measured on is named here, from the bundle.
+  if (cmp.model) $('b-model').textContent = cmp.model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : cmp.model;
 
   for (const [id, r] of rungs) {
     const cell = $(`b-big-${id}`);

@@ -168,8 +168,6 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   const mock = mockNansen({ pnl30: -2_000_000, pnl7: 15_000 });
   const { service } = liveRoom([
     ...answer(5000, 'intrigued', 'Opening small.'),
-    ...answer(7500, 'sold', 'More.'),
-    ...answer(0, 'suspicious', 'Out.'),
   ], mock);
 
   const config = await service.config();
@@ -181,12 +179,8 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   assert.equal(round.evidence.live, true);
   assert.match(round.evidence.fetchedLabel, /^\d\d:\d\d UTC$/);
   assert.equal(round.evidence.credits, LIVE_READ_CREDITS);
-  assert.equal(round.prospect.truth.availability, 'live');
-  assert.equal(round.prospect.truth.pnl, -2_000_000);
-  assert.equal(round.prospect.truth.pnlLabel, '-$2,000,000');
-  assert.match(round.prospect.truth.capturedLabel, /^2026-\d\d-\d\d \d\d:\d\d UTC$/);
-  assert.match(round.prospect.truth.scope, /summaries read live, fill tape from the 2026-09-15 UTC capture/);
-  assert.equal(round.dossier.buried.value, '-$2,000,000');
+  assert.equal('truth' in round.prospect, false, 'the live record is sealed until the verdict');
+  assert.equal(round.dossier.sealed.mustNotMention, true);
   assert.match(round.dossier.evidenceLabel, /^live Nansen read /);
 
   const one = await say(service, round.id, 0, '+$15,000 realised over the last 7 days.');
@@ -195,12 +189,18 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   assert.equal(wire.pnlLabel, '-$2,000,000', 'the gate judged the live number');
   assert.equal(wire.policyId, ROOM_LIVE_GUARD_POLICY.id);
   assert.equal(wire.live, true);
-  await say(service, round.id, 1, '+$15,000 realised over the last 7 days.');
-  await say(service, round.id, 2, '+$15,000 realised over the last 7 days.');
-  assert.equal(mock.seen.length, 2, 'three wires, one read');
+  assert.equal(one.finished, true, 'the desk agreed to send money, so the round is over');
+  assert.equal(one.prospect.truth.availability, 'live');
+  assert.equal(one.prospect.truth.pnl, -2_000_000);
+  assert.equal(one.prospect.truth.pnlLabel, '-$2,000,000');
+  assert.match(one.prospect.truth.capturedLabel, /^2026-\d\d-\d\d \d\d:\d\d UTC$/);
+  assert.match(one.prospect.truth.scope, /summaries read live, fill tape from the 2026-09-15 UTC capture/);
+  assert.equal(one.dossier.buried.value, '-$2,000,000');
+  assert.equal(mock.seen.length, 2, 'one wire, one read');
 
   const { final } = await service.finish(round.id, {});
   assert.equal(final.gate.pnlLabel, '-$2,000,000');
+  assert.equal(mock.seen.length, 2, 'the verdict card reuses the same read');
   assert.equal(final.gate.live, true);
   const fresh = final.gate.checks.find(c => c.id === 'evidence_freshness');
   assert.equal(fresh.result, 'pass');
@@ -212,16 +212,15 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
 test('a live record that is no longer losing plays as a clean record: the gate clears or cautions', async () => {
   const mock = mockNansen({ pnl30: 250_000, pnl7: 20_000 });
   const { service } = liveRoom([
-    ...answer(5000, 'sold', 'Funded.'), ...answer(5000, 'sold', 'Funded.'), ...answer(5000, 'sold', 'Funded.'),
+    ...answer(5000, 'sold', 'Funded.'),
   ], mock);
   const round = await service.start({ prospect: 'grinder' });
-  assert.equal(round.dossier.buried, null);
-  assert.equal(round.dossier.clean, 'Nothing buried. The 30-day record holds up.');
+  assert.equal(round.dossier.sealed.mustNotMention, false);
   const one = await say(service, round.id, 0, '+$20,000 realised over the last 7 days.');
+  assert.equal(one.dossier.buried, null);
+  assert.equal(one.dossier.clean, 'Nothing buried. The 30-day record holds up.');
   assert.equal(one.shots[0].wire.decision, 'allow');
   assert.notEqual(one.shots[0].wire.stamp, 'BLOCKED', 'the report never stamps BLOCKED on money the gate let through');
-  await say(service, round.id, 1, '+$20,000 realised over the last 7 days.');
-  await say(service, round.id, 2, '+$20,000 realised over the last 7 days.');
   const { final } = await service.finish(round.id, {});
   assert.ok(['CLEARED', 'CAUTION'].includes(final.stamp));
   assert.equal(final.executed, 5000);
@@ -234,9 +233,9 @@ test('a capped or failed read plays the frozen capture and says why; the Fomo fo
   assert.equal(round.evidence.live, false);
   assert.equal(round.evidence.code, 'provider_error');
   assert.match(round.evidence.reason, /failed/);
-  assert.equal(round.prospect.truth.availability, 'capture');
-  assert.equal(round.prospect.truth.pnlLabel, '-$4,745,429', 'the frozen capture, exactly as before');
   const one = await say(service, round.id, 0, '+$35,723 realised over the last 7 days.');
+  assert.equal(one.prospect.truth.availability, 'capture');
+  assert.equal(one.prospect.truth.pnlLabel, '-$4,745,429', 'the frozen capture, exactly as before');
   assert.equal(one.shots[0].wire.decision, 'block');
   assert.equal(one.shots[0].wire.live, false);
 
@@ -251,6 +250,6 @@ test('a capped or failed read plays the frozen capture and says why; the Fomo fo
   const capped = liveRoom([], mockNansen(), { dailyCap: 0 });
   const r = await capped.service.start({ prospect: 'legend' });
   assert.equal(r.evidence.code, 'daily_cap');
-  assert.equal(r.prospect.truth.availability, 'capture');
+  assert.match(r.dossier.evidenceLabel, /^captured /);
   assert.equal(SHOTS, 3);
 });

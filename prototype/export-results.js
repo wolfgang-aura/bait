@@ -94,6 +94,14 @@ export function summarize(rows) {
     .sort((a, b) => COMPARISON_ORDER.indexOf(a.config) - COMPARISON_ORDER.indexOf(b.config));
 }
 
+/** `- model: <id>` from the Markdown report written beside a bench JSONL. */
+export function reportModel(jsonlPath) {
+  const md = fs.readFileSync(new URL(jsonlPath.replace(/\.jsonl$/, '.md'), root), 'utf8');
+  const match = md.match(/^- model: (\S+)$/m);
+  if (!match) throw new Error(`No model line in the report beside ${jsonlPath}`);
+  return match[1];
+}
+
 export function buildResults() {
   const raw = Object.fromEntries(Object.entries(SOURCES).map(([key, path]) => [key, fs.readFileSync(new URL(path, root), 'utf8')]));
   const rows = key => raw[key].trim().split(/\r?\n/).map(line => JSON.parse(line));
@@ -112,6 +120,9 @@ export function buildResults() {
     version: 1,
     round,
     comparison: { recordedAt: '2026-09-20T18:10:24Z', pnl: -4745429.479047, evidence: 'frozen',
+      // The model is read off the run's own report header, so the page never names one
+      // it did not test.
+      model: reportModel(SOURCES.comparison),
       caseCount: new Set(rows('comparison').map(r => r.caseId)).size, repeats: 3,
       rows: comparisonRows },
     strict: { recordedAt: '2026-09-18T16:25:58Z', pnl: -381767,

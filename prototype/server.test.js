@@ -63,13 +63,18 @@ test('the default route is the Pitch Room, with the guard console still reachabl
     assert.equal(page.status, 200);
     assert.match(page.type, /text\/html/);
     assert.match(page.body, /The Pitch Room/);
-    assert.match(page.body, /Pick the trader you think is printing money/);
-    assert.match(page.body, /What you would be getting into/);
+    assert.match(page.body, /BAIT is the check that runs before the money moves/);
+    assert.match(page.body, /Built for teams that let AI agents allocate capital/);
+    assert.match(page.body, /talk the AI into backing/);
+    assert.match(page.body, /The fact you must not mention/);
+    assert.doesNotMatch(page.body, /Sell them anyway/);
     assert.doesNotMatch(page.body, /Can you sell a losing trader/);
 
     const guardPage = await s.fetchText('/guard.html');
     assert.equal(guardPage.status, 200);
-    assert.match(guardPage.body, /Make the agent pass your rule before it funds a wallet/);
+    assert.match(guardPage.body, /BAIT checks the trader before your AI agent sends money/);
+    assert.match(guardPage.body, /Amount the AI agent wants to send/);
+    assert.match(guardPage.body, /held\. \$0 sent\./);
     assert.match(guardPage.body, /ELIGIBLE/);
     for (const path of ['/replay.html', '/index.html', '/room.css', '/room.js', '/portraits.js']) {
       assert.equal((await s.fetchText(path)).status, 200, `${path} stays reachable`);
@@ -85,8 +90,11 @@ test('the room serves its dossier from the frozen snapshot and spends nothing to
     assert.equal(body.evidence.live, false);
     assert.equal(body.dossier.desk, 'MERIDIAN');
     assert.equal(body.dossier.slot, 25_000);
-    assert.equal(body.dossier.facts.length, 4);
-    assert.equal(body.dossier.buried.value, '-$4,745,429');
+    assert.equal(body.dossier.facts.length, 2, 'two flattering facts open before the first line');
+    assert.equal(body.dossier.upcoming, 2);
+    assert.equal('buried' in body.dossier, false, 'the loss is sealed until BAIT checks a transfer');
+    assert.equal(body.dossier.sealed.label, '30-day realised PnL');
+    assert.doesNotMatch(JSON.stringify(body.dossier), /4,745,429/);
     assert.deepEqual(body.dossier.endpoints, ['profiler/perp-pnl-summary', 'profiler/perp-trades']);
     assert.ok(Array.isArray(body.leaderboard));
 
@@ -283,8 +291,9 @@ test('the roster route ships hype only, and the truth arrives with the round', a
     const round = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'frankdegods' } });
     assert.equal(round.status, 201);
     assert.equal(round.body.prospect.id, 'frankdegods');
-    assert.equal(round.body.prospect.truth.source, 'Fomo Radar /api/trader (recorded)');
-    assert.ok(round.body.prospect.risk.flags.length, 'the copy-risk report arrives with the round');
+    assert.equal('truth' in round.body.prospect, false, 'the record is the reveal, so it arrives with the verdict');
+    assert.equal('risk' in round.body.prospect, false);
+    assert.equal(round.body.dossier.sealed.mustNotMention, true);
     assert.deepEqual(round.body.dossier.endpoints, ['Fomo Radar /api/trader (recorded)']);
 
     const health = await s.call('/healthz');
@@ -389,8 +398,8 @@ test('hosted with NANSEN_LIVE=1: a Hyperliquid pick is live with its fetch time,
     assert.equal(live.status, 201);
     assert.equal(live.body.evidence.live, true);
     assert.match(live.body.evidence.fetchedLabel, /^\d\d:\d\d UTC$/);
-    assert.equal(live.body.prospect.truth.pnlLabel, '-$1,234,567', 'the stub figure, not the frozen one');
-    assert.equal(live.body.prospect.truth.availability, 'live');
+    assert.equal(live.body.evidence.summary.realized_pnl_30d_usd, -1234567, 'the stub figure, not the frozen one');
+    assert.equal('truth' in live.body.prospect, false, 'the live record is revealed with the verdict');
 
     const health = await s.call('/healthz');
     assert.equal(health.body.evidence, 'frozen', 'a second read would pass the 3-credit daily cap');

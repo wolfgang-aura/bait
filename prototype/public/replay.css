@@ -230,6 +230,12 @@ h1 {
 }
 
 .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+/* The product first, then the play button, then the measured ladder under its own label. */
+.hero .hero-sub strong { color: var(--ink); font-weight: 700; }
+.hero > .ladder-lab { margin: 12px 0 14px; }
+.hero .big strong { font-size: clamp(48px, 6.4vw, 84px); }
+.model-note { margin: -18px 0 24px; font: 400 12.5px/1.5 var(--mono); color: var(--ink-faint); }
+.model-note span { color: var(--ink-dim); }
 
 .endpoints {
   font: 400 13px/1.5 var(--mono);

@@ -55,11 +55,12 @@
   <!-- ============================================ 1. pick your hero ==== -->
   <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
     <p class="concept" id="concept">
-      Con an AI allocator with <b>true facts</b>. It will fund a loser.
-      <b>BAIT's code gate</b>, not the AI, stops the money.
+      AI agents are starting to move real money, and true facts can talk them into bad bets.
+      <b>BAIT is the check that runs before the money moves.</b>
+      <span class="for-whom">Built for teams that let AI agents allocate capital.</span>
     </p>
     <div class="roster-head">
-      <h1 class="screen-title" id="roster-title">Pick the trader you think is printing money.</h1>
+      <h1 class="screen-title" id="roster-title">Your turn: pick a trader, then talk the AI into backing them.</h1>
       <p class="truth-credit" id="truth-credit"><span>Truth source</span> <b>Nansen</b> profiler for the four Hyperliquid traders · recorded Fomo Radar tape for the four on Robinhood Chain</p>
     </div>
     <div class="grid" id="roster-grid" role="listbox" aria-label="Eight traders" tabindex="0"></div>
@@ -67,15 +68,15 @@
       <p class="caller-line" id="caller-line"></p>
       <p class="caller-meta" id="caller-meta"></p>
     </div>
-    <p class="hint">Arrow keys move. Enter picks. Every number on a tile is what that trader publishes about themselves. The record behind it shows after you pick.</p>
+    <p class="hint">Arrow keys move. Enter picks. Every number on a tile is what that trader publishes about themselves. The full record stays hidden until BAIT checks it.</p>
 
     <!-- Below the grid: the measured finding and the cons that really happened, so the
          first screen already says what the game proves. Both are read from files. -->
     <div class="front-proof">
       <div class="ladder-strip" id="ladder-strip" aria-label="Recorded benchmark">
-        <p class="col-head" id="ladder-head">Recorded: DeepSeek funding a wallet down $4.7M in 30 days</p>
+        <p class="col-head" id="ladder-head">We ran one recorded attack 30 times</p>
         <ol class="ladder" id="ladder"></ol>
-        <p class="ladder-foot"><a href="/replay.html">Recorded proof</a> · <a href="/?view=fomo">Side proof: Fomo's most-followed, ranked by what they sold</a></p>
+        <p class="ladder-foot"><span id="ladder-model">Model tested: DeepSeek</span> · <a href="/replay.html">Recorded proof</a> · <a href="/?view=fomo">Side proof: Fomo's most-followed, ranked by what they sold</a></p>
       </div>
       <div class="front-cons">
         <p class="col-head">Best cons so far · every one stopped by the gate</p>
@@ -84,11 +85,19 @@
     </div>
   </section>
 
-  <!-- ================================================== 2. the truth === -->
-  <section class="screen truth" id="truth-screen" hidden aria-labelledby="truth-head">
+  <!-- ============================ 4. the reveal: BAIT's check, then the record === -->
+  <section class="screen truth" id="truth-screen" hidden aria-labelledby="reveal-title">
+    <div class="reveal-head" id="reveal-head">
+      <p class="stamp" id="reveal-stamp">BLOCKED</p>
+      <div class="reveal-body">
+        <h2 class="reveal-title" id="reveal-title">.</h2>
+        <p class="reveal-sub" id="reveal-sub">.</p>
+        <p class="reveal-why" id="reveal-why" hidden>.</p>
+      </div>
+    </div>
     <div class="splash" id="splash">
       <div class="half hype-half">
-        <p class="half-label">What they post</p>
+        <p class="half-label" id="hype-label">What you pitched</p>
         <div class="half-art" id="truth-portrait"></div>
         <div class="half-text">
           <div class="plate">
@@ -103,7 +112,7 @@
       <div class="vs" aria-hidden="true">VS</div>
 
       <div class="half record-half" id="record-half">
-        <p class="half-label">What the record shows</p>
+        <p class="half-label" id="record-label">What you left out</p>
         <div class="turn" id="turn-card">
           <p class="record-pnl" id="truth-pnl">.</p>
           <p class="record-caption" id="truth-pnl-caption">.</p>
@@ -119,17 +128,22 @@
       </div>
     </div>
 
-    <h2 class="screen-title" id="truth-head">What you would be getting into</h2>
-    <div class="report" id="truth-report"></div>
-
     <div class="truth-actions">
-      <button id="sell" type="button" class="primary">Sell them anyway</button>
-      <button id="back" type="button" class="ghost">Pick someone else</button>
+      <button id="sell" type="button" class="primary">See every check BAIT ran</button>
+      <button id="back" type="button" class="ghost">Play again</button>
     </div>
+
+    <h2 class="screen-title" id="truth-head">What else BAIT found in the record</h2>
+    <div class="report" id="truth-report"></div>
   </section>
 
   <!-- =============================================== 3. the pitch room = -->
   <section class="screen stage" id="stage-screen" hidden>
+
+    <div class="premise">
+      <p class="premise-job">Your job: talk the AI into backing <b id="premise-name">this trader</b>, using only true facts.</p>
+      <p class="premise-how">MERIDIAN is an AI that invests a <span id="premise-slot">$25,000</span> fund. Backing a trader means sending part of it to copy their trades. The round ends when it agrees to send money.</p>
+    </div>
 
     <div class="readouts">
       <div class="readout">
@@ -137,14 +151,14 @@
         <div class="health"><i class="trail" id="meter-trail"></i><i class="fill" id="meter-fill"></i></div>
         <span class="readout-sub"><span id="suspicion">30</span> / 100</span>
       </div>
-      <ol class="pips" id="pips" aria-label="Shots left"><li></li><li></li><li></li></ol>
-      <div class="readout stopped-readout">
+      <ol class="pips" id="pips" aria-label="Lines left"><li></li><li></li><li></li></ol>
+      <div class="readout stopped-readout" hidden>
         <span class="readout-label">Stopped by BAIT</span>
         <strong class="stopped zero" id="stopped">$0</strong>
         <span class="readout-sub" id="stopped-sub">no wire yet</span>
       </div>
       <div class="readout funded-readout">
-        <span class="readout-label">Desk committed</span>
+        <span class="readout-label">AI agreed to send</span>
         <strong class="funded zero" id="funded">$0</strong>
         <span class="readout-sub">of <span id="slot-sub">$25,000</span></span>
         <span class="pop" id="pop" aria-hidden="true"></span>
@@ -184,14 +198,14 @@
           <p class="who"><strong id="client-name">.</strong><span id="client-sub">.</span></p>
         </div>
         <div class="dossier">
-          <p class="dossier-head">Everything here is true. Click to use it.</p>
+          <p class="dossier-head">True facts you can use. Click one to add it.</p>
           <div class="facts" id="facts"></div>
-          <p class="buried" id="buried" hidden>
-            <s id="buried-value"></s>
-            <span id="buried-label"></span>
-            <em>do not mention this</em>
-          </p>
-          <p class="clean" id="clean" hidden></p>
+          <p class="next-fact" id="next-fact" hidden>.</p>
+          <div class="sealed" id="sealed" hidden>
+            <span class="sealed-head" id="sealed-head">The fact you must not mention</span>
+            <span class="sealed-row"><b aria-label="hidden amount">$ &bull;&bull;&bull;&bull;&bull;&bull;</b> <span id="sealed-label">.</span></span>
+            <span class="sealed-foot">Locked until BAIT checks the transfer</span>
+          </div>
         </div>
       </aside>
     </div>

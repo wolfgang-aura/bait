@@ -13,10 +13,14 @@
  * to its prompt is a reply-shape clause, because a speech bubble cannot hold 65 words.
  * Nothing here tells the desk how to decide, and nothing here hardens it.
  *
- * Every time the desk commits money, that wire goes through BAIT's gate on the spot,
- * and the shot carries the gate's decision (`shot.wire`). The ending headlines the most
- * the desk committed and the most the gate stopped. BAIT reads the same frozen record
- * twice, and the wire is cut by whichever read is stricter:
+ * The facts come out in order (23 Sep 2026): the player starts with one or two flattering
+ * facts, each line unlocks the next one, and every unflattering fact stays sealed, value
+ * and all, until BAIT has checked the transfer. See `publicDossier`.
+ *
+ * The round ends the moment the desk agrees to send money. That transfer goes through
+ * BAIT's gate at once, the shot carries the gate's decision (`shot.wire`), and the
+ * ending is that one decision. A desk that never agrees gets three lines. BAIT reads the
+ * same record twice:
  *   - `guardAllocation`, the hard execution gate, unchanged since the recorded 0/30
  *     benchmark: a negative realised PnL over the window forces the allocation to zero.
  *   - `assessCopyRisk`, the copy-risk report, which answers what the PnL sign cannot:
@@ -129,11 +133,74 @@ export function buildProspectDossier(p) {
     checkerNote: p.checkerNote,
     // `insert` is what a click drops into the text box. Short on purpose: the box holds
     // 200 characters and a player needs room for the argument around the fact.
-    facts: p.dossier.facts.map(({ id, value, label, insert }) => ({ id, value, label, insert })),
+    // Flattering facts first, the one the trader brags about at the front, so the reveal
+    // order in `publicDossier` is a slice of this list.
+    facts: revealOrder(p.dossier.facts.map(({ id, value, label, insert }) => ({
+      id, value, label, insert, tone: factTone(value),
+    }))),
     buried: p.dossier.buried,
     clean: p.dossier.clean,
+    // What the sealed card is called while its value is hidden.
+    hiddenLabel: p.dossier.buried?.label ?? p.truth.pnlCaption,
     // Carried so the claim checker sees exactly the fact set the dossier shows.
     cards: p.dossier.facts.map(({ id, label, value, claim }) => ({ id, label, value, claim })),
+  };
+}
+
+/**
+ * Which way a fact points. A loss is unflattering, and so is a win rate under half:
+ * both stay sealed until BAIT has checked the transfer. Everything else is ammunition.
+ */
+export function factTone(value) {
+  const v = String(value ?? '').trim();
+  if (v.startsWith('-')) return 'negative';
+  if (v.endsWith('%')) return Number.parseFloat(v) >= 50 ? 'positive' : 'negative';
+  return 'positive';
+}
+
+/** The number the trader brags about goes first; the rest keep the roster's order. */
+const LEAD_FACTS = ['all-time', 'headline'];
+function revealOrder(facts) {
+  const lead = facts.filter(f => LEAD_FACTS.includes(f.id) && f.tone === 'positive');
+  return [...lead, ...facts.filter(f => !lead.includes(f))];
+}
+
+/**
+ * How many flattering facts are open before the first line, and how many each line adds.
+ * Two to start when there are three or more, one when there are only two, so there is
+ * always something left to unlock; the last one opens before the third line.
+ */
+export function revealSchedule(positives, shots = SHOTS) {
+  const initial = positives <= 2 ? Math.min(1, positives) : 2;
+  const step = Math.max(1, Math.ceil((positives - initial) / Math.max(1, shots - 1)));
+  return { initial, step };
+}
+
+/**
+ * The dossier as the page may see it. Before the round ends: the flattering facts
+ * unlocked so far, a count of the ones still to come, and one sealed card whose value is
+ * not in the payload at all. Every unflattering fact, the buried number and the claim
+ * texts stay on the server. After BAIT has checked the transfer, everything.
+ */
+export function publicDossier(d, { shotsUsed = 0, ended = false } = {}) {
+  const { cards, loss, lossLabel, buried, clean, facts, hiddenLabel, ...rest } = d;
+  const positives = facts.filter(f => f.tone === 'positive');
+  const negatives = facts.filter(f => f.tone !== 'positive');
+  if (ended) {
+    return {
+      ...rest, loss, lossLabel, buried, clean, hiddenLabel,
+      facts: positives, leftOut: negatives, upcoming: 0, nextUnlock: null, revealed: true,
+    };
+  }
+  const { initial, step } = revealSchedule(positives.length, d.shots ?? SHOTS);
+  const open = Math.min(positives.length, initial + step * shotsUsed);
+  return {
+    ...rest,
+    facts: positives.slice(0, open),
+    upcoming: positives.length - open,
+    nextUnlock: open < positives.length ? shotsUsed + 1 : null,
+    sealed: { label: hiddenLabel, mustNotMention: !!buried, count: negatives.length + (buried ? 1 : 0) },
+    revealed: false,
   };
 }
 
@@ -272,41 +339,37 @@ export function createLeaderboardStore(file, { limit = 20 } = {}) {
 
 // ----------------------------------------------------------------- ending
 
-const wires = n => `${n} wire attempt${n === 1 ? '' : 's'}`;
+/** The record BAIT read, in the words a stranger knows: Nansen, or the recorded Fomo tape. */
+const recordName = p => (p.venue === 'fomo' ? 'the recorded Fomo tape' : 'Nansen');
 
 /**
- * The ending, in three sentences at most, from the round's own tally. It headlines the
- * most the player talked the desk into and what the gate did with it, so a desk that
- * committed on line 1 and backed out on line 3 still shows the moment BAIT stopped it.
+ * The ending, in two sentences, from the one transfer the desk agreed to. The round ends
+ * the moment the desk agrees to send money, so there is exactly one wire or none.
  */
-export function endingCopy({ s, peak, stopped, executed, verdict, attempts, blocked }) {
+export function endingCopy({ s, peak, executed, verdict }) {
   const name = s.prospect.name;
+  const checked = `BAIT checked ${recordName(s.prospect)} before the money moved.`;
   if (peak === 0) {
     return {
-      headline: `${DESK_NAME} never committed a dollar.`,
-      subline: `No wire reached BAIT's gate, so it had nothing to stop.`,
+      headline: `${DESK_NAME} never agreed to send money.`,
+      subline: `Three lines and no transfer, so BAIT had nothing to stop.`,
       trail: null,
     };
   }
-  const peakShot = s.shots.find(shot => !shot.caught && shot.allocation === peak);
-  const last = s.shots[s.shots.length - 1];
-  const backedDown = s.funded < peak
-    ? `${DESK_NAME} backed down to ${dollars(s.funded)} by line ${last.n}. The gate had already stopped the ${dollars(peak)} wire on line ${peakShot?.n}.`
-    : null;
   if (verdict === 'block') {
     return {
-      headline: `You conned ${DESK_NAME} into ${dollars(peak)}.`,
-      subline: stopped >= peak
-        ? `BAIT stopped all of it. ${blocked.length === attempts.length ? `${wires(attempts.length)}, every one blocked` : `${blocked.length} of ${wires(attempts.length)} blocked`}. ${dollars(executed)} moved.`
-        : `BAIT stopped ${dollars(stopped)}. ${dollars(executed)} moved.`,
-      trail: backedDown,
+      headline: `You talked ${DESK_NAME} into sending ${dollars(peak)} to ${name}.`,
+      subline: executed > 0
+        ? `${checked} It held ${dollars(peak - executed)}; ${dollars(executed)} sent.`
+        : `${checked} Blocked: ${dollars(peak)} held, $0 sent.`,
+      trail: null,
     };
   }
   return {
-    headline: `You sold ${DESK_NAME} ${dollars(peak)} of ${name}.`,
+    headline: `You talked ${DESK_NAME} into sending ${dollars(peak)} to ${name}.`,
     subline: verdict === 'caution'
-      ? `The guard allowed ${dollars(executed)}. The recorded report still found concerns.`
-      : 'BAIT let it through. Nothing to catch.',
+      ? `${checked} The gate let it through: ${dollars(executed)} sent. The record still shows concerns.`
+      : `${checked} The gate let it through: ${dollars(executed)} sent.`,
     trail: null,
   };
 }
@@ -412,13 +475,25 @@ export function createRoomService({
     return s;
   };
 
-  const publicState = s => ({
+  /**
+   * The round is over when the desk has agreed to send money (that transfer is the one
+   * BAIT checks) or when the three lines are spent.
+   */
+  const ended = s => s.shots.length >= SHOTS || s.shots.some(shot => shot.wire);
+
+  /** An evidence check the desk ran, with its finding sealed until the round is over. */
+  const sealCheck = c => ({ ...c, finding: c.finding === null ? null : 'record read' });
+
+  const publicState = s => {
+    const over = ended(s);
+    return {
     id: s.id,
-    prospect: s.prospectPublic,
-    dossier: s.dossier,
+    // The record and the report are the reveal, so they arrive when the round is over.
+    prospect: over ? s.prospectPublic : rosterTile(s.prospect),
+    dossier: publicDossier(s.dossier, { shotsUsed: s.shots.length, ended: over }),
     shotsUsed: s.shots.length,
-    shotsLeft: SHOTS - s.shots.length,
-    finished: s.shots.length >= SHOTS,
+    shotsLeft: over ? 0 : SHOTS - s.shots.length,
+    finished: over,
     suspicion: s.suspicion,
     funded: s.funded,
     // The intercept tally. `peak` is the most the desk ever committed this round,
@@ -430,15 +505,16 @@ export function createRoomService({
     wiresBlocked: s.shots.filter(shot => shot.wire?.decision === 'block').length,
     mood: s.mood,
     line: s.line,
-    shots: s.shots,
-    checks: s.checks,
+    shots: over ? s.shots : s.shots.map(shot => ({ ...shot, checks: (shot.checks ?? []).map(sealCheck) })),
+    checks: over ? s.checks : s.checks.map(sealCheck),
     phase: s.phase,
     busy: s.busy,
     error: s.error,
     submitted: s.submitted,
     evidence: { ...s.evidence, capturedAt: s.dossier.capturedAt },
     health: health(),
-  });
+    };
+  };
 
   /**
    * BAIT's own gate, run on the same record the desk read. Nothing about the prospect
@@ -537,7 +613,7 @@ export function createRoomService({
         // The dossier of the prospect a start with no pick would use. It is not shown
         // on the roster screen; it is here so a client can size the scene before the
         // first round and so the fact set is inspectable without starting one.
-        dossier: buildProspectDossier(fallback),
+        dossier: publicDossier(buildProspectDossier(fallback)),
         // No round yet, so nothing on screen is live. `liveReady` says whether picking a
         // Hyperliquid trader right now would buy a live read.
         evidence: {
@@ -552,6 +628,16 @@ export function createRoomService({
     },
 
     roster: () => lineup.map(rosterTile),
+
+    /** The frozen record and the unsealed dossier behind one tile, for capture fixtures. */
+    fixture(id) {
+      const p = lineup.find(x => x.id === id) ?? fallback;
+      return {
+        prospect: prospectPublic(p),
+        dossier: publicDossier(buildProspectDossier(p), { ended: true }),
+        sealedDossier: publicDossier(buildProspectDossier(p)),
+      };
+    },
 
     leaderboard: () => board(),
 
@@ -593,6 +679,7 @@ export function createRoomService({
       }
       if (s.requestIds.has(body.requestId)) return publicState(s);
       if (s.busy || busyGlobally) throw new RoomError(`${DESK_NAME} is still reading another line. Wait a moment.`, 409);
+      if (s.shots.some(shot => shot.wire)) throw new RoomError(`The round is over: ${DESK_NAME} already agreed to send money.`, 409);
       if (s.shots.length >= SHOTS) throw new RoomError('You are out of shots. Close the round.', 409);
       if (typeof body.shot === 'number' && body.shot !== s.shots.length) {
         throw new RoomError('Your round moved on. Reload to restore it.', 409);
@@ -694,7 +781,7 @@ export function createRoomService({
         s.shots.push(shot);
         s.requestIds.add(body.requestId);
         s.pending = null;
-        s.phase = s.shots.length >= SHOTS ? 'Out of shots' : 'Waiting for your next line';
+        s.phase = wire ? 'BAIT checked the transfer' : s.shots.length >= SHOTS ? 'Out of shots' : 'Waiting for your next line';
         onSave({ id: s.id, at: new Date().toISOString(), kind: 'room', model: provider.model,
           prospect: s.prospect.id, prospectName: s.prospect.name,
           dataMode: s.dataMode, capturedAt: s.dossier.capturedAt, evidence: s.evidence, shots: s.shots });
@@ -723,7 +810,7 @@ export function createRoomService({
      */
     async finish(id, body = {}) {
       const s = lookup(id);
-      if (s.shots.length < SHOTS) throw new RoomError('Use all three lines first.', 409);
+      if (!ended(s)) throw new RoomError(`Keep pitching. The round ends when ${DESK_NAME} agrees to send money, or after three lines.`, 409);
       // The page calls this twice: once as the round ends, to show the card, and again
       // when the player types initials. The card is computed once and the row is
       // written once, so the second call places a score instead of being refused.
@@ -772,7 +859,10 @@ export function createRoomService({
         // A gate that only ever says no proves nothing, so a record that holds up gets
         // an ending that says the money moved.
         stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[verdict],
-        ...endingCopy({ s, peak, stopped, executed, verdict, attempts, blocked }),
+        ...endingCopy({ s, peak, executed, verdict }),
+        // The one check that decided it, in the gate's own words.
+        because: gate.checks.find(c => c.result === 'fail')?.plain ?? null,
+        checkedRecord: recordName(s.prospect),
         bestLine,
       };
       s.final = final;

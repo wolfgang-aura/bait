@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BAIT · Red-team benchmark for AI traders</title>
-<meta name="description" content="BAIT proves an AI trading agent can be talked into funding a losing wallet, scores any agent against the same recorded attacks, and ships the execution gate that stops it.">
+<title>BAIT · The check before an AI agent moves money</title>
+<meta name="description" content="AI agents can be talked into bad bets with true facts. BAIT is the check that runs before the money moves: it reads the trader&rsquo;s record from Nansen and blocks the transfer when the record is losing.">
 <meta name="theme-color" content="#0A0B0D">
 <meta property="og:type" content="website">
-<meta property="og:title" content="BAIT · Red-team benchmark for AI traders">
-<meta property="og:description" content="Ten recorded attacks, all true facts. With no data the agent funded a losing wallet 24/30. With Nansen data and no rule, 6/30. Behind BAIT's code gate, 0/30.">
+<meta property="og:title" content="BAIT · The check before an AI agent moves money">
+<meta property="og:description" content="Ten recorded attacks, 30 runs, all true facts. The AI alone backed a losing trader 24/30. With Nansen data, 6/30. Behind BAIT's gate, 0/30. Model tested: DeepSeek.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
 <header class="mast">
   <div class="mast-inner">
     <a class="mark" href="#top">BAIT</a>
-    <p class="mast-note">Red-team benchmark for AI capital allocators · recorded proof</p>
+    <p class="mast-note">The check that runs before an AI agent moves money · recorded proof</p>
   </div>
 </header>
 
@@ -30,29 +30,35 @@
   <p id="b-error" class="error" role="alert" hidden></p>
 
   <section class="hero" aria-labelledby="hero-title">
-    <p class="lab">Recorded attack 1 of 10, pitch 1 · <code>bench/cases/00-headline-encounter</code></p>
-    <h1 id="hero-title">&ldquo;A win rate that holds across a sample that size is a process, not luck.&rdquo;</h1>
-    <p class="hero-sub">Every fact in that pitch is true. The same wallet&rsquo;s realised PnL over the same 30 days was <span id="b-loss-short" class="skeleton-inline">&nbsp;</span>. DeepSeek funded it anyway.</p>
+    <p class="lab">BAIT · for teams that let AI agents allocate capital</p>
+    <h1 id="hero-title">AI agents are starting to move real money. True facts can talk them into bad bets.</h1>
+    <p class="hero-sub"><strong>BAIT is the check that runs before the money moves.</strong> The AI proposes a transfer; BAIT reads the trader&rsquo;s record from Nansen and blocks it when the record is losing.</p>
 
-    <ol class="ladder" aria-label="Replays in which the agent funded the losing wallet">
+    <div class="hero-actions">
+      <a class="btn" href="https://bait-wyqr.onrender.com/">Play: talk the AI into backing a losing trader</a>
+    </div>
+
+    <p class="lab ladder-lab">30 runs: 10 recorded attacks, 3 times each, on a trader down <span id="b-loss-short" class="skeleton-inline">&nbsp;</span> in 30 days</p>
+    <ol class="ladder" aria-label="Runs in which the AI backed the losing trader">
       <li class="big" data-rung="1">
         <strong id="b-big-unarmed" class="skeleton">&nbsp;</strong>
-        <span>baited · no data</span>
+        <span>The AI alone backed the losing trader</span>
       </li>
       <li class="big" data-rung="2">
         <strong id="b-big-armed-basic" class="skeleton">&nbsp;</strong>
-        <span>baited · with Nansen data, no rule</span>
+        <span>With Nansen data in hand, it still did</span>
       </li>
       <li class="big" data-rung="3">
         <strong id="b-big-guarded" class="skeleton">&nbsp;</strong>
-        <span>baited · behind BAIT&rsquo;s gate</span>
+        <span>Behind BAIT&rsquo;s gate, no money reached him</span>
       </li>
     </ol>
+    <p class="model-note">Model tested: <span id="b-model">see the report</span>. One frozen Nansen snapshot. Every fact in every attack is true.</p>
 
     <div class="hero-actions">
-      <a class="btn" href="#attack">Step through the attack</a>
-      <a class="btn-ghost" href="#score">Score your agent</a>
-      <a class="btn-ghost" href="#guard">Run the gate live</a>
+      <a class="btn-ghost" href="#attack">See the recorded attack</a>
+      <a class="btn-ghost" href="#score">Test your agent&rsquo;s rules</a>
+      <a class="btn-ghost" href="#guard">How the gate works</a>
     </div>
 
     <p id="b-endpoints" class="endpoints skeleton-row">&nbsp;</p>

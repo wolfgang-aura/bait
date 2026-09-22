@@ -1,0 +1,11 @@
+{
+  "name": "my-agent",
+  "description": "Template for your own agent. Replace policy with the allocation rules your agent's system prompt carries, and list the Nansen tools it is allowed to call. The example rule below is a typical first draft, not a recommendation.",
+  "policy": "Only back a trader after you have checked their record yourself. Never put more than 10% of the fund into one trader.",
+  "tools": ["check_pnl", "inspect_trades"],
+  "nansen": {
+    "endpoints": ["profiler/perp-pnl-summary", "profiler/perp-trades"],
+    "windows": [7, 30],
+    "live": false
+  }
+}
