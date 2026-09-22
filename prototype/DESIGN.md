@@ -8,6 +8,19 @@ through `GET /api/opener`. Version D below is unchanged: the roster, truth, pitc
 and gate screens keep their composition, their copy and their behaviour, and the roster
 simply starts hidden until the player continues out of this screen.
 
+### 23 September: busts on the pick
+
+The founder's verdict on the pick screen in the judge cut: "just boxes", cosmetically
+weak, "can we use the characters too?". Seen at 1280 x 720 before the change: seven
+flat text boxes ending 430px above the bottom, followed one click later by a lit row of
+busts, so the two screens did not read as one game. Each card now carries the same
+face-crop portrait frame as a roster tile above its three Fomo facts, with the
+trader's accent on the focused frame and the crowd bar. Three of the seven already had
+busts on the roster (unipcs, frankdegods, orangie); `crayon`, `veeman`, `econoar`
+and `nicecat` were drawn for the rest on the same skeleton. The "no portraits" rule
+below is withdrawn: the roster already drew these named accounts as archetypes, and the
+footnote on the screen says the busts are not likenesses.
+
 ### Why it exists
 
 The founder's complaint after the hosted round: the card pick opens cold. A stranger
@@ -56,10 +69,10 @@ looks its own up, so the screen never tells a player who was right that they wer
 
 - **Colour follows the sign, never the rank.** A thin sample that made money is green; a
   ranked row that lost is red. No new colour token: `--green`, `--red`, `--amber`,
-  `--dim` and `--faint` only, and no per-trader accent, because these seven are not the
-  roster cast and nothing on this screen depicts a person.
-- **No portraits.** The roster's busts are archetype avatars for codenamed prospects.
-  These seven are named public accounts, so the screen is type and figures only.
+  `--dim` and `--faint` only. Since 23 September each pick card also carries its
+  trader's accent, on the portrait frame and the crowd bar, exactly as a roster tile does.
+- **Archetype busts, not likenesses.** Since 23 September the pick cards carry the
+  roster's portrait frame (see above). Nothing on the screen tries to depict a person.
 - **Every figure is recomputed from the tape.** `readFomo` in `roster.js` reads
   `closed[]` and `positions[]`; the `stats` block and the model-written `summary`,
   `score`, `status` and `red_flags` fields are never read. The hard-truth line is

@@ -247,6 +247,61 @@ const CAST = {
             <path class="prop" d="M212 224 h-26 v52 h26 a8 8 0 0 0 8 -8 v-36 a8 8 0 0 0 -8 -8 Z"/>
             <path class="band" d="M26 230 C44 194 196 194 214 230"/>`,
   },
+  // Hair in every direction, a grin, one crayon behind the ear. Eats what it draws.
+  crayon: {
+    m: metrics({ w: 1.02, jaw: 0.9, top: 44, chin: 218, eyeRx: 11, eyeRy: 9, browTilt: 12, eyeX: 30, mouthW: 36, noseW: 4.5, noseL: 22 }),
+    skin: '#C9A07A', shade: '#87603F', light: '#F3D8B4', cloth: '#2F4A2A', clothShade: '#172614', ink: '#1A1A14',
+    bg: ['#3B3D0A', '#0A0A08'],
+    hair: `<path class="hair" d="M120 20 C150 6 176 22 186 44 L206 34 L192 66 C200 84 198 104 192 118 C180 90 168 74 150 66 C130 58 100 58 82 66 C64 74 54 92 46 118 C40 100 40 80 50 62 L32 40 L58 46 C70 24 96 14 120 20 Z"/>
+           <path class="hair" d="M96 22 L104 -6 L118 20 Z M136 20 L152 -4 L152 24 Z M64 42 L48 22 L74 34 Z"/>
+           <path class="hair-light" d="M108 26 C86 34 68 56 58 94 C60 56 78 32 108 26 Z"/>`,
+    front: `<path class="prop" d="M186 106 l30 -70 l14 6 l-30 70 Z"/>
+            <path class="ember" d="M216 36 l8 -18 l6 24 Z"/>
+            <path class="prop-shine" d="M192 104 l26 -60 l4 2 l-26 60 Z"/>`,
+  },
+  // A widow's peak like an arrowhead and a V-neck. Everything about him points down.
+  veeman: {
+    m: metrics({ w: 0.96, jaw: 0.94, top: 42, chin: 220, eyeRx: 10, eyeRy: 6, browTilt: 6, eyeX: 28, mouthW: 22, noseW: 5, noseL: 28 }),
+    skin: '#B98D66', shade: '#77563A', light: '#E8C79E', cloth: '#1F3B3F', clothShade: '#0F2023', ink: '#141C1E',
+    bg: ['#063A3A', '#07090A'],
+    hair: `<path class="hair" d="M120 24 C170 24 196 58 192 112 C184 88 172 72 154 66 L120 92 L86 66 C68 72 56 88 48 112 C44 58 70 24 120 24 Z"/>
+           <path class="hair-light" d="M106 30 C82 40 66 62 56 96 C58 58 76 34 106 30 Z"/>
+           <path class="hair" d="M188 96 c10 -22 6 -48 -8 -60 c4 22 4 42 0 60 Z"/>`,
+    front: `<path class="collar" d="M64 226 L120 296 L176 226 L166 220 L120 270 L74 220 Z"/>
+            <path class="collar-fold" d="M120 270 L166 220 L156 216 L120 256 L84 216 L74 220 Z"/>`,
+  },
+  // Square rims, a hairline in retreat, a tie knotted tight. Reads the footnotes.
+  econoar: {
+    m: metrics({ w: 1.04, jaw: 1.1, top: 46, chin: 222, eyeRx: 9, eyeRy: 7.5, browTilt: -4, eyeX: 29, mouthW: 18, noseW: 5.5, noseL: 30 }),
+    skin: '#C39A78', shade: '#805C40', light: '#EFD3B0', cloth: '#2C3140', clothShade: '#151824', ink: '#191A20',
+    bg: ['#0C3A20', '#07090A'],
+    hair: `<path class="hair" d="M48 116 C44 76 56 50 80 40 C88 60 84 84 78 104 C70 106 58 110 48 116 Z"/>
+           <path class="hair" d="M192 116 C196 76 184 50 160 40 C152 60 156 84 162 104 C170 106 182 110 192 116 Z"/>
+           <path class="hair-light" d="M60 106 C58 78 66 58 78 48 C74 66 72 86 68 102 Z"/>`,
+    front: `<rect class="lens" x="64" y="102" width="50" height="38" rx="6"/>
+            <rect class="lens" x="126" y="102" width="50" height="38" rx="6"/>
+            <path class="frame" d="M114 118 h12 M64 116 L48 108 M176 116 L192 108"/>
+            <path class="glare" d="M70 108 l16 -4 l4 8 l-16 4 Z"/>
+            <path class="glare" d="M132 108 l16 -4 l4 8 l-16 4 Z"/>
+            <path class="collar" d="M70 224 L120 262 L170 224 L160 218 L120 246 L80 218 Z"/>
+            <path class="prop" d="M110 244 h20 l6 12 l-16 64 l-16 -64 Z"/>
+            <path class="prop-shine" d="M116 258 h8 l-4 44 Z"/>`,
+  },
+  // A hoodie with cat ears and a bell on the drawstring. Not a nice cat.
+  nicecat: {
+    m: metrics({ w: 0.92, jaw: 0.8, top: 40, chin: 216, eyeRx: 12, eyeRy: 10, browTilt: 8, eyeX: 27, mouthW: 14, noseW: 4, noseL: 20 }),
+    skin: '#D2A98A', shade: '#8E674D', light: '#F5DDC4', cloth: '#4A1F3F', clothShade: '#260F21', ink: '#1E1220',
+    bg: ['#3A0F3A', '#0A080B'],
+    behind: `<path class="hood" d="M120 -12 C188 -12 230 46 224 126 C221 168 208 212 190 246 L50 246 C32 212 19 168 16 126 C10 46 52 -12 120 -12 Z"/>
+             <path class="hood" d="M26 74 L18 18 L74 30 Z"/>
+             <path class="hood" d="M214 74 L222 18 L166 30 Z"/>
+             <path class="hood-inner" d="M32 64 L28 30 L62 36 Z"/>
+             <path class="hood-inner" d="M208 64 L212 30 L178 36 Z"/>`,
+    hair: `<path class="hood-inner" fill-rule="evenodd" d="M120 6 C180 6 214 56 209 124 C206 160 196 196 182 224 L58 224 C44 196 34 160 31 124 C26 56 60 6 120 6 Z M120 34 a76 98 0 1 0 0.1 0 Z"/>
+           <path class="hood-rim" d="M196 38 c22 30 30 76 25 128 c-2 -56 -14 -98 -39 -134 Z"/>`,
+    front: `<path class="band" d="M74 230 C94 262 146 262 166 230"/>
+            <circle class="pendant" cx="120" cy="258" r="12"/>`,
+  },
 };
 
 const bust = (key, c) => {

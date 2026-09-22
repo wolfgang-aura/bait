@@ -105,6 +105,20 @@ function setAccent(accent) {
  * the handle, the follower count and the profile headline PnL. Nothing is computed here
  * and nothing about the tape is drawn until the player has chosen.
  */
+/**
+ * The seven are drawn with the roster's archetype busts, three of which they share.
+ * None is a likeness; the accent is the one thing on the card that is the trader's.
+ */
+const OPENER_CAST = {
+  unipcs: ['unipcs', '#8B7BFF'],
+  dumbcrayoneater: ['crayon', '#C6E24A'],
+  frankdegods: ['frank', '#E0C46C'],
+  orangie: ['orangie', '#FFA62B'],
+  theveeman: ['veeman', '#3FD3C4'],
+  econoar: ['econoar', '#4CD37A'],
+  notanicecat69: ['nicecat', '#FF5FA8'],
+};
+
 function renderOpener(data) {
   opener = data;
   text(el.openerEyebrow, [
@@ -117,6 +131,7 @@ function renderOpener(data) {
     `The ranking below them is recomputed from the recorded ${data.source} tape:`,
     `realised PnL is the sum of the positions that were actually sold, and a tape with fewer`,
     `than ${data.minSoldToRank} sold positions is labelled a thin sample rather than ranked.`,
+    `The busts are the game's archetypes, not likenesses.`,
   ].join(' '));
 
   el.openerGrid.replaceChildren();
@@ -131,6 +146,14 @@ function renderOpener(data) {
     card.setAttribute('role', 'option');
     card.setAttribute('aria-selected', 'false');
     card.dataset.handle = t.handle;
+    const [portrait, accent] = OPENER_CAST[t.handle.toLowerCase()] ?? ['grinder', '#FFB020'];
+    card.style.setProperty('--accent', accent);
+    const art = document.createElement('span');
+    art.className = 'tile-art card-art';
+    art.innerHTML = portraitSvg(portrait, { mood: 'idle', accent, title: `@${t.handle}`, crop: 'face' });
+    const body = document.createElement('span');
+    body.className = 'card-body';
+    card.append(art, body);
     for (const [cls, value, tag] of [
       ['at', `@${t.handle}`, 'span'],
       ['crowd', t.followersLabel, 'span'],
@@ -139,19 +162,19 @@ function renderOpener(data) {
       const node = document.createElement(tag);
       node.className = cls;
       node.textContent = value;
-      card.append(node);
+      body.append(node);
     }
     const bar = document.createElement('span');
     bar.className = 'crowd-bar';
     const fill = document.createElement('i');
     fill.style.width = `${(t.followers / widest) * 100}%`;
     bar.append(fill);
-    card.append(bar);
+    body.append(bar);
     for (const [cls, value] of [['head-pnl', t.headlineLabel], ['head-label', 'Fomo profile PnL']]) {
       const node = document.createElement('span');
       node.className = cls;
       node.textContent = value;
-      card.append(node);
+      body.append(node);
     }
     card.addEventListener('mouseenter', () => focusOpener(i));
     card.addEventListener('focus', () => focusOpener(i));
@@ -166,6 +189,8 @@ function focusOpener(index) {
   openerFocus = (index + opener.pick.length) % opener.pick.length;
   [...el.openerGrid.children].forEach((card, i) => {
     card.setAttribute('aria-selected', String(i === openerFocus));
+    const bust = card.querySelector('.bust');
+    if (bust) bust.dataset.x = i === openerFocus ? 'confident' : 'idle';
   });
 }
 
