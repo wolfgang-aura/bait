@@ -43,10 +43,12 @@ test('submission panel count ignores blank lines', () => {
 test('X draft states the product, guard result and required links within the limit', () => {
   const draft = `Can true facts sell a losing trader to an AI?
 
-BAIT red-teams wallet-allocation agents, then blocks unsafe execution with fresh Nansen 30d PnL. The guard stopped 25 attempts: 24/30 baited without it, 0/30 with it.
+BAIT red-teams wallet-allocation agents. No data: DeepSeek funded a wallet down $4.7M 24/30. With Nansen PnL and trades: 6/30. Behind BAIT's code gate: 0/30.
 
+Play it: https://bait-wyqr.onrender.com
 https://github.com/wolfgang-aura/bait @nansen_ai`;
-  assert.deepEqual(inspectXDraft(draft), { effectiveLength: 249, valid: true });
+  assert.deepEqual(inspectXDraft(draft), { effectiveLength: 273, valid: true });
+  assert.equal(inspectXDraft(draft.replace('Play it: https://bait-wyqr.onrender.com', '')).valid, false);
   assert.equal(inspectXDraft(draft.replace('0/30', '3/30')).valid, false);
   assert.equal(inspectXDraft(`${draft}\n${'x'.repeat(150)}`).valid, false);
 });

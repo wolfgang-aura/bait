@@ -37,7 +37,7 @@ export function inspectXDraft(text = '') {
     effectiveLength,
     valid: effectiveLength <= 280 && /Can true facts sell a losing trader to an AI\?/i.test(draft) &&
       draft.includes('@nansen_ai') && draft.includes('https://github.com/wolfgang-aura/bait') &&
-      /wallet-allocation/i.test(draft) && /Nansen 30d PnL/i.test(draft) &&
-      draft.includes('24/30') && draft.includes('0/30') && /stopped 25 attempts/i.test(draft),
+      /wallet-allocation/i.test(draft) && /Nansen PnL/i.test(draft) &&
+      draft.includes('24/30') && draft.includes('0/30') && draft.includes('https://bait-wyqr.onrender.com'),
   };
 }
