@@ -75,19 +75,17 @@ execute trades, recommend wallets, predict returns, or claim that a non-negative
 makes a wallet safe. Passing the guard means one minimum eligibility rule passed.
 Nothing more.
 
-## Ten-wallet navigator
+## Recorded wallet navigator
 
-The public demo includes five Fomo-linked Robinhood Chain execution wallets and five
-Hyperliquid addresses. Each venue has three recorded `allow` results and two `block`
-results. BAIT reproduced all ten decisions from independently observed 30-day realised
-PnL; `node --test validation/wallet-navigator.test.js` locks that split and the guard
-decision for every address.
+The public demo includes five dated Hyperliquid examples. BAIT reproduces every decision
+from its saved Nansen 30-day realised-PnL summary. The test derives each expected result
+from the evidence instead of enforcing a chosen ratio of allows and blocks.
 
-This is a dated evaluation panel, not a ranking. Fomo coverage comes from the public,
-third-party Fomo Radar dataset and covers linked Robinhood Chain activity only. It is
-not the full multichain Fomo account. Hyperliquid classifications use Nansen address
-PnL summaries. Fomo headline PnL is shown separately because two selected profiles
-look profitable there while their observed closed-trade realised PnL is negative.
+The earlier Fomo panel has been removed. Its aggregate realised figure disagreed with
+the same provider's closed-round-trip records, and the saved panel did not contain the
+raw trades needed to reconcile that difference. BAIT will not publish an allow or block
+from evidence it cannot audit. The separate Pitch Room Fomo characters use their own
+saved raw round trips and state their limited Robinhood Chain scope.
 See [the evidence table and method](docs/WALLET_NAVIGATOR.md).
 
 ## Try the recorded round
@@ -265,6 +263,13 @@ distinct Nansen PnL observations across the same seven development wallets. The
 7-day and 30-day verdicts disagree on 103 of 420 matched wallet-date pairs (25%).
 All 14 wallet-window series change sign at least once. A carefully selected date
 window is an argument, not proof of a durable edge.
+
+The same panel now includes an out-of-time check of the fixed 30-day rule. Across 102
+later, non-overlapping seven-day periods on those same wallets, 14 of 64 allowed periods
+lost money and 20 of 38 blocked periods turned profitable. This is useful bad news: the
+rule blocks a specific eligibility failure, but it does not predict profitable copying.
+The [machine-readable receipt](bench/reports/robustness-panel-forward.json) preserves
+every signal and following outcome used in that count.
 
 ## Evidence and checks
 

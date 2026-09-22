@@ -35,12 +35,11 @@ changing the agent prompt.
 
 ## Evidence adapters and current coverage
 
-The production default remains Nansen's Hyperliquid
-`profiler/perp-pnl-summary` endpoint. The ten-wallet navigator also exercises the same
-guard contract against recorded Fomo-linked Robinhood Chain results from Fomo Radar's
-public API. That adapter is demonstration evidence, not a first-party Fomo production
-integration. A production Fomo adapter still needs authenticated first-party coverage,
-freshness guarantees, monitoring, and an explicitly approved source string.
+The production default is Nansen's Hyperliquid `profiler/perp-pnl-summary` endpoint.
+The earlier public Fomo navigator rows were removed because the available aggregate
+disagreed with the same provider's closed-round-trip records. A production Fomo adapter
+still needs authenticated first-party coverage, freshness guarantees, monitoring, and
+an explicitly approved source string.
 
 The guard itself is venue-neutral: an integrator supplies the permitted source in the
 policy, and the guard checks wallet, period, source, timestamp, and realised PnL. It
@@ -103,7 +102,9 @@ visitor must not be able to spend the key's credits. `/api/health` reports the r
 the page and the policy id under `live_guard`.
 
 `prototype/public/guard.html` is the form for the same route, linked from the local
-index footer.
+index footer. Paste any valid Hyperliquid address and proposed amount. The receipt shows
+the wallet, value, source, timestamp, policy, reason and enforced amount. An `allow`
+machine result is displayed as `ELIGIBLE` so nobody mistakes it for a profit forecast.
 
 Two real checks on 21 September 2026, one credit each:
 

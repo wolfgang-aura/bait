@@ -189,4 +189,238 @@ export async function guardAllocation({
   return result({ attempted, policy, evidence, code: 'allowed', reason: `allowed: verified ${policy.windowDays}-day realised PnL meets the policy minimum` });
 }
 
+// ---------------------------------------------------------- copy-risk report
+
+/**
+ * BAIT's second answer, for the question the PnL sign cannot answer on its own:
+ * would copying this wallet have been survivable?
+ *
+ * `guardAllocation` above is untouched and stays the hard execution gate, because the
+ * recorded 0/30 benchmark result depends on exactly that function. `assessCopyRisk` is
+ * additive and deterministic: same evidence in, same verdict out. No model, no network,
+ * no clock. It reads only fields a caller has already pulled out of a frozen snapshot
+ * or a recorded venue response.
+ *
+ * It has two readers and it is written for both. A person about to copy an address gets
+ * one plain sentence per flag, including the drawdown they would have sat through. An
+ * agent with BAIT installed gets `summary`, a flat object it can branch on.
+ */
+
+export const COPY_RISK_THRESHOLDS = Object.freeze({
+  paperShareOfHeadline: 0.8,
+  paperShareOfTotal: 0.8,
+  minClosedTrades: 20,
+  minWinRate: 0.4,
+  maxEarlyEntryShare: 0.2,
+  maxTopPositionShare: 0.5,
+  maxTopCoinPnlShare: 0.6,
+  maxTailLossShare: 0.25,
+  maxDrawdownShareOfPeak: 0.3,
+  maxDrawdownShareOfAccount: 0.15,
+});
+
+const usd = n => `$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
+const signedUsd = n => `${n < 0 ? '-' : '+'}${usd(n)}`;
+const asShare = n => `${(n * 100).toFixed(1)}%`;
+const num = v => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+
+/**
+ * Peak to trough of cumulative realised PnL, from time-ordered closed trades, oldest
+ * first. This is the number a copier actually lives through: not where the window ends,
+ * but the worst point between the high and the end.
+ */
+export function drawdownOf(series = []) {
+  const rows = (Array.isArray(series) ? series : []).map(num).filter(v => v !== null);
+  if (!rows.length) {
+    return { max_drawdown_usd: null, peak_usd: null, trough_usd: null, final_usd: null, share_of_peak: null, trades: 0 };
+  }
+  let cumulative = 0;
+  let peak = 0;
+  let peakAtTrough = 0;
+  let trough = 0;
+  let worst = 0;
+  for (const value of rows) {
+    cumulative += value;
+    if (cumulative > peak) peak = cumulative;
+    const fall = peak - cumulative;
+    if (fall > worst) { worst = fall; trough = cumulative; peakAtTrough = peak; }
+  }
+  const round = n => Math.round(n * 100) / 100;
+  // A curve that never fell has no peak it fell from, so report the high it did reach
+  // and a drawdown share of zero. A curve that fell reports the peak it fell from.
+  const from = worst > 0 ? peakAtTrough : peak;
+  return {
+    max_drawdown_usd: round(worst),
+    peak_usd: round(from),
+    trough_usd: round(worst > 0 ? trough : peak),
+    final_usd: round(cumulative),
+    share_of_peak: from > 0 ? worst / from : null,
+    trades: rows.length,
+  };
+}
+
+/**
+ * @param {{
+ *   address?: string, venue?: string, source?: string, retrieved_at?: string,
+ *   window_days?: number, window?: object,
+ *   realized_pnl_usd?: number, unrealized_pnl_usd?: number, headline_pnl_usd?: number,
+ *   closed_trade_count?: number, win_rate?: number,
+ *   realised_series?: number[],
+ *   top_position_share?: number, top_coin_pnl_share?: number,
+ *   worst_trade_usd?: number, volume_usd?: number, account_value_usd?: number,
+ *   early_entry_share?: number,
+ * }} evidence
+ */
+export function assessCopyRisk(evidence = {}) {
+  const t = COPY_RISK_THRESHOLDS;
+  const realized = num(evidence.realized_pnl_usd);
+  const unrealized = num(evidence.unrealized_pnl_usd);
+  const headline = num(evidence.headline_pnl_usd);
+  const closed = num(evidence.closed_trade_count);
+  const winRate = num(evidence.win_rate);
+  const topPosition = num(evidence.top_position_share);
+  const topCoin = num(evidence.top_coin_pnl_share);
+  const worstTrade = num(evidence.worst_trade_usd);
+  const volume = num(evidence.volume_usd);
+  const account = num(evidence.account_value_usd);
+  const earlyEntries = num(evidence.early_entry_share);
+  const drawdown = drawdownOf(evidence.realised_series);
+
+  // This is a recorded risk report, not an execution authorization. These four fields
+  // are the minimum needed to say what was measured, over which window, when and from
+  // where. Missing them produces an explicit insufficient result instead of a green
+  // light assembled from checks that never ran.
+  const required = [];
+  if (!evidence.address || !walletPattern.test(String(evidence.address))) required.push('address');
+  if (realized === null) required.push('realized_pnl_usd');
+  if (!Number.isInteger(evidence.window_days) || evidence.window_days < 1) required.push('window_days');
+  if (!evidence.source || typeof evidence.source !== 'string') required.push('source');
+  if (!evidence.retrieved_at || !Number.isFinite(Date.parse(evidence.retrieved_at))) required.push('retrieved_at');
+
+  const flags = [];
+  const notAssessed = [];
+  const add = (id, severity, plain, detail) => flags.push({ id, severity, plain, evidence: detail });
+  const skip = (id, reason) => notAssessed.push({ id, reason });
+
+  if (realized === null) skip('realised_negative', 'no realised PnL in the evidence');
+  else if (realized < 0) {
+    add('realised_negative', 'high',
+      `Closed trades lost money over this window: ${signedUsd(realized)}. Copying this wallet would have lost money too.`,
+      { realized_pnl_usd: realized });
+  }
+
+  if (unrealized === null || unrealized <= 0) skip('paper_headline', 'no unrealised PnL in the evidence');
+  else {
+    const total = Math.abs(realized ?? 0) + unrealized;
+    const ofHeadline = headline && headline !== 0 ? unrealized / Math.abs(headline) : null;
+    const ofTotal = total > 0 ? unrealized / total : null;
+    if ((ofHeadline !== null && ofHeadline > t.paperShareOfHeadline) || (ofTotal !== null && ofTotal > t.paperShareOfTotal)) {
+      add('paper_headline', 'high',
+        `Most of this number is unsold: ${usd(unrealized)} sits in open positions and can move or vanish before anyone realises it.`,
+        { unrealized_pnl_usd: unrealized, headline_pnl_usd: headline, share_of_headline: ofHeadline, share_of_total: ofTotal });
+    }
+  }
+
+  if (closed === null) skip('thin_sample', 'no closed trade count in the evidence');
+  else if (closed < t.minClosedTrades) {
+    add('thin_sample', 'medium',
+      `Not enough closed trades to judge: ${closed} in this window. A handful of round trips is luck or skill and the record cannot tell you which.`,
+      { closed_trade_count: closed, minimum: t.minClosedTrades });
+  }
+
+  if (winRate === null) skip('low_win_rate', 'no win rate in the evidence');
+  else if (winRate < t.minWinRate) {
+    add('low_win_rate', 'medium',
+      `Most trades lose and the winners carry it: ${asShare(winRate)} of closed trades were profitable. Copying this means sitting through long losing runs.`,
+      { win_rate: winRate, minimum: t.minWinRate });
+  }
+
+  if (earlyEntries === null) {
+    skip('uncopyable_entries', 'the evidence carries no token launch times, so the share of launch-window entries cannot be derived');
+  } else if (earlyEntries > t.maxEarlyEntryShare) {
+    add('uncopyable_entries', 'high',
+      `Entries you cannot copy with any lag: ${asShare(earlyEntries)} of buys land inside ten minutes of a token going live.`,
+      { early_entry_share: earlyEntries, maximum: t.maxEarlyEntryShare });
+  }
+
+  if (topPosition === null && topCoin === null) skip('concentration', 'no position or per-coin breakdown in the evidence');
+  else if ((topPosition !== null && topPosition > t.maxTopPositionShare)
+    || (topCoin !== null && topCoin > t.maxTopCoinPnlShare)) {
+    add('concentration', 'medium',
+      'One bag decides the outcome. The result rests on a single position rather than on anything repeatable.',
+      { top_position_share: topPosition, top_coin_pnl_share: topCoin });
+  }
+
+  const tailBase = [volume, account].filter(v => v !== null && v > 0);
+  if (worstTrade === null || !tailBase.length) skip('tail_loss', 'no worst trade, volume or account value in the evidence');
+  else {
+    const worstShare = Math.max(...tailBase.map(base => Math.abs(worstTrade) / base));
+    if (worstShare > t.maxTailLossShare) {
+      add('tail_loss', 'medium',
+        `One trade can take a quarter of the book: the worst single closed trade here was ${signedUsd(worstTrade)}.`,
+        { worst_trade_usd: worstTrade, share_of_base: worstShare, maximum: t.maxTailLossShare });
+    }
+  }
+
+  if (drawdown.max_drawdown_usd === null) skip('max_drawdown', 'no time-ordered closed trades in the evidence');
+  else {
+    const ofPeak = drawdown.share_of_peak;
+    const ofAccount = account && account > 0 ? drawdown.max_drawdown_usd / account : null;
+    if ((ofPeak !== null && ofPeak > t.maxDrawdownShareOfPeak) || (ofAccount !== null && ofAccount > t.maxDrawdownShareOfAccount)) {
+      add('max_drawdown', 'high',
+        `At the worst point you would have been down ${usd(drawdown.max_drawdown_usd)} from the top of this window.`,
+        { ...drawdown, share_of_account: ofAccount });
+    }
+  }
+
+  const hardBlock = flags.some(f => f.id === 'realised_negative');
+  const verdict = required.length ? 'insufficient'
+    : hardBlock ? 'block'
+      : flags.length > 0 ? 'caution'
+        : 'allow';
+
+  return {
+    verdict,
+    execution_authorized: false,
+    required_missing: required,
+    flags,
+    not_assessed: notAssessed,
+    max_drawdown: drawdown,
+    thresholds: t,
+    // The flat object an agent branches on: everything needed to decide whether to
+    // follow an address, plus where the numbers came from and when.
+    summary: {
+      address: evidence.address ?? null,
+      venue: evidence.venue ?? null,
+      verdict,
+      execution_authorized: false,
+      required_missing: required,
+      realised_30d: realized,
+      unrealised: unrealized,
+      headline,
+      closed_trades: closed,
+      win_rate: winRate,
+      max_drawdown: drawdown.max_drawdown_usd,
+      max_drawdown_share_of_peak: drawdown.share_of_peak,
+      flags: flags.map(f => f.id),
+      evidence: {
+        source: evidence.source ?? null,
+        retrieved_at: evidence.retrieved_at ?? null,
+        window: evidence.window ?? null,
+        window_days: num(evidence.window_days),
+      },
+    },
+  };
+}
+
+/** What an agent running BAIT would have done with this address, in one sentence. */
+export function agentVerdictLine(verdict) {
+  return {
+    allow: 'The recorded assessment found no configured risk flag. Run the execution guard on fresh evidence before allocating.',
+    caution: 'The recorded assessment found risk flags. It does not prescribe a position size.',
+    block: 'The recorded assessment found negative realised PnL. The matching guard rule blocks allocation.',
+    insufficient: 'The record is missing required evidence. BAIT cannot assess it.',
+  }[verdict] ?? 'The assessment result is unknown. BAIT cannot authorize an allocation.';
+}
+
 export default guardAllocation;

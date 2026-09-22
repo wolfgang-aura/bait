@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "wallet": "0x0c46eb73fae2816f219fcf11f50d6d3c59b5819e",
+  "chain": "hyperliquid",
+  "retrieved_at": "2026-09-21T22:23:42Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-22T22:23:42Z",
+      "to": "2026-09-21T22:23:42Z"
+    },
+    "7d": {
+      "from": "2026-09-14T22:23:42Z",
+      "to": "2026-09-21T22:23:42Z"
+    }
+  },
+  "pnl_summary_30d": {
+    "top5_coins": [],
+    "traded_coin_count": 0,
+    "traded_times": 0,
+    "closed_trade_count": 0,
+    "winning_trade_count": 0,
+    "realized_pnl_usd": 0,
+    "realized_pnl_percent": 0,
+    "win_rate": 0,
+    "fees_usd": 0
+  },
+  "pnl_summary_7d": {
+    "top5_coins": [],
+    "traded_coin_count": 0,
+    "traded_times": 0,
+    "closed_trade_count": 0,
+    "winning_trade_count": 0,
+    "realized_pnl_usd": 0,
+    "realized_pnl_percent": 0,
+    "win_rate": 0,
+    "fees_usd": 0
+  },
+  "open_positions": {
+    "asset_positions": [],
+    "cross_maintenance_margin_used_usd": "0.0",
+    "cross_margin_summary_account_value_usd": "0.0",
+    "cross_margin_summary_total_margin_used_usd": "0.0",
+    "cross_margin_summary_total_net_liquidation_position_on_usd": "0.0",
+    "cross_margin_summary_total_raw_usd": "0.0",
+    "margin_summary_account_value_usd": "0.0",
+    "margin_summary_total_margin_used_usd": "0.0",
+    "margin_summary_total_net_liquidation_position_usd": "0.0",
+    "margin_summary_total_raw_usd": "0.0",
+    "timestamp": 1790029424973,
+    "withdrawable_usd": "0.0"
+  },
+  "trades_30d": [
+    {
+      "timestamp": "2026-08-23T07:50:20.274000Z",
+      "side": "Short",
+      "action": "Sell",
+      "block_number": 1120459241,
+      "token_symbol": "@107",
+      "price": 78.802,
+      "size": 1.99,
+      "value_usd": 156.81598,
+      "start_position": 2,
+      "closed_pnl": 66.51774,
+      "crossed": true,
+      "fee_usd": 0.06586271,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x21584b4f8a6ba8c222d20442c8d9e90202210035256ec794c520f6a2496f82ac",
+      "user": "0x0c46eb73fae2816f219fcf11f50d6d3c59b5819e",
+      "oid": 523877664192
+    }
+  ],
+  "trades_pagination": {
+    "per_page": 1000,
+    "pages_fetched": 1,
+    "is_complete": true,
+    "max_pages": 1
+  },
+  "sources": [
+    {
+      "path": "profiler/perp-pnl-summary",
+      "body": {
+        "address": "0x0c46eb73fae2816f219fcf11f50d6d3c59b5819e",
+        "date": {
+          "from": "2026-08-22T22:23:42Z",
+          "to": "2026-09-21T22:23:42Z"
+        }
+      },
+      "note": "30d summary",
+      "at": "2026-09-21T22:23:43Z"
+    },
+    {
+      "path": "profiler/perp-pnl-summary",
+      "body": {
+        "address": "0x0c46eb73fae2816f219fcf11f50d6d3c59b5819e",
+        "date": {
+          "from": "2026-09-14T22:23:42Z",
+          "to": "2026-09-21T22:23:42Z"
+        }
+      },
+      "note": "7d summary",
+      "at": "2026-09-21T22:23:44Z"
+    },
+    {
+      "path": "profiler/perp-positions",
+      "body": {
+        "address": "0x0c46eb73fae2816f219fcf11f50d6d3c59b5819e"
+      },
+      "note": "open positions",
+      "at": "2026-09-21T22:23:45Z"
+    },
+    {
+      "path": "profiler/perp-trades",
+      "body": {
+        "address": "0x0c46eb73fae2816f219fcf11f50d6d3c59b5819e",
+        "date": {
+          "from": "2026-08-22T22:23:42Z",
+          "to": "2026-09-21T22:23:42Z"
+        },
+        "pagination": {
+          "page": 1,
+          "per_page": 1000
+        },
+        "order_by": [
+          {
+            "field": "timestamp",
+            "direction": "ASC"
+          }
+        ]
+      },
+      "note": "fills page 1",
+      "at": "2026-09-21T22:23:45Z"
+    }
+  ],
+  "reconciliation": {
+    "fills_fetched": 1,
+    "fills_complete": true,
+    "distinct_symbols": [
+      "@107"
+    ],
+    "excluded_spot_index_symbols": [
+      "@107"
+    ],
+    "excluded_spot_index_fills": 1,
+    "sum_closed_pnl_named_instruments": 0,
+    "summary_realized_pnl_usd": 0,
+    "pnl_delta_usd": 0,
+    "pnl_relative_error": null,
+    "sum_fee_usd_named_instruments": 0,
+    "summary_fees_usd": 0,
+    "fee_delta_usd": 0,
+    "fee_treatment": "summary realized_pnl_usd is gross of fees; fees_usd is reported separately",
+    "realized_pnl_net_of_fees_usd": 0,
+    "nonzero_closed_pnl_fills": 0,
+    "summary_closed_trade_count": 0,
+    "winning_fills": 0,
+    "summary_winning_trade_count": 0,
+    "win_rate_from_fills": null,
+    "summary_win_rate": 0,
+    "trade_count_note": "Nansen counts logical closed trades (order-level), not raw fills, so closed_trade_count > fills with non-zero closed_pnl. Win rates differ accordingly. The referee uses the summary figure, which is what a user would see in the product.",
+    "per_symbol": [
+      {
+        "symbol": "@107",
+        "pnl": 66.51774,
+        "fees": 0.06586271,
+        "fills": 1,
+        "closing": 1,
+        "wins": 1
+      }
+    ]
+  }
+}

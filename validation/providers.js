@@ -43,7 +43,11 @@ export const MAX_TOKENS = 1024;
 // User approved 800 total calls on 19 September for the paired evaluation and demo checks.
 // Raised 20 Sep 2026 for the frozen-evidence strict sweep, founder-authorized.
 // DeepSeek 1000 -> 1100 on 21 Sep 2026 for the frozen-evidence armed-basic rerun, founder-authorized.
-export const CAPS = { anthropic: 98, deepseek: 1250 }; // deepseek raised 21 Sep 2026 for the guarded frozen run
+// DeepSeek 1250 -> 5000 on 22 Sep 2026. The founder's instruction for the Pitch Room
+// was "go free on the DeepSeek calls": it is the cheap model, it is the only model the
+// player flow uses, and a playtest of one round costs up to twelve calls. Anthropic is
+// deliberately untouched, so the expensive vendor still stops at 98.
+export const CAPS = { anthropic: 98, deepseek: 5000 };
 
 export class CapExceeded extends Error {
   constructor(vendor, used, cap) {

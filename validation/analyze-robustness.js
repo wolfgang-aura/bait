@@ -79,8 +79,68 @@ export function summarizeDynamics(rows) {
   };
 }
 
+/**
+ * Out-of-time check for the fixed 30-day rule. A decision at day T is matched to the
+ * wallet's realised PnL from T through T+7. Candidate outcomes are sampled at least
+ * seven days apart, then only the latest third per wallet is scored. The periods are
+ * new to the decision, but the wallets are the same seven development wallets.
+ */
+export function evaluateForwardHoldout(rows) {
+  const valid = rows.filter(row => Number.isFinite(row.data?.data?.realized_pnl_usd));
+  const byKey = new Map(valid.map(row => [
+    `${row.wallet}|${days(row)}|${Date.parse(row.window.from)}|${Date.parse(row.window.to)}`, row,
+  ]));
+  const byWallet = new Map();
+  for (const signal of valid.filter(row => days(row) === 30)) {
+    const start = Date.parse(signal.window.to);
+    const outcomeTo = start + 7 * 86400_000;
+    const outcome = byKey.get(`${signal.wallet}|7|${start}|${outcomeTo}`);
+    if (!outcome) continue;
+    if (!byWallet.has(signal.wallet)) byWallet.set(signal.wallet, []);
+    byWallet.get(signal.wallet).push({
+      wallet: signal.wallet,
+      at: signal.window.to,
+      signal_pnl_usd: signal.data.data.realized_pnl_usd,
+      outcome_pnl_usd: outcome.data.data.realized_pnl_usd,
+    });
+  }
+
+  const holdout = [];
+  for (const candidates of byWallet.values()) {
+    candidates.sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    const independent = [];
+    let next = -Infinity;
+    for (const candidate of candidates) {
+      const at = Date.parse(candidate.at);
+      if (at < next) continue;
+      independent.push(candidate);
+      next = at + 7 * 86400_000;
+    }
+    const count = Math.max(1, Math.ceil(independent.length / 3));
+    holdout.push(...independent.slice(-count));
+  }
+
+  const allowed = holdout.filter(row => row.signal_pnl_usd >= 0);
+  const blocked = holdout.filter(row => row.signal_pnl_usd < 0);
+  const sum = list => list.reduce((total, row) => total + row.outcome_pnl_usd, 0);
+  return {
+    wallets: new Set(holdout.map(row => row.wallet)).size,
+    periods: holdout.length,
+    allowed: allowed.length,
+    allowed_profitable: allowed.filter(row => row.outcome_pnl_usd >= 0).length,
+    allowed_losing: allowed.filter(row => row.outcome_pnl_usd < 0).length,
+    blocked: blocked.length,
+    blocked_losing: blocked.filter(row => row.outcome_pnl_usd < 0).length,
+    blocked_profitable: blocked.filter(row => row.outcome_pnl_usd >= 0).length,
+    all_follow_outcome_pnl_usd: sum(holdout),
+    allowed_outcome_pnl_usd: sum(allowed),
+    rows: holdout,
+  };
+}
+
 export function markdown(summary, meta = {}) {
   const dynamics = meta.dynamics;
+  const forward = meta.forward;
   const lines = [
     '# Historical robustness panel',
     '',
@@ -96,6 +156,18 @@ export function markdown(summary, meta = {}) {
         `Across each wallet and window over time, the profit/loss sign flipped on ${dynamics.sign_flips} of ${dynamics.transitions} adjacent endpoints (${Math.round(dynamics.sign_flips / dynamics.transitions * 100)}%); ${dynamics.series_with_flip} of ${dynamics.series} series flipped at least once.`,
       '',
       'A truthful short window can therefore imply the opposite classification from the full 30-day record. BAIT tests whether an agent notices that omission before allocating.',
+      '',
+    );
+  }
+  if (forward?.periods) {
+    lines.push(
+      '## Out-of-time forward check',
+      '',
+      `The fixed 30-day rule was evaluated on ${forward.periods} later, non-overlapping seven-day periods across ${forward.wallets} development wallets. ` +
+        `It allowed ${forward.allowed}: ${forward.allowed_profitable} were non-negative in the following week and ${forward.allowed_losing} lost money. ` +
+        `It blocked ${forward.blocked}: ${forward.blocked_losing} then lost money and ${forward.blocked_profitable} turned profitable.`,
+      '',
+      'This is an out-of-time check on the same development wallets. It is not an unseen-wallet test, a copy-trading simulation, or proof of losses avoided. Wallet PnL does not include a copier\'s entry time, sizing, fees or slippage.',
       '',
     );
   }
@@ -121,8 +193,19 @@ if (isMain) {
   const input = path.resolve(process.argv[2] || 'scratch/robustness-panel.jsonl');
   const output = path.resolve(process.argv[3] || 'bench/reports/robustness-panel.md');
   const rows = readRows(input);
-  const report = markdown(summarize(rows), { rows: rows.length, dynamics: summarizeDynamics(rows) });
+  const forward = evaluateForwardHoldout(rows);
+  const report = markdown(summarize(rows), {
+    rows: rows.length,
+    dynamics: summarizeDynamics(rows),
+    forward,
+  });
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, report, 'utf8');
-  process.stdout.write(`wrote ${output} from ${rows.length} observations\n`);
+  const receipt = output.replace(/\.md$/i, '-forward.json');
+  fs.writeFileSync(receipt, `${JSON.stringify({
+    version: 1,
+    method: 'latest third of seven-day-spaced matches per wallet; 30-day signal at T, seven-day realised PnL from T to T+7',
+    ...forward,
+  }, null, 2)}\n`, 'utf8');
+  process.stdout.write(`wrote ${output} and ${receipt} from ${rows.length} observations\n`);
 }

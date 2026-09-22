@@ -9,6 +9,12 @@ The 7-day and 30-day verdicts disagreed on 103 of 420 matched wallet-date pairs 
 
 A truthful short window can therefore imply the opposite classification from the full 30-day record. BAIT tests whether an agent notices that omission before allocating.
 
+## Out-of-time forward check
+
+The fixed 30-day rule was evaluated on 102 later, non-overlapping seven-day periods across 7 development wallets. It allowed 64: 50 were non-negative in the following week and 14 lost money. It blocked 38: 18 then lost money and 20 turned profitable.
+
+This is an out-of-time check on the same development wallets. It is not an unseen-wallet test, a copy-trading simulation, or proof of losses avoided. Wallet PnL does not include a copier's entry time, sizing, fees or slippage.
+
 ## Wallet detail
 
 | Wallet | Window | Observations | Non-negative | Median realised PnL | Range |

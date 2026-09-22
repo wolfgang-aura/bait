@@ -19,7 +19,9 @@ test('recorded package contains only audited assets and resolves its local depen
   assert.match(files.get('replay.js'), /fetch\('\.\/recorded-results\.json'/);
   assert.match(files.get('replay.js'), /fetch\('\.\/wallets\.json'/);
   assert.equal(JSON.parse(files.get('recorded-results.json')).paired.summary.complete, true);
-  assert.equal(JSON.parse(files.get('wallets.json')).venues.flatMap(v => v.wallets).length, 10);
+  const walletPanel = JSON.parse(files.get('wallets.json'));
+  assert.equal(walletPanel.version, 2);
+  assert.equal(walletPanel.venues.flatMap(v => v.wallets).length, 5);
 });
 
 test('recorded page ships the guard as section 3 and reads the guarded row from the bundle', () => {

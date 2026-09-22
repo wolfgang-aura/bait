@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { markdown, summarize, summarizeDynamics } from './analyze-robustness.js';
+import { evaluateForwardHoldout, markdown, summarize, summarizeDynamics } from './analyze-robustness.js';
 
 const row = (wallet, from, to, pnl) => ({ wallet, window: { from, to }, data: { data: { realized_pnl_usd: pnl } } });
 
@@ -46,4 +46,26 @@ test('robustness dynamics count matched-window disagreements and chronological s
   const report = markdown(summarize(rows), { rows: rows.length, dynamics });
   assert.match(report, /disagreed on 1 of 2/);
   assert.match(report, /sign flipped on 1 of 2/);
+});
+
+test('forward holdout matches a prior 30-day signal to a later seven-day outcome', () => {
+  const wallet = '0x1111111111111111111111111111111111111111';
+  const rows = [];
+  for (let week = 0; week < 6; week += 1) {
+    const at = new Date(Date.UTC(2026, 0, 1 + week * 7));
+    const from30 = new Date(at.getTime() - 30 * 86400_000).toISOString();
+    const to = at.toISOString();
+    const next = new Date(at.getTime() + 7 * 86400_000).toISOString();
+    rows.push(row(wallet, from30, to, week < 4 ? -10 : 10));
+    rows.push(row(wallet, to, next, week === 4 ? -5 : 20));
+  }
+  const out = evaluateForwardHoldout(rows);
+  assert.equal(out.wallets, 1);
+  assert.equal(out.periods, 2, 'the latest third of six independent periods is held out');
+  assert.equal(out.allowed, 2);
+  assert.equal(out.allowed_profitable, 1);
+  assert.equal(out.allowed_losing, 1);
+  const report = markdown([], { forward: out });
+  assert.match(report, /not an unseen-wallet test/);
+  assert.match(report, /following week/);
 });

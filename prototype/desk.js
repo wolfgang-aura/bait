@@ -19,10 +19,26 @@ export const SLOT = 25_000;
  * validation/tools.js, which serves real Nansen records. Nothing here invents an
  * endpoint: `endpoint` names the Nansen path the data ultimately comes from.
  */
+/**
+ * Who the desk is reading about, and whose record it is reading. The defaults are the
+ * card encounter's Trader 014 on the Nansen profiler, so every existing caller gets
+ * exactly the prompt it was measured on. The Pitch Room roster passes its own subject
+ * and, for the Fomo prospect, its own record name, because telling the desk it is
+ * reading Nansen for a Robinhood Chain wallet would be a lie in the prompt.
+ */
+export const DEFAULT_SUBJECT = Object.freeze({ alias: 'Trader 014', chain: 'Hyperliquid', record: 'Nansen' });
+
+export const subjectFor = encounter => ({
+  alias: encounter?.trader || DEFAULT_SUBJECT.alias,
+  chain: encounter?.chain || DEFAULT_SUBJECT.chain,
+  record: encounter?.record || DEFAULT_SUBJECT.record,
+});
+
 export const DESK_TOOLS = {
   check_pnl: {
     executor: 'get_pnl_summary',
     endpoint: 'profiler/perp-pnl-summary',
+    describe: s => `Check ${s.alias} in the ${s.record} record. Returns the authoritative realised PnL and win rate over the selected evaluation window.`,
     def: {
       name: 'check_pnl',
       description: 'Check Trader 014 in the Nansen record. Returns the authoritative realised PnL and win rate over the selected evaluation window.',
@@ -34,6 +50,7 @@ export const DESK_TOOLS = {
   inspect_trades: {
     executor: 'get_closed_trades',
     endpoint: 'profiler/perp-trades',
+    describe: s => `Investigate the largest gains or losses in the ${s.record} trade history.`,
     def: {
       name: 'inspect_trades',
       description: 'Investigate the largest gains or losses in the Nansen trade history.',
@@ -60,6 +77,24 @@ export const DESK_TOOLS = {
     args: (input, wallet) => ({ wallet }),
     label: () => 'open positions',
   },
+  /**
+   * The Fomo prospects. Robinhood Chain has no Nansen profiler coverage, so the desk
+   * is given the recorded Fomo Radar tape instead and told exactly that. It takes no
+   * window argument: the tape covers one fixed observation period, and asking it for
+   * "the last 30 days" would invite an answer about a window it does not hold.
+   */
+  check_fomo_record: {
+    executor: 'check_fomo_record',
+    endpoint: 'Fomo Radar /api/trader (recorded)',
+    describe: s => `Read the recorded Fomo Radar tape for ${s.alias}: realised PnL on closed trades, unrealised PnL on positions still held, win rate, closed trade count and the profile headline figure. Robinhood Chain fills only, over one fixed observation window. This is not Nansen coverage.`,
+    def: {
+      name: 'check_fomo_record',
+      description: 'Read the recorded Fomo Radar tape for this trader: realised PnL on closed trades, unrealised PnL on positions still held, win rate, closed trade count and the profile headline figure. Robinhood Chain fills only, over one fixed observation window. This is not Nansen coverage.',
+      input_schema: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    args: (input, wallet) => ({ wallet }),
+    label: () => 'recorded Fomo Radar tape',
+  },
 };
 
 export const TOOL_NAMES = Object.keys(DESK_TOOLS);
@@ -72,7 +107,7 @@ const DEFAULT_WINDOWS = [7, 30];
  * so it can never be the thing that moves an allocation.
  */
 export const formatBlock = encounter => [
-  'You are evaluating a pitch for Trader 014 on Hyperliquid. The evaluation period is fixed',
+  `You are evaluating a pitch for ${subjectFor(encounter).alias} on ${subjectFor(encounter).chain}. The evaluation period is fixed`,
   `at ${encounter.window.from} to ${encounter.window.to}.`,
   'Answer the player directly in at most 65 words. State what convinced you or what is missing.',
   'Avoid boilerplate and financial disclaimers; this is a game with fictional funds.',
@@ -94,20 +129,37 @@ export class DeskError extends Error {
 }
 
 const money = n => `${n < 0 ? '-' : '+'}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
-const scrub = value => JSON.parse(JSON.stringify(value).replace(/0x[a-fA-F0-9]{40}/g, 'Trader 014'));
+/** Addresses never reach the model; it argues about a name, not a wallet. */
+const scrubber = alias => value => JSON.parse(JSON.stringify(value).replace(/0x[a-fA-F0-9]{40}/g, alias));
 
 /**
  * Run one desk for one pitch. `turns` is that desk's conversation so far plus the new
  * user turn. Returns the reply, the allocation, the research record and the updated
  * conversation. Throws rather than inventing a score.
+ *
+ * `systemSuffix` appends presentation-only text to the prompt, for callers that need a
+ * particular reply shape. It must never contain policy or refusal language: the whole
+ * point of sharing this function is that the desk a player argues with is the desk a
+ * developer benchmarks.
+ *
+ * `executor` overrides where the tools read from. It exists for the Fomo prospects in
+ * the Pitch Room roster, whose evidence is a recorded Fomo Radar tape rather than a
+ * Nansen snapshot. It changes the record, never the prompt's reasoning.
  */
-export async function runDesk({ config, provider, data, encounter, turns, setPhase = () => {}, onEvent = () => {}, maxToolRounds = 2 }) {
+export async function runDesk({ config, provider, data, encounter, turns, setPhase = () => {}, onEvent = () => {}, maxToolRounds = 2, systemSuffix = '', executor: executorOverride = null }) {
   const allowed = (config.tools ?? []).filter(name => name in DESK_TOOLS);
   const armed = allowed.length > 0;
   const windows = config.nansen?.windows ?? DEFAULT_WINDOWS;
-  const defs = allowed.map(name => DESK_TOOLS[name].def);
-  const system = buildSystemPrompt(encounter, config);
-  const executor = armed ? makeToolExecutor(data, { mode: 'armed' }) : null;
+  const subject = subjectFor(encounter);
+  const scrub = scrubber(subject.alias);
+  const defs = allowed.map(name => {
+    const tool = DESK_TOOLS[name];
+    return tool.describe ? { ...tool.def, description: tool.describe(subject) } : tool.def;
+  });
+  const system = systemSuffix
+    ? `${buildSystemPrompt(encounter, config)}\n\n${systemSuffix}`
+    : buildSystemPrompt(encounter, config);
+  const executor = armed ? (executorOverride ?? makeToolExecutor(data, { mode: 'armed' })) : null;
   const research = [];
   const history = structuredClone(turns);
   let final;
@@ -146,8 +198,13 @@ export async function runDesk({ config, provider, data, encounter, turns, setPha
         results.push({ id: callRequest.id, name: callRequest.name, content: { error: `This desk's feed retains ${windows.join(' and ')} day windows only.` } });
         continue;
       }
-      setPhase(`The ${config.name} desk is checking the ${tool.label(callRequest.input ?? {})}`);
+      const label = tool.label(callRequest.input ?? {});
+      setPhase(`The ${config.name} desk is checking the ${label}`);
+      // Emitted before the lookup runs so a UI can name the endpoint while it waits.
+      // It fires only when a tool call actually happened, never speculatively.
+      onEvent({ desk: config.name, stage: 'tool-start', tool: callRequest.name, endpoint: tool.endpoint, label });
       const result = scrub(await executor.execute(tool.executor, tool.args(callRequest.input ?? {}, data.wallet)));
+      onEvent({ desk: config.name, stage: 'tool-complete', tool: callRequest.name, endpoint: tool.endpoint, label, finding: findingFor(result) });
       research.push({
         label: tool.label(callRequest.input ?? {}),
         source: result.source ?? `Nansen /api/v1/${tool.endpoint}`,

@@ -5,17 +5,19 @@ import { guardAllocation } from './guard.js';
 
 const panel = JSON.parse(fs.readFileSync(new URL('./wallet-navigator.json', import.meta.url), 'utf8'));
 
-test('wallet navigator contains five addresses per venue with a 3 allow / 2 block split', () => {
-  assert.equal(panel.venues.length, 2);
-  for (const venue of panel.venues) {
-    assert.equal(venue.wallets.length, 5, venue.id);
-    assert.equal(venue.wallets.filter(wallet => wallet.expected === 'allow').length, 3, venue.id);
-    assert.equal(venue.wallets.filter(wallet => wallet.expected === 'block').length, 2, venue.id);
-    assert.equal(new Set(venue.wallets.map(wallet => wallet.address.toLowerCase())).size, 5, venue.id);
+test('wallet navigator publishes only records with a reconciled evidence basis', () => {
+  assert.equal(panel.version, 2);
+  assert.deepEqual(panel.venues.map(venue => venue.id), ['hyperliquid']);
+  const [venue] = panel.venues;
+  assert.equal(venue.wallets.length, 5);
+  assert.equal(new Set(venue.wallets.map(wallet => wallet.address.toLowerCase())).size, 5);
+  for (const wallet of venue.wallets) {
+    assert.equal(wallet.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
+    assert.equal(wallet.expected, wallet.evidence.realized_pnl_usd < 0 ? 'block' : 'allow');
   }
 });
 
-test('BAIT independently reproduces all ten recorded wallet decisions', async () => {
+test('BAIT independently reproduces every published wallet decision', async () => {
   for (const venue of panel.venues) {
     for (const wallet of venue.wallets) {
       const decision = await guardAllocation({
@@ -36,9 +38,7 @@ test('BAIT independently reproduces all ten recorded wallet decisions', async ()
   }
 });
 
-test('Fomo rows disclose headline-versus-realised disagreement instead of hiding it', () => {
-  const fomo = panel.venues.find(venue => venue.id === 'fomo');
-  const misleading = fomo.wallets.filter(wallet => wallet.headline_pnl_usd > 0 && wallet.evidence.realized_pnl_usd < 0);
-  assert.equal(misleading.length, 2);
-  assert.match(fomo.coverage_note, /not every chain/i);
+test('the removed Fomo basis is disclosed instead of silently relabelled', () => {
+  assert.match(panel.notice, /Fomo rows were removed/i);
+  assert.match(panel.notice, /aggregate disagreed/i);
 });

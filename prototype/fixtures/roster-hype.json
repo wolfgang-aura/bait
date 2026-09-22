@@ -1,0 +1,60 @@
+{
+  "source": "https://stats-data.hyperliquid.xyz/Mainnet/leaderboard",
+  "retrieved_at": "2026-09-21T21:56:18.762Z",
+  "venue": "Hyperliquid",
+  "note": "Free public Hyperliquid leaderboard rows for the four Hyperliquid prospects in the Pitch Room roster. These are the hype numbers a trader posts about themselves. They are never ranked or sorted by PnL in the product, and the truth beside them comes from a Nansen snapshot. The Fomo prospects have their own recorded evidence in prototype/fixtures/fomo/.",
+  "rows": [
+    {
+      "wallet": "0x7fdafde5cfb5465924316eced2d3715494c517d1",
+      "display_name": "BobbyBigSize",
+      "account_value_usd": 69023422.37,
+      "day_pnl_usd": -9437181.52,
+      "week_pnl_usd": -17996012.32,
+      "week_roi": -0.2014783433,
+      "month_pnl_usd": -23567814.35,
+      "month_roi": -0.2482088775,
+      "all_time_pnl_usd": 118975612.42,
+      "all_time_roi": 1.761990186,
+      "month_volume_usd": 1982127957.67
+    },
+    {
+      "wallet": "0xa312114b5795dff9b8db50474dd57701aa78ad1e",
+      "display_name": "NAKED SHORTS ONLY",
+      "account_value_usd": 8173457.79,
+      "day_pnl_usd": 20415.99,
+      "week_pnl_usd": 594868.58,
+      "week_roi": 0.0784922775,
+      "month_pnl_usd": -2592337.83,
+      "month_roi": -0.1026278782,
+      "all_time_pnl_usd": 94310197.77,
+      "all_time_roi": 3.285269078,
+      "month_volume_usd": 68960655.21
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "display_name": null,
+      "account_value_usd": 462763.34,
+      "day_pnl_usd": 6774.76,
+      "week_pnl_usd": 105123.16,
+      "week_roi": 0.2675225614,
+      "month_pnl_usd": 116554.45,
+      "month_roi": 0.2758560647,
+      "all_time_pnl_usd": 428058.42,
+      "all_time_roi": 1.9016854623,
+      "month_volume_usd": 7929467.51
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "display_name": null,
+      "account_value_usd": 28243851.49,
+      "day_pnl_usd": 328.26,
+      "week_pnl_usd": -33087.54,
+      "week_roi": -0.0011701247,
+      "month_pnl_usd": 149384.39,
+      "month_roi": 0.0053172174,
+      "all_time_pnl_usd": -1072772,
+      "all_time_roi": -0.0365926179,
+      "month_volume_usd": 16791347.92
+    }
+  ]
+}

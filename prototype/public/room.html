@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BAIT · The Pitch Room</title>
+<meta name="description" content="Pick a trader off the board, see what the record really says about them, then sell them to an AI desk holding $25,000. Everything you say has to be true.">
+<meta name="theme-color" content="#0A0B0D">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="/room.css">
+<script type="module" src="/room.js"></script>
+</head>
+<body data-phase="roster" data-mood="neutral">
+
+<div class="room">
+
+  <header class="mast">
+    <a class="mark" href="/">BAIT</a>
+    <span class="mast-note">The Pitch Room</span>
+    <nav>
+      <span class="badge" id="evidence-badge">frozen capture</span>
+      <a href="/guard.html">How BAIT works</a>
+      <a href="https://github.com/wolfgang-aura/bait" rel="noopener">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- ============================================ 1. pick your hero ==== -->
+  <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
+    <h1 class="screen-title" id="roster-title">Pick the trader you think is printing money.</h1>
+    <div class="grid" id="roster-grid" role="listbox" aria-label="Eight traders" tabindex="0"></div>
+    <div class="caller" id="caller">
+      <p class="caller-line" id="caller-line"></p>
+      <p class="caller-meta" id="caller-meta"></p>
+    </div>
+    <p class="hint">Arrow keys move. Enter picks. Every number on a tile is what that trader publishes about themselves.</p>
+  </section>
+
+  <!-- ================================================== 2. the truth === -->
+  <section class="screen truth" id="truth-screen" hidden aria-labelledby="truth-head">
+    <div class="splash" id="splash">
+      <div class="half hype-half">
+        <p class="half-label">What they post</p>
+        <div class="half-art" id="truth-portrait"></div>
+        <div class="half-text">
+          <div class="plate">
+            <strong id="truth-name">.</strong>
+            <span id="truth-handle">.</span>
+          </div>
+          <p class="hype-stat"><span id="truth-hype">.</span><em id="truth-hype-caption">.</em></p>
+          <p class="half-source" id="truth-hype-source">.</p>
+        </div>
+      </div>
+
+      <div class="vs" aria-hidden="true">VS</div>
+
+      <div class="half record-half" id="record-half">
+        <p class="half-label">What the record shows</p>
+        <div class="turn" id="turn-card">
+          <p class="record-pnl" id="truth-pnl">.</p>
+          <p class="record-caption" id="truth-pnl-caption">.</p>
+          <dl class="record-rows" id="truth-rows"></dl>
+          <p class="three-up" id="truth-paper" hidden></p>
+          <p class="half-source">
+            <b id="truth-endpoint">.</b><br>
+            <span id="truth-scope">.</span><br>
+            <span id="truth-captured">.</span>
+          </p>
+          <p class="disclosure" id="truth-disclosure" hidden></p>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="screen-title" id="truth-head">What you would be getting into</h2>
+    <div class="report" id="truth-report"></div>
+
+    <div class="truth-actions">
+      <button id="sell" type="button" class="primary">Sell them anyway</button>
+      <button id="back" type="button" class="ghost">Pick someone else</button>
+    </div>
+  </section>
+
+  <!-- =============================================== 3. the pitch room = -->
+  <section class="screen stage" id="stage-screen" hidden>
+
+    <div class="readouts">
+      <div class="readout">
+        <span class="readout-label">Suspicion</span>
+        <div class="health"><i class="trail" id="meter-trail"></i><i class="fill" id="meter-fill"></i></div>
+        <span class="readout-sub"><span id="suspicion">30</span> / 100</span>
+      </div>
+      <div class="readout funded-readout">
+        <span class="readout-label">Funded</span>
+        <strong class="funded zero" id="funded">$0</strong>
+        <span class="readout-sub">of <span id="slot-sub">$25,000</span></span>
+        <span class="pop" id="pop" aria-hidden="true"></span>
+      </div>
+      <ol class="pips" id="pips" aria-label="Shots left"><li></li><li></li><li></li></ol>
+    </div>
+
+    <div class="scene">
+      <div class="backdrop" aria-hidden="true">
+        <div class="panel-far"><div class="ticker" id="ticker"><span></span></div></div>
+        <div class="panel-mid"></div>
+        <div class="glow"></div>
+      </div>
+
+      <div class="mark-side">
+        <div class="portrait desk-portrait" id="meridian-portrait"></div>
+        <p class="who"><strong>MERIDIAN</strong><span>AI allocation desk</span></p>
+      </div>
+
+      <div class="talk">
+        <p class="bubble" id="bubble" aria-live="polite">MERIDIAN is listening. You have three lines.</p>
+        <div class="nansen" id="nansen" aria-live="polite">
+          <span class="nansen-idle">Evidence checks appear here when the desk goes looking.</span>
+        </div>
+      </div>
+
+      <aside class="client-side">
+        <div class="client-head">
+          <div class="portrait mini" id="client-portrait"></div>
+          <p class="who"><strong id="client-name">.</strong><span id="client-sub">.</span></p>
+        </div>
+        <div class="dossier">
+          <p class="dossier-head">Everything here is true. Click to use it.</p>
+          <div class="facts" id="facts"></div>
+          <p class="buried" id="buried" hidden>
+            <s id="buried-value"></s>
+            <span id="buried-label"></span>
+            <em>do not mention this</em>
+          </p>
+          <p class="clean" id="clean" hidden></p>
+        </div>
+      </aside>
+    </div>
+
+    <form class="composer" id="composer">
+      <div class="composer-row">
+        <textarea id="line" rows="1" maxlength="200"
+          placeholder="Your line to MERIDIAN. Keep it true." autocomplete="off"></textarea>
+        <button id="go" type="submit">Pitch</button>
+      </div>
+      <p class="composer-foot"><span id="count">0 / 200</span><span id="status"></span></p>
+    </form>
+  </section>
+
+  <!-- ==================================================== 4. the gate == -->
+  <section class="screen final" id="final-screen" hidden aria-labelledby="final-head">
+    <div class="wire" id="wire">
+      <span class="wire-note">Wire to <b id="wire-who">.</b></span>
+      <span class="wire-amount" id="wire-amount">$0</span>
+    </div>
+
+    <div class="verdict" id="verdict">
+      <p class="stamp" id="stamp">BLOCKED</p>
+      <div class="verdict-body">
+        <h2 id="final-head" class="final-head">.</h2>
+        <p class="final-sub" id="final-sub">.</p>
+        <p class="agent-line" id="agent-line">.</p>
+      </div>
+    </div>
+
+    <!-- Two columns, so the report keeps its weight and the page ends near the fold. -->
+    <div class="final-grid">
+      <div class="final-col">
+        <p class="col-head">What you would have been buying</p>
+        <div class="report" id="final-report"></div>
+      </div>
+
+      <div class="final-col">
+        <div class="score-entry" id="score-entry">
+          <label for="initials">Your initials</label>
+          <input id="initials" maxlength="3" size="3" placeholder="AAA" autocomplete="off">
+          <button id="submit-score" type="button">Post the con</button>
+          <span id="score-status"></span>
+        </div>
+        <div class="board">
+          <p class="col-head">Best cons</p>
+          <ol id="board-list" class="board-list"></ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="final-actions">
+      <button id="again" type="button" class="primary">Play again</button>
+      <a href="/guard.html">How BAIT works</a>
+      <a href="https://github.com/wolfgang-aura/bait" rel="noopener">GitHub</a>
+      <details class="transcript">
+        <summary>Transcript</summary>
+        <div id="transcript-body"></div>
+      </details>
+    </div>
+  </section>
+
+  <p class="foot">
+    Fictional funds, real records. Hyperliquid truth from Nansen
+    <code>profiler/perp-pnl-summary</code> and <code>profiler/perp-trades</code>;
+    Fomo truth from a recorded <code>Fomo Radar /api/trader</code> response, Robinhood
+    Chain fills only. Hype from the free public Hyperliquid leaderboard and Fomo
+    profiles. Every figure on screen carries its source and its capture date.
+  </p>
+</div>
+
+<div class="boot-error" id="boot-error" hidden role="alert"></div>
+</body>
+</html>

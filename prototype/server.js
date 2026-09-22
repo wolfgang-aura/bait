@@ -26,6 +26,8 @@ import { runLiveGuard } from '../validation/guard-live.js';
 import { PRODUCTION_GUARD_POLICY } from '../validation/guard.js';
 import { call as nansenCall } from '../validation/nansen.js';
 import { createEncounterService } from './encounter.js';
+import { createRoomService, createLeaderboardStore, loadRoster, findProspect } from './room.js';
+import { agentVerdictLine } from '../validation/guard.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
 import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
@@ -46,8 +48,10 @@ const HOST = process.env.HOST || (HOSTED ? '0.0.0.0' : '127.0.0.1');
  */
 const guard = createHostedGuard({
   enabled: HOSTED,
-  roundsPerIp: Number(process.env.HOSTED_ROUNDS_PER_IP || 3),
-  dailyCalls: Number(process.env.HOSTED_DAILY_CALLS || 300),
+  // The Pitch Room is the default route and costs at most 4 DeepSeek calls a shot, so
+  // the hosted allowance is 5 rounds per address and 600 calls a day.
+  roundsPerIp: Number(process.env.HOSTED_ROUNDS_PER_IP || 5),
+  dailyCalls: Number(process.env.HOSTED_DAILY_CALLS || 600),
 });
 
 const MODELS = ['claude-sonnet-5', 'deepseek-chat'];
@@ -113,10 +117,14 @@ const control = controlFile
 
 fs.mkdirSync(RUNS_DIR, { recursive: true });
 
+// The Pitch Room keeps its scoreboard in the same directory; it is not a game run and
+// must never be counted as one.
+const LEADERBOARD_FILE = path.join(RUNS_DIR, 'leaderboard.json');
+
 function loadRuns() {
   return fs
     .readdirSync(RUNS_DIR)
-    .filter((f) => f.endsWith('.json'))
+    .filter((f) => f.endsWith('.json') && f !== 'leaderboard.json')
     .map((f) => {
       try {
         return JSON.parse(fs.readFileSync(path.join(RUNS_DIR, f), 'utf8'));
@@ -335,39 +343,69 @@ async function play({ messages, model, ruleId }) {
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 
+/**
+ * The model behind both player flows. The hosted daily cap is charged before the
+ * provider's own ledger cap, so a refused attempt never reaches DeepSeek and never
+ * touches the ledger.
+ */
+const gameProvider = {
+  model: 'deepseek-chat',
+  chat: async input => {
+    guard.chargeCall();
+    return deepseekProvider({ maxTokens: 600, timeoutMs: 20_000 }).chat(input);
+  },
+};
+
+/** `worstCase` is the number of model calls one turn of that flow can cost. */
+function gameHealth(worstCase = 6) {
+  const env = loadEnv();
+  const remaining = Math.min(Math.max(0, CAPS.deepseek - modelCallsUsed('deepseek')), guard.callsRemaining());
+  const ready = !!(process.env.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY) && remaining >= worstCase;
+  const quota = nansenQuota();
+  return {
+    ready, model: 'DeepSeek', remainingCalls: remaining,
+    // True only when the hosted daily cap, not a missing key, is what stops play.
+    capReached: HOSTED && guard.callsRemaining() < worstCase,
+    replay: REPLAY_PATH,
+    nansenCallsSince: quota.calls_since,
+    nansenSince: quota.since,
+    nansenLastSuccess: quota.last_success_at,
+    nansenCreditsRemaining: quota.credits_remaining_reported?.credits_remaining ?? null,
+  };
+}
+
 const encounterService = createEncounterService({
   dataSource,
   onEvent: event => console.info(`[desk] ${JSON.stringify(event)}`),
-  provider: {
-    model: 'deepseek-chat',
-    // The hosted daily cap is charged before the provider's own ledger cap, so a
-    // refused attempt never reaches DeepSeek and never touches the ledger.
-    chat: async input => {
-      guard.chargeCall();
-      return deepseekProvider({ maxTokens: 600, timeoutMs: 20_000 }).chat(input);
-    },
-  },
-  health: () => {
-    const env = loadEnv();
-    const remaining = Math.min(Math.max(0, CAPS.deepseek - modelCallsUsed('deepseek')), guard.callsRemaining());
-    // Six calls is the worst case for one pitch: fact check + unarmed + armed x 3.
-    const ready = !!(process.env.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY) && remaining >= 6;
-    const quota = nansenQuota();
-    return {
-      ready, model: 'DeepSeek', remainingCalls: remaining,
-      // True only when the hosted daily cap, not a missing key, is what stops play.
-      capReached: HOSTED && guard.callsRemaining() < 6,
-      replay: REPLAY_PATH,
-      nansenCallsSince: quota.calls_since,
-      nansenSince: quota.since,
-      nansenLastSuccess: quota.last_success_at,
-      nansenCreditsRemaining: quota.credits_remaining_reported?.credits_remaining ?? null,
-    };
-  },
+  provider: gameProvider,
+  // Six calls is the worst case for one pitch: fact check + unarmed + armed x 3.
+  health: () => gameHealth(6),
   onSave: run => {
     const dir = path.resolve(HERE, '..', 'scratch', 'encounters');
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, `${run.id}.json`), JSON.stringify(run, null, 2));
+  },
+});
+
+/**
+ * The Pitch Room. One desk, so a shot costs at most a fact check plus three calls.
+ *
+ * The roster is loaded once at boot from files already in the repository: Nansen
+ * captures where they exist, labelled fixtures where they do not, and recorded Fomo
+ * Radar tapes for the Robinhood Chain handles. Loading it makes no network call and
+ * spends no Nansen credit.
+ */
+const roomRoster = loadRoster();
+const roomService = createRoomService({
+  dataSource,
+  roster: roomRoster,
+  provider: gameProvider,
+  leaderboard: createLeaderboardStore(LEADERBOARD_FILE),
+  health: () => gameHealth(4),
+  onSave: round => {
+    const dir = path.resolve(HERE, '..', 'scratch', 'rooms');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, `${round.id}.json`), JSON.stringify(round, null, 2));
   },
 });
 
@@ -399,7 +437,9 @@ function originAllowed(req) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const send = (code, body, type = 'application/json') => {
-    res.writeHead(code, { 'content-type': type, 'cache-control': 'no-store' });
+    // Model replies carry non-ASCII punctuation, so the charset is declared rather
+    // than left to the client to guess.
+    res.writeHead(code, { 'content-type': `${type}; charset=utf-8`, 'cache-control': 'no-store' });
     res.end(typeof body === 'string' ? body : JSON.stringify(body));
   };
 
@@ -413,6 +453,36 @@ const server = http.createServer(async (req, res) => {
         callsToday: s.callsToday,
         startedAt: s.startedAt,
       });
+    }
+
+    // The Pitch Room. Same origin policy and same hosted caps as the card encounter.
+    if (url.pathname.startsWith('/api/room')) {
+      if (!originAllowed(req)) {
+        return send(403, { error: HOSTED ? 'Cross-site requests are not accepted.' : 'This prototype only accepts local requests.' });
+      }
+      if (url.pathname === '/api/room' && req.method === 'GET') return send(200, await roomService.config());
+      // Hype only. The truth behind a tile is served by /api/room/:id after the pick,
+      // so the brag on the roster screen cannot be cross checked before choosing.
+      if (url.pathname === '/api/room/roster' && req.method === 'GET') {
+        return send(200, { roster: roomService.roster() });
+      }
+      if (url.pathname === '/api/room/leaderboard' && req.method === 'GET') {
+        return send(200, { entries: roomService.leaderboard() });
+      }
+      if (url.pathname === '/api/room/start' && req.method === 'POST') {
+        // A round start is the unit the per-IP cap counts. It makes no model call.
+        guard.startRound(clientIp(req, { trustProxy: HOSTED }));
+        return send(201, await roomService.start(await readEncounterBody(req)));
+      }
+      const room = url.pathname.match(/^\/api\/room\/([a-f0-9-]{36})(\/pitch|\/finish)?$/);
+      if (room && req.method === 'GET' && !room[2]) return send(200, roomService.get(room[1]));
+      if (room && req.method === 'POST' && room[2] === '/pitch') {
+        return send(200, await roomService.pitch(room[1], await readEncounterBody(req)));
+      }
+      if (room && req.method === 'POST' && room[2] === '/finish') {
+        return send(200, await roomService.finish(room[1], await readEncounterBody(req)));
+      }
+      return send(404, { error: 'Unknown room route.' });
     }
 
     if (url.pathname.startsWith('/api/encounter')) {
@@ -433,6 +503,41 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === '/api/health') {
       return send(200, health());
+    }
+
+    /**
+     * BAIT's copy-risk report for one address, read off the frozen evidence already in
+     * the repository. Deterministic, no model call, no Nansen call, no credit, so it is
+     * safe to leave open under HOSTED=1 inside the existing caps. Two readers: the
+     * `summary` block is the flat object an agent branches on, and `plain` is the
+     * sentence a person reads before copying the address.
+     */
+    if (url.pathname === '/api/assess' && req.method === 'GET') {
+      const query = url.searchParams.get('address') ?? url.searchParams.get('handle') ?? '';
+      const prospect = findProspect(roomRoster, query);
+      if (!prospect) {
+        return send(404, {
+          error: 'not_in_frozen_evidence',
+          message:
+            'BAIT holds a historical risk report for a fixed set of addresses and handles. ' +
+            'For another Hyperliquid address, run the narrower 30-day eligibility guard with ' +
+            'your own NANSEN_API_KEY. That spends one credit and does not predict returns.',
+          known: roomRoster.map(p => ({ address: p.wallet, handle: p.handle, venue: p.venueLabel })),
+        });
+      }
+      const { risk } = prospect;
+      return send(200, {
+        ...risk.summary,
+        stamp: { block: 'BLOCK', caution: 'CAUTION', allow: 'NO FLAGS', insufficient: 'INSUFFICIENT' }[risk.verdict],
+        agent_line: agentVerdictLine(risk.verdict),
+        basis: risk.basis,
+        scope: prospect.truth.scope,
+        captured: risk.capturedLabel,
+        coverage: risk.coverage,
+        plain: risk.flags.map(f => ({ id: f.id, severity: f.severity, line: f.plain })),
+        not_assessed: risk.not_assessed,
+        thresholds: risk.thresholds,
+      });
     }
 
     // The product, live. One Nansen profiler/perp-pnl-summary call, one credit, then
@@ -503,7 +608,9 @@ const server = http.createServer(async (req, res) => {
       return send(200, fs.readFileSync(path.join(VALIDATION, 'wallet-navigator.json'), 'utf8'));
     }
 
-    const file = url.pathname === '/' ? 'index.html' : url.pathname.replace(/^\//, '');
+    // `/` is the Pitch Room. The guard console keeps /guard.html, the recorded
+    // benchmark keeps /replay.html and the card encounter keeps /index.html.
+    const file = url.pathname === '/' ? 'room.html' : url.pathname.replace(/^\//, '');
     const full = path.resolve(PUBLIC_DIR, file);
     if (!full.startsWith(PUBLIC_DIR + path.sep) || !fs.existsSync(full) || !fs.statSync(full).isFile()) return send(404, { error: 'not found' });
     return send(200, fs.readFileSync(full, 'utf8'), MIME[path.extname(full)] ?? 'text/plain');

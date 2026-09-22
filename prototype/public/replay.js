@@ -275,14 +275,14 @@ function filterWallets() {
     card.hidden = !visible;
     if (visible) shown += 1;
   }
-  $('b-wallet-count').textContent = `${shown} of 10 wallets shown`;
+  $('b-wallet-count').textContent = `${shown} of ${walletData.venues.flatMap(v => v.wallets).length} wallets shown`;
 }
 
 function renderWallets() {
   const wallets = walletData.venues.flatMap(venue => venue.wallets.map(wallet => ({ venue, wallet })));
-  if (walletData.version !== 1 || wallets.length !== 10) throw new Error('Wallet evidence has an unsupported format');
+  if (walletData.version !== 2 || wallets.length < 1) throw new Error('Wallet evidence has an unsupported format');
   $('b-wallet-grid').innerHTML = wallets.map(({ venue, wallet }) => walletCard(venue, wallet)).join('');
-  $('b-wallet-method').textContent = `${walletData.notice} Fomo coverage is limited to linked Robinhood Chain execution wallets and uses Fomo Radar public data; Hyperliquid decisions use Nansen address PnL summaries. Evidence captured ${day(walletData.generated_at)}.`;
+  $('b-wallet-method').textContent = `${walletData.notice} Published decisions use Nansen address PnL summaries. Evidence captured ${day(walletData.generated_at)}.`;
   filterWallets();
 }
 

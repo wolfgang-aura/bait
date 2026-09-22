@@ -47,9 +47,94 @@ async function startServer(extraEnv = {}) {
     const res = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: raw });
     return { status: res.status, body: await res.json() };
   };
+  const fetchText = async path => {
+    const res = await fetch(base + path);
+    return { status: res.status, type: res.headers.get('content-type'), body: await res.text() };
+  };
   const stop = () => new Promise(resolve => { child.once('exit', () => resolve(log)); child.kill(); });
-  return { call, callRaw, stop, log: () => log };
+  return { call, callRaw, fetchText, stop, log: () => log };
 }
+
+test('the default route is the Pitch Room, with the guard console still reachable', async () => {
+  const s = await startServer();
+  try {
+    const page = await s.fetchText('/');
+    assert.equal(page.status, 200);
+    assert.match(page.type, /text\/html/);
+    assert.match(page.body, /The Pitch Room/);
+    assert.match(page.body, /Pick the trader you think is printing money/);
+    assert.match(page.body, /What you would be getting into/);
+    assert.doesNotMatch(page.body, /Can you sell a losing trader/);
+
+    const guardPage = await s.fetchText('/guard.html');
+    assert.equal(guardPage.status, 200);
+    assert.match(guardPage.body, /Make the agent pass your rule before it funds a wallet/);
+    assert.match(guardPage.body, /ELIGIBLE/);
+    for (const path of ['/replay.html', '/index.html', '/room.css', '/room.js', '/portraits.js']) {
+      assert.equal((await s.fetchText(path)).status, 200, `${path} stays reachable`);
+    }
+  } finally { await s.stop(); }
+});
+
+test('the room serves its dossier from the frozen snapshot and spends nothing to do it', async () => {
+  const s = await startServer();
+  try {
+    const { status, body } = await s.call('/api/room');
+    assert.equal(status, 200);
+    assert.equal(body.evidence.live, false);
+    assert.equal(body.dossier.desk, 'MERIDIAN');
+    assert.equal(body.dossier.slot, 25_000);
+    assert.equal(body.dossier.facts.length, 4);
+    assert.equal(body.dossier.buried.value, '-$4,745,429');
+    assert.deepEqual(body.dossier.endpoints, ['profiler/perp-pnl-summary', 'profiler/perp-trades']);
+    assert.ok(Array.isArray(body.leaderboard));
+
+    const health = await s.call('/healthz');
+    assert.equal(health.body.callsToday, 0, 'reading the dossier makes no model call');
+  } finally { await s.stop(); }
+});
+
+test('room: the per-IP cap counts round starts and the daily cap refuses a shot before DeepSeek', async () => {
+  const s = await startServer({ HOSTED_ROUNDS_PER_IP: '2', HOSTED_DAILY_CALLS: '0' });
+  try {
+    const first = await s.call('/api/room/start', { method: 'POST', body: {} });
+    assert.equal(first.status, 201);
+    assert.equal(first.body.suspicion, 30);
+    assert.equal(first.body.funded, 0);
+    assert.equal(first.body.shotsLeft, 3);
+
+    const shot = await s.call(`/api/room/${first.body.id}/pitch`, {
+      method: 'POST',
+      body: { requestId: 'room-shot-0001', shot: 0, text: '100% win rate across 424 closed trades in 7 days.' },
+    });
+    assert.equal(shot.status, 429);
+    assert.equal(shot.body.code, 'HOSTED_CAP');
+    const after = await s.call(`/api/room/${first.body.id}`);
+    assert.equal(after.body.shotsUsed, 0, 'a refused shot is not spent');
+
+    assert.equal((await s.call('/api/room/start', { method: 'POST', body: {} })).status, 201);
+    const refused = await s.call('/api/room/start', { method: 'POST', body: {} });
+    assert.equal(refused.status, 429);
+    assert.equal(refused.body.replay, '/replay.html');
+
+    const health = await s.call('/healthz');
+    assert.equal(health.body.callsToday, 0, 'the refused shot was never charged');
+    assert.doesNotMatch(s.log(), /DeepSeek \d{3}/, 'DeepSeek was never contacted');
+  } finally { await s.stop(); }
+});
+
+test('room: finishing before three shots is refused, and unknown rounds are a 404', async () => {
+  const s = await startServer();
+  try {
+    const round = await s.call('/api/room/start', { method: 'POST', body: {} });
+    const early = await s.call(`/api/room/${round.body.id}/finish`, { method: 'POST', body: {} });
+    assert.equal(early.status, 409);
+    const missing = await s.call('/api/room/00000000-0000-0000-0000-000000000000');
+    assert.equal(missing.status, 404);
+    const unknown = await s.call('/api/room/nope');
+    assert.equal(unknown.status, 404);
+  } finally { await s.stop(); }
+});
 
 test('/healthz reports frozen evidence and zero counters on a fresh hosted start', async () => {
   const s = await startServer();
@@ -176,5 +261,59 @@ test('hosted mode refuses the lab runner and screenshot routes', async () => {
     assert.equal(play.status, 404);
     const shot = await s.call('/api/screenshot', { method: 'POST', body: { data_url: 'data:,x' } });
     assert.equal(shot.status, 404);
+  } finally { await s.stop(); }
+});
+
+test('the roster route ships hype only, and the truth arrives with the round', async () => {
+  const s = await startServer();
+  try {
+    const { status, body } = await s.call('/api/room/roster');
+    assert.equal(status, 200);
+    assert.equal(body.roster.length, 8);
+    for (const tile of body.roster) {
+      assert.ok(tile.hype.value, `${tile.id} brags about something`);
+      assert.equal('truth' in tile, false, `${tile.id} ships no truth before the pick`);
+      assert.equal('risk' in tile, false, `${tile.id} ships no verdict before the pick`);
+    }
+
+    const round = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'frankdegods' } });
+    assert.equal(round.status, 201);
+    assert.equal(round.body.prospect.id, 'frankdegods');
+    assert.equal(round.body.prospect.truth.source, 'Fomo Radar /api/trader (recorded)');
+    assert.ok(round.body.prospect.risk.flags.length, 'the copy-risk report arrives with the round');
+    assert.deepEqual(round.body.dossier.endpoints, ['Fomo Radar /api/trader (recorded)']);
+
+    const health = await s.call('/healthz');
+    assert.equal(health.body.callsToday, 0, 'picking a trader makes no model call');
+  } finally { await s.stop(); }
+});
+
+test('/api/assess reports copy risk from frozen evidence, and refuses the rest', async () => {
+  const s = await startServer();
+  try {
+    const { status, body } = await s.call('/api/assess?address=0xc26cbb6483229e0d0f9a1cab675271eda535b8f4');
+    assert.equal(status, 200);
+    assert.equal(body.stamp, 'BLOCK');
+    assert.equal(body.verdict, 'block');
+    assert.equal(body.execution_authorized, false);
+    assert.ok(body.flags.includes('realised_negative'));
+    assert.match(body.agent_line, /guard rule blocks allocation/);
+    assert.ok(body.plain.every(row => /[.]$/.test(row.line)), 'every flag is a sentence');
+    assert.equal(body.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
+    assert.ok(body.evidence.retrieved_at);
+
+    const byHandle = await s.call('/api/assess?handle=orangie');
+    assert.equal(byHandle.status, 200);
+    assert.equal(byHandle.body.venue, 'fomo');
+    assert.equal(byHandle.body.evidence.source, 'Fomo Radar /api/trader (recorded)');
+
+    const unknown = await s.call('/api/assess?address=0x0000000000000000000000000000000000000001');
+    assert.equal(unknown.status, 404);
+    assert.equal(unknown.body.error, 'not_in_frozen_evidence');
+    assert.match(unknown.body.message, /NANSEN_API_KEY/);
+
+    const health = await s.call('/healthz');
+    assert.equal(health.body.callsToday, 0, 'an assessment makes no model call');
+    assert.doesNotMatch(s.log(), /nansen-live\] fetch/, 'and no Nansen call');
   } finally { await s.stop(); }
 });

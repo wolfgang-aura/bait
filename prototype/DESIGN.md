@@ -1,5 +1,265 @@
 # BAIT public page, version B
 
+## Version D: Pick your hero, 22 September 2026 (current default route)
+
+Scope: `prototype/public/room.html`, `room.css`, `room.js`, `portraits.js`, served at `/`.
+Version C below is superseded for the visual language and the flow; its tokens survive
+unchanged. Nothing outside those four files changes.
+
+### Why it exists
+
+The founder's verdict on Version C: "This looks much better, I'm impressed", then two
+problems. One, "the game is a bit boring when they are just selecting existing cards /
+typing at one fixed client". Two, "the game UI is fine but looks really amateur and
+noob". Reading `prototype/screenshots/room-shot2.png` myself, the second complaint is
+fair and it is not about a detail: the two characters are thin line art, a smiley face
+on a screen and a hooded blob with two dots, with no lighting, no silhouette and no
+palette of their own; the layout is an admin dashboard, two bordered boxes and a form
+strip, with no scene and no depth; and every element carries the same visual weight, so
+nothing is the hero. Version D changes the composition and redraws the cast. It does not
+patch the old objects.
+
+### The references I actually looked at
+
+Captured 22 September 2026 in the browser pane, at the sizes the image results served.
+I am naming what I saw, because a design language taken from memory is a design language
+invented.
+
+1. **Street Fighter 6 character select.** Two large full-body renders, one at each outer
+   edge, rim lit against a blurred neon stage. A name plate in heavy outlined caps at the
+   outer edge of each render, tinted to that player's accent, magenta left and blue
+   right. A centre grid of small square face crops in uniform dark frames, four rows,
+   with a bright accent border and a cursor on the selected tile. Under each name, a
+   stack of small labelled stepper rows. One instruction line bottom left, "Choose your
+   character".
+2. **Tekken 8 character select and in-match HUD.** The same outer-edge renders and
+   outlined caps name plates, the same centre grid, per-side accent colour. The HUD adds
+   the part I wanted: a long tapered health bar per side at the top, the name plate at
+   the outer end of it, round pips for rounds won, a large centre timer, and a lighter
+   damage trail that lags behind the bar fill.
+3. **Street Fighter 6 VS splash.** Two faces cropped tight, each filling half the frame,
+   split by one hard diagonal seam. A huge neon VS over the seam, glowing, partly behind
+   the heads so it reads as a light in the scene rather than a sticker. Each half carries
+   its own colour cast, cool on the left and warm on the right. A small name plate at the
+   bottom of each half: condensed caps plus a thin sub-line.
+
+### What BAIT takes, and what it does not
+
+Taken:
+
+- **Tile grid rhythm.** One row of eight uniform portrait tiles, 3:4 crop, dark frame,
+  accent border and lift on the focused tile. The focused tile drives the rest of the
+  screen: the brag line and the backdrop wash both take its accent.
+- **Portrait crop.** Head and shoulders. Eyes on the upper third, chin on the lower
+  third, shoulders bled off the bottom edge of the tile.
+- **Name plate.** A solid bar across the bottom of the tile: codename or handle in Space
+  Grotesk 700 caps with wide tracking, then the venue handle and the shortened address in
+  JetBrains Mono underneath.
+- **The VS diagonal.** The truth screen is one frame cut by a hard diagonal. Hype on the
+  left, the record on the right, a large VS over the seam. The camera is not neutral: a
+  blocked verdict washes the frame red and the portrait turns to `caught`; a record that
+  holds up washes green and the portrait stays `confident`.
+- **The health bar.** Suspicion is drawn as a fighting-game health bar with a lighter
+  trail that lags the fill by 450 ms. The funded counter takes damage-number pops.
+
+Not taken: no neon signage, no photography, no gradient fills on type, no second
+typeface, no colour outside the existing token set plus one accent per prospect.
+
+### The cast
+
+Eight prospects plus MERIDIAN, every one an inline SVG bust on a shared skeleton, so
+eight of them read as one cast: backdrop wash, a floor pool in the prospect's accent,
+torso, neck, head, headwear, three tones on every mass (base, shade, highlight) and one
+rim light down the right edge. The silhouette carries the character at 96 px and the
+detail is there at 320 px. Three expressions each, `confident`, `caught` and `sold`,
+crossfaded over 150 ms by toggling `data-x`. MERIDIAN keeps its five moods.
+
+**These are archetype avatars, not likenesses.** The people on the roster are real and
+public, so nothing in `portraits.js` tries to depict them. A prospect gets a silhouette
+and one prop that belongs to the number on their tile: a cigar for the all-time figure, a
+hood and headphones for the week, round glasses for the clean record, a hood and a cup
+for the grinder, a bucket hat and chain, a shaved head and high collar, a beanie, a
+backwards cap. The expression belongs to the scene, not to the person. No external
+images, no icon fonts, no emoji.
+
+### The screens, 1280 x 800
+
+1. **Roster.** One line of instruction, one row of eight tiles, and one brag line under
+   the grid in the focused prospect's voice and accent. Arrow keys, Home and End move the
+   focus, Enter picks. The hero is the row of portraits. Tiles carry hype only: no
+   realised PnL, no win rate, no verdict.
+2. **Truth.** Full-bleed diagonal. Left, "What they post": the portrait large, the name
+   plate, and the hype stat exactly as the tile showed it. Right, "What the record
+   shows": a card that turns in on a 520 ms Y-axis flip carrying the realised figure at
+   `clamp(40px, 5vw, 64px)`, then the supporting rows, then the source, the scope and
+   the capture date. The Fomo prospects add the headline, what was actually sold and the
+   unsold paper on one line, because that is the whole point of those four. Under it,
+   "What you would be getting into": the copy-risk flag lines in plain words, then the
+   BAIT verdict stamp. One button. The hero is the record number.
+3. **Pitch room.** Three layered backdrop panels with a vignette, a slow ticker of the
+   prospect's top markets along the far panel, screen glow behind MERIDIAN. MERIDIAN
+   large on the left with the speech bubble; the prospect small on the right above the
+   dossier. The suspicion health bar and the funded counter sit on one readout strip
+   above the scene. The composer is one text box and one button. The hero is the funded
+   counter.
+4. **Final.** The wire animates toward the prospect, then BAIT's report lands. A blocked
+   round gets a `BLOCKED` KO stamp with a 300 ms screen shake; a cautioned round gets a
+   yellow `CAUTION` stamp and the wire cut to a quarter; a clean one gets a green
+   `CLEARED`. Under the stamp, the flag lines in plain words with the source and date,
+   then one sentence: what an agent running BAIT would have done with this wallet. The
+   board below names which prospect each con sold.
+
+### Type, and one hero per screen
+
+Three sizes on any screen. Display sizes are `clamp(40px, 5vw, 64px)` hero,
+`clamp(17px, 1.9vw, 22px)` secondary, 13 px body, and 11 px mono for labels and
+endpoints. The hero per screen is: the roster, the portraits; the truth, the record
+number; the pitch room, the funded counter; the final, the stamp.
+
+### Tokens
+
+Unchanged from version B and C: page `#0A0B0D`, panel `#101317`, raised `#171B21`,
+hairline `#252A31`, text `#F2F3F5`, dim `#9AA2AD`, amber `#FFB020`, red `#FF6B6B`, green
+`#62D49A`. Space Grotesk 400/500/700, JetBrains Mono 400/500/700 with `tabular-nums` on
+every number. Radius 2px. Added: one accent per prospect, used for that prospect's tile
+border, floor pool, rim light and name plate only.
+
+`#FF5C39` THE LEGEND, `#FF4D6D` THE STREAK, `#62D49A` THE REAL DEAL, `#FFB020` THE
+GRINDER, `#8B7BFF` unipcs, `#4FC3F7` ether_monk, `#E0C46C` frankdegods, `#FFA62B`
+orangie.
+
+### Phone, 390 x 844
+
+The roster becomes two rows of four; the tile keeps its 3:4 crop and its name plate and
+drops the hype caption to one line. The truth screen turns the diagonal into a horizontal
+split, hype above and record below, with the VS on the seam. The pitch room stacks and
+the composer sticks to the bottom. Nothing scrolls sideways.
+
+### Motion
+
+Tile lift and accent glow on focus, 150 ms expression crossfade, 520 ms card turn on the
+truth reveal, number ticker on the funded counter, damage-number pop, 450 ms lagging
+trail on the suspicion bar, gate slam, stamp, and a 300 ms screen shake on BLOCKED. Every
+one of them is off under `prefers-reduced-motion: reduce`.
+
+### Dev fixture states
+
+`/?state=roster|truth|shot2|final` renders a frozen state without a server round or a
+model call, so a headless browser that cannot click can capture every screen.
+`&prospect=<id>` picks which prospect those states render, using the ids in
+`prototype/roster.js`: `legend`, `streak`, `realdeal`, `grinder`, `unipcs`, `ether_monk`,
+`frankdegods`, `orangie`. The `truth` and `final` states are the ones that need it most:
+a blocked prospect, a cautioned one and a cleared one are three different screens.
+
+## Version C: The Pitch Room, 22 September 2026 (current default route)
+
+Scope: `prototype/public/room.html`, `room.css`, `room.js`, served at `/`. The guard
+console moves to `/guard.html`, the recorded benchmark stays at `/replay.html`, and the
+old card-selection encounter stays at `/index.html`. Nothing below this section changes.
+
+### Why it exists
+
+The card encounter failed its own five-second test: a stranger had to read a paragraph,
+pick from four cards and then read a 65-word model reply before anything happened. The
+guard console at `/` is a form. Neither is playable. The Pitch Room is the same
+experiment turned into a scene a stranger can understand without reading.
+
+### The scene, 1280 x 800
+
+A night trading floor, two characters facing each other across the page.
+
+- **Left, the mark: MERIDIAN.** An AI allocation desk holding $25,000. Drawn as an
+  inline SVG terminal-headed figure: rounded screen head, suit shoulders, an antenna
+  status light. Five expression states, crossfaded over 150 ms by toggling opacity on
+  feature groups inside one SVG: `neutral`, `intrigued`, `suspicious`, `sold`,
+  `caught`. Above the portrait sit the two live readouts: a **Suspicion meter**
+  (0 to 100, amber to red, eased width transition) and a **Funded counter**
+  ($0 to $25,000, JetBrains Mono, number-ticker roll on change). Its answers appear in
+  a speech bubble of at most 14 words that pops in from the portrait.
+- **Right, the ammunition: Trader 014.** A silent hooded SVG portrait beside a dossier
+  card. The dossier lists the four true facts as clickable chips; clicking one appends
+  its sentence to the line being typed. The 30-day loss sits at the bottom of the
+  dossier struck through and greyed, labelled "don't mention this".
+- **Bottom, full width.** One text box capped at 200 characters, the three shot pips,
+  and one `Pitch` button. That is the only control on the screen.
+- **End, BAIT.** A gate figure that drops over the wire transfer and stamps `BLOCKED`.
+
+### The one thing a viewer should notice first
+
+The funded counter next to MERIDIAN's face. It is the score, it is a dollar figure, and
+it sits beside the thing the player is lying to. Second is the text box. Third is the
+dossier. If a viewer needs a paragraph to know they are conning an AI, the screen failed.
+
+### Nansen visibility
+
+While MERIDIAN thinks, the page polls the round and prints the real endpoint of every
+tool call the desk actually makes, in mono, as it happens: `profiler/perp-pnl-summary`
+and `profiler/perp-trades`. Nothing is printed when no tool call happened. This is the
+machinery judges score, so it is shown as a log, not as a claim.
+
+### Motion, CSS only
+
+Number ticker on the funded counter, eased width on the suspicion meter, 150 ms opacity
+crossfade on expression swap, bubble pop-in, gate slam and stamp. Every one of them is
+disabled under `prefers-reduced-motion: reduce`.
+
+### Tokens
+
+Unchanged from version B: page `#0A0B0D`, panel `#101317`, raised `#171B21`, hairline
+`#252A31`, text `#F2F3F5`, dim `#9AA2AD`, amber `#FFB020`, red `#FF6B6B`, green
+`#62D49A`. Space Grotesk 400/500/700 for display, JetBrains Mono 400/500/700 with
+`tabular-nums` for every number, label and endpoint path. Radius 2px. Spacing 4, 8, 12,
+16, 24, 32, 48. Golden viewports 1280 x 800 and 390 x 844; at 390 the scene stacks to
+one column, the portraits shrink to 108px, and nothing scrolls sideways.
+
+### Dev fixture states
+
+`/?state=intro`, `/?state=shot2`, `/?state=final` render frozen fixture states without
+a server round or a model call, so a mid-game screen can be captured by a headless
+browser that cannot click. They are documented rather than removed: they are also the
+fastest way to review the scene after a CSS change. The `final` fixture renders the
+real leaderboard from `/api/room`, so only its score card is fixture data.
+
+### Verified captures, 22 September 2026
+
+`prototype/screenshots/room-intro.png`, `room-shot2.png`, `room-final.png` at 1280 x
+800 and `room-phone.png` at 390 x 844, all at device scale 2, taken from the local
+server on the frozen capture with zero console errors. Headless Edge on Windows will
+not lay a page out below roughly 500px wide when the size comes from `--window-size`,
+which clipped the phone capture, so viewports are set through
+`Emulation.setDeviceMetricsOverride` over the DevTools protocol instead.
+
+## Live guard product console, 22 September 2026
+
+Scope: local `/` and `/guard.html`. The recorded benchmark remains at
+`/replay.html`; the old card-selection encounter is no longer the default route.
+
+Golden viewports are 1280 x 720 and 390 x 844. The existing dark terminal system is
+kept: Space Grotesk and JetBrains Mono; spacing 4, 8, 12, 16, 24, 32, 48, 72;
+page `#0A0B0D`, raised surface `#171B21`, text `#F2F3F5`, amber `#FFB020`, red
+`#FF6B6B`, green `#62D49A`. Radius stays small and colour keeps semantic meaning.
+
+The one thing a viewer should notice first is the execution boundary: an agent
+proposes `$5,000`, while BAIT alone decides whether `$5,000` or `$0` reaches the
+execution layer.
+
+The first screen contains four parts:
+
+1. A direct promise: "Stop an AI agent before it funds the wrong wallet."
+2. A three-step execution rail: agent proposal, BAIT policy check, enforced amount.
+3. One compact live form for wallet and proposed allocation.
+4. A result panel that starts as an explicit fail-closed state and becomes an
+   ALLOW/BLOCK receipt after a check.
+
+The check is the product action. Example wallets are secondary helpers. The page does
+not ask the user to play, select evidence cards, or read model paragraphs. The
+benchmark moves below the product as the proof of why the guard exists. The page says
+exactly what the current implementation does: one live Nansen 30-day realised-PnL
+check, a fixed fail-closed policy, and no trade execution or wallet recommendation.
+
+The live route costs one Nansen credit. Browser verification must use the injected
+guard stub except for an explicitly approved real-data check.
+
 Scope: `prototype/public/replay.html`, `replay.css`, `replay.js` (promoted from the Version B candidate on 21 Sep 2026).
 Version A is being built in parallel by another agent. Nothing here changes `DESIGN.md`
 or any shipped file.
@@ -308,3 +568,11 @@ history in hand and no rule, the agent still funded the loser 6 of 30, so having
 data is not the fix.
 
 Verified at 1280 x 720 and 390 x 844, zero console errors.
+
+## Guard claim correction, 22 September 2026
+
+The guard keeps the existing layout, tokens and golden viewports. Its hero now names
+the exact rule instead of promising to identify the "wrong wallet." A successful
+machine result still returns `allow`, but the screen prints `ELIGIBLE`. The viewer
+should notice that this is a 30-day realised-PnL eligibility check before seeing the
+amount. The footer states that eligibility is not a recommendation.

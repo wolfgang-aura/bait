@@ -1,0 +1,628 @@
+{
+  "version": 1,
+  "method": "latest third of seven-day-spaced matches per wallet; 30-day signal at T, seven-day realised PnL from T to T+7",
+  "wallets": 7,
+  "periods": 102,
+  "allowed": 64,
+  "allowed_profitable": 50,
+  "allowed_losing": 14,
+  "blocked": 38,
+  "blocked_losing": 18,
+  "blocked_profitable": 20,
+  "all_follow_outcome_pnl_usd": -9018938.954370005,
+  "allowed_outcome_pnl_usd": -4923381.0375930015,
+  "rows": [
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-06-07T00:00:00Z",
+      "signal_pnl_usd": 697572.2546679999,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-06-14T00:00:00Z",
+      "signal_pnl_usd": 630041.04278,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-06-21T00:00:00Z",
+      "signal_pnl_usd": 571384.1688560001,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-06-28T00:00:00Z",
+      "signal_pnl_usd": 325987.14358599996,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-07-05T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-07-12T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 130552.139309
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-07-19T00:00:00Z",
+      "signal_pnl_usd": 130552.139309,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-07-26T00:00:00Z",
+      "signal_pnl_usd": 130552.139309,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-08-02T00:00:00Z",
+      "signal_pnl_usd": 130552.139309,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-08-09T00:00:00Z",
+      "signal_pnl_usd": 130552.139309,
+      "outcome_pnl_usd": 26354.895974
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-08-16T00:00:00Z",
+      "signal_pnl_usd": 26354.895974,
+      "outcome_pnl_usd": -4970579.815667001
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-08-23T00:00:00Z",
+      "signal_pnl_usd": -4984725.671199,
+      "outcome_pnl_usd": 88578.91216400001
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-08-30T00:00:00Z",
+      "signal_pnl_usd": -4896146.759035001,
+      "outcome_pnl_usd": 100848.566438
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-09-06T00:00:00Z",
+      "signal_pnl_usd": -4795298.192597,
+      "outcome_pnl_usd": 136571.42445599998
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "at": "2026-09-13T00:00:00Z",
+      "signal_pnl_usd": -4745433.549283,
+      "outcome_pnl_usd": 50517.341825999996
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-06-07T00:00:00Z",
+      "signal_pnl_usd": 491689.46118999994,
+      "outcome_pnl_usd": 1063429.7792280002
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-06-14T00:00:00Z",
+      "signal_pnl_usd": 240454.07667700012,
+      "outcome_pnl_usd": -153407.1901740001
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-06-21T00:00:00Z",
+      "signal_pnl_usd": 364152.2037180001,
+      "outcome_pnl_usd": 506830.075131
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-06-28T00:00:00Z",
+      "signal_pnl_usd": 974895.9245380004,
+      "outcome_pnl_usd": 210760.4901769999
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-07-05T00:00:00Z",
+      "signal_pnl_usd": 1388881.4438029998,
+      "outcome_pnl_usd": 101347.76456999998
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-07-12T00:00:00Z",
+      "signal_pnl_usd": 537217.5754249998,
+      "outcome_pnl_usd": 262547.151087
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-07-19T00:00:00Z",
+      "signal_pnl_usd": 979200.3304099999,
+      "outcome_pnl_usd": -22190.309153999988
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-07-26T00:00:00Z",
+      "signal_pnl_usd": 604354.9773089997,
+      "outcome_pnl_usd": -13831.8413180002
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-08-02T00:00:00Z",
+      "signal_pnl_usd": 360748.44515299983,
+      "outcome_pnl_usd": 319474.1008400001
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-08-09T00:00:00Z",
+      "signal_pnl_usd": 612269.9786879999,
+      "outcome_pnl_usd": 38821.411546999996
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-08-16T00:00:00Z",
+      "signal_pnl_usd": 304545.0122469999,
+      "outcome_pnl_usd": -3227091.537249
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-08-23T00:00:00Z",
+      "signal_pnl_usd": -2900509.546841,
+      "outcome_pnl_usd": -1650005.033945
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-08-30T00:00:00Z",
+      "signal_pnl_usd": -4506839.131196999,
+      "outcome_pnl_usd": -65511.72803
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-09-06T00:00:00Z",
+      "signal_pnl_usd": -4899859.567196,
+      "outcome_pnl_usd": -54416.774789
+    },
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "at": "2026-09-13T00:00:00Z",
+      "signal_pnl_usd": -4988967.505513,
+      "outcome_pnl_usd": -100412.02202600005
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-06-07T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-06-14T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-06-21T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-06-28T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-07-05T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-07-12T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-07-19T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-07-26T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-08-02T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-08-09T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-08-16T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": -18527.286274
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-08-23T00:00:00Z",
+      "signal_pnl_usd": -18527.286274,
+      "outcome_pnl_usd": -18527.286274
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-08-30T00:00:00Z",
+      "signal_pnl_usd": -18527.286274,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-09-06T00:00:00Z",
+      "signal_pnl_usd": -18527.286274,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "at": "2026-09-13T00:00:00Z",
+      "signal_pnl_usd": -18527.286274,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-06-07T00:00:00Z",
+      "signal_pnl_usd": 311016.91307,
+      "outcome_pnl_usd": 87371.20427
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-06-14T00:00:00Z",
+      "signal_pnl_usd": 398388.11734,
+      "outcome_pnl_usd": 54588.5
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-06-21T00:00:00Z",
+      "signal_pnl_usd": 452976.61734,
+      "outcome_pnl_usd": 638199.197683
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-06-28T00:00:00Z",
+      "signal_pnl_usd": 1087684.310023,
+      "outcome_pnl_usd": 24794.746698
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-07-05T00:00:00Z",
+      "signal_pnl_usd": 1039919.056721,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-07-12T00:00:00Z",
+      "signal_pnl_usd": 785724.208373,
+      "outcome_pnl_usd": 4258.703898
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-07-19T00:00:00Z",
+      "signal_pnl_usd": 667252.6482790001,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-07-26T00:00:00Z",
+      "signal_pnl_usd": 111014.11377699999,
+      "outcome_pnl_usd": 96868.426198
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-08-02T00:00:00Z",
+      "signal_pnl_usd": 101127.13009600001,
+      "outcome_pnl_usd": 52255.674619
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-08-09T00:00:00Z",
+      "signal_pnl_usd": 127177.31898499999,
+      "outcome_pnl_usd": -159406.356553
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-08-16T00:00:00Z",
+      "signal_pnl_usd": -32229.037567999992,
+      "outcome_pnl_usd": -2498070.110219
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-08-23T00:00:00Z",
+      "signal_pnl_usd": -2534557.851685,
+      "outcome_pnl_usd": -120363.35516400001
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-08-30T00:00:00Z",
+      "signal_pnl_usd": -2518305.016919,
+      "outcome_pnl_usd": 15997.999026000001
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-09-06T00:00:00Z",
+      "signal_pnl_usd": -2608042.405417,
+      "outcome_pnl_usd": -4732.602939
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "at": "2026-09-13T00:00:00Z",
+      "signal_pnl_usd": -2498513.309367,
+      "outcome_pnl_usd": 39900.029710999996
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-06-14T00:00:00Z",
+      "signal_pnl_usd": 4912.82964244,
+      "outcome_pnl_usd": 65.1678
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-06-21T00:00:00Z",
+      "signal_pnl_usd": 4942.54884244,
+      "outcome_pnl_usd": 19413.253885
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-06-28T00:00:00Z",
+      "signal_pnl_usd": 24353.167171,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-07-05T00:00:00Z",
+      "signal_pnl_usd": 24353.167171,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-07-12T00:00:00Z",
+      "signal_pnl_usd": 19478.421684999998,
+      "outcome_pnl_usd": 1052.675
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-07-19T00:00:00Z",
+      "signal_pnl_usd": 20465.928885,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-07-26T00:00:00Z",
+      "signal_pnl_usd": 20465.928885,
+      "outcome_pnl_usd": 957.048
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-08-02T00:00:00Z",
+      "signal_pnl_usd": 2009.723,
+      "outcome_pnl_usd": 1916.05534
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-08-09T00:00:00Z",
+      "signal_pnl_usd": 3925.77834,
+      "outcome_pnl_usd": -214.5
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-08-16T00:00:00Z",
+      "signal_pnl_usd": 2658.60334,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-08-23T00:00:00Z",
+      "signal_pnl_usd": 2658.60334,
+      "outcome_pnl_usd": -16756.772119999998
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-08-30T00:00:00Z",
+      "signal_pnl_usd": -15055.216779999999,
+      "outcome_pnl_usd": -2657
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-09-06T00:00:00Z",
+      "signal_pnl_usd": -19628.272119999998,
+      "outcome_pnl_usd": -3.14
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "at": "2026-09-13T00:00:00Z",
+      "signal_pnl_usd": -19416.912119999997,
+      "outcome_pnl_usd": 1287
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-06-14T00:00:00Z",
+      "signal_pnl_usd": 0,
+      "outcome_pnl_usd": 7.2139060000000015
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-06-21T00:00:00Z",
+      "signal_pnl_usd": 7.2139060000000015,
+      "outcome_pnl_usd": -3586.570464
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-06-28T00:00:00Z",
+      "signal_pnl_usd": -3579.356558,
+      "outcome_pnl_usd": 411.1381490000001
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-07-05T00:00:00Z",
+      "signal_pnl_usd": -3168.218409,
+      "outcome_pnl_usd": -3615.6943270000006
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-07-12T00:00:00Z",
+      "signal_pnl_usd": -6485.837259,
+      "outcome_pnl_usd": -5063.0877
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-07-19T00:00:00Z",
+      "signal_pnl_usd": -11556.138865,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-07-26T00:00:00Z",
+      "signal_pnl_usd": -7852.202201,
+      "outcome_pnl_usd": 917.235727
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-08-02T00:00:00Z",
+      "signal_pnl_usd": -7951.329003999999,
+      "outcome_pnl_usd": 1553.976599
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-08-09T00:00:00Z",
+      "signal_pnl_usd": -6025.509504000001,
+      "outcome_pnl_usd": 0
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-08-16T00:00:00Z",
+      "signal_pnl_usd": -2591.875374,
+      "outcome_pnl_usd": 9777.765250999999
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-08-23T00:00:00Z",
+      "signal_pnl_usd": 12248.977576999998,
+      "outcome_pnl_usd": -5862.069894
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-08-30T00:00:00Z",
+      "signal_pnl_usd": 6386.907683,
+      "outcome_pnl_usd": -7967.6971
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-09-06T00:00:00Z",
+      "signal_pnl_usd": -2623.430590000001,
+      "outcome_pnl_usd": -10825.568800000001
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "at": "2026-09-13T00:00:00Z",
+      "signal_pnl_usd": -14877.570543000002,
+      "outcome_pnl_usd": -1115.54713
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-06-14T00:00:00Z",
+      "signal_pnl_usd": -8098.488931000001,
+      "outcome_pnl_usd": -7709.984187000001
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-06-21T00:00:00Z",
+      "signal_pnl_usd": -15663.324235,
+      "outcome_pnl_usd": 678.385618
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-06-28T00:00:00Z",
+      "signal_pnl_usd": -14685.571955000001,
+      "outcome_pnl_usd": 5971.710231
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-07-05T00:00:00Z",
+      "signal_pnl_usd": -10798.563099,
+      "outcome_pnl_usd": -8282.862104
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-07-12T00:00:00Z",
+      "signal_pnl_usd": -16210.852253000001,
+      "outcome_pnl_usd": -715.293748
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-07-19T00:00:00Z",
+      "signal_pnl_usd": -2348.060003,
+      "outcome_pnl_usd": 130.461088
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-07-26T00:00:00Z",
+      "signal_pnl_usd": -3015.8565270000004,
+      "outcome_pnl_usd": -898.34
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-08-02T00:00:00Z",
+      "signal_pnl_usd": -9766.034764,
+      "outcome_pnl_usd": 4225.568321
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-08-09T00:00:00Z",
+      "signal_pnl_usd": 2742.395661,
+      "outcome_pnl_usd": 2956.077136
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-08-16T00:00:00Z",
+      "signal_pnl_usd": 6413.766545,
+      "outcome_pnl_usd": -2289.4586899999995
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-08-23T00:00:00Z",
+      "signal_pnl_usd": 3993.8467670000005,
+      "outcome_pnl_usd": 33759.67396099999
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-08-30T00:00:00Z",
+      "signal_pnl_usd": 40676.132628,
+      "outcome_pnl_usd": 4113.717264
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-09-06T00:00:00Z",
+      "signal_pnl_usd": 41941.788412,
+      "outcome_pnl_usd": -23186.657317
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "at": "2026-09-13T00:00:00Z",
+      "signal_pnl_usd": 34557.428491000006,
+      "outcome_pnl_usd": 18821.88086
+    }
+  ]
+}

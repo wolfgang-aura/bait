@@ -10,5 +10,12 @@ __pycache__/
 validation/node_modules/
 prototype/node_modules/
 
+# Player-generated scoreboard for the Pitch Room, not a recorded run.
+prototype/runs/leaderboard.json
+
+# The full 38 MB Hyperliquid leaderboard dump. Only the roster rows are committed,
+# in prototype/fixtures/roster-hype.json.
+hl_leaderboard.json
+
 validation/call_ledger.jsonl
 validation/model_ledger.jsonl
