@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { PRESETS } from './encounter.js';
-import { CAP_MESSAGE } from './hosted-guard.js';
+import { CAP_MESSAGE, IP_CAP_MESSAGE } from './hosted-guard.js';
 
 const SERVER = fileURLToPath(new URL('./server.js', import.meta.url));
 /** Stub Nansen client for the /api/guard route. Keeps these tests off the network. */
@@ -161,7 +161,7 @@ test('per-IP cap: the fourth round start from one client is refused with the rep
     }
     const refused = await s.call('/api/encounter', { method: 'POST', body: {} });
     assert.equal(refused.status, 429);
-    assert.deepEqual(refused.body, { error: CAP_MESSAGE, code: 'HOSTED_CAP', replay: '/replay.html' });
+    assert.deepEqual(refused.body, { error: IP_CAP_MESSAGE, code: 'HOSTED_CAP', replay: '/replay.html' });
     // Behind the proxy, X-Forwarded-For identifies the client, so another address is not blocked.
     const other = await s.call('/api/encounter', { method: 'POST', body: {}, headers: { 'x-forwarded-for': '203.0.113.7' } });
     assert.equal(other.status, 201);

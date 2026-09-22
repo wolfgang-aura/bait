@@ -22,7 +22,7 @@ services:
       - key: NANSEN_LIVE
         value: "0"
       - key: HOSTED_ROUNDS_PER_IP
-        value: "3"
+        value: "12"
       - key: HOSTED_DAILY_CALLS
         value: "300"
       - key: DEEPSEEK_API_KEY

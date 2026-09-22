@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createHostedGuard, clientIp, CAP_MESSAGE, DAY_MS, HostedCapError } from './hosted-guard.js';
+import { createHostedGuard, clientIp, CAP_MESSAGE, IP_CAP_MESSAGE, DAY_MS, HostedCapError } from './hosted-guard.js';
 
 const clock = (start = Date.parse('2026-09-21T10:00:00Z')) => {
   let t = start;
@@ -19,7 +19,7 @@ test('per-IP cap: the fourth round start in 24h is refused with the player-facin
   for (let i = 0; i < 3; i++) { guard.startRound('1.2.3.4'); c.advance(60 * 60_000); }
   const err = caught(() => guard.startRound('1.2.3.4'));
   assert.ok(err instanceof HostedCapError);
-  assert.equal(err.message, CAP_MESSAGE);
+  assert.equal(err.message, IP_CAP_MESSAGE, 'a per-IP refusal names the connection, not the site');
   assert.equal(err.status, 429);
   assert.equal(err.code, 'HOSTED_CAP');
   assert.equal(err.replay, '/replay.html');

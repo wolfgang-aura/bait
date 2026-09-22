@@ -1,7 +1,7 @@
 # Hosting the live BAIT demo on Render (free tier)
 
 The hosted server runs with `HOSTED=1`: it serves the frozen 15 Sep Nansen snapshot
-(zero Nansen credits), allows 3 rounds per visitor IP per 24h, and stops after 300
+(zero Nansen credits), allows 12 rounds per visitor IP per 24h, and stops after 300
 DeepSeek calls per UTC day. Both counters live in memory and reset when the free
 instance restarts or wakes from idle. The lab runner (`/api/play`) is off.
 

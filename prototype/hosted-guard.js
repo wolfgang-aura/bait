@@ -17,11 +17,12 @@
 
 export const DAY_MS = 24 * 60 * 60_000;
 export const CAP_MESSAGE = "Today's live rounds are used up. Watch the recorded attack instead.";
+export const IP_CAP_MESSAGE = "This connection has used its live rounds for today. Watch the recorded attack instead.";
 export const REPLAY_PATH = '/replay.html';
 
 export class HostedCapError extends Error {
-  constructor(reason) {
-    super(CAP_MESSAGE);
+  constructor(reason, message = CAP_MESSAGE) {
+    super(message);
     this.name = 'HostedCapError';
     this.status = 429;
     this.code = 'HOSTED_CAP';
@@ -75,7 +76,7 @@ export function createHostedGuard({ enabled = true, roundsPerIp = 3, dailyCalls 
       rollover();
       const list = recentRounds(ip);
       if (enabled && list.length >= roundsPerIp) {
-        throw new HostedCapError(`ip has ${list.length}/${roundsPerIp} rounds in the last 24h`);
+        throw new HostedCapError(`ip has ${list.length}/${roundsPerIp} rounds in the last 24h`, IP_CAP_MESSAGE);
       }
       list.push(now());
       roundsByIp.set(ip, list);
