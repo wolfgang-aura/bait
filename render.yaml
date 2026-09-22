@@ -1,8 +1,9 @@
 # Render Blueprint for the hosted BAIT demo. One free web service, frozen evidence,
 # hard spend caps. PORT is injected by Render; the server reads it.
 #
-# The two API keys are declared with sync: false, so Render prompts for them in the
-# dashboard on first deploy and never stores them in this file or in Git.
+# The model key is declared with sync: false, so Render prompts for it in the dashboard
+# on first deploy and never stores it in this file or in Git. Hosted mode serves frozen
+# Nansen evidence and therefore does not receive a Nansen key.
 services:
   - type: web
     name: bait
@@ -25,6 +26,4 @@ services:
       - key: HOSTED_DAILY_CALLS
         value: "300"
       - key: DEEPSEEK_API_KEY
-        sync: false
-      - key: NANSEN_API_KEY
         sync: false

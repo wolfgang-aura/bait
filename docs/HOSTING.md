@@ -14,9 +14,9 @@ instance restarts or wakes from idle. The lab runner (`/api/play`) is off.
    **Configure account** and grant Render access to that one repo.
 4. Render reads `render.yaml` and shows one service, `bait`, on the Free plan.
    Give the blueprint any name and click **Apply**.
-5. Render now prompts for the two secrets marked `sync: false`. Paste each value into
-   its box (`DEEPSEEK_API_KEY`, `NANSEN_API_KEY`) and click **Apply** again.
-   Nothing else needs a value; `PORT` is injected by Render.
+5. Render prompts for the secret marked `sync: false`. Set `DEEPSEEK_API_KEY` from the
+   local environment. Hosted mode uses frozen Nansen evidence, so it does not receive
+   `NANSEN_API_KEY`. Nothing else needs a value; `PORT` is injected by Render.
 6. Wait for the first deploy to reach **Live** (2 to 4 minutes). The service URL is
    shown at the top of the service page as `https://bait-<hash>.onrender.com`.
 
