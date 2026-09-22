@@ -447,7 +447,7 @@ function renderGate(host, gate) {
   const windows = gate.shortWindowDays ? `${gate.shortWindowDays}-day and ${gate.windowDays}-day` : `${gate.windowDays}-day`;
   foot.textContent = [
     `Policy ${gate.policyId} · ${windows} · ${gate.source} · ${gate.reason}`,
-    skipped.length ? `Not assessed by the gate, covered by the report below: ${skipped.map(c => c.id.replace(/_/g, ' ')).join(', ')}.` : '',
+    skipped.length ? `Not decided by the gate (not reached after the block, or needs the fill tape the report below reads): ${skipped.map(c => c.id.replace(/_/g, ' ')).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
 }
