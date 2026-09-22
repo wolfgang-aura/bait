@@ -86,10 +86,10 @@ export const DESK_TOOLS = {
   check_fomo_record: {
     executor: 'check_fomo_record',
     endpoint: 'Fomo Radar /api/trader (recorded)',
-    describe: s => `Read the recorded Fomo Radar tape for ${s.alias}: realised PnL on closed trades, unrealised PnL on positions still held, win rate, closed trade count and the profile headline figure. Robinhood Chain fills only, over one fixed observation window. This is not Nansen coverage.`,
+    describe: s => `Read the recorded Fomo Radar tape for ${s.alias}: realised PnL summed over every position that was sold, with the count of those that went out in full, unrealised PnL on positions still held, win rate and the profile headline figure. The realised side is Robinhood Chain fills only; the open book Fomo marks also carries positions on other chains, and the response names them. One fixed observation window. This is not Nansen coverage.`,
     def: {
       name: 'check_fomo_record',
-      description: 'Read the recorded Fomo Radar tape for this trader: realised PnL on closed trades, unrealised PnL on positions still held, win rate, closed trade count and the profile headline figure. Robinhood Chain fills only, over one fixed observation window. This is not Nansen coverage.',
+      description: 'Read the recorded Fomo Radar tape for this trader: realised PnL summed over every position that was sold, with the count of those that went out in full, unrealised PnL on positions still held, win rate and the profile headline figure. The realised side is Robinhood Chain fills only; the open book Fomo marks also carries positions on other chains, and the response names them. One fixed observation window. This is not Nansen coverage.',
       input_schema: { type: 'object', properties: {}, additionalProperties: false },
     },
     args: (input, wallet) => ({ wallet }),

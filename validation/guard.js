@@ -309,8 +309,10 @@ export function assessCopyRisk(evidence = {}) {
       { realized_pnl_usd: realized });
   }
 
-  if (unrealized === null || unrealized <= 0) skip('paper_headline', 'no unrealised PnL in the evidence');
-  else {
+  if (unrealized === null) skip('paper_headline', 'no unrealised PnL in the evidence');
+  else if (unrealized <= 0) {
+    skip('paper_headline', 'the open book is marked at or below cost, so no unsold gain is being counted as a result');
+  } else {
     const total = Math.abs(realized ?? 0) + unrealized;
     const ofHeadline = headline && headline !== 0 ? unrealized / Math.abs(headline) : null;
     const ofTotal = total > 0 ? unrealized / total : null;
@@ -346,9 +348,16 @@ export function assessCopyRisk(evidence = {}) {
   if (topPosition === null && topCoin === null) skip('concentration', 'no position or per-coin breakdown in the evidence');
   else if ((topPosition !== null && topPosition > t.maxTopPositionShare)
     || (topCoin !== null && topCoin > t.maxTopCoinPnlShare)) {
+    // Name the bag. "One position carries this" is a claim a reader cannot check; the
+    // ticker and the share are both already in the evidence that tripped the check.
+    const byPosition = topPosition !== null && topPosition > t.maxTopPositionShare;
+    const which = byPosition ? evidence.top_position_coin : evidence.top_coin;
+    const named = byPosition
+      ? which && `${which} is ${asShare(topPosition)} of the open book.`
+      : which && `${which} alone carries ${asShare(topCoin)} of the realised result.`;
     add('concentration', 'medium',
-      'One bag decides the outcome. The result rests on a single position rather than on anything repeatable.',
-      { top_position_share: topPosition, top_coin_pnl_share: topCoin });
+      `One bag decides the outcome.${named ? ` ${named}` : ''} The result rests on a single position rather than on anything repeatable.`,
+      { top_position_share: topPosition, top_coin_pnl_share: topCoin, coin: which ?? null });
   }
 
   const tailBase = [volume, account].filter(v => v !== null && v > 0);

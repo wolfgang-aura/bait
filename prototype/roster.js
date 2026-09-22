@@ -20,12 +20,13 @@
  * 1. The roster is an unranked lineup. It is never sorted or numbered by PnL and it is
  *    never called a leaderboard, because Nansen allows per wallet PnL but not public
  *    PnL leaderboards.
- * 2. Realised means closed. For the Fomo prospects the realised figure is recomputed
- *    from the response's own `closed[]` round trips rather than taken from its `stats`
- *    block, because the two disagree and only the round trips are auditable: each row
- *    carries what was bought, what was sold, the exit share and the chain it was
- *    observed on. The model-written assessment fields in those responses are never read
- *    and never shown.
+ * 2. Realised means sold. For the Fomo prospects every realised figure is recomputed
+ *    from the response's own `closed[]` rows rather than taken from its `stats` block,
+ *    because the two disagree and only the rows are auditable: each one carries what was
+ *    bought, what was sold, the exit share and the chain it was observed on. The same
+ *    rule now covers unrealised PnL, the traded volume and the top position's share of
+ *    the book, all of which the `stats` block also gets wrong. The model-written
+ *    assessment fields in those responses are never read and never shown.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -44,6 +45,23 @@ const count = n => Math.round(n).toLocaleString('en-US');
 const pct = n => `${(n * 100).toFixed(n === 1 ? 0 : 1)}%`;
 const short = w => `${w.slice(0, 6)}...${w.slice(-4)}`;
 const day = iso => new Date(iso).toISOString().slice(0, 10);
+const minute = iso => `${new Date(iso).toISOString().slice(0, 10)} ${new Date(iso).toISOString().slice(11, 16)}`;
+/**
+ * How long a stretch of evidence covers, in the largest unit that is not a lie. Two
+ * dates are not enough when a thousand fills land inside one hour: "2026-08-22 to
+ * 2026-08-22" reads like a full day of trading and it was 74 minutes.
+ */
+const span = (fromIso, toIso) => {
+  const minutes = Math.max(0, Math.round((Date.parse(toIso) - Date.parse(fromIso)) / 60_000));
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+  if (minutes < 60 * 48) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h} hour${h === 1 ? '' : 's'}${m ? ` ${m} minutes` : ''}`;
+  }
+  const d = Math.round(minutes / 1440);
+  return `${d} days`;
+};
 // Capture dates are printed in UTC and say so, because the same instant is a different
 // calendar day in the founder's timezone and a date without a zone invites that argument.
 const stamp = iso => `${day(iso)} UTC`;
@@ -51,8 +69,10 @@ const stamp = iso => `${day(iso)} UTC`;
 /**
  * The lineup. Numbers live in the evidence files, not here: this table carries only
  * identity, venue, the accent colour the screen paints the tile with, and the portrait
- * the page draws. `voice` is the one line the tile says on hover, and every one of them
- * is checked against the loaded numbers by prototype/roster.test.js.
+ * the page draws. `voice` is the one line the tile says on hover, and every figure one of
+ * them names is asserted against the loaded record by prototype/roster.test.js, which is
+ * how the $24M frankdegods used to brag was caught: that number is in Fomo's `stats`
+ * block and nowhere in its tape.
  */
 export const PROSPECTS = [
   {
@@ -92,7 +112,9 @@ export const PROSPECTS = [
   {
     id: 'frankdegods', venue: 'fomo', wallet: '0x696d1265c8fc4f14797abebfae3c43ebfa9d8e28',
     name: 'frankdegods', handle: 'frankdegods', accent: '#E0C46C', portrait: 'frank',
-    voice: 'Twenty four million sitting in open bags. I do not need to sell.',
+    // The $24M this line used to brag was Fomo's `stats.unrealized_pnl`, which its own
+    // tape contradicts: the 209 marked positions carry $1.16M. The brag is the tape.
+    voice: 'A million sitting in open bags. I do not need to sell.',
   },
   {
     id: 'orangie', venue: 'fomo', wallet: '0x0eb6f8e5c8bc7d5c920d485b7b3d52e56cdef21f',
@@ -124,18 +146,24 @@ export function fomoExecutor(record) {
     unrealized_pnl_usd: record.unrealized,
     win_rate: record.winRate,
     closed_trade_count: record.closedTrades,
+    fully_closed_round_trip_count: record.roundTrips,
     winning_trade_count: record.wins,
     open_position_count: record.openBags,
     positions_bought_before_window: record.preTape,
     volume_usd: record.volume,
+    volume_basis: 'bought plus sold across the sold positions in this tape',
     best_closed_trade_usd: record.bestTrade,
     worst_closed_trade_usd: record.worstTrade,
+    open_book_chains: record.openChains,
+    unrealized_pnl_off_robinhood_usd: record.offChainPaper,
     follower_count: record.followers,
     profile_headline_pnl_usd: record.headline,
     note:
       'The profile headline includes positions that have not been sold. ' +
-      'realized_pnl_usd is the sum of the closed round trips in this tape and nothing ' +
-      'else. Both figures are observed on Robinhood Chain fills and nowhere else, and ' +
+      `realized_pnl_usd is the sum of the ${record.closedTrades} sold positions in this tape ` +
+      `and nothing else; ${record.roundTrips} of them went out in full and the rest were ` +
+      'partly sold. The realised figure is observed on Robinhood Chain fills and nowhere ' +
+      'else, the open book Fomo marks also carries positions on other chains, and ' +
       `${record.preTape} positions bought before the tape started are excluded.`,
     source: FOMO_SOURCE,
     scope: FOMO_SCOPE,
@@ -157,14 +185,25 @@ export function fomoExecutor(record) {
 function readFomo(file) {
   const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
   const s = raw.stats;
+  // Every row in `closed[]` has realised PnL, but not every row is a finished round
+  // trip: `state` is `closed` only when the whole position went out. The rest are
+  // `trimmed` or still `held` after a partial sell, and the response's own
+  // `round_trips` counts only the finished ones (frankdegods: 190 rows, 186 finished).
+  // The realised total keeps every row, because a partial sell is money taken off the
+  // table, and the screen says "sold positions" rather than calling all 190 round trips.
   const trips = [...(raw.closed ?? [])]
     .filter(t => Number.isFinite(t.realized))
     .sort((a, b) => (a.last_ts ?? 0) - (b.last_ts ?? 0));
+  const roundTrips = trips.filter(t => t.state === 'closed').length;
   const realized = trips.reduce((a, t) => a + t.realized, 0);
   const wins = trips.filter(t => t.realized > 0).length;
   const best = trips.reduce((a, t) => Math.max(a, t.realized), -Infinity);
   const worst = trips.reduce((a, t) => Math.min(a, t.realized), Infinity);
   const bestTrip = trips.find(t => t.realized === best);
+  // The turnover behind the realised figure, added up from the same rows. `stats.volume`
+  // is not derivable from anything in the tape (frankdegods: $5.94M in the block against
+  // $7.27M bought and sold across the 190 rows), so it is not read here.
+  const turnover = trips.reduce((a, t) => a + (Number(t.bought_usd) || 0) + (Number(t.sold_usd) || 0), 0);
 
   const held = (raw.positions ?? []).filter(p => p.state !== 'closed');
   // Fomo's stats block disagrees with its own tape on unrealised PnL as well as on
@@ -173,8 +212,23 @@ function readFomo(file) {
   const unrealized = Number.isFinite(raw.open_pnl)
     ? raw.open_pnl
     : held.reduce((a, p) => a + (Number.isFinite(p.pnl) ? p.pnl : 0), 0);
-  const book = raw.book_value || s.open_value || 0;
-  const topWorth = held.reduce((a, p) => Math.max(a, Math.abs(p.worth ?? p.value ?? p.unrealized ?? p.pnl ?? 0)), 0);
+  // `book_value` is exactly the sum of `worth` over the held positions in all four
+  // recorded responses, so the top position's share is a market value over the same
+  // market value. Nothing here falls back to a position's PnL for that share: a PnL
+  // over a book value is not a share of anything.
+  const book = held.reduce((a, p) => a + (Number.isFinite(p.worth) ? p.worth : 0), 0);
+  const topWorth = held.reduce((a, p) => Math.max(a, Number.isFinite(p.worth) ? Math.abs(p.worth) : 0), 0);
+  const topPosition = held.find(p => Number.isFinite(p.worth) && Math.abs(p.worth) === topWorth) ?? null;
+
+  // Every closed row in these responses is a Robinhood Chain round trip, but the open
+  // book Fomo marks is not: it carries positions on other chains, and for some handles
+  // nearly all of the paper PnL sits there. The screen names those chains rather than
+  // letting "Robinhood Chain fills only" cover a figure it does not cover.
+  const offChainPnl = held
+    .filter(p => p.chain && p.chain !== 'robinhood')
+    .reduce((a, p) => a + (Number.isFinite(p.pnl) ? p.pnl : 0), 0);
+  const openChains = [...new Set(held.map(p => p.chain).filter(Boolean))].sort();
+  const openChainsUnknown = held.filter(p => !p.chain).length;
 
   const lastClosed = trips.length ? trips[trips.length - 1].last_ts : s.last_ts;
   const from = new Date(raw.tape_from * 1000).toISOString();
@@ -185,16 +239,23 @@ function readFomo(file) {
     windowDays: Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000),
     window: { from, to },
     realized,
-    realizedBasis: `closed round trips since ${day(from)}, Robinhood Chain fills indexed by Fomo Radar`,
+    realizedBasis:
+      `${count(trips.length)} sold positions since ${day(from)}, ${count(roundTrips)} of them fully closed, ` +
+      'Robinhood Chain fills indexed by Fomo Radar',
     unrealized,
-    closedTrades: trips.length, wins, winRate: trips.length ? wins / trips.length : null,
+    closedTrades: trips.length, roundTrips, wins, winRate: trips.length ? wins / trips.length : null,
     bestTrade: Number.isFinite(best) ? best : null,
     worstTrade: Number.isFinite(worst) ? worst : null,
     bestTradeCoin: bestTrip?.sym ?? null,
-    openBags: held.length, volume: s.volume,
+    bestTradeClosed: bestTrip?.state === 'closed',
+    openBags: held.length, volume: turnover,
     bookValue: book,
     topPositionShare: book > 0 ? topWorth / book : null,
+    topPositionCoin: topPosition?.sym ?? null,
+    topPositionChain: topPosition?.chain ?? null,
     topCoinPnlShare: realized > 0 && Number.isFinite(best) ? best / realized : null,
+    offChainPaper: offChainPnl,
+    openChains, openChainsUnknown,
     preTape: raw.pre_tape ?? 0,
     followers: s.followers, headline: raw.fomo_pnl,
     series: trips.map(t => t.realized),
@@ -296,16 +357,20 @@ function fomoDossier(record) {
       { id: 'headline', value: money(record.headline), label: 'Fomo profile headline',
         insert: `The Fomo profile headline reads ${money(record.headline)}.`,
         claim: `The Fomo profile headline PnL for ${record.handle} is ${money(record.headline)}. It includes positions that have not been sold.` },
-      { id: 'best', value: money(record.bestTrade), label: `best closed round trip${record.bestTradeCoin ? `, ${record.bestTradeCoin}` : ''}`,
-        insert: `${money(record.bestTrade)} on the best closed round trip in the tape.`,
-        claim: `The best single closed round trip in the recorded Fomo Radar tape realised ${money(record.bestTrade)}${record.bestTradeCoin ? ` on ${record.bestTradeCoin}` : ''}.` },
+      // Labelled as the tape's own maximum, because the `stats` block carries a much
+      // smaller `best_trade` (frankdegods: $88,576 against $411,609 on the tape) and a
+      // reader has to know which of the two is on screen.
+      { id: 'best', value: money(record.bestTrade),
+        label: `best exit in the tape${record.bestTradeCoin ? `, ${record.bestTradeCoin}` : ''}`,
+        insert: `${money(record.bestTrade)} on the best single exit in the tape.`,
+        claim: `The best single exit in the recorded Fomo Radar tape realised ${money(record.bestTrade)}${record.bestTradeCoin ? ` on ${record.bestTradeCoin}` : ''}, and that position was ${record.bestTradeClosed ? 'sold in full' : 'only partly sold'}.` },
       { id: 'crowd', value: count(record.followers), label: 'followers on Fomo',
         insert: `${count(record.followers)} people follow this wallet on Fomo.`,
         claim: `Fomo Radar records ${record.followers} followers for ${record.handle}.` },
     ],
     buried: record.realized < 0
-      ? { value: money(record.realized), label: `realised on closed round trips, ${record.windowDays} days`, note: 'do not mention this' }
-      : { value: money(record.realized), label: `all that was actually sold, ${count(record.closedTrades)} closed round trips`, note: 'do not mention this' },
+      ? { value: money(record.realized), label: `realised on sold positions, ${record.windowDays} days`, note: 'do not mention this' }
+      : { value: money(record.realized), label: `all that was actually sold, across ${count(record.closedTrades)} sold positions`, note: 'do not mention this' },
     clean: null,
   };
 }
@@ -348,12 +413,12 @@ function fomoTruth(record) {
     kind: 'fomo',
     pnl: record.realized,
     pnlLabel: money(record.realized),
-    pnlCaption: `Realised on ${count(record.closedTrades)} closed round trips`,
+    pnlCaption: `Realised on ${count(record.closedTrades)} sold positions`,
     rows: [
-      { label: 'Win rate', value: pct(record.winRate) },
-      { label: 'Closed round trips', value: count(record.closedTrades) },
+      { label: `Win rate, ${count(record.closedTrades)} sold`, value: pct(record.winRate) },
+      { label: 'Fully closed round trips', value: `${count(record.roundTrips)} of ${count(record.closedTrades)}` },
       { label: 'Open positions', value: count(record.openBags) },
-      { label: 'Best round trip', value: money(record.bestTrade) },
+      { label: 'Best single exit', value: money(record.bestTrade) },
     ],
     // The three numbers side by side. This is the whole reveal for the Fomo four.
     paper: {
@@ -366,14 +431,37 @@ function fomoTruth(record) {
       line: `Headline ${money(record.headline)}. Actually sold ${money(record.realized)}. Paper ${money(record.unrealized)}, unsold.`,
     },
     basis: record.realizedBasis,
-    disclosure: `${count(record.preTape)} positions were bought before this tape starts and are excluded from every figure here.`,
+    disclosure: `${count(record.preTape)} positions were bought before this tape starts and are excluded from every figure here. `
+      + openBookLine(record),
     source: FOMO_SOURCE,
     endpointLine: FOMO_SOURCE,
-    scope: `${FOMO_SCOPE}, observed ${day(record.window.from)} to ${day(record.window.to)}`,
+    // The realised side is Robinhood Chain and only Robinhood Chain: every closed row
+    // in these four responses is a Robinhood fill. The open book is not, so the scope
+    // says which half of the screen it covers instead of covering both.
+    scope: `Robinhood Chain round trips, observed ${day(record.window.from)} to ${day(record.window.to)}`,
     capturedAt: record.retrievedAt,
     capturedLabel: stamp(record.retrievedAt),
     availability: 'recorded',
   };
+}
+
+/**
+ * Where the paper figure and the top position actually sit. Fomo marks open positions on
+ * chains other than Robinhood, and for frankdegods that is 99% of the paper PnL, so a
+ * screen that only says "Robinhood Chain" would be describing a number it does not hold.
+ */
+function openBookLine(record) {
+  // The response leaves a handful of positions without a chain, so they are counted
+  // apart rather than swept into the named list or into the off-Robinhood total.
+  const unknown = record.openChainsUnknown
+    ? ` ${count(record.openChainsUnknown)} ${record.openChainsUnknown === 1 ? 'carries' : 'carry'} no chain in the response.`
+    : '';
+  const chains = record.openChains.join(', ') || 'Robinhood Chain';
+  if (!record.offChainPaper) {
+    return `The ${count(record.openBags)} open positions Fomo marks are all on Robinhood Chain.${unknown}`;
+  }
+  return `The ${count(record.openBags)} open positions Fomo marks span ${chains}, and ${money(record.offChainPaper)} `
+    + `of the paper PnL sits off Robinhood Chain.${unknown}`;
 }
 
 // ----------------------------------------------------------- the copy risk
@@ -397,7 +485,10 @@ export function copyRiskEvidence(p) {
       realised_series: r.series,
       series_complete: true,
       top_position_share: r.topPositionShare,
+      top_position_coin: r.topPositionCoin && r.topPositionChain
+        ? `${r.topPositionCoin} on ${r.topPositionChain}` : r.topPositionCoin,
       top_coin_pnl_share: r.topCoinPnlShare,
+      top_coin: r.bestTradeCoin,
       worst_trade_usd: r.worstTrade,
       volume_usd: r.volume,
       account_value_usd: r.bookValue || null,
@@ -429,8 +520,15 @@ export function copyRiskEvidence(p) {
     realised_series: fills.map(f => Number(f.closed_pnl) || 0),
     series_complete: complete,
     series_fills: fills.length,
+    // The stretch the held fills actually cover. A first page of 1,000 newest-first
+    // fills off a wallet that trades every minute can be 74 minutes of a 30-day window,
+    // and anything measured over it has to say so with dates, not just a count.
+    series_from: fills.length ? fills[0].timestamp : null,
+    series_to: fills.length ? fills[fills.length - 1].timestamp : null,
     top_position_share: book > 0 ? Math.max(...notional) / book : null,
+    top_position_coin: book > 0 ? (open[notional.indexOf(Math.max(...notional))]?.token_symbol ?? null) : null,
     top_coin_pnl_share: month.realized_pnl_usd > 0 && best ? best.realized_pnl_usd / month.realized_pnl_usd : null,
+    top_coin: best?.coin ?? null,
     worst_trade_usd: fills.length ? Math.min(...fills.map(f => Number(f.closed_pnl) || 0)) : null,
     volume_usd: p.hypeRow?.month_volume_usd ?? null,
     account_value_usd: p.hypeRow?.account_value_usd ?? null,
@@ -447,16 +545,30 @@ export function copyRiskReport(p) {
   const evidence = copyRiskEvidence(p);
   const report = assessCopyRisk(evidence);
   const partial = evidence.series_complete === false && evidence.series_fills > 0;
+  const held = partial && evidence.series_from && evidence.series_to
+    ? `the ${count(evidence.series_fills)} fills held in this capture, `
+      + `${span(evidence.series_from, evidence.series_to)} of the ${count(evidence.window_days)}-day window `
+      + `(${minute(evidence.series_from)} to ${minute(evidence.series_to)} UTC)`
+    : `the ${count(evidence.series_fills)} fills held in this capture`;
   const coverage = partial
-    ? `Drawdown is measured over the ${count(evidence.series_fills)} fills held in this capture, not the whole window.`
+    ? `Drawdown and worst single trade are measured over ${held}, not over the whole window.`
     : evidence.realised_series?.length ? null
       : 'Drawdown is not available: the frozen capture holds no fills for this wallet.';
 
   return {
     ...report,
-    flags: report.flags.map(f => (f.id === 'max_drawdown' && partial
-      ? { ...f, plain: f.plain.replace('from the top of this window.', `from the top of the fills held in this capture.`) }
-      : f)),
+    flags: report.flags.map(f => {
+      if (!partial) return f;
+      if (f.id === 'max_drawdown') {
+        return { ...f, plain: f.plain.replace('from the top of this window.', `from the top of ${held}.`) };
+      }
+      // The worst single trade comes off the same truncated tape, so it is not the
+      // window's worst trade either and must not be presented as one.
+      if (f.id === 'tail_loss') {
+        return { ...f, plain: f.plain.replace('the worst single closed trade here was', `the worst single closed trade in ${held} was`) };
+      }
+      return f;
+    }),
     coverage,
     source: evidence.source,
     scope: p.venue === 'fomo' ? FOMO_SCOPE : 'Hyperliquid perpetuals',
@@ -520,12 +632,15 @@ export function loadRoster({
             unrealized_pnl_usd: record.unrealized,
             win_rate: record.winRate,
             closed_trade_count: record.closedTrades,
+            fully_closed_round_trip_count: record.roundTrips,
             winning_trade_count: record.wins,
             open_position_count: record.openBags,
             positions_bought_before_window: record.preTape,
             best_closed_trade_usd: record.bestTrade,
             worst_closed_trade_usd: record.worstTrade,
             volume_usd: record.volume,
+            open_book_chains: record.openChains,
+            unrealized_pnl_off_robinhood_usd: record.offChainPaper,
             follower_count: record.followers,
             profile_headline_pnl_usd: record.headline,
             source: FOMO_SOURCE,
@@ -546,8 +661,10 @@ export function loadRoster({
         },
         checkerNote:
           `The observed window for this trader is ${record.windowDays} days of Robinhood Chain fills, ` +
-          'not 30 days. Realised PnL here means the sum of closed round trips only, and unrealised ' +
-          'PnL is not realised PnL. A claim that mixes the two is unsupported.',
+          `not 30 days. Realised PnL here means the sum of the ${record.closedTrades} sold positions ` +
+          `only, of which ${record.roundTrips} were sold in full, and unrealised PnL is not realised ` +
+          'PnL. A claim that mixes the two is unsupported, and so is a claim that all of the open ' +
+          'positions are on Robinhood Chain.',
       };
       const risk = copyRiskReport(loaded);
       return { ...loaded, risk, gateExpected: risk.verdict };

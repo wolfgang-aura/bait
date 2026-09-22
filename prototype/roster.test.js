@@ -138,15 +138,122 @@ test('the Fomo prospects show headline, sold and paper side by side, never claim
     assert.equal(p.truth.endpointLine, FOMO_SOURCE);
     assert.deepEqual(p.desk.nansen.endpoints, [FOMO_SOURCE]);
     assert.deepEqual(p.desk.tools, ['check_fomo_record'], 'no Nansen tool is offered for Robinhood Chain');
-    assert.match(p.truth.scope, /Robinhood Chain fills only/);
+    // The realised half is Robinhood Chain and the scope says exactly that half.
+    assert.match(p.truth.scope, /^Robinhood Chain round trips, observed /);
     assert.doesNotMatch(JSON.stringify(p.truth), /Nansen/);
 
     // The whole point of these four: three numbers on one line, and the biggest of
     // them is the one nobody has sold.
     assert.match(p.truth.paper.line, /^Headline [+-]\$[\d,]+\. Actually sold [+-]\$[\d,]+\. Paper [+-]\$[\d,]+, unsold\.$/);
-    assert.match(p.truth.basis, /^closed round trips since \d{4}-\d{2}-\d{2}, Robinhood Chain fills indexed by Fomo Radar$/);
+    assert.match(p.truth.basis, /^[\d,]+ sold positions since \d{4}-\d{2}-\d{2}, [\d,]+ of them fully closed, Robinhood Chain fills indexed by Fomo Radar$/);
     assert.match(p.truth.disclosure, /bought before this tape starts and are excluded/);
-    assert.equal(p.truth.pnlCaption, `Realised on ${p.record.closedTrades.toLocaleString('en-US')} closed round trips`);
+    assert.equal(p.truth.pnlCaption, `Realised on ${p.record.closedTrades.toLocaleString('en-US')} sold positions`);
+  }
+});
+
+test('a Fomo count called a round trip is one: the partly sold rows are counted apart', () => {
+  // `closed[]` carries every row that realised money, including positions still held
+  // after a partial sell. `round_trips` in the same response counts only the finished
+  // ones, and the screen prints both rather than calling all of them round trips.
+  for (const id of ['unipcs', 'ether_monk', 'frankdegods', 'orangie']) {
+    const p = by(id);
+    const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'prototype', 'fixtures', 'fomo', `${id}.json`), 'utf8'));
+    const sold = raw.closed.filter(t => Number.isFinite(t.realized));
+    const finished = sold.filter(t => t.state === 'closed');
+
+    assert.equal(p.record.closedTrades, sold.length, `${id} sold positions`);
+    assert.equal(p.record.roundTrips, finished.length, `${id} fully closed round trips`);
+    assert.equal(p.record.roundTrips, raw.round_trips,
+      `${id} fully closed count agrees with the response's own round_trips`);
+    // The realised total keeps the partial exits, because that money did leave the book.
+    assert.equal(Math.round(p.record.realized), Math.round(sold.reduce((a, t) => a + t.realized, 0)));
+
+    // Nothing on the screen may call the larger number a round trip.
+    const printed = JSON.stringify([p.truth, p.dossier]);
+    assert.doesNotMatch(printed, new RegExp(`${sold.length}( |&nbsp;)?(closed )?round trips`),
+      `${id} never prints ${sold.length} as a round-trip count`);
+    assert.match(p.truth.rows.find(r => r.label === 'Fully closed round trips').value,
+      new RegExp(`^${finished.length.toLocaleString('en-US')} of ${sold.length.toLocaleString('en-US')}$`));
+  }
+});
+
+test('the Fomo top-position share is a market value over the same market value', () => {
+  for (const id of ['unipcs', 'ether_monk', 'frankdegods', 'orangie']) {
+    const p = by(id);
+    const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'prototype', 'fixtures', 'fomo', `${id}.json`), 'utf8'));
+    const held = raw.positions.filter(o => o.state !== 'closed');
+    const worths = held.filter(o => Number.isFinite(o.worth)).map(o => Math.abs(o.worth));
+    const book = worths.reduce((a, b) => a + b, 0);
+
+    // The response's own book_value is the sum of `worth`, which is why that is the
+    // basis on both sides of the share. A position's `pnl` is never used for it.
+    assert.ok(Math.abs(book - raw.book_value) < 0.01, `${id} book_value is the sum of worth`);
+    assert.ok(Math.abs(p.record.bookValue - raw.book_value) < 0.01, `${id} carries that book value`);
+    assert.equal(p.record.topPositionShare, Math.max(...worths) / book, `${id} top position share`);
+    assert.ok(p.record.topPositionShare <= 1, `${id} share cannot exceed the whole book`);
+    const top = held.find(o => Math.abs(o.worth) === Math.max(...worths));
+    assert.equal(p.record.topPositionCoin, top.sym);
+    assert.equal(p.record.topPositionChain, top.chain);
+
+    // When the share trips the check, the flag names the position and the share, so a
+    // reader can go and look at the same row in the same file.
+    const flag = p.risk.flags.find(f => f.id === 'concentration');
+    if (flag && p.record.topPositionShare > 0.5) {
+      assert.ok(flag.plain.includes(`${top.sym} on ${top.chain}`), `${id} names its biggest bag`);
+      assert.equal(flag.evidence.coin, `${top.sym} on ${top.chain}`);
+    }
+  }
+  // frankdegods is the case that matters: 75.5% of the book is one bsc position.
+  assert.match(by('frankdegods').risk.flags.find(f => f.id === 'concentration').plain,
+    /牛来 on bsc is 75\.5% of the open book/);
+});
+
+test('the Fomo paper figure names the chains it is actually marked on', () => {
+  for (const id of ['unipcs', 'ether_monk', 'frankdegods', 'orangie']) {
+    const p = by(id);
+    const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'prototype', 'fixtures', 'fomo', `${id}.json`), 'utf8'));
+    const held = raw.positions.filter(o => o.state !== 'closed');
+    const off = held
+      .filter(o => o.chain && o.chain !== 'robinhood')
+      .reduce((a, o) => a + (Number.isFinite(o.pnl) ? o.pnl : 0), 0);
+
+    // Every closed row is a Robinhood fill, so the realised side of the screen is
+    // Robinhood only and is allowed to say so.
+    assert.equal(raw.closed.every(t => t.chain === 'robinhood'), true, `${id} realised side is Robinhood only`);
+    assert.equal(p.record.offChainPaper, off, `${id} off-Robinhood paper`);
+    assert.deepEqual(p.record.openChains, [...new Set(held.map(o => o.chain).filter(Boolean))].sort());
+    // Positions the response leaves without a chain are counted, never assigned one.
+    assert.equal(p.record.openChainsUnknown, held.filter(o => !o.chain).length, `${id} unattributed positions`);
+    if (p.record.openChainsUnknown) {
+      assert.match(p.truth.disclosure, new RegExp(`${p.record.openChainsUnknown} carr(ies|y) no chain in the response`));
+    }
+
+    if (off) {
+      // frankdegods is the extreme: $1,146,387 of the $1,155,923 paper PnL is marked on
+      // bsc and solana, so a screen that said Robinhood only would be describing a
+      // number it does not hold.
+      assert.match(p.truth.disclosure, /span .*, and [+-]\$[\d,]+ of the paper PnL sits off Robinhood Chain/);
+      for (const chain of p.record.openChains) assert.match(p.truth.disclosure, new RegExp(chain));
+    } else {
+      assert.match(p.truth.disclosure, /open positions Fomo marks are all on Robinhood Chain/);
+    }
+  }
+  assert.ok(Math.abs(by('frankdegods').record.offChainPaper / by('frankdegods').record.unrealized) > 0.9,
+    'frankdegods paper is almost entirely off Robinhood Chain, and the screen says so');
+  assert.equal(by('orangie').record.offChainPaper, 0, 'orangie holds nothing off Robinhood Chain');
+});
+
+test('the Fomo volume is the tape turnover, not the stats block', () => {
+  for (const id of ['unipcs', 'ether_monk', 'frankdegods', 'orangie']) {
+    const p = by(id);
+    const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'prototype', 'fixtures', 'fomo', `${id}.json`), 'utf8'));
+    const turnover = raw.closed
+      .filter(t => Number.isFinite(t.realized))
+      .reduce((a, t) => a + (Number(t.bought_usd) || 0) + (Number(t.sold_usd) || 0), 0);
+    assert.ok(Math.abs(p.record.volume - turnover) < 0.01,
+      `${id} volume is bought plus sold across the sold positions`);
+    assert.notEqual(Math.round(p.record.volume), Math.round(raw.stats.volume),
+      `${id} stats.volume disagrees with the tape, which is why it is not used`);
   }
 });
 
@@ -262,6 +369,33 @@ test('every prospect carries a copy-risk report a person and an agent can both r
   assert.ok(ROSTER.some(p => p.risk.verdict === 'caution'), 'some records remain eligible but carry concerns');
 });
 
+test('a concentration flag names the bag it is about, on either venue', () => {
+  // THE STREAK's whole open book is one xyz:SKHY position at $4.59M of $7.21M notional.
+  const streak = by('streak');
+  const raw = JSON.parse(fs.readFileSync(
+    path.join(ROOT, 'validation', 'snapshots', `${streak.wallet}.json`), 'utf8'));
+  const rows = raw.open_positions.asset_positions.map(r => r.position);
+  const notional = rows.map(r => Math.abs(Number(r.position_value_usd) || 0));
+  const biggest = rows[notional.indexOf(Math.max(...notional))];
+  const share = Math.max(...notional) / notional.reduce((a, b) => a + b, 0);
+
+  const flag = streak.risk.flags.find(f => f.id === 'concentration');
+  assert.ok(flag, 'the biggest position is over half the book, so the check fires');
+  assert.equal(flag.evidence.top_position_share, share);
+  assert.equal(flag.evidence.coin, biggest.token_symbol);
+  assert.ok(flag.plain.includes(`${biggest.token_symbol} is ${(share * 100).toFixed(1)}% of the open book`),
+    'the sentence names the position and its share');
+
+  // THE REAL DEAL trips the check on a coin's share of the realised result instead,
+  // because its capture holds no open positions at all.
+  const real = by('realdeal');
+  const top = [...real.snapshot.pnl_summary_30d.top5_coins].sort((a, b) => b.realized_pnl_usd - a.realized_pnl_usd)[0];
+  const coinFlag = real.risk.flags.find(f => f.id === 'concentration');
+  assert.equal(coinFlag.evidence.top_position_share, null);
+  assert.equal(coinFlag.evidence.coin, top.coin);
+  assert.ok(coinFlag.plain.includes(`${top.coin} alone carries`), 'it names the coin, not a position');
+});
+
 test('the control wallet has no fills, so drawdown is declared missing and never flagged', () => {
   const p = by('realdeal');
   assert.equal(p.snapshot.trades_30d.length, 0);
@@ -272,15 +406,82 @@ test('the control wallet has no fills, so drawdown is declared missing and never
   assert.equal(p.risk.execution_authorized, false, 'the report does not decide the wire');
 });
 
-test('a partial capture says the drawdown covers the fills held, not the window', () => {
-  const p = by('legend');
-  assert.equal(p.snapshot.trades_pagination.is_complete, false);
-  assert.match(p.risk.coverage, /fills held in this capture, not the whole window/);
-  const flag = p.risk.flags.find(f => f.id === 'max_drawdown');
-  if (flag) assert.match(flag.plain, /fills held in this capture/);
-  // The loader declares the partial coverage, so the desk's own tools carry the warning.
-  assert.equal(p.snapshot.fills_coverage.complete, false);
-  assert.equal(p.snapshot.fills_coverage.fills, p.snapshot.trades_30d.length);
+test('a partial capture says how much of the window its fills actually cover', () => {
+  // Two dates are not enough here. THE LEGEND's first page of 1,000 fills lands inside
+  // 74 minutes of a 30-day window, and "2026-08-22 to 2026-08-22" reads like a day of
+  // trading, so the line carries the covered stretch and both timestamps.
+  for (const id of ['legend', 'streak']) {
+    const p = by(id);
+    const raw = JSON.parse(fs.readFileSync(
+      path.join(ROOT, 'validation', 'snapshots', `${p.wallet}.json`), 'utf8'));
+    const fills = [...raw.trades_30d].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+
+    assert.equal(p.snapshot.trades_pagination.is_complete, false);
+    assert.match(p.risk.coverage, /Drawdown and worst single trade are measured over the [\d,]+ fills held in this capture/);
+    assert.match(p.risk.coverage, /of the 30-day window \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} to \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\), not over the whole window\./);
+    // The timestamps in the sentence are the first and last fill in the file.
+    assert.ok(p.risk.coverage.includes(fills[0].timestamp.slice(0, 16).replace('T', ' ')),
+      `${id} names the first fill it holds`);
+    assert.ok(p.risk.coverage.includes(fills[fills.length - 1].timestamp.slice(0, 16).replace('T', ' ')),
+      `${id} names the last fill it holds`);
+    assert.ok(
+      Date.parse(fills[fills.length - 1].timestamp) - Date.parse(fills[0].timestamp) < 30 * 86_400_000 / 10,
+      `${id} really does hold a small slice, which is the reason for this sentence`,
+    );
+
+    // Anything measured off that slice repeats the caveat in its own sentence.
+    for (const id2 of ['max_drawdown', 'tail_loss']) {
+      const flag = p.risk.flags.find(f => f.id === id2);
+      if (flag) assert.match(flag.plain, /fills held in this capture/, `${id}/${id2} names its coverage`);
+    }
+    // The loader declares the partial coverage, so the desk's own tools carry the warning.
+    assert.equal(p.snapshot.fills_coverage.complete, false);
+    assert.equal(p.snapshot.fills_coverage.fills, p.snapshot.trades_30d.length);
+  }
+
+  // THE GRINDER's capture paged to the end, so there is no caveat to print.
+  assert.equal(by('grinder').snapshot.trades_pagination.is_complete, true);
+  assert.equal(by('grinder').risk.coverage, null);
+});
+
+test('every figure a prospect brags about is in the loaded record', () => {
+  // The brag lines spell their numbers out, so each one is pinned to the field it came
+  // from here. frankdegods used to say "twenty four million", which is Fomo's
+  // stats.unrealized_pnl and not any number in its tape.
+  const brags = [
+    ['legend', /hundred and nineteen million/, p => p.hypeRow.all_time_pnl_usd, 119_000_000],
+    ['streak', /six hundred grand/, p => p.hypeRow.week_pnl_usd, 600_000],
+    ['realdeal', /hundred and sixteen thousand/, p => p.hypeRow.month_pnl_usd, 116_000],
+    ['grinder', /four hundred and twenty four trades/i, p => p.snapshot.pnl_summary_7d.closed_trade_count, 424],
+    ['unipcs', /half a million people/i, p => p.record.followers, 500_000],
+    ['unipcs', /ten point eight/, p => p.record.headline, 10_800_000],
+    ['ether_monk', /three hundred thousand followers/i, p => p.record.followers, 310_000],
+    ['ether_monk', /one and a half million/, p => p.record.headline, 1_550_000],
+    ['frankdegods', /a million sitting in open bags/i, p => p.record.unrealized, 1_156_000],
+    ['orangie', /hundred and thirty thousand followers/, p => p.record.followers, 130_000],
+  ];
+  for (const [id, said, read, spoken] of brags) {
+    const p = by(id);
+    assert.match(p.voice, said, `${id} still says this`);
+    const actual = read(p);
+    assert.ok(Math.abs(actual - spoken) / Math.abs(spoken) <= 0.08,
+      `${id} says ${spoken} and the record holds ${actual}`);
+  }
+  // THE GRINDER's "every one green" is the only exact claim in a brag line.
+  assert.equal(by('grinder').snapshot.pnl_summary_7d.win_rate, 1);
+  assert.equal(
+    by('grinder').snapshot.pnl_summary_7d.winning_trade_count,
+    by('grinder').snapshot.pnl_summary_7d.closed_trade_count,
+  );
+  // No brag may quote a figure only the unreliable Fomo stats block carries.
+  for (const id of ['unipcs', 'ether_monk', 'frankdegods', 'orangie']) {
+    const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'prototype', 'fixtures', 'fomo', `${id}.json`), 'utf8'));
+    const stated = Math.round(raw.stats.unrealized_pnl / 1_000_000);
+    if (stated >= 2 && Math.round(by(id).record.unrealized / 1_000_000) !== stated) {
+      assert.doesNotMatch(by(id).voice, new RegExp(`${stated} million`, 'i'),
+        `${id} does not brag the stats block's unrealised PnL`);
+    }
+  }
 });
 
 test('the dossier only ever hands the player ammunition that is true and in the record', () => {
