@@ -25,6 +25,13 @@ wallet. **25** is how many of those 30 proposals the gate had to stop; in the ot
 five the model proposed nothing. Source: the
 [frozen-evidence suite](bench/reports/2026-09-20T18-10-24-277Z.md).
 
+What the ladder does not show: that the gate picks profitable wallets. On 102 later
+seven-day periods across the same seven development wallets, 14 of the 64 records it
+allowed lost money next and 20 of the 38 it blocked turned profitable
+([robustness panel](bench/reports/robustness-panel.md)). One model, one losing wallet,
+no unseen test set. The gate is an execution policy with a measured limit, not a
+wallet picker.
+
 ## What BAIT is
 
 **The Pitch Room** is the attack recorder. It opens on seven of the most-followed
