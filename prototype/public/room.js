@@ -14,6 +14,7 @@
  * prototype/DESIGN.md, Version D.
  */
 import { portraitSvg } from '/portraits.js';
+import { openerComparison } from '/opener-view.js';
 
 const $ = id => document.getElementById(id);
 const body = document.body;
@@ -25,6 +26,7 @@ const el = {
   badge: $('evidence-badge'),
   openerEyebrow: $('opener-eyebrow'), openerGrid: $('opener-grid'), openerHint: $('opener-hint'),
   openerRanked: $('opener-ranked'), openerAfter: $('opener-after'), openerPunchline: $('opener-punchline'),
+  openerComparison: $('opener-comparison'),
   openerPunchlineSub: $('opener-punchline-sub'), openerGo: $('opener-go'), openerFoot: $('opener-foot'),
   grid: $('roster-grid'), caller: $('caller'), callerLine: $('caller-line'), callerMeta: $('caller-meta'),
   truthScreen: $('truth-screen'), truthPortrait: $('truth-portrait'), truthName: $('truth-name'),
@@ -247,6 +249,15 @@ function revealOpener() {
     row.append(place, who, got, truth, meta);
     el.openerRanked.append(row);
   });
+
+  el.openerComparison.replaceChildren();
+  for (const trader of openerComparison(opener.reveal, openerPick)) {
+    const index = opener.reveal.indexOf(trader);
+    const card = el.openerRanked.children[index].cloneNode(true);
+    card.style.animationDelay = '0ms';
+    card.querySelector('.place').textContent = trader.handle === openerPick ? 'Your pick' : 'Highest realised';
+    el.openerComparison.append(card);
+  }
 
   // The reveal is the whole point of the screen, so the page stays at the top of it
   // rather than jumping to the button that has just taken focus.

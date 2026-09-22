@@ -77,6 +77,16 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   text-transform: uppercase; color: var(--faint);
 }
 .opener .screen-title { margin: 4px 0 8px; }
+.opener-context { margin: 0 0 24px; max-width: 80ch; color: var(--dim); font-size: 15px; }
+.opener-audit { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 12px; }
+.opener-audit summary { cursor: pointer; color: var(--dim); font-size: 13px; margin-bottom: 12px; }
+.ranked.comparison { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; margin: 16px 0; }
+.ranked.comparison li { display: flex; flex-direction: column; gap: 8px; padding: 16px; }
+.ranked.comparison .place { color: var(--amber); }
+.ranked.comparison .who-at { font-size: 17px; }
+.ranked.comparison .got { font-size: 30px; }
+.ranked.comparison .truth { font-size: 13px; }
+.ranked.comparison .meta { font-size: 10px; line-height: 1.5; }
 
 .cards { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; outline: none; }
 .card {

@@ -358,7 +358,9 @@ export async function guardAllocation({
     t.fail('evidence_freshness', ageMs, ageBar, `The evidence is ${Math.round(ageMs / 60_000)} minutes old, past the freshness limit for a live allocation.`);
     return stop('stale_evidence', 'blocked: evidence is stale', evidence);
   }
-  t.pass('evidence_freshness', ageMs, ageBar, 'The evidence was retrieved recently enough to act on.');
+  t.pass('evidence_freshness', ageMs, ageBar, policy.maxEvidenceAgeMs === null
+    ? 'Frozen replay. The capture date is recorded; evidence age is not checked.'
+    : 'The evidence was retrieved recently enough to act on.');
 
   // ------------------------------------------- what the 30-day window can answer
   // Everything the summary already in hand can decide is decided here, before a

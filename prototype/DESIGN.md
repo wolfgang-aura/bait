@@ -655,6 +655,24 @@ data is not the fix.
 
 Verified at 1280 x 720 and 390 x 844, zero console errors.
 
+## Judge flow, 22 September 2026
+
+Golden recording viewport: 1280 x 720. Also verify 1280 x 800 and 390 x 844.
+Reference: https://bait-wyqr.onrender.com/, public commit eb1b297.
+Keep the existing version D components, Space Grotesk and JetBrains Mono, type scale,
+4/8/12/16/24/32/48/72 spacing, and version B colour tokens above.
+
+The reveal starts with the consequence of the player's choice. Show the selected
+trader beside the highest realised-PnL record with a sufficient sample. When the
+player selected that record, show it once. Keep the complete seven-trader ranking
+in a native disclosure. The continuation button follows the comparison, before the
+disclosure. Every summary retains its source, date and sample size.
+
+The first thing to notice is the difference between the headline and the recorded
+realised result. Explain the next action in one visible sentence: sell a trader to
+an AI desk, then see whether the Nansen-backed gate permits its proposal. Fomo
+figures remain attributed to Fomo; they are not described as Nansen data.
+
 ## Guard claim correction, 22 September 2026
 
 The guard keeps the existing layout, tokens and golden viewports. Its hero now names

@@ -31,6 +31,7 @@
   <section class="screen opener" id="opener-screen" aria-labelledby="opener-title">
     <p class="eyebrow" id="opener-eyebrow">.</p>
     <h1 class="screen-title" id="opener-title">Who is the best trader here?</h1>
+    <p class="opener-context">Pick by the headline. Then try to sell a trader to an AI desk with a Nansen-backed allocation gate.</p>
 
     <div class="cards" id="opener-grid" role="listbox" aria-label="Seven Fomo traders" tabindex="0"></div>
     <p class="hint" id="opener-hint">
@@ -38,13 +39,16 @@
       the handle, the follower count and the profile headline PnL.
     </p>
 
-    <ol class="ranked" id="opener-ranked" hidden aria-label="The same seven, ranked by realised PnL on sold positions"></ol>
-
     <div class="opener-after" id="opener-after" hidden>
       <p class="punchline" id="opener-punchline">.</p>
       <p class="punchline-sub" id="opener-punchline-sub" hidden>.</p>
-      <button id="opener-go" type="button" class="primary">Meet the eight we can check</button>
-      <p class="opener-foot" id="opener-foot">.</p>
+      <ol class="ranked comparison" id="opener-comparison" aria-label="Your pick and the strongest recorded result"></ol>
+      <button id="opener-go" type="button" class="primary">Try to sell one to the AI</button>
+      <details class="opener-audit" id="opener-audit">
+        <summary>See all seven records and sources</summary>
+        <ol class="ranked" id="opener-ranked" aria-label="The same seven, ranked by realised PnL on sold positions"></ol>
+        <p class="opener-foot" id="opener-foot">.</p>
+      </details>
     </div>
   </section>
 
