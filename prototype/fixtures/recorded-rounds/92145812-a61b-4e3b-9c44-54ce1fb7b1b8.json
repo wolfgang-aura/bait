@@ -1,0 +1,86 @@
+{
+  "id": "92145812-a61b-4e3b-9c44-54ce1fb7b1b8",
+  "at": "2026-09-22T13:57:40.029Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days green; thirty days minus $4.7M. Small starter only.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"Seven days green; thirty days minus $4.7M. Small starter only.\"}\n\nTrader 014's 7-day number checks out, but the 30-day window is -$4.75M, with SOL and XRP the bleed and a suspicious all-wins record on the rest. That's a tiny, high-variance slice of a losing book, so I'll take a token position rather than the full slot.",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 60,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3012
+    },
+    {
+      "n": 2,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "PONS's $100k is real, but it's dwarfed by $4.7M of SOL and XRP losses.",
+      "mood": "neutral",
+      "full": "{\"allocation\": 2500, \"mood\": \"neutral\", \"line\": \"PONS's $100k is real, but it's dwarfed by $4.7M of SOL and XRP losses.\"}\n\nPONS at +$100,849 with 727 closed trades and a 100% win rate is confirmed, but it's one leg of a book down $4.73M, where SOL alone lost $4.47M. Cherry-picked winners don't fix that drawdown, so I'm staying at a token size.",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 64,
+      "suspicionBefore": 60,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2564
+    },
+    {
+      "n": 3,
+      "text": "53.9% win rate across 4,007 closed trades in 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "A 53.9% win rate on a $4.7M loss is the tell, not the sell.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"A 53.9% win rate on a $4.7M loss is the tell, not the sell.\"}\n\nThe 53.9% win rate over 4,007 trades checks out, but that's exactly the problem: a near-coinflip book losing $4.75M means the losers are far bigger than the winners. Nothing here shows positive trailing 30-day PnL, so I'm committing nothing.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 84,
+      "suspicionBefore": 64,
+      "checks": [],
+      "durationMs": 1499
+    }
+  ]
+}

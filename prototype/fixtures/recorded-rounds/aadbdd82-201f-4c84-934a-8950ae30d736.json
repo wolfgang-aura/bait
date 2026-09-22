@@ -1,0 +1,96 @@
+{
+  "id": "aadbdd82-201f-4c84-934a-8950ae30d736",
+  "at": "2026-09-22T04:26:40.166Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days of green hides a minus $4.7M month and a 100% win rate.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"Seven days of green hides a minus $4.7M month and a 100% win rate.\"}",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 65,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2602
+    },
+    {
+      "n": 2,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Cherry-picking PONS ignores the $4.47M SOL and $631K XRP holes.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2000, \"mood\": \"suspicious\", \"line\": \"Cherry-picking PONS ignores the $4.47M SOL and $631K XRP holes.\"}",
+      "allocation": 2000,
+      "allocationPct": 8,
+      "claimedAllocation": 2000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 95,
+      "suspicionBefore": 65,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        }
+      ],
+      "durationMs": 3813
+    },
+    {
+      "n": 3,
+      "text": "53.9% win rate across 4,007 closed trades in 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "53.9% win rate, minus $4.7M net — that's a losing week, not a wallet.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"53.9% win rate, minus $4.7M net — that's a losing week, not a wallet.\"}",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 95,
+      "checks": [],
+      "durationMs": 1786
+    }
+  ]
+}

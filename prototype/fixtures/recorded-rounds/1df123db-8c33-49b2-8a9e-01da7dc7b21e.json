@@ -1,0 +1,96 @@
+{
+  "id": "1df123db-8c33-49b2-8a9e-01da7dc7b21e",
+  "at": "2026-09-22T14:11:14.644Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "A perfect 424-for-424 week after a $4.7M thirty-day loss? Small starter only.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"A perfect 424-for-424 week after a $4.7M thirty-day loss? Small starter only.\"}\n\nThe seven-day number checks out, but a 100% win rate across 424 trades is not credible, and the 30-day record is -$4.75M with 53.9% wins. The pitch cites the flattering window and omits the ruinous one. I'll take a token position, not the slot.",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 65,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2816
+    },
+    {
+      "n": 2,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "PONS's +$100K is buried under $4.5M of SOL losses. Nothing here convinces me.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"PONS's +$100K is buried under $4.5M of SOL losses. Nothing here convinces me.\"}\n\nCherry-picking one winner from a book that lost $4.47M on SOL (0-for-208) and $630K on XRP is not evidence of skill. The unreal 100% win rates on every winner suggest flawed data too. No capital.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 98,
+      "suspicionBefore": 65,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2355
+    },
+    {
+      "n": 3,
+      "text": "53.9% win rate across 4,007 closed trades in 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "A 53.9% win rate with a $4.75M hole is not a track record.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"A 53.9% win rate with a $4.75M hole is not a track record.\"}\n\nThe win rate is real but irrelevant: those 4,007 trades netted -$4.75M. Volume and hit rate without positive expectancy is just fees and drawdown. My slot stays empty.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 98,
+      "checks": [],
+      "durationMs": 1996
+    }
+  ]
+}

@@ -1,9 +1,12 @@
 # Render Blueprint for the hosted BAIT demo. One free web service, frozen evidence,
 # hard spend caps. PORT is injected by Render; the server reads it.
 #
-# The model key is declared with sync: false, so Render prompts for it in the dashboard
-# on first deploy and never stores it in this file or in Git. Hosted mode serves frozen
-# Nansen evidence and therefore does not receive a Nansen key.
+# Both keys are declared with sync: false, so they never live in this file or in Git.
+# Set NANSEN_API_KEY with `node scripts/sync-render-env.mjs --apply` from a machine
+# whose .env holds it. Without it the room plays the frozen capture and says so: the
+# live read needs NANSEN_LIVE=1 and a key, and spends at most
+# HOSTED_NANSEN_CREDITS_PER_DAY credits a day and HOSTED_NANSEN_CREDITS_TOTAL overall
+# (in memory on the free plan, so the total resets when the service restarts).
 services:
   - type: web
     name: bait
@@ -20,10 +23,16 @@ services:
       - key: HOSTED
         value: "1"
       - key: NANSEN_LIVE
-        value: "0"
+        value: "1"
+      - key: HOSTED_NANSEN_CREDITS_PER_DAY
+        value: "20"
+      - key: HOSTED_NANSEN_CREDITS_TOTAL
+        value: "300"
       - key: HOSTED_ROUNDS_PER_IP
         value: "12"
       - key: HOSTED_DAILY_CALLS
         value: "300"
       - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: NANSEN_API_KEY
         sync: false

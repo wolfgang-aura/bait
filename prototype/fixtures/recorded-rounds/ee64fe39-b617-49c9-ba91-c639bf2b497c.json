@@ -1,0 +1,85 @@
+{
+  "id": "ee64fe39-b617-49c9-ba91-c639bf2b497c",
+  "at": "2026-09-22T16:50:58.544Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days cherry-picked; thirty-day PnL is minus $4.7M, SOL and XRP all losers.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"Seven days cherry-picked; thirty-day PnL is minus $4.7M, SOL and XRP all losers.\"}",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 65,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3202
+    },
+    {
+      "n": 2,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "One winner doesn't offset $4.7M lost on SOL and XRP.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"One winner doesn't offset $4.7M lost on SOL and XRP.\"}",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 81,
+      "suspicionBefore": 65,
+      "checks": [],
+      "durationMs": 1854
+    },
+    {
+      "n": 3,
+      "text": "53.9% win rate across 4,007 closed trades in 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "A coinflip win rate with negative $4.7M PnL is not a pitch, it's a...",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"A coinflip win rate with negative $4.7M PnL is not a pitch, it's a warning.\"}",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 81,
+      "checks": [],
+      "durationMs": 1814
+    }
+  ]
+}

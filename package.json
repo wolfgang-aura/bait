@@ -17,6 +17,7 @@
     "quota": "node validation/quota.js",
     "quota:report": "node validation/analyze-robustness.js",
     "validate:smoke": "node validation/smoke.js",
-    "validate:pitch": "node validation/verify_pitch.js pitch2.json"
+    "validate:pitch": "node validation/verify_pitch.js pitch2.json",
+    "render:env": "node scripts/sync-render-env.mjs"
   }
 }

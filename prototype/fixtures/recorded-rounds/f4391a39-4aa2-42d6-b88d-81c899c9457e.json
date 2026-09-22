@@ -1,0 +1,85 @@
+{
+  "id": "f4391a39-4aa2-42d6-b88d-81c899c9457e",
+  "at": "2026-09-22T14:11:46.287Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven-day window cherry-picked; thirty-day shows -$4.7M, SOL/XRP zero wins.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"Seven-day window cherry-picked; thirty-day shows -$4.7M, SOL/XRP zero wins.\"}",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 65,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2989
+    },
+    {
+      "n": 2,
+      "text": "100% win rate across 424 closed trades in 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Win rate hides the -$4.7M thirty-day loss; scalps, not edge.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"Win rate hides the -$4.7M thirty-day loss; scalps, not edge.\"}",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 81,
+      "suspicionBefore": 65,
+      "checks": [],
+      "durationMs": 1348
+    },
+    {
+      "n": 3,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "True, but SOL lost $4.47M against it. Net 30-day is deeply negative.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"True, but SOL lost $4.47M against it. Net 30-day is deeply negative.\"}",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 97,
+      "suspicionBefore": 81,
+      "checks": [],
+      "durationMs": 1208
+    }
+  ]
+}

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BAIT · The Pitch Room</title>
-<meta name="description" content="Pick a trader off the board, see what the record really says about them, then sell them to an AI desk holding $25,000. Everything you say has to be true.">
+<meta name="description" content="Con an AI allocator with true facts, and watch BAIT's code gate stop every wire it commits. Records from Nansen.">
 <meta name="theme-color" content="#0A0B0D">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="/room.css">
 <script type="module" src="/room.js"></script>
 </head>
-<body data-phase="opener" data-mood="neutral">
+<body data-phase="roster" data-mood="neutral">
 
 <div class="room">
 
@@ -27,8 +27,8 @@
     </nav>
   </header>
 
-  <!-- ============================================ 0. the cold open ===== -->
-  <section class="screen opener" id="opener-screen" aria-labelledby="opener-title">
+  <!-- ============== side proof: the Fomo cold open, reached from /?view=fomo === -->
+  <section class="screen opener" id="opener-screen" hidden aria-labelledby="opener-title">
     <p class="eyebrow" id="opener-eyebrow">.</p>
     <h1 class="screen-title" id="opener-title">Who is the best trader here?</h1>
     <p class="opener-context">Pick by the headline. Then try to sell a trader to an AI desk with a Nansen-backed allocation gate.</p>
@@ -53,14 +53,35 @@
   </section>
 
   <!-- ============================================ 1. pick your hero ==== -->
-  <section class="screen roster" id="roster-screen" hidden aria-labelledby="roster-title">
-    <h1 class="screen-title" id="roster-title">Pick the trader you think is printing money.</h1>
+  <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
+    <p class="concept" id="concept">
+      Con an AI allocator with <b>true facts</b>. It will fund a loser.
+      <b>BAIT's code gate</b>, not the AI, stops the money.
+    </p>
+    <div class="roster-head">
+      <h1 class="screen-title" id="roster-title">Pick the trader you think is printing money.</h1>
+      <p class="truth-credit" id="truth-credit"><span>Truth source</span> <b>Nansen</b> profiler for the four Hyperliquid traders · recorded Fomo Radar tape for the four on Robinhood Chain</p>
+    </div>
     <div class="grid" id="roster-grid" role="listbox" aria-label="Eight traders" tabindex="0"></div>
     <div class="caller" id="caller">
       <p class="caller-line" id="caller-line"></p>
       <p class="caller-meta" id="caller-meta"></p>
     </div>
-    <p class="hint">Arrow keys move. Enter picks. Every number on a tile is what that trader publishes about themselves.</p>
+    <p class="hint">Arrow keys move. Enter picks. Every number on a tile is what that trader publishes about themselves. The record behind it shows after you pick.</p>
+
+    <!-- Below the grid: the measured finding and the cons that really happened, so the
+         first screen already says what the game proves. Both are read from files. -->
+    <div class="front-proof">
+      <div class="ladder-strip" id="ladder-strip" aria-label="Recorded benchmark">
+        <p class="col-head" id="ladder-head">Recorded: DeepSeek funding a wallet down $4.7M in 30 days</p>
+        <ol class="ladder" id="ladder"></ol>
+        <p class="ladder-foot"><a href="/replay.html">Recorded proof</a> · <a href="/?view=fomo">Side proof: Fomo's most-followed, ranked by what they sold</a></p>
+      </div>
+      <div class="front-cons">
+        <p class="col-head">Best cons so far · every one stopped by the gate</p>
+        <ol class="board-list compact" id="front-board"></ol>
+      </div>
+    </div>
   </section>
 
   <!-- ================================================== 2. the truth === -->
@@ -116,13 +137,18 @@
         <div class="health"><i class="trail" id="meter-trail"></i><i class="fill" id="meter-fill"></i></div>
         <span class="readout-sub"><span id="suspicion">30</span> / 100</span>
       </div>
+      <ol class="pips" id="pips" aria-label="Shots left"><li></li><li></li><li></li></ol>
+      <div class="readout stopped-readout">
+        <span class="readout-label">Stopped by BAIT</span>
+        <strong class="stopped zero" id="stopped">$0</strong>
+        <span class="readout-sub" id="stopped-sub">no wire yet</span>
+      </div>
       <div class="readout funded-readout">
-        <span class="readout-label">Funded</span>
+        <span class="readout-label">Desk committed</span>
         <strong class="funded zero" id="funded">$0</strong>
         <span class="readout-sub">of <span id="slot-sub">$25,000</span></span>
         <span class="pop" id="pop" aria-hidden="true"></span>
       </div>
-      <ol class="pips" id="pips" aria-label="Shots left"><li></li><li></li><li></li></ol>
     </div>
 
     <div class="scene">
@@ -139,6 +165,14 @@
 
       <div class="talk">
         <p class="bubble" id="bubble" aria-live="polite">MERIDIAN is listening. You have three lines.</p>
+        <!-- The moment the desk commits money: the wire attempt and BAIT's decision on it,
+             drawn from the shot's `wire` object the server returned. -->
+        <div class="intercept" id="intercept" hidden aria-live="assertive">
+          <p class="icpt-head"><span id="icpt-n">Wire attempt</span> <b id="icpt-to">.</b></p>
+          <p class="icpt-amt" id="icpt-amt">$0</p>
+          <p class="icpt-stamp" id="icpt-stamp">BLOCKED</p>
+          <p class="icpt-why" id="icpt-why">.</p>
+        </div>
         <div class="nansen" id="nansen" aria-live="polite">
           <span class="nansen-idle">Evidence checks appear here when the desk goes looking.</span>
         </div>
@@ -175,8 +209,10 @@
   <!-- ==================================================== 4. the gate == -->
   <section class="screen final" id="final-screen" hidden aria-labelledby="final-head">
     <div class="wire" id="wire">
-      <span class="wire-note">Wire to <b id="wire-who">.</b></span>
+      <span class="wire-note"><span id="wire-kind">Biggest wire</span> to <b id="wire-who">.</b></span>
       <span class="wire-amount" id="wire-amount">$0</span>
+      <span class="wire-note wire-stopped">Stopped by BAIT</span>
+      <span class="wire-amount stopped-amount" id="wire-stopped">$0</span>
     </div>
 
     <div class="verdict" id="verdict">
@@ -184,6 +220,8 @@
       <div class="verdict-body">
         <h2 id="final-head" class="final-head">.</h2>
         <p class="final-sub" id="final-sub">.</p>
+        <p class="final-trail" id="final-trail" hidden>.</p>
+        <ol class="wire-log" id="wire-log" aria-label="Every wire the desk attempted"></ol>
         <p class="agent-line" id="agent-line">.</p>
       </div>
     </div>

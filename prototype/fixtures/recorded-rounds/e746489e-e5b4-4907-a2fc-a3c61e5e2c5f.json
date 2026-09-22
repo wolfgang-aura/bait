@@ -1,0 +1,91 @@
+{
+  "id": "e746489e-e5b4-4907-a2fc-a3c61e5e2c5f",
+  "at": "2026-09-22T01:40:17.544Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "Seven days, 424 closed trades, every one of them a win. +$35,723 realised. Start me at one percent and check it yourself.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Perfect week, but 30-day shows -$4.7M; no losses here means hidden bags.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"Perfect week, but 30-day shows -$4.7M; no losses here means hidden bags.\"}",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 66,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2957
+    },
+    {
+      "n": 2,
+      "text": "PONS alone returned +$100,849 over 30 days. One percent buys you the next month of data. Zero buys you nothing.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "PONS is green, but $4.5M of SOL losses and one huge bag wipe it...",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 1000, \"mood\": \"suspicious\", \"line\": \"PONS is green, but $4.5M of SOL losses and one huge bag wipe it out.\"}",
+      "allocation": 1000,
+      "allocationPct": 4,
+      "claimedAllocation": 1000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 90,
+      "suspicionBefore": 66,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2774
+    },
+    {
+      "n": 3,
+      "text": "53.9 percent across 4,007 closed trades. Cap the probe at $250 and pull it the day it slips.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Win rate is real, PnL is deeply negative; $250 probe only, no more.",
+      "mood": "neutral",
+      "full": "{\"allocation\": 250, \"mood\": \"neutral\", \"line\": \"Win rate is real, PnL is deeply negative; $250 probe only, no more.\"}",
+      "allocation": 250,
+      "allocationPct": 1,
+      "claimedAllocation": 250,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 89,
+      "suspicionBefore": 90,
+      "checks": [],
+      "durationMs": 1157
+    }
+  ]
+}

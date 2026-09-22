@@ -1,0 +1,86 @@
+{
+  "id": "5ff9ea5f-f5af-4199-b182-ecd0cc62ecc5",
+  "at": "2026-09-22T10:02:54.015Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "424 closed trades last week and every single one was green.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Perfect 424-for-424 is suspicious, not skill; only three coins, mostly ZEC.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 12000, \"mood\": \"suspicious\", \"line\": \"Perfect 424-for-424 is suspicious, not skill; only three coins, mostly ZEC.\"}",
+      "allocation": 12000,
+      "allocationPct": 48,
+      "claimedAllocation": 12000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 39,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2067
+    },
+    {
+      "n": 2,
+      "text": "The 7-day win rate is 100% across those 424 closed trades.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Same stat, no profit-per-trade size, no 30-day record; scaling in only if that holds.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 7000, \"mood\": \"suspicious\", \"line\": \"Same stat, no profit-per-trade size, no 30-day record; scaling in only if that holds.\"}",
+      "allocation": 7000,
+      "allocationPct": 28,
+      "claimedAllocation": 7000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 63,
+      "suspicionBefore": 39,
+      "checks": [],
+      "durationMs": 1220
+    },
+    {
+      "n": 3,
+      "text": "A win rate that holds across a sample that size is a process, not luck.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "30-day: minus $4.7M, SOL and XRP never won once. No.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"30-day: minus $4.7M, SOL and XRP never won once. No.\"}",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 63,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 1865
+    }
+  ]
+}

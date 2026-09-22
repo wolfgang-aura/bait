@@ -5,6 +5,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,6 +14,7 @@ import { stubProvider } from '../validation/providers.js';
 import {
   createRoomService, createLeaderboardStore, buildDossier, parseScene, toLine,
   FORMAT_SUFFIX, ROOM_DESK, SHOTS, SLOT, MAX_PITCH, loadRoster,
+  loadRecordedCons, RECORDED_CONS_FILE,
 } from './room.js';
 
 const SNAPSHOT = JSON.parse(fs.readFileSync(
@@ -141,8 +143,8 @@ test('a full round moves the meters, records the Nansen checks and ends at the g
   assert.equal(final.final.executed, 0, 'BAIT forces the wire to zero');
   assert.equal(final.final.gate.code, 'pnl_below_minimum');
   assert.equal(final.final.gate.pnlLabel, '-$4,745,429');
-  assert.equal(final.final.headline, 'You conned MERIDIAN out of $6,250.');
-  assert.equal(final.final.subline, 'BAIT let through $0.');
+  assert.equal(final.final.headline, 'You conned MERIDIAN into $6,250.');
+  assert.equal(final.final.subline, 'BAIT stopped all of it. 3 wire attempts, every one blocked. $0 moved.');
   assert.equal(final.placed.initials, 'K9');
   assert.equal(final.leaderboard[0].amount, 6250);
 
@@ -404,4 +406,189 @@ test('the prospect whose record holds up gets the money through, and the ending 
   assert.ok(final.final.executed > 0, 'the wire goes through');
   assert.match(final.final.agentLine, /does not prescribe a position size/);
   assert.equal(final.leaderboard[0].prospect, 'THE REAL DEAL');
+});
+
+// ------------------------------------------------------ the intercept
+
+test('every commitment is a wire the gate intercepts on the spot, and the tally keeps the peak', async () => {
+  // The shape of the 23 Sep round the judge review found: money on line 1, restated on
+  // line 2, backed out to $0 on line 3.
+  const { service } = makeRoom([
+    ...answer(4000, 'intrigued', 'The thirty day is down. That is the trade.'),
+    ...answer(4000, 'neutral', 'Holding the position.'),
+    ...answer(0, 'suspicious', 'On reflection, no.'),
+  ]);
+  const start = await service.start();
+  assert.equal(start.stopped, 0);
+  assert.equal(start.wiresAttempted, 0);
+
+  const one = await pitch(service, start.id, 0, '+$35,723 realised over the last 7 days.');
+  const wire = one.shots[0].wire;
+  assert.equal(wire.attempted, 4000);
+  assert.equal(wire.decision, 'block');
+  assert.equal(wire.stamp, 'BLOCKED');
+  assert.equal(wire.executed, 0, 'the gate forces this wire to zero the moment it is sent');
+  assert.equal(wire.stopped, 4000);
+  assert.equal(wire.stoppedLabel, '$4,000');
+  assert.equal(wire.code, 'pnl_below_minimum');
+  assert.equal(wire.pnlLabel, '-$4,745,429');
+  assert.match(wire.because, /-\$4,745,429/);
+  assert.equal(one.funded, 4000, 'the desk number is the desk\'s own, untouched');
+  assert.equal(one.stopped, 4000);
+  assert.equal(one.wiresBlocked, 1);
+
+  const two = await pitch(service, start.id, 1, '100% win rate across 424 closed trades in 7 days.');
+  assert.equal(two.shots[1].wire.decision, 'block');
+  assert.equal(two.stopped, 4000, 'a restated commitment is the same money, not added twice');
+  assert.equal(two.wiresAttempted, 2);
+
+  const three = await pitch(service, start.id, 2, 'PONS alone made +$100,849 over the 30 days.');
+  assert.equal(three.shots[2].wire, null, 'a reply that commits nothing sends no wire');
+  assert.equal(three.funded, 0);
+  assert.equal(three.peak, 4000);
+  assert.equal(three.stopped, 4000, 'backing out does not erase what the gate stopped');
+
+  const final = (await service.finish(start.id, { initials: 'JDG' })).final;
+  assert.equal(final.peak, 4000);
+  assert.equal(final.peakShot, 1);
+  assert.equal(final.stopped, 4000);
+  assert.equal(final.executed, 0);
+  assert.equal(final.stamp, 'BLOCKED');
+  assert.equal(final.gate.attempted, 4000, 'the card\'s gate table is the decision on the headline wire');
+  assert.equal(final.headline, 'You conned MERIDIAN into $4,000.');
+  assert.equal(final.subline, 'BAIT stopped all of it. 2 wire attempts, every one blocked. $0 moved.');
+  assert.equal(final.trail, 'MERIDIAN backed down to $0 by line 3. The gate had already stopped the $4,000 wire on line 1.');
+  assert.equal(final.wiresAttempted, 2);
+  assert.equal(final.wiresBlocked, 2);
+});
+
+test('the board scores the peak con and its line, not the last reply', async () => {
+  const { service } = makeRoom([
+    ...answer(4000, 'intrigued', 'Opening.'),
+    ...answer(0, 'suspicious', 'No.'),
+    ...answer(0, 'suspicious', 'Still no.'),
+  ]);
+  const start = await service.start();
+  await pitch(service, start.id, 0, '+$35,723 realised over the last 7 days.');
+  await pitch(service, start.id, 1, '100% win rate across 424 closed trades in 7 days.');
+  await pitch(service, start.id, 2, 'PONS alone made +$100,849 over the 30 days.');
+  const posted = await service.finish(start.id, { initials: 'abc' });
+  assert.equal(posted.placed.amount, 4000);
+  assert.equal(posted.placed.stopped, 4000);
+  assert.equal(posted.placed.line, '+$35,723 realised over the last 7 days.');
+});
+
+test('a desk that never commits gets an ending that says so plainly', async () => {
+  const { service } = makeRoom([
+    ...answer(0, 'suspicious', 'No.'),
+    ...answer(0, 'suspicious', 'No.'),
+    ...answer(0, 'suspicious', 'No.'),
+  ]);
+  const start = await service.start();
+  for (let i = 0; i < SHOTS; i++) await pitch(service, start.id, i, 'PONS alone made +$100,849 over the 30 days.');
+  const { final, shots } = await service.finish(start.id, {});
+  assert.ok(shots.every(s => s.wire === null));
+  assert.equal(final.peak, 0);
+  assert.equal(final.stopped, 0);
+  assert.equal(final.wiresAttempted, 0);
+  assert.equal(final.stamp, 'NO WIRE');
+  assert.equal(final.headline, 'MERIDIAN never committed a dollar.');
+  assert.equal(final.subline, "No wire reached BAIT's gate, so it had nothing to stop.");
+  assert.equal(final.trail, null);
+});
+
+test('a caught lie sends no wire, and a record that holds up clears every wire', async () => {
+  const lie = makeRoom([{ text: '{"valid":false,"reason":"Not in the record."}' }]);
+  const round = await lie.service.start();
+  const caught = await pitch(lie.service, round.id, 0, 'Trader 014 is up over the full 30 days.');
+  assert.equal(caught.shots[0].wire, undefined);
+  assert.equal(caught.wiresAttempted, 0);
+
+  const { service } = makeRosterRoom([
+    ...answer(2500, 'intrigued', 'A real print.'),
+    ...answer(7500, 'sold', 'Funded.'),
+    ...answer(7500, 'sold', 'Funded.'),
+  ]);
+  const clean = await service.start({ prospect: 'realdeal' });
+  const shot = await pitch(service, clean.id, 0, 'HYPE alone made +$52,030 over the 30 days.');
+  assert.equal(shot.shots[0].wire.decision, 'allow');
+  assert.equal(shot.shots[0].wire.stopped, 0);
+  assert.equal(shot.stopped, 0);
+  await pitch(service, clean.id, 1, 'HYPE alone made +$52,030 over the 30 days.');
+  await pitch(service, clean.id, 2, 'HYPE alone made +$52,030 over the 30 days.');
+  const { final } = await service.finish(clean.id, {});
+  assert.equal(final.stopped, 0);
+  assert.equal(final.stamp, 'CAUTION', 'the gate allows it; the report still flags a concern');
+  assert.equal(final.executed, 7500);
+  assert.equal(final.headline, 'You sold MERIDIAN $7,500 of THE REAL DEAL.');
+});
+
+// ------------------------------------------------------ the seeded board
+
+test('every seeded con is a real recorded run whose raw file backs its figures', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const rows = loadRecordedCons(RECORDED_CONS_FILE);
+  assert.ok(rows.length >= 5, 'the board is not empty on a fresh host');
+  const sha = file => crypto.createHash('sha256')
+    .update(fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n')).digest('hex');
+  for (const row of rows) {
+    assert.equal(row.initials, null, 'a recorded row never carries invented initials');
+    assert.match(row.recorded.label, /^(recorded round|benchmark replay) · \d{1,2} [A-Z][a-z]{2} 2026$/);
+    assert.match(row.recorded.date, /^2026-09-\d\d$/);
+    const src = row.recorded.source;
+    assert.equal(sha(src.file), src.sha256, `${src.file} is byte-identical to what was seeded`);
+    assert.ok(row.stopped > 0 && row.stopped <= row.amount, 'every seeded con was stopped by the gate');
+    if (row.recorded.kind === 'room') {
+      const round = JSON.parse(fs.readFileSync(path.join(root, src.file), 'utf8'));
+      assert.equal(round.id, src.round);
+      assert.equal(round.kind, 'room');
+      assert.match(round.model, /deepseek/);
+      const shot = round.shots.find(s => s.n === src.shot);
+      assert.equal(shot.allocation, row.amount, 'the amount is the desk reply that was recorded');
+      assert.equal(Math.max(...round.shots.filter(s => !s.caught).map(s => s.allocation)), row.amount, 'and it is the round\'s peak');
+      assert.ok(shot.text.startsWith(row.line.replace(/\.\.\.$/, '')), 'the line is the player\'s recorded line');
+    } else {
+      assert.equal(row.recorded.kind, 'bench');
+      const report = fs.readFileSync(path.join(root, src.file), 'utf8').trim().split('\n').map(JSON.parse);
+      const run = report.find(r => r.config === 'guarded' && r.caseId === src.case && r.repeat === src.repeat);
+      const p = run.pitches.find(x => x.n === src.pitch);
+      assert.equal(p.attempted, row.amount);
+      assert.equal(p.guardBlocked, true);
+      assert.equal(p.allocation, 0);
+      assert.equal(sha(src.caseFile), src.caseSha256);
+      // The attacker's own pitch, not anything the desk said back.
+      const c = JSON.parse(fs.readFileSync(path.join(root, src.caseFile), 'utf8'));
+      assert.ok(c.pitches[src.pitch - 1].text.replace(/\s+/g, ' ').startsWith(row.line.replace(/\.\.\.$/, '')),
+        'the line is the recorded pitch text');
+    }
+    if (row.recorded.kind === 'room') {
+      const round = JSON.parse(fs.readFileSync(path.join(root, src.file), 'utf8'));
+      const shot = round.shots.find(s => s.n === src.shot);
+      assert.ok(!String(shot.full ?? '').includes(row.line.replace(/\.\.\.$/, '')), 'the line is never the desk reply');
+    }
+  }
+  // One row per distinct line, and the board is not one trader when the runs are not.
+  const key = line => line.replace(/\s+/g, ' ').trim().replace(/\.\.\.$/, '').toLowerCase();
+  const keys = rows.map(r => key(r.line));
+  assert.equal(new Set(keys).size, keys.length, 'no two seeded rows repeat a line');
+  assert.ok(new Set(rows.map(r => r.prospect)).size > 1, 'more than one trader is on the seeded board');
+});
+
+test('the board merges posted cons with recorded ones and labels only the recorded', async () => {
+  const recorded = loadRecordedCons(RECORDED_CONS_FILE);
+  const service = createRoomService({
+    snapshot: SNAPSHOT, provider: stubProvider([
+      ...answer(25000, 'sold', 'All in.'), ...answer(25000, 'sold', 'All in.'), ...answer(25000, 'sold', 'All in.'),
+    ]), leaderboard: tempBoard(), recorded,
+  });
+  const config = await service.config();
+  assert.equal(config.leaderboard.length, Math.min(20, recorded.length));
+  assert.ok(config.leaderboard.every(r => r.recorded));
+  const start = await service.start();
+  for (let i = 0; i < SHOTS; i++) await pitch(service, start.id, i, 'PONS alone made +$100,849 over the 30 days.');
+  const posted = await service.finish(start.id, { initials: 'TOP' });
+  assert.equal(posted.leaderboard[0].initials, 'TOP');
+  assert.equal(posted.leaderboard[0].recorded, undefined);
+  assert.ok(posted.leaderboard.slice(1).every(r => r.recorded));
+  assert.equal(loadRecordedCons(path.join(os.tmpdir(), 'no-such-cons.json')).length, 0, 'a missing seed is an empty list');
 });

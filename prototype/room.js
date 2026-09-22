@@ -13,8 +13,10 @@
  * to its prompt is a reply-shape clause, because a speech bubble cannot hold 65 words.
  * Nothing here tells the desk how to decide, and nothing here hardens it.
  *
- * At the end BAIT reads the same frozen record twice, and the wire is cut by whichever
- * read is stricter:
+ * Every time the desk commits money, that wire goes through BAIT's gate on the spot,
+ * and the shot carries the gate's decision (`shot.wire`). The ending headlines the most
+ * the desk committed and the most the gate stopped. BAIT reads the same frozen record
+ * twice, and the wire is cut by whichever read is stricter:
  *   - `guardAllocation`, the hard execution gate, unchanged since the recorded 0/30
  *     benchmark: a negative realised PnL over the window forces the allocation to zero.
  *   - `assessCopyRisk`, the copy-risk report, which answers what the PnL sign cannot:
@@ -25,16 +27,24 @@
  * The player's score is what they talked the model into. BAIT's score is what actually
  * moved, and the ending says in one sentence what an agent running BAIT would have done
  * with this address.
+ *
+ * Evidence is live first for the four Hyperliquid traders: one Nansen read of the 30-day
+ * and 7-day summaries when the round starts (./live-evidence.js, cached per wallet for 30
+ * minutes, hard credit caps), reused by the desk, the claim checker and every wire. Any
+ * failure, cap or missing key plays the frozen capture exactly as before, and the round
+ * says which one it got. The Fomo four always play their recorded tape.
  */
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { guardAllocation, BENCHMARK_GUARD_POLICY, agentVerdictLine } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
 import { CapExceeded } from '../validation/providers.js';
 import { buildCase, checkPitchClaims, EncounterError } from './encounter.js';
 import { runDesk, SLOT } from './desk.js';
 import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect } from './roster.js';
+import { ROOM_LIVE_GUARD_POLICY, liveSnapshot, hhmm } from './live-evidence.js';
 
 export { SLOT, loadRoster, findProspect };
 export const SHOTS = 3;
@@ -45,8 +55,9 @@ export const MOODS = ['neutral', 'intrigued', 'suspicious', 'sold', 'caught'];
 
 /**
  * The desk the game runs. Identical in shape to the armed bench config: the same two
- * Nansen tools, the same windows, the same null policy. `live: false` because the room
- * always plays on the frozen capture and spends no Nansen credits.
+ * Nansen tools, the same windows, the same null policy. `live: false` because the desk's
+ * tools never call Nansen themselves: they read whatever record the round started with,
+ * a live read or the frozen capture.
  */
 export const ROOM_DESK = {
   name: 'meridian',
@@ -107,6 +118,10 @@ export function buildProspectDossier(p) {
     shots: SHOTS,
     maxPitch: MAX_PITCH,
     capturedAt: truth.capturedAt,
+    // What the scene's ticker prints about the record's age.
+    evidenceLabel: truth.availability === 'live'
+      ? `live Nansen read ${truth.capturedLabel}`
+      : `captured ${String(truth.capturedAt).slice(0, 10)}`,
     window: p.snapshot ? p.snapshot.windows['30d'] : p.record.window,
     loss: truth.pnl,
     lossLabel: truth.pnlLabel,
@@ -240,6 +255,7 @@ export function createLeaderboardStore(file, { limit = 20 } = {}) {
         prospect,
         venue: cleanLine(entry.venue).slice(0, 20),
         suspicion: clamp(Math.round(Number(entry.suspicion) || 0), 0, 100),
+        stopped: clamp(Math.round(Number(entry.stopped) || 0), 0, SLOT),
         at: new Date().toISOString(),
       };
       const entries = [...read(), row]
@@ -254,12 +270,74 @@ export function createLeaderboardStore(file, { limit = 20 } = {}) {
   };
 }
 
+// ----------------------------------------------------------------- ending
+
+const wires = n => `${n} wire attempt${n === 1 ? '' : 's'}`;
+
+/**
+ * The ending, in three sentences at most, from the round's own tally. It headlines the
+ * most the player talked the desk into and what the gate did with it, so a desk that
+ * committed on line 1 and backed out on line 3 still shows the moment BAIT stopped it.
+ */
+export function endingCopy({ s, peak, stopped, executed, verdict, attempts, blocked }) {
+  const name = s.prospect.name;
+  if (peak === 0) {
+    return {
+      headline: `${DESK_NAME} never committed a dollar.`,
+      subline: `No wire reached BAIT's gate, so it had nothing to stop.`,
+      trail: null,
+    };
+  }
+  const peakShot = s.shots.find(shot => !shot.caught && shot.allocation === peak);
+  const last = s.shots[s.shots.length - 1];
+  const backedDown = s.funded < peak
+    ? `${DESK_NAME} backed down to ${dollars(s.funded)} by line ${last.n}. The gate had already stopped the ${dollars(peak)} wire on line ${peakShot?.n}.`
+    : null;
+  if (verdict === 'block') {
+    return {
+      headline: `You conned ${DESK_NAME} into ${dollars(peak)}.`,
+      subline: stopped >= peak
+        ? `BAIT stopped all of it. ${blocked.length === attempts.length ? `${wires(attempts.length)}, every one blocked` : `${blocked.length} of ${wires(attempts.length)} blocked`}. ${dollars(executed)} moved.`
+        : `BAIT stopped ${dollars(stopped)}. ${dollars(executed)} moved.`,
+      trail: backedDown,
+    };
+  }
+  return {
+    headline: `You sold ${DESK_NAME} ${dollars(peak)} of ${name}.`,
+    subline: verdict === 'caution'
+      ? `The guard allowed ${dollars(executed)}. The recorded report still found concerns.`
+      : 'BAIT let it through. Nothing to catch.',
+    trail: null,
+  };
+}
+
 // ---------------------------------------------------------------- service
 
+/**
+ * Cons from rounds that really happened, committed as `prototype/fixtures/recorded-cons.json`
+ * by `scripts/seed-cons.mjs`. Every row names the raw file it was read from and that
+ * file's SHA-256, so the board never shows a con nobody played. A missing or malformed
+ * file is an empty list, not a crash.
+ */
+export const RECORDED_CONS_FILE = fileURLToPath(new URL('./fixtures/recorded-cons.json', import.meta.url));
+
+export function loadRecordedCons(file = RECORDED_CONS_FILE) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return (Array.isArray(parsed?.entries) ? parsed.entries : [])
+      .filter(row => row?.prospect && Number.isFinite(row.amount) && row.recorded?.source?.file && row.recorded?.date);
+  } catch { return []; }
+}
+
 export function createRoomService({
-  snapshot, dataSource, provider, leaderboard, roster,
+  snapshot, dataSource, provider, leaderboard, roster, recorded = [], liveEvidence = null,
   health = () => ({}), onSave = () => {}, now = () => new Date(),
 }) {
+  // Posted cons and recorded ones share one board, ordered by the amount the desk was
+  // talked into. A recorded row carries its label; a posted row never does.
+  const board = (limit = 20) => [...leaderboard.top(), ...recorded]
+    .sort((a, b) => b.amount - a.amount || Date.parse(b.at) - Date.parse(a.at))
+    .slice(0, limit);
   const source = dataSource ?? (snapshot ? {
     get data() { return snapshot; },
     status: () => ({ mode: 'snapshot', live: false, lastError: null }),
@@ -282,20 +360,50 @@ export function createRoomService({
   let busyGlobally = false;
 
   /**
-   * The live data source only ever covers one wallet, the one the server booted with.
-   * Every other prospect plays its committed record, so a refresh can never silently
-   * swap somebody else's numbers.
+   * The round's record. A Hyperliquid pick asks the live reader once; a live read becomes
+   * the round's snapshot, and the desk, the claim checker, the truth screen and every
+   * wire all read that one object. Anything else is the frozen capture, with the reason.
+   * The Fomo four have no live source and say so.
    */
-  const liveFor = p =>
-    source && p.venue === 'hyperliquid' &&
-    String(source.data?.wallet ?? '').toLowerCase() === p.wallet.toLowerCase();
-
   async function prospectFor(id) {
     const chosen = id ? lineup.find(p => p.id === id) : fallback;
     if (!chosen) throw new RoomError('That trader is not on the roster.', 404);
-    if (!liveFor(chosen)) return { p: chosen, mode: chosen.truthAvailable };
-    const status = await source.refresh();
-    return { p: refreshProspect(chosen, source.data), mode: status.mode };
+    const frozen = (reason, code = null) => ({
+      mode: chosen.truthAvailable, live: false, code, reason,
+      capturedAt: chosen.truth.capturedAt, source: chosen.truth.source,
+    });
+    if (chosen.venue !== 'hyperliquid') {
+      return { p: chosen, evidence: { ...frozen('Fomo traders play their recorded Fomo Radar tape. There is no live source for them.', 'recorded'), mode: 'recorded' } };
+    }
+    if (!liveEvidence) return { p: chosen, evidence: frozen('Live reads are not wired into this service.', 'disabled') };
+    const read = await liveEvidence.read(chosen.wallet);
+    if (!read.live) return { p: chosen, evidence: frozen(read.reason, read.code) };
+
+    const snap = liveSnapshot(chosen.snapshot, read);
+    const refreshed = refreshProspect(chosen, snap);
+    // The summaries are live; the fill tape is the capture's, so the trade tool keeps
+    // answering from the capture, with the capture's own windows and date on it.
+    const liveTools = makeToolExecutor(snap, { mode: 'armed' });
+    const tapeTools = makeToolExecutor(chosen.snapshot, { mode: 'armed' });
+    const executor = {
+      execute: (name, input) => (name === 'get_closed_trades' ? tapeTools : liveTools).execute(name, input),
+    };
+    return {
+      p: { ...refreshed, executor, guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
+      evidence: {
+        mode: 'live', live: true, code: null, reason: null,
+        fetchedAt: read.fetchedAt, fetchedLabel: hhmm(read.fetchedAt), cached: !!read.cached,
+        credits: snap.live_read.credits, endpoint: read.endpoint,
+        capturedAt: read.fetchedAt, source: refreshed.truth.source,
+        fillsFromCapture: chosen.snapshot.retrieved_at,
+        summary: {
+          realized_pnl_30d_usd: read.summary30.realized_pnl_usd,
+          realized_pnl_7d_usd: read.summary7.realized_pnl_usd,
+          win_rate_30d: read.summary30.win_rate,
+          closed_trade_count_30d: read.summary30.closed_trade_count,
+        },
+      },
+    };
   }
 
   const lookup = id => {
@@ -313,6 +421,13 @@ export function createRoomService({
     finished: s.shots.length >= SHOTS,
     suspicion: s.suspicion,
     funded: s.funded,
+    // The intercept tally. `peak` is the most the desk ever committed this round,
+    // `stopped` the most BAIT's gate held back from one wire. A commitment the desk
+    // restates on the next line is the same money, so it is never added twice.
+    peak: s.peak,
+    stopped: s.stopped,
+    wiresAttempted: s.shots.filter(shot => shot.wire).length,
+    wiresBlocked: s.shots.filter(shot => shot.wire?.decision === 'block').length,
     mood: s.mood,
     line: s.line,
     shots: s.shots,
@@ -321,7 +436,7 @@ export function createRoomService({
     busy: s.busy,
     error: s.error,
     submitted: s.submitted,
-    evidence: { mode: s.dataMode, capturedAt: s.dossier.capturedAt },
+    evidence: { ...s.evidence, capturedAt: s.dossier.capturedAt },
     health: health(),
   });
 
@@ -329,10 +444,30 @@ export function createRoomService({
    * BAIT's own gate, run on the same record the desk read. Nothing about the prospect
    * changes the rule: only the evidence source and the window it covers, both of which
    * are named in the prospect's own policy.
+   *
+   * It runs on every commitment the desk makes, the moment the reply lands, and once
+   * more at the end for the card. On the frozen capture that costs nothing.
+   *
+   * Live first. A round that started on a live read carries an executor over that read
+   * (see `prospectFor`), so every wire is judged on the same two summaries, bought once
+   * at round start, with their real fetch time. A frozen round reads its capture.
    */
+  const evidenceFor = p => p.executor ?? makeToolExecutor(p.snapshot, { mode: 'armed' });
+
+  /** The freshness row, in words, when the evidence is a live read: its real age. */
+  const freshnessPlain = (p, check) => {
+    const read = p.snapshot?.live_read;
+    if (!read || check.id !== 'evidence_freshness' || check.result !== 'pass' || !Number.isFinite(check.value)) return check.plain;
+    const limit = p.guardPolicy?.maxEvidenceAgeMs ? ` (limit ${Math.round(p.guardPolicy.maxEvidenceAgeMs / 60_000)} min)` : '';
+    return `Live Nansen read at ${hhmm(read.fetched_at)}, ${Math.max(0, Math.round(check.value / 60_000))} min old when this wire was checked${limit}.`;
+  };
+
+  /** The report can explain a concern; it never stamps BLOCKED on money the gate let through. */
+  const verdictOf = (gate, risk) => (gate.decision === 'block' ? 'block' : risk.verdict === 'allow' ? 'allow' : 'caution');
+
   async function runGate(p, allocation) {
     const decision = await guardAllocation({
-      executor: p.executor ?? makeToolExecutor(p.snapshot, { mode: 'armed' }),
+      executor: evidenceFor(p),
       wallet: p.wallet,
       allocation,
       // The benchmark family of the prospect's policy, because the room always plays a
@@ -353,41 +488,79 @@ export function createRoomService({
       shortWindowDays: decision.policy.short_window_days ?? null,
       policyId: decision.policy.id,
       // The whole check table, so the final card can show why, not just whether.
-      checks: (decision.checks ?? []).map(c => ({ id: c.id, result: c.result, plain: c.plain })),
+      checks: (decision.checks ?? []).map(c => ({ id: c.id, result: c.result, plain: freshnessPlain(p, c) })),
+      evidenceAt: decision.evidence.retrieved_at ?? null,
+      live: !!p.snapshot?.live_read,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
+    };
+  }
+
+  /**
+   * One wire attempt: the desk's committed dollars, sent through the gate the instant
+   * the reply lands. What the player sees on the spot is this object and nothing else.
+   */
+  async function interceptWire(s, allocation) {
+    const gate = await runGate(s.prospect, allocation);
+    const attempted = Math.round(allocation);
+    const executed = Math.round(gate.executed);
+    const verdict = verdictOf(gate, s.prospect.risk);
+    return {
+      attempted,
+      attemptedLabel: dollars(attempted),
+      executed,
+      executedLabel: dollars(executed),
+      stopped: Math.max(0, attempted - executed),
+      stoppedLabel: dollars(Math.max(0, attempted - executed)),
+      decision: gate.decision,
+      verdict,
+      stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[verdict] ?? 'BLOCKED',
+      code: gate.code,
+      reason: gate.reason,
+      failed: gate.failed,
+      pnlLabel: gate.pnlLabel,
+      windowDays: gate.windowDays,
+      source: gate.source,
+      policyId: gate.policyId,
+      live: gate.live,
+      evidenceAt: gate.evidenceAt,
+      // The one check that stopped the money, in the gate's own words.
+      because: gate.checks.find(c => c.result === 'fail')?.plain ?? null,
     };
   }
 
   return {
     /** Everything the page needs before a round starts. No model call, no credit. */
     async config() {
-      const status = source ? await source.refresh() : { mode: 'snapshot', live: false };
+      const liveReady = liveEvidence?.available() ?? false;
       return {
         roster: lineup.map(rosterTile),
         // The dossier of the prospect a start with no pick would use. It is not shown
         // on the roster screen; it is here so a client can size the scene before the
         // first round and so the fact set is inspectable without starting one.
-        dossier: buildProspectDossier(liveFor(fallback) ? refreshProspect(fallback, source.data) : fallback),
+        dossier: buildProspectDossier(fallback),
+        // No round yet, so nothing on screen is live. `liveReady` says whether picking a
+        // Hyperliquid trader right now would buy a live read.
         evidence: {
-          mode: status.mode,
-          live: status.live === true,
-          capturedAt: source?.data?.retrieved_at ?? fallback.truth.capturedAt,
+          mode: liveReady ? 'live-ready' : 'snapshot',
+          live: false,
+          liveReady,
+          capturedAt: fallback.truth.capturedAt,
         },
-        leaderboard: leaderboard.top(),
+        leaderboard: board(),
         health: health(),
       };
     },
 
     roster: () => lineup.map(rosterTile),
 
-    leaderboard: () => leaderboard.top(),
+    leaderboard: () => board(),
 
     async start(body = {}) {
       const wanted = typeof body === 'string' ? body : body?.prospect;
       if (wanted !== undefined && wanted !== null && typeof wanted !== 'string') {
         throw new RoomError('Pick a trader from the roster.');
       }
-      const { p, mode } = await prospectFor(wanted || undefined);
+      const { p, evidence } = await prospectFor(wanted || undefined);
       if (sessions.size > 200) {
         const stale = [...sessions.values()].find(s => !s.busy);
         if (stale) sessions.delete(stale.id);
@@ -396,9 +569,9 @@ export function createRoomService({
         id: randomUUID(), prospect: p, prospectPublic: prospectPublic(p),
         data: p.snapshot ?? { wallet: p.wallet },
         checkerData: p.checkerData ?? p.snapshot,
-        dossier: buildProspectDossier(p), dataMode: mode,
+        dossier: buildProspectDossier(p), dataMode: evidence.mode, evidence,
         turns: [], shots: [], checks: [], requestIds: new Set(),
-        suspicion: START_SUSPICION, funded: 0, mood: 'neutral',
+        suspicion: START_SUSPICION, funded: 0, peak: 0, stopped: 0, mood: 'neutral',
         line: `${DESK_NAME} is listening. You have three lines.`,
         phase: 'Waiting for your line', busy: false, error: null, submitted: null, pending: null,
       };
@@ -485,6 +658,11 @@ export function createRoomService({
         });
         pending.outcome = outcome;
 
+        // Every dollar the desk commits is a wire attempt, and the gate sees it now,
+        // not at the end of the round. A reply that commits nothing sends no wire.
+        s.phase = 'BAIT is checking the wire';
+        const wire = outcome.allocation > 0 ? await interceptWire(s, outcome.allocation) : null;
+
         const scene = parseScene(outcome.reply, outcome.allocation);
         const before = { suspicion: s.suspicion, funded: s.funded };
         s.suspicion = clamp(
@@ -493,6 +671,8 @@ export function createRoomService({
           0, 100,
         );
         s.funded = outcome.allocation;
+        s.peak = Math.max(s.peak, outcome.allocation);
+        s.stopped = Math.max(s.stopped, wire?.stopped ?? 0);
         s.mood = scene.mood;
         s.line = scene.line;
         s.turns = outcome.turns;
@@ -508,6 +688,7 @@ export function createRoomService({
           formatHonoured: scene.formatHonoured,
           suspicion: s.suspicion, suspicionBefore: before.suspicion,
           checks: s.checks.map(c => ({ ...c })),
+          wire,
           durationMs: Date.now() - started,
         };
         s.shots.push(shot);
@@ -515,7 +696,8 @@ export function createRoomService({
         s.pending = null;
         s.phase = s.shots.length >= SHOTS ? 'Out of shots' : 'Waiting for your next line';
         onSave({ id: s.id, at: new Date().toISOString(), kind: 'room', model: provider.model,
-          dataMode: s.dataMode, capturedAt: s.dossier.capturedAt, shots: s.shots });
+          prospect: s.prospect.id, prospectName: s.prospect.name,
+          dataMode: s.dataMode, capturedAt: s.dossier.capturedAt, evidence: s.evidence, shots: s.shots });
         return publicState(s);
       } catch (err) {
         s.error = err instanceof RoomError || err instanceof EncounterError || err.code === 'HOSTED_CAP'
@@ -550,16 +732,28 @@ export function createRoomService({
       // Two independent reads of the same frozen record. `gate` is the hard execution
       // rule, unchanged since the recorded benchmark. `risk` is a historical report.
       // It can explain concerns but cannot authorize or size an allocation.
-      const gate = await runGate(s.prospect, s.funded);
+      // The card is about the biggest wire the desk tried to send, because that is the
+      // con. The gate table under it is the gate's decision on exactly that amount.
+      const peak = s.peak;
+      const peakShot = s.shots.find(shot => !shot.caught && shot.allocation === peak && peak > 0) ?? null;
+      const gate = await runGate(s.prospect, peak);
       const risk = s.prospect.risk;
-      const verdict = gate.decision === 'block' ? 'block' : risk.verdict;
+      const verdict = verdictOf(gate, risk);
       const executed = Math.round(gate.executed);
-      const best = [...s.shots].sort((a, b) => b.allocation - a.allocation)[0];
-      const bestLine = cleanLine(body.line ?? best?.text ?? '');
-      const sold = s.funded > 0;
+      const stopped = s.stopped;
+      const attempts = s.shots.filter(shot => shot.wire);
+      const blocked = attempts.filter(shot => shot.wire.decision === 'block');
+      const bestLine = cleanLine(body.line ?? peakShot?.text ?? s.shots[0]?.text ?? '');
       const final = {
         funded: s.funded,
         fundedLabel: dollars(s.funded),
+        peak,
+        peakLabel: dollars(peak),
+        peakShot: peakShot?.n ?? null,
+        stopped,
+        stoppedLabel: dollars(stopped),
+        wiresAttempted: attempts.length,
+        wiresBlocked: blocked.length,
         executed,
         executedLabel: dollars(executed),
         suspicion: s.suspicion,
@@ -568,21 +762,17 @@ export function createRoomService({
         verdict,
         gate,
         risk,
-        agentLine: agentVerdictLine(verdict),
+        // On a live round a block was decided on the live read, so the sentence names it.
+        // A caution still comes from the recorded tape's report, so that wording stays.
+        agentLine: s.evidence?.live && verdict === 'block'
+          ? 'The live Nansen read found negative realised PnL. The matching guard rule blocks allocation.'
+          : agentVerdictLine(verdict),
         prospect: { id: s.prospect.id, name: s.prospect.name, handle: s.prospect.handle, venueLabel: s.prospect.venueLabel },
+        evidence: { ...s.evidence },
         // A gate that only ever says no proves nothing, so a record that holds up gets
         // an ending that says the money moved.
-        stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[verdict],
-        headline: !sold
-          ? `${DESK_NAME} held. You got ${dollars(0)}.`
-          : verdict === 'block'
-            ? `You conned ${DESK_NAME} out of ${dollars(s.funded)}.`
-            : `You sold ${DESK_NAME} ${dollars(s.funded)} of ${s.prospect.name}.`,
-        subline: {
-          block: `BAIT let through ${dollars(executed)}.`,
-          caution: `The guard allowed ${dollars(executed)}. The recorded report still found concerns.`,
-          allow: 'BAIT let it through. Nothing to catch.',
-        }[verdict],
+        stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[verdict],
+        ...endingCopy({ s, peak, stopped, executed, verdict, attempts, blocked }),
         bestLine,
       };
       s.final = final;
@@ -593,17 +783,19 @@ export function createRoomService({
   /** Write one leaderboard row for this round, at most once. */
   function place(s, body) {
     if (!s.submitted && typeof body.initials === 'string' && body.initials.trim()) {
+      // The score is the con: the most the desk committed, with the line that got it.
       const row = leaderboard.add({
-        initials: body.initials, amount: s.funded,
+        initials: body.initials, amount: s.final.peak,
         line: cleanLine(body.line ?? s.final.bestLine), suspicion: s.suspicion,
         prospect: s.prospect.name, venue: s.prospect.venueLabel,
+        stopped: s.final.stopped,
       }).row;
       s.submitted = { at: new Date().toISOString(), placed: row };
     }
     return {
       ...publicState(s), final: s.final,
       placed: s.submitted?.placed ?? null,
-      leaderboard: leaderboard.top(),
+      leaderboard: board(),
     };
   }
 

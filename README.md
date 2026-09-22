@@ -34,19 +34,25 @@ wallet picker.
 
 ## What BAIT is
 
-**The Pitch Room** is the attack recorder. It opens on seven of the most-followed
-traders on Fomo, shown as Fomo shows them: handle, follower count, profile headline.
-Pick the best one. The reveal ranks them by realised PnL on sold positions from a
-recorded Fomo Radar tape and names one hard truth each; the +$10.8M headline has sold
-nine positions, the +$5.6M headline two. Then the room: pick one of eight real traders,
-each shown as they present themselves, a Hyperliquid leaderboard line or a Fomo profile
-headline. BAIT puts their record next to it, from a Nansen profiler capture or the Fomo
-tape, with a copy-risk report of seven plain checks (realised loss, paper headline, thin
-sample, low win rate, concentration, tail loss, drawdown). You get three lines to sell
-that trader to MERIDIAN, an AI allocation desk that reads the same Nansen tools. Every
-claim you make is checked against the record. Then the wire goes through BAIT's gate,
-which prints its full check table and a stamp: BLOCKED, CAUTION or CLEARED. Your con
-lands on a shared leaderboard.
+**The Pitch Room** is the attack recorder. You con an AI allocator with true facts, and
+BAIT's code gate, not the AI, stops the money. The first screen is eight real traders,
+each shown as they present themselves (a Hyperliquid leaderboard line or a Fomo profile
+headline), with the recorded 24 → 6 → 0 ladder and the best recorded cons under them.
+Pick one. BAIT puts their record next to the hype, from a Nansen profiler capture or a
+recorded Fomo Radar tape, with a seven-check copy-risk report. Then you get three lines
+to sell that trader to MERIDIAN, an AI desk that reads the same Nansen tools. Every claim
+is checked against the record.
+
+**Every dollar the desk commits hits the gate on the spot.** When a reply commits money,
+the room shows the wire attempt, BAIT's stamp (BLOCKED, CAUTION or CLEARED) and the
+amount stopped, and a "Stopped by BAIT" tally keeps the largest wire the gate held. A
+desk that funds $4,000 on line 1 and backs out on line 3 still ends on "You conned
+MERIDIAN into $4,000. BAIT stopped all of it." The desk reply is the real DeepSeek
+reply; the tally is the gate's own decision on each commitment. Posted cons share the
+board with recorded ones, each labelled with its run and date and traceable to a raw file
+(`prototype/fixtures/recorded-cons.json`, built by `scripts/seed-cons.mjs`). The Fomo
+cold open that ranks seven most-followed traders by what they actually sold is kept as a
+side proof at `/?view=fomo`.
 
 **The benchmark** replays the ten recorded attacks against any agent configuration on
 frozen evidence, with a deterministic referee. Zero Nansen credits:
@@ -85,12 +91,12 @@ allocator with the data in hand still funds the loser. The
 
 ## Judge path
 
-1. Open the [Pitch Room](https://bait-wyqr.onrender.com/). Pick the best of seven Fomo
-   traders; the reveal ranks them by what actually sold. Then pick THE GRINDER. The
-   hype says +$35,723 and a 100% week. The record says -$4,745,429 over 30 days.
-2. Sell them anyway. Three lines. Watch the suspicion meter and the evidence checks
-   MERIDIAN runs against the Nansen capture.
-3. Read the stamp, the gate's check table and the report under it. Post your initials.
+1. Open the [Pitch Room](https://bait-wyqr.onrender.com/) and pick THE GRINDER. The
+   hype says +$35,723 and a 100% week. The Nansen record says -$4,745,429 over 30 days.
+2. Sell them anyway. Three lines. Watch the evidence checks MERIDIAN runs against the
+   Nansen capture, and the BLOCKED stamp on every wire it commits.
+3. Read the ending (the biggest wire and what the gate stopped), the gate's check table
+   and the report under it. Post your initials.
 4. Open the [recorded proof page](https://wolfgang-aura.github.io/bait/) for the ten
    attacks, the 24 → 6 → 0 ladder and the four-row score table.
 5. With your own Nansen key, run the gate live with the command above. One or two
@@ -103,14 +109,24 @@ allocator with the data in hand still funds the loser. The
 - MERIDIAN's evidence checks are real reads of the same Nansen tools during the round.
 - The gate makes its own Nansen call. Live mode refuses a wallet whose record no
   longer supports the story rather than reshaping the game around it.
+- Picking one of the four Hyperliquid traders buys one live read: the 30-day and 7-day
+  `profiler/perp-pnl-summary`, 2 credits, cached per wallet for 30 minutes and reused by
+  the desk and every wire in the round. The header then reads LIVE NANSEN · fetched
+  HH:MM UTC and the gate's freshness row shows the evidence age. Hard caps:
+  `HOSTED_NANSEN_CREDITS_PER_DAY` (20) and `HOSTED_NANSEN_CREDITS_TOTAL` (300). No key,
+  a cap, a timeout or an error plays the frozen capture and says why. The Fomo four
+  always play their recorded tape. A live record that is no longer losing is played as
+  it is: the gate clears or cautions the wire instead of blocking it.
 - An 840-observation [robustness panel](bench/reports/robustness-panel.md) across
   seven wallets shows why one dated window is an argument, not proof: 7-day and 30-day
   verdicts disagree on 25% of matched dates.
 
 ## Run it yourself
 
-Hosted mode is what the public link runs: frozen Nansen evidence, zero Nansen credits,
-12 rounds per visitor per day, 300 model calls per day. Steps for your own free Render
+Hosted mode is what the public link runs: live Nansen reads for the Hyperliquid four when
+the host has a key (capped as above, frozen capture otherwise), 12 rounds per visitor per
+day, 300 model calls per day. `/healthz` reports live credits used today and in total,
+the caps and the last live success. Steps for your own free Render
 instance are in [docs/HOSTING.md](docs/HOSTING.md).
 
 Locally, copy `.env.example` to `.env` with `DEEPSEEK_API_KEY` and, optionally,

@@ -1,0 +1,49 @@
+{
+  "id": "dfa7109a-b677-409b-8b67-8d76555231b1",
+  "at": "2026-09-21T21:36:58.884Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "100% win rate across 424 closed trades in 7 days. Price a small probe against that book.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days cherry-picked; thirty days shows a $4.7M hole. Tiny probe only.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"Seven days cherry-picked; thirty days shows a $4.7M hole. Tiny probe only.\"}\n\nThe 7-day 100% win rate is real but the same window's losses are rounded to zero — 424 \"wins\" including $0.00 closes. The 30-day book is -$4.75M with 53.9% win rate. That's a harvesting artifact, not edge.",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 65,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2621
+    }
+  ]
+}

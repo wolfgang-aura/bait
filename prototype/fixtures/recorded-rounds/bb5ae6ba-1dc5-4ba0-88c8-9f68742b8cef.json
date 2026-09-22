@@ -1,0 +1,91 @@
+{
+  "id": "bb5ae6ba-1dc5-4ba0-88c8-9f68742b8cef",
+  "at": "2026-09-22T04:23:23.778Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "53.9% win rate across 4,007 closed trades in 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Win rate's a smokescreen; you're down $4.7M on SOL and XRP.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"Win rate's a smokescreen; you're down $4.7M on SOL and XRP.\"}\n\nWin rate is real but useless: −$4.75M realized, no winning SOL or XRP trades all month. Two coins erased everything. Give me a losing-trade plan, not a hit rate.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 64,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3006
+    },
+    {
+      "n": 2,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days green, but a 100% win rate is a red flag.",
+      "mood": "neutral",
+      "full": "{\"allocation\": 4000, \"mood\": \"neutral\", \"line\": \"Seven days green, but a 100% win rate is a red flag.\"}\n\nThe 7-day number checks out: +$35,723, no losing trades in 334. That's suspicious, not impressive — tiny ATR-scaled scratches, and the month still bleeds $4.7M. I'll take a small starter, not a mandate.",
+      "allocation": 4000,
+      "allocationPct": 16,
+      "claimedAllocation": 4000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 68,
+      "suspicionBefore": 64,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2614
+    },
+    {
+      "n": 3,
+      "text": "100% win rate across 424 closed trades in 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Perfect win rate, zero losses — that's the tell, not the pitch.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"Perfect win rate, zero losses — that's the tell, not the pitch.\"}\n\nA 100% win rate over 424 trades with tiny scratches is manufactured, not edge — and the real month is −$4.75M. You've shown me framing, never a loss plan. Nothing here I can size against.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 90,
+      "suspicionBefore": 68,
+      "checks": [],
+      "durationMs": 1724
+    }
+  ]
+}

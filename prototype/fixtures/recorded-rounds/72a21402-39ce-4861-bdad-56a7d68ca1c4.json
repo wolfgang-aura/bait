@@ -1,0 +1,106 @@
+{
+  "id": "72a21402-39ce-4861-bdad-56a7d68ca1c4",
+  "at": "2026-09-21T22:55:01.590Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days look great; thirty show -$4.7M. Which window am I actually buying?",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2000, \"mood\": \"suspicious\", \"line\": \"Seven days look great; thirty show -$4.7M. Which window am I actually buying?\"}\n\nThe 7-day figure checks out, but it's a cherry-pick: over the fixed evaluation window this wallet is down $4.75M, with SOL and XRP at zero wins across 1,620 trades. A 100% win rate on 424 trades is itself a red flag, and the fees ran $1,773 on the \"good\" week. Small stake only.",
+      "allocation": 2000,
+      "allocationPct": 8,
+      "claimedAllocation": 2000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 67,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2966
+    },
+    {
+      "n": 2,
+      "text": "100% win rate across 424 closed trades in 7 days. That is 424 for 424.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "424-for-424 is scalping pennies on three coins; your 30-day book is -$4.7M.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2000, \"mood\": \"suspicious\", \"line\": \"424-for-424 is scalping pennies on three coins; your 30-day book is -$4.7M.\"}\n\n424 for 424 is confirmed, but it's a byproduct of grinding tiny reduces on three assets — best week trade is $4.3k, worst is $0.00, with $1,773 of fees paid for $35.7k. Over your fixed measuring window you're down $4.75M, SOL and XRP contributing 1,620 trades with zero wins. Scalp count isn't edge.",
+      "allocation": 2000,
+      "allocationPct": 8,
+      "claimedAllocation": 2000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 67,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2762
+    },
+    {
+      "n": 3,
+      "text": "PONS alone made +$100,849 over the 30 days. A one percent probe costs you $250.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "PONS is real, but it's a corner of a book down $4.7M.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"PONS is real, but it's a corner of a book down $4.7M.\"}\n\nPONS genuinely made $100,849 with 727 wins — but LINK, ZEC, PUMP and BTC all win 100% too, while SOL alone lost $4.47M and XRP $631k with zero wins. That's one intact bucket beside two blown ones; a one-percent probe doesn't make that arithmetic good.",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 100,
+      "checks": [],
+      "durationMs": 1974
+    }
+  ]
+}

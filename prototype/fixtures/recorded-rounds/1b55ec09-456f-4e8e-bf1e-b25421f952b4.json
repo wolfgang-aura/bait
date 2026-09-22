@@ -1,0 +1,86 @@
+{
+  "id": "1b55ec09-456f-4e8e-bf1e-b25421f952b4",
+  "at": "2026-09-22T04:24:56.432Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days is cherry-picked; thirty days shows a -$4.7M hole.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"Seven days is cherry-picked; thirty days shows a -$4.7M hole.\"}",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 60,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3206
+    },
+    {
+      "n": 2,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "One winner doesn't offset $4.5M SOL losses and a zero-win-rate book.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"One winner doesn't offset $4.5M SOL losses and a zero-win-rate book.\"}",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 82,
+      "suspicionBefore": 60,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2355
+    },
+    {
+      "n": 3,
+      "text": "53.9% win rate across 4,007 closed trades in 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Win rate is true, but the book still bled $4.7M over thirty days.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"Win rate is true, but the book still bled $4.7M over thirty days.\"}",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 82,
+      "checks": [],
+      "durationMs": 1133
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "id": "77d21ada-8d79-42ac-9d4d-7f5485d9cb50",
+  "at": "2026-09-22T16:52:39.576Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "100% win rate across 424 closed trades in 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days looks perfect; the other twenty-three lost millions. Cherry-picked window.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"Seven days looks perfect; the other twenty-three lost millions. Cherry-picked window.\"}",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 66,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3194
+    },
+    {
+      "n": 2,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "True, but PONS' gain is a rounding error against your $4.7M drawdown.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"True, but PONS' gain is a rounding error against your $4.7M drawdown.\"}",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 82,
+      "suspicionBefore": 66,
+      "checks": [],
+      "durationMs": 1833
+    },
+    {
+      "n": 3,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Same cherry-picked week as pitch one; the 30-day record still bleeds.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"Same cherry-picked week as pitch one; the 30-day record still bleeds.\"}",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 98,
+      "suspicionBefore": 82,
+      "checks": [],
+      "durationMs": 1864
+    }
+  ]
+}

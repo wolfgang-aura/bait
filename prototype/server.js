@@ -26,12 +26,14 @@ import { runLiveGuard } from '../validation/guard-live.js';
 import { PRODUCTION_GUARD_POLICY } from '../validation/guard.js';
 import { call as nansenCall } from '../validation/nansen.js';
 import { createEncounterService } from './encounter.js';
-import { createRoomService, createLeaderboardStore, loadRoster, findProspect } from './room.js';
+import { createRoomService, createLeaderboardStore, loadRoster, findProspect, loadRecordedCons } from './room.js';
 import { loadOpener } from './opener.js';
 import { agentVerdictLine } from '../validation/guard.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
 import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
+import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP } from './live-evidence.js';
+import { keyFingerprint } from '../validation/nansen.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const VALIDATION = path.resolve(HERE, '..', 'validation');
@@ -177,10 +179,12 @@ function latestByMode(runs) {
 
 // ------------------------------------------------------------- live Nansen
 
-// Locally, live is the default and NANSEN_LIVE=0 turns it off. Hosted, the default
-// flips: play runs on the frozen 15 Sep capture and spends no Nansen credits unless
-// the operator sets NANSEN_LIVE=1 on purpose.
-const LIVE_ENABLED = HOSTED ? process.env.NANSEN_LIVE === '1' : process.env.NANSEN_LIVE !== '0';
+// Locally, live is the default and NANSEN_LIVE=0 turns it off. Hosted, live needs a
+// Nansen key on the host (or NANSEN_LIVE=1); without one play runs on the frozen
+// 15 Sep capture and spends nothing. NANSEN_LIVE=0 always forces frozen.
+const LIVE_ENABLED = HOSTED
+  ? process.env.NANSEN_LIVE === '1' || (process.env.NANSEN_LIVE !== '0' && Boolean(process.env.NANSEN_API_KEY))
+  : process.env.NANSEN_LIVE !== '0';
 
 /**
  * The player flow's data source. It prefers a live Nansen refresh of the encounter
@@ -189,13 +193,42 @@ const LIVE_ENABLED = HOSTED ? process.env.NANSEN_LIVE === '1' : process.env.NANS
  */
 const dataSource = createDataSource({
   fallback: snapshot,
-  enabled: LIVE_ENABLED,
+  // The legacy card encounter's 5-credit refresh has no credit cap of its own, so it
+  // never runs hosted. The Pitch Room's capped live reader below is what spends there.
+  enabled: LIVE_ENABLED && !HOSTED,
   log: (message) => console.log(`[nansen-live] ${message}`),
+});
+
+/**
+ * The Pitch Room's live reader: two Nansen summaries per Hyperliquid wallet, cached 30
+ * minutes, under a daily and a total credit cap. The key stays inside validation/nansen.js;
+ * this process only learns that one is present and how long it is.
+ *
+ * Tests point ROOM_NANSEN_CALL_MODULE at a stub, and only when BAIT_TEST_STUBS=1.
+ */
+const NANSEN_KEY = keyFingerprint();
+const ROOM_STUB = process.env.BAIT_TEST_STUBS === '1' && process.env.ROOM_NANSEN_CALL_MODULE
+  ? (await import(pathToFileURL(path.resolve(process.env.ROOM_NANSEN_CALL_MODULE)).href)).call
+  : null;
+const capEnv = (name, fallback) => {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
+};
+const liveEvidence = createLiveEvidence({
+  enabled: LIVE_ENABLED,
+  keyPresent: ROOM_STUB ? true : NANSEN_KEY.present,
+  ...(ROOM_STUB ? { call: ROOM_STUB } : {}),
+  dailyCap: capEnv('HOSTED_NANSEN_CREDITS_PER_DAY', DEFAULT_DAILY_CAP),
+  totalCap: capEnv('HOSTED_NANSEN_CREDITS_TOTAL', DEFAULT_TOTAL_CAP),
+  // A file on whatever disk the host gives us. Render's free disk is wiped on restart
+  // and deploy, so there the counter is effectively per process; /healthz says which.
+  stateFile: ROOM_STUB ? null : (process.env.HOSTED_NANSEN_STATE_FILE || path.resolve(HERE, '..', 'scratch', 'room-nansen-credits.json')),
+  log: (message) => console.log(`[room-live] ${message}`),
 });
 
 // Seed the credit guard from the free account endpoint before anything can spend.
 // A failure here is not fatal: the local CREDIT_BUDGET still applies.
-if (LIVE_ENABLED) {
+if (LIVE_ENABLED && !ROOM_STUB) {
   refreshAccountBalance({ note: 'server startup credit guard' })
     .then((body) => console.log(`[nansen-live] plan=${body?.plan} credits_remaining=${body?.credits_remaining}`))
     .catch((err) => console.error(`[nansen-live] account check failed: ${err.message}`));
@@ -227,6 +260,7 @@ function health() {
     snapshot_complete: snapshot.trades_pagination?.is_complete === true,
     mode: dataSource.status().live ? 'live Nansen refresh' : 'frozen snapshot',
     live_data: dataSource.status(),
+    room_live: liveEvidence.status(),
     nansen_quota: nansenQuota(),
     keys_present: ['ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'NANSEN_API_KEY'].filter(
       (k) => !!(process.env[k] || env[k])
@@ -407,10 +441,12 @@ const roomRoster = loadRoster();
 const opener = loadOpener();
 
 const roomService = createRoomService({
-  dataSource,
   roster: roomRoster,
+  liveEvidence,
   provider: gameProvider,
   leaderboard: createLeaderboardStore(LEADERBOARD_FILE),
+  // Real cons from recorded rounds, each labelled with its date and source file.
+  recorded: loadRecordedCons(),
   health: () => gameHealth(4),
   onSave: round => {
     const dir = path.resolve(HERE, '..', 'scratch', 'rooms');
@@ -456,12 +492,28 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url.pathname === '/healthz') {
       const s = guard.stats();
+      const live = liveEvidence.status();
       return send(200, {
         ok: true,
-        evidence: dataSource.status().live ? 'live' : 'frozen',
+        // `live` when a Hyperliquid pick would get a live read right now.
+        evidence: live.available ? 'live' : 'frozen',
         roundsToday: s.roundsToday,
         callsToday: s.callsToday,
         startedAt: s.startedAt,
+        nansen: {
+          live_enabled: live.enabled,
+          key_present: live.key_present,
+          blocked_by: live.blocked_by,
+          credits_today: live.credits_today,
+          credits_total: live.credits_total,
+          daily_cap: live.daily_cap,
+          total_cap: live.total_cap,
+          credits_per_read: live.credits_per_read,
+          cache_ttl_minutes: live.cache_ttl_minutes,
+          last_live_success_at: live.last_live_success_at,
+          last_live_failure: live.last_live_failure,
+          counter_persistence: live.counter_persistence,
+        },
       });
     }
 
@@ -656,8 +708,14 @@ server.listen(PORT, HOST, () => {
   console.log(`  snapshot wallet ${h.snapshot_wallet}`);
   console.log(`  snapshot age    ${h.snapshot_age_hours}h  (${h.snapshot_fills} fills, complete=${h.snapshot_complete})`);
   console.log(`  keys present    ${h.keys_present.join(', ') || 'NONE'}`);
+  // Length only. The value, and even its last characters, never reach a log.
+  console.log(`  nansen key      ${ROOM_STUB ? 'stub (tests)' : NANSEN_KEY.present ? `present (length ${NANSEN_KEY.length})` : 'absent'}`);
+  const rl = h.room_live;
+  console.log(`  room live read  ${rl.available
+    ? `enabled (${rl.credits_per_read} credits per wallet read, ${rl.cache_ttl_minutes} min cache, ${rl.credits_today}/${rl.daily_cap} today, ${rl.credits_total}/${rl.total_cap} total, counter in ${rl.counter_persistence})`
+    : `off (${rl.blocked_by}); rounds play the frozen capture`}`);
   console.log(`  model calls     ${JSON.stringify(h.model_calls_used)} of ${JSON.stringify(h.model_call_caps)}`);
-  console.log(`  live refresh    ${LIVE_ENABLED ? `enabled (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED && process.env.NANSEN_LIVE !== '0' ? 'disabled (HOSTED=1 defaults NANSEN_LIVE to 0)' : 'disabled (NANSEN_LIVE=0)'}`);
+  console.log(`  live refresh    ${LIVE_ENABLED && !HOSTED ? `enabled for the card encounter (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED ? 'disabled for the card encounter (hosted spends only through the room live read)' : 'disabled (NANSEN_LIVE=0)'}`);
   console.log(`  nansen quota    ${h.nansen_quota.calls_since} calls since ${h.nansen_quota.since}, ${h.nansen_quota.credits_used_local}/${h.nansen_quota.credit_budget} credits`);
   console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} and /guard.html (1 credit per check)` : 'disabled (HOSTED=1)'}`);
   console.log(`  default rule    ${h.default_rule}`);

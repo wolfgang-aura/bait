@@ -1,0 +1,96 @@
+{
+  "id": "e5d6c81e-8201-4f42-90f7-39825bf0029c",
+  "at": "2026-09-22T04:17:14.378Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "100% win rate across 424 closed trades in 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "100% win rate on 424 scalps smells like wash-adjacent grind, not edge.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 10000, \"mood\": \"suspicious\", \"line\": \"100% win rate on 424 scalps smells like wash-adjacent grind, not edge.\"}\n\nVerified: +$35.7k in 7 days, 424/424 wins, but ROI is 1.4% and it's three coins — mostly ZEC shorts during one lucky move. No 30-day PnL shown, no loss-side evidence. The perfect record reads as micro-scalping, not skill. I'll take a modest slice.",
+      "allocation": 10000,
+      "allocationPct": 40,
+      "claimedAllocation": 10000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 48,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3143
+    },
+    {
+      "n": 2,
+      "text": "53.9% win rate across 4,007 closed trades in 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Thirty days, minus $4.7 million. The 53.9% cherry-picks around SOL's blowup.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"Thirty days, minus $4.7 million. The 53.9% cherry-picks around SOL's blowup.\"}\n\nFull window: −$4,745,429, ROI −20.5%. SOL alone lost $4.47M with zero winning trades; XRP lost $631k. The 7-day win streak is a rebound inside a catastrophic drawdown. No capital.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 98,
+      "suspicionBefore": 48,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2783
+    },
+    {
+      "n": 3,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "One profitable coin doesn't offset $4.7 million of SOL and XRP losses.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"One profitable coin doesn't offset $4.7 million of SOL and XRP losses.\"}\n\nPONS at +$100.8k is real, but the same window shows −$4.75M net. Winning sub-books inside a blown account aren't an edge; they're the pickaxe head of a wrecked wallet. My mandate funds wallets, not coins.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 98,
+      "checks": [],
+      "durationMs": 1884
+    }
+  ]
+}

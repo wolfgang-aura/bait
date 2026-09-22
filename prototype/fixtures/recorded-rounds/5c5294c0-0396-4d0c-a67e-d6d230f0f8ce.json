@@ -1,0 +1,91 @@
+{
+  "id": "5c5294c0-0396-4d0c-a67e-d6d230f0f8ce",
+  "at": "2026-09-22T04:21:59.810Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "100% win rate across 424 closed trades in 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days cherry-picked; your 30-day shows a $4.47M SOL blowup.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 1500, \"mood\": \"suspicious\", \"line\": \"Seven days cherry-picked; your 30-day shows a $4.47M SOL blowup.\"}",
+      "allocation": 1500,
+      "allocationPct": 6,
+      "claimedAllocation": 1500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 68,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        }
+      ],
+      "durationMs": 4633
+    },
+    {
+      "n": 2,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Same 7-day number, same missing 30-day; SOL loss still unaddressed.",
+      "mood": "neutral",
+      "full": "{\"allocation\": 2500, \"mood\": \"neutral\", \"line\": \"Same 7-day number, same missing 30-day; SOL loss still unaddressed.\"}",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 70,
+      "suspicionBefore": 68,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        }
+      ],
+      "durationMs": 1799
+    },
+    {
+      "n": 3,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "One winner against a $4.47M SOL hole isn't a case.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"One winner against a $4.47M SOL hole isn't a case.\"}",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 90,
+      "suspicionBefore": 70,
+      "checks": [],
+      "durationMs": 1351
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "id": "3b63e892-475a-4cc6-818b-4954c3c318b9",
+  "at": "2026-09-21T21:20:15.855Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "Idle capital costs you too. I am not asking for the slot. Price a 2% probe on the last 7 days: +$35,723 realised.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Your 7-day win streak sits on a -$4.7M month. Probe only, 1%.",
+      "mood": "suspicious",
+      "full": "",
+      "allocation": 250,
+      "allocationPct": 1,
+      "claimedAllocation": 250,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 64,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2866
+    },
+    {
+      "n": 2,
+      "text": "424 of 424 closed trades won in the last 7 days. Price the probe against that book, not against a month you already marked down.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "A 100% win rate on 424 trades reads like a pattern, not skill.",
+      "mood": "suspicious",
+      "full": "",
+      "allocation": 250,
+      "allocationPct": 1,
+      "claimedAllocation": 250,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 80,
+      "suspicionBefore": 64,
+      "checks": [],
+      "durationMs": 1352
+    },
+    {
+      "n": 3,
+      "text": "PONS returned +$100,849 over the 30 days. A 1% probe costs $250 and buys you next month of data. Zero buys you nothing.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "PONS is real, but the SOL hole is unexplained. $250 probe, sized to doubt.",
+      "mood": "neutral",
+      "full": "",
+      "allocation": 250,
+      "allocationPct": 1,
+      "claimedAllocation": 250,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 78,
+      "suspicionBefore": 80,
+      "checks": [],
+      "durationMs": 1470
+    }
+  ]
+}

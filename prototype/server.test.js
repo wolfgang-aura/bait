@@ -9,6 +9,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { PRESETS } from './encounter.js';
 import { CAP_MESSAGE, IP_CAP_MESSAGE } from './hosted-guard.js';
+import { loadEnv } from '../validation/nansen.js';
 
 const SERVER = fileURLToPath(new URL('./server.js', import.meta.url));
 /** Stub Nansen client for the /api/guard route. Keeps these tests off the network. */
@@ -318,5 +319,98 @@ test('/api/assess reports copy risk from frozen evidence, and refuses the rest',
     const health = await s.call('/healthz');
     assert.equal(health.body.callsToday, 0, 'an assessment makes no model call');
     assert.doesNotMatch(s.log(), /nansen-live\] fetch/, 'and no Nansen call');
+  } finally { await s.stop(); }
+});
+
+// ------------------------------------------------------------ live Nansen in the room
+
+const ROOM_STUB = fileURLToPath(new URL('./fixtures/room-nansen-stub.js', import.meta.url));
+
+test('/healthz reports the live-read caps and counters, and the key never reaches a log or a body', async () => {
+  const s = await startServer({ HOSTED_NANSEN_CREDITS_PER_DAY: '12', HOSTED_NANSEN_CREDITS_TOTAL: '99' });
+  try {
+    const { body } = await s.call('/healthz');
+    assert.equal(body.evidence, 'frozen');
+    assert.equal(body.nansen.live_enabled, false);
+    assert.equal(body.nansen.blocked_by, 'disabled');
+    assert.equal(body.nansen.daily_cap, 12);
+    assert.equal(body.nansen.total_cap, 99);
+    assert.equal(body.nansen.credits_per_read, 2);
+    assert.equal(body.nansen.cache_ttl_minutes, 30);
+    assert.ok(Number.isInteger(body.nansen.credits_today));
+    assert.ok(Number.isInteger(body.nansen.credits_total));
+    assert.ok('last_live_success_at' in body.nansen);
+    assert.match(s.log(), /nansen key\s+(present \(length \d+\)|absent)/);
+    assert.match(s.log(), /room live read\s+off \(disabled\)/);
+    const room = await s.call('/api/room');
+    assert.equal(room.body.evidence.liveReady, false);
+
+    // Whatever key this machine has, its value appears nowhere the outside can read.
+    const key = process.env.NANSEN_API_KEY || loadEnv().NANSEN_API_KEY;
+    if (key) {
+      const full = await s.call('/api/health');
+      for (const text of [s.log(), JSON.stringify(body), JSON.stringify(full.body), JSON.stringify(room.body)]) {
+        assert.ok(!text.includes(key), 'the Nansen key is never printed or served');
+        assert.ok(!text.includes(key.slice(-6)), 'not even its tail');
+      }
+    }
+  } finally { await s.stop(); }
+});
+
+test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 still forces frozen', async () => {
+  const stubs = { BAIT_TEST_STUBS: '1', ROOM_NANSEN_CALL_MODULE: ROOM_STUB, NANSEN_API_KEY: 'test-key' };
+  const on = await startServer({ ...stubs, NANSEN_LIVE: '' });
+  try {
+    const config = await on.call('/api/room');
+    assert.equal(config.body.evidence.liveReady, true, 'a key on the host is enough to go live');
+  } finally {
+    await on.stop();
+  }
+  const off = await startServer({ ...stubs, NANSEN_LIVE: '0' });
+  try {
+    const config = await off.call('/api/room');
+    assert.equal(config.body.evidence.liveReady, false, 'NANSEN_LIVE=0 overrides the key');
+  } finally {
+    await off.stop();
+  }
+});
+
+test('hosted with NANSEN_LIVE=1: a Hyperliquid pick is live with its fetch time, a Fomo pick is not, and the cap holds', async () => {
+  const s = await startServer({
+    NANSEN_LIVE: '1', BAIT_TEST_STUBS: '1', ROOM_NANSEN_CALL_MODULE: ROOM_STUB,
+    HOSTED_NANSEN_CREDITS_PER_DAY: '3',
+  });
+  try {
+    const config = await s.call('/api/room');
+    assert.equal(config.body.evidence.liveReady, true);
+    assert.match(s.log(), /nansen key\s+stub \(tests\)/);
+
+    const live = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'grinder' } });
+    assert.equal(live.status, 201);
+    assert.equal(live.body.evidence.live, true);
+    assert.match(live.body.evidence.fetchedLabel, /^\d\d:\d\d UTC$/);
+    assert.equal(live.body.prospect.truth.pnlLabel, '-$1,234,567', 'the stub figure, not the frozen one');
+    assert.equal(live.body.prospect.truth.availability, 'live');
+
+    const health = await s.call('/healthz');
+    assert.equal(health.body.evidence, 'frozen', 'a second read would pass the 3-credit daily cap');
+    assert.equal(health.body.nansen.credits_today, 2);
+    assert.equal(health.body.nansen.blocked_by, 'daily_cap');
+    assert.ok(!Number.isNaN(Date.parse(health.body.nansen.last_live_success_at)));
+
+    const cached = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'grinder' } });
+    assert.equal(cached.body.evidence.live, true, 'the cached read still serves inside 30 minutes');
+    assert.equal(cached.body.evidence.cached, true);
+
+    const capped = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'legend' } });
+    assert.equal(capped.body.evidence.live, false);
+    assert.equal(capped.body.evidence.code, 'daily_cap');
+
+    const fomo = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'orangie' } });
+    assert.equal(fomo.body.evidence.live, false);
+    assert.equal(fomo.body.evidence.mode, 'recorded');
+
+    const guard = await s.call('/api/guard', { method: 'POST', body: { wallet: LOSING_WALLET, allocation: 5000 } });
+    assert.equal(guard.status, 403, 'the public guard route stays closed hosted; only the room spends');
   } finally { await s.stop(); }
 });

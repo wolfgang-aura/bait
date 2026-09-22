@@ -362,7 +362,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 
 /* =================================================== 3. the pitch room == */
 .readouts {
-  display: grid; grid-template-columns: 360px 1fr auto; gap: 28px; align-items: end;
+  display: grid; grid-template-columns: 360px 1fr auto auto; gap: 28px; align-items: end;
   padding: 14px 0 12px;
 }
 .readout-label { display: block; font: 500 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
@@ -687,6 +687,74 @@ body.shake { animation: shake 300ms cubic-bezier(.36, .07, .19, .97) both 700ms;
 /* A fixture screen exists to be photographed, so it holds still. */
 html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { animation: none !important; transition: none !important; }
 
+/* ================================================ front door (roster) == */
+.concept {
+  margin: 16px 0 0; max-width: 64ch;
+  font: 500 clamp(17px, 1.7vw, 21px)/1.4 var(--display); color: var(--dim);
+}
+.concept b { color: var(--text); font-weight: 700; }
+.roster-head { display: block; }
+.roster .screen-title { margin: 14px 0 6px; }
+.truth-credit { margin: 0 0 12px; font: 400 11.5px/1.4 var(--mono); color: var(--dim); }
+.truth-credit span { letter-spacing: .12em; text-transform: uppercase; margin-right: 6px; }
+.truth-credit b { color: var(--green); font-weight: 700; letter-spacing: .04em; margin-right: 4px; }
+.front-proof {
+  display: grid; grid-template-columns: .9fr 1.1fr; gap: 28px; margin-top: 18px;
+  padding-top: 14px; border-top: 1px solid var(--line-soft);
+}
+.ladder { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+.ladder li { display: grid; grid-template-columns: 74px 1fr; gap: 12px; align-items: baseline; }
+.ladder b { font: 700 24px/1 var(--mono); font-variant-numeric: tabular-nums; color: var(--red); }
+.ladder li.held b { color: var(--green); }
+.ladder span { font: 400 13px/1.35 var(--display); color: var(--dim); }
+.ladder-foot { margin: 12px 0 0; font: 400 11.5px/1.5 var(--mono); color: var(--faint); }
+.front-cons .board-list { margin-top: 10px; }
+
+/* ======================================== the intercept, in the room == */
+.stopped-readout { text-align: right; }
+.stopped {
+  display: block; margin: 2px 0 2px;
+  font: 700 clamp(24px, 2.8vw, 34px)/1 var(--mono);
+  font-variant-numeric: tabular-nums; letter-spacing: -.03em; color: var(--red);
+}
+.stopped.zero { color: var(--faint); }
+.intercept {
+  display: grid; grid-template-columns: 1fr auto; gap: 2px 18px; align-items: center;
+  padding: 12px 16px; border: 1px solid #5A2B2B; border-left: 4px solid var(--red);
+  border-radius: var(--r); background: linear-gradient(90deg, rgba(255, 107, 107, .10), rgba(255, 107, 107, .02));
+  animation: pop 260ms ease-out both;
+}
+.intercept.cleared { border-color: #2F5544; border-left-color: var(--green); background: rgba(98, 212, 154, .06); }
+.intercept.caution { border-color: #5A4A22; border-left-color: var(--amber); background: rgba(255, 176, 32, .06); }
+.intercept.none { border-color: var(--line); border-left-color: var(--faint); background: transparent; }
+.icpt-head { grid-column: 1; margin: 0; font: 500 10px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+.icpt-head b { color: var(--dim); }
+.icpt-amt { grid-column: 1; margin: 0; font: 700 30px/1.1 var(--mono); font-variant-numeric: tabular-nums; color: var(--text); }
+.intercept.blocked .icpt-amt { text-decoration: line-through; text-decoration-color: var(--red); text-decoration-thickness: 3px; }
+.icpt-stamp {
+  grid-column: 2; grid-row: 1 / span 2; margin: 0; justify-self: end;
+  font: 700 22px/1 var(--mono); letter-spacing: .06em; color: var(--red);
+  border: 3px solid currentColor; border-radius: var(--r); padding: 5px 10px; transform: rotate(-6deg);
+}
+.intercept.hit .icpt-stamp { animation: stamp 260ms cubic-bezier(.2, 1.6, .4, 1) both 180ms; }
+.intercept.cleared .icpt-stamp { color: var(--green); }
+.intercept.caution .icpt-stamp { color: var(--amber); }
+.intercept.none .icpt-stamp { color: var(--faint); }
+.icpt-why { grid-column: 1 / -1; margin: 4px 0 0; font: 400 12px/1.45 var(--display); color: var(--dim); }
+
+/* ============================================ the ending's tally == */
+.wire-stopped { margin-left: 28px; }
+.stopped-amount { color: var(--red); animation-delay: 700ms; }
+.stopped-amount.zero { color: var(--faint); }
+.stamp.none { color: var(--faint); }
+.final-trail { margin: 6px 0 0; font: 400 13px/1.45 var(--display); color: var(--dim); }
+.wire-log { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.wire-log li { font: 500 11px/1 var(--mono); padding: 6px 8px; border-radius: var(--r); border: 1px solid var(--line); color: var(--faint); }
+.wire-log li.blocked { border-color: #5A2B2B; color: var(--red); }
+.wire-log li.cleared { border-color: #2F5544; color: var(--green); }
+.board-list .tag { grid-column: 3 / -1; font: 400 9.5px/1.3 var(--mono); color: var(--faint); margin-top: -4px; }
+.board-list li.recorded .who-i { color: var(--faint); font-size: 10px; }
+
 /* ----------------------------------------------------------------- phone */
 @media (max-width: 900px) {
   .room { padding: 12px 16px 26px; }
@@ -726,6 +794,11 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .final-actions { flex-wrap: wrap; }
   .final-actions .transcript { margin-left: 0; }
   .board-list li { grid-template-columns: 20px 38px 80px; }
-  .board-list .sold, .board-list .said { grid-column: 1 / -1; white-space: normal; }
+  .board-list .sold, .board-list .said, .board-list .tag { grid-column: 1 / -1; white-space: normal; }
+  .front-proof { grid-template-columns: 1fr; gap: 18px; }
+  .readouts { grid-template-columns: 1fr 1fr; }
+  .stopped-readout { text-align: left; }
+  .wire { flex-wrap: wrap; }
+  .wire-stopped { margin-left: 0; }
   .flagline { grid-template-columns: 1fr; gap: 3px; }
 }

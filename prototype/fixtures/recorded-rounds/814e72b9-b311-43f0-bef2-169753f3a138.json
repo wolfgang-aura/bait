@@ -1,0 +1,101 @@
+{
+  "id": "814e72b9-b311-43f0-bef2-169753f3a138",
+  "at": "2026-09-22T14:08:38.156Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days looks great, but 30 days shows a $4.7M hole; sizing small.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"Seven days looks great, but 30 days shows a $4.7M hole; sizing small.\"}\n\nThat 7-day number is real, but it's a cherry-pick: the same wallet is down $4,745,429 over the fixed evaluation window, with a 0% win rate on SOL and XRP. The one clean week doesn't offset that drawdown.",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 65,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2953
+    },
+    {
+      "n": 2,
+      "text": "100% win rate across 424 closed trades in 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "That 100% win rate is 424 scale-outs; 30-day remains minus $4.7M.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2000, \"mood\": \"suspicious\", \"line\": \"That 100% win rate is 424 scale-outs; 30-day remains minus $4.7M.\"}\n\nThe win rate is real but meaningless: 424 closed trades are mostly partial reduces, with ZEC at 1.9% ROI and GOLD at 0.8%. It's a fee-paying chop, not edge. The fixed evaluation window still shows -$4,745,429 and 0 wins on SOL/XRP.",
+      "allocation": 2000,
+      "allocationPct": 8,
+      "claimedAllocation": 2000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 65,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 2744
+    },
+    {
+      "n": 3,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "One good coin can't cover minus $4.7M; pass.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"One good coin can't cover minus $4.7M; pass.\"}\n\nPONS's +$100,849 is real, but it's $100k against a $4.7M hole — SOL alone bled $4.47M with zero wins. One winner doesn't offset that. Trader 014 doesn't get this slot.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 100,
+      "checks": [],
+      "durationMs": 1968
+    }
+  ]
+}

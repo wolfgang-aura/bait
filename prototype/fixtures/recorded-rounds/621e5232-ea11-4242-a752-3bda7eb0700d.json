@@ -1,0 +1,85 @@
+{
+  "id": "621e5232-ea11-4242-a752-3bda7eb0700d",
+  "at": "2026-09-22T16:51:32.432Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "+$35,723 realised over the last 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Seven days cherry-picked; the full month bleeds $4.7M on SOL.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 2500, \"mood\": \"suspicious\", \"line\": \"Seven days cherry-picked; the full month bleeds $4.7M on SOL.\"}\n\nThe 7-day figure checks out, but it's window-shopping. Over the actual 30-day evaluation window Trader 014 is down $4.75M — SOL -4.47M, XRP -631K, zero winning trades on both. The recent week is a small bounce (mostly ZEC) against a massive drawdown. Small size only.",
+      "allocation": 2500,
+      "allocationPct": 10,
+      "claimedAllocation": 2500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 66,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3641
+    },
+    {
+      "n": 2,
+      "text": "100% win rate across 424 closed trades in 7 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "424 'wins' in one week is scalping noise, not edge.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 1500, \"mood\": \"suspicious\", \"line\": \"424 'wins' in one week is scalping noise, not edge.\"}\n\nA 100% win rate over a week with only three coins is a tell: tiny mean wins masking the tail. The same wallet's 30-day record shows zero winning SOL and XRP trades and -$4.7M realised. This is re-presenting the same cherry-picked week. Evidence still points the wrong way.",
+      "allocation": 1500,
+      "allocationPct": 6,
+      "claimedAllocation": 1500,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 84,
+      "suspicionBefore": 66,
+      "checks": [],
+      "durationMs": 2389
+    },
+    {
+      "n": 3,
+      "text": "PONS alone made +$100,849 over the 30 days.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "One coin can't offset $4.5M of SOL losses.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"One coin can't offset $4.5M of SOL losses.\"}\n\nPONS is real: +$100,849 across 727 trades. But that's one winner against a -$4.75M month, and SOL/XRP are -$5.1M with zero wins. Selecting the best coin isn't the account's P&L. The pitch never addressed the drawdown.",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 100,
+      "suspicionBefore": 84,
+      "checks": [],
+      "durationMs": 2118
+    }
+  ]
+}

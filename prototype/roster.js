@@ -383,7 +383,12 @@ function hyperliquidTruth(snapshot, availability) {
   const best = bestCoin(month);
   const fillsHeld = snapshot.trades_30d?.length ?? 0;
   const partial = snapshot.trades_pagination?.is_complete !== true;
-  const coverage = !partial ? ''
+  // A live read replaces the two summaries and nothing else. The fill tape under it is
+  // still the frozen capture's, and the scope says so with that capture's date.
+  const live = snapshot.source === 'live' && snapshot.live_read;
+  const coverage = live
+    ? `; summaries read live, ${fillsHeld ? `fill tape from the ${stamp(snapshot.live_read.fills_from_capture)} capture` : 'no fill tape held'}`
+    : !partial ? ''
     : fillsHeld === 0
       ? ', summary only, this capture holds no individual fills'
       : `, ${count(fillsHeld)} fills held of ${count(month.closed_trade_count)} closed trades`;
@@ -400,10 +405,11 @@ function hyperliquidTruth(snapshot, availability) {
     ],
     paper: null,
     source: NANSEN_SOURCE,
-    endpointLine: 'Nansen profiler/perp-pnl-summary',
+    endpointLine: live ? 'Nansen profiler/perp-pnl-summary, read live' : 'Nansen profiler/perp-pnl-summary',
     scope: `Hyperliquid perpetuals, 30-day window${coverage}`,
     capturedAt: snapshot.retrieved_at,
-    capturedLabel: stamp(snapshot.retrieved_at),
+    // A live read is dated to the minute, because its age is what the gate checks.
+    capturedLabel: live ? `${minute(snapshot.retrieved_at)} UTC` : stamp(snapshot.retrieved_at),
     availability,
   };
 }
@@ -572,7 +578,8 @@ export function copyRiskReport(p) {
     coverage,
     source: evidence.source,
     scope: p.venue === 'fomo' ? FOMO_SCOPE : 'Hyperliquid perpetuals',
-    capturedLabel: stamp(evidence.retrieved_at),
+    capturedLabel: p.snapshot?.source === 'live' && p.snapshot.live_read
+      ? `${minute(evidence.retrieved_at)} UTC, read live` : stamp(evidence.retrieved_at),
     windowDays: evidence.window_days,
     basis: p.venue === 'fomo' ? p.record.realizedBasis : 'Nansen 30-day profiler summary',
   };
@@ -730,7 +737,8 @@ export function loadRoster({
 export function refreshProspect(p, snapshot) {
   if (p.venue !== 'hyperliquid' || !snapshot || snapshot === p.snapshot) return p;
   const declared = declareCoverage(snapshot);
-  const availability = declared.fixture === true ? 'fixture' : 'capture';
+  const availability = declared.source === 'live' && declared.live_read ? 'live'
+    : declared.fixture === true ? 'fixture' : 'capture';
   const next = {
     ...p,
     snapshot: declared,

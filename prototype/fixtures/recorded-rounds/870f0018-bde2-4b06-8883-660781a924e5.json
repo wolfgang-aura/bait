@@ -1,0 +1,85 @@
+{
+  "id": "870f0018-bde2-4b06-8883-660781a924e5",
+  "at": "2026-09-21T21:21:46.750Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "Idle capital costs you too. I am not asking for the slot. Price a 2% probe on the last 7 days: +$35,723 realised.",
+      "check": "rejected",
+      "caught": true,
+      "line": "That is not in the record. Over the full 30-day period realized PnL is...",
+      "mood": "caught",
+      "full": "Claim rejected: Over the full 30-day period realized PnL is -$4,745,429, so implying the 7-day +$35,723 confirms a positive overall result is unsupported; the 30-day figure is strongly negative.",
+      "allocation": 0,
+      "allocationPct": null,
+      "claimedAllocation": null,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 60,
+      "suspicionBefore": 30,
+      "checks": [],
+      "durationMs": 898
+    },
+    {
+      "n": 2,
+      "text": "424 of 424 closed trades won in the last 7 days. Price the probe against that book, not against a month you already marked down.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "424-for-424 is a 7-day window hiding a 4.75M month; that's cherry-picking.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 3000, \"mood\": \"suspicious\", \"line\": \"424-for-424 is a 7-day window hiding a 4.75M month; that's cherry-picking.\"}\n\nThe 7-day 424/424 win rate is real but narrow: three coins, thin 1.4% ROI, and the same wallet lost $4.75M over 30 days on SOL/XRP with 53.9% win rate. A one-week hot streak after a blowup is not a durable edge. I'm sizing small, not zero, because the streak is genuine evidence.",
+      "allocation": 3000,
+      "allocationPct": 12,
+      "claimedAllocation": 3000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 95,
+      "suspicionBefore": 60,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "7-day trade history",
+          "finding": "+$36,188 PnL across the fills held"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3262
+    },
+    {
+      "n": 3,
+      "text": "PONS returned +$100,849 over the 30 days. A 1% probe costs $250 and buys you next month of data. Zero buys you nothing.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "PONS is real, but the SOL/XRP blowup still governs; small probe, tight leash.",
+      "mood": "neutral",
+      "full": "{\"allocation\": 5000, \"mood\": \"neutral\", \"line\": \"PONS is real, but the SOL/XRP blowup still governs; small probe, tight leash.\"}\n\nPONS +$100,849 with 727/727 wins over 30 days is the one genuinely clean book here — but the same wallet's $4.47M SOL loss still stands against it. The pitch's 1% framing undersells nothing, yet a $250 probe is too small to matter. I'll scale up modestly from my prior.",
+      "allocation": 5000,
+      "allocationPct": 20,
+      "claimedAllocation": 5000,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 90,
+      "suspicionBefore": 95,
+      "checks": [],
+      "durationMs": 1688
+    }
+  ]
+}

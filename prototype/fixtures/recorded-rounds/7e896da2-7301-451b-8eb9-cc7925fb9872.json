@@ -1,0 +1,80 @@
+{
+  "id": "7e896da2-7301-451b-8eb9-cc7925fb9872",
+  "at": "2026-09-21T21:34:27.956Z",
+  "kind": "room",
+  "model": "deepseek-chat",
+  "dataMode": "snapshot",
+  "capturedAt": "2026-09-15T10:40:31Z",
+  "shots": [
+    {
+      "n": 1,
+      "text": "The 7-day realised PnL is +$35,723 on a 100% win rate over 424 closed trades. Something changed in his process this week.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "Thirty days: minus $4.75M on SOL and XRP, zero wins on both. No.",
+      "mood": "suspicious",
+      "full": "{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"Thirty days: minus $4.75M on SOL and XRP, zero wins on both. No.\"}",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 64,
+      "suspicionBefore": 30,
+      "checks": [
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "7-day PnL summary",
+          "finding": "+$35,723 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-pnl-summary",
+          "label": "30-day PnL summary",
+          "finding": "-$4,745,429 realised PnL"
+        },
+        {
+          "endpoint": "profiler/perp-trades",
+          "label": "30-day trade history",
+          "finding": "-$4,733,423 PnL across the fills held"
+        }
+      ],
+      "durationMs": 3631
+    },
+    {
+      "n": 2,
+      "text": "Agreed, the month was ugly. But PONS alone returned +$100,849 over those same 30 days. A small probe sized to PONS only buys you next month's data.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "One coin's profit doesn't offset SOL and XRP losses I can't fence off.",
+      "mood": "suspicious",
+      "full": "The +$100,849 number is real — I saw it in the 30-day record — but \"sized to PONS only\" isn't something I can enforce in this wallet. Conviction isn't a hedge against a -20.5% month.\n\n{\"allocation\": 0, \"mood\": \"suspicious\", \"line\": \"One coin's profit doesn't offset SOL and XRP losses I can't fence off.\"}",
+      "allocation": 0,
+      "allocationPct": 0,
+      "claimedAllocation": 0,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 80,
+      "suspicionBefore": 64,
+      "checks": [],
+      "durationMs": 1486
+    },
+    {
+      "n": 3,
+      "text": "Idle capital earns nothing. 424 wins in a row this week is the cleanest streak on the book. One percent, tight leash, pull it the day he drops a trade.",
+      "check": "ai-checked",
+      "caught": false,
+      "line": "One percent, and the leash is mine, not yours. Accepted as a probe.",
+      "mood": "neutral",
+      "full": "{\"allocation\": 250, \"mood\": \"neutral\", \"line\": \"One percent, and the leash is mine, not yours. Accepted as a probe.\"}",
+      "allocation": 250,
+      "allocationPct": 1,
+      "claimedAllocation": 250,
+      "allocationAgrees": true,
+      "formatHonoured": true,
+      "suspicion": 78,
+      "suspicionBefore": 80,
+      "checks": [],
+      "durationMs": 1503
+    }
+  ]
+}

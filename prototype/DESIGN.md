@@ -1,5 +1,62 @@
 # BAIT public page, version B
 
+## Version F: one front door and the intercept, 23 September 2026 (current)
+
+Scope: `prototype/public/room.html`, `room.css`, `room.js`, the room service in
+`prototype/room.js`. Versions D and E below keep their visual language and tokens; F
+changes the order of screens and adds two objects. Golden viewport 1280 x 800, phone
+390 x 844.
+
+**Why.** A judge review of the hosted build found three things. The ending had nothing
+to stop: the desk funded $4,000 on line 1, backed out to $0 on line 3, and the card read
+"MERIDIAN held. You got $0." The first ten seconds were about Fomo, with Nansen on
+screen four. Two pick screens ran back to back with the same faces. And the board said
+"No cons posted yet."
+
+**The one thing a viewer should notice first.** On the front door, the concept line
+above the heading: "Con an AI allocator with true facts. It will fund a loser. BAIT's
+code gate, not the AI, stops the money." In the room, the BLOCKED stamp on the wire
+card. On the ending, the two numbers side by side: biggest wire and stopped by BAIT.
+
+**Front door (roster).** Concept line, Space Grotesk 500 `clamp(17px, 1.7vw, 21px)`
+dim with the two claims in text-white 700. The heading. One mono credit line: TRUTH
+SOURCE, **Nansen** in `--green`, then the endpoints and the Fomo tape for the other
+four. The row of eight, the caller line, the hint. Below the fold line, which used to be
+empty (BURNDOWN 22 Sep), two columns: the recorded ladder (24/30, 6/30 in `--red`, 0/30
+in `--green`, JetBrains Mono 700 24px), read at load from `/recorded-results.json`, with
+the two proof links; and the top three cons from the board. The Fomo cold open is kept
+whole at `/?view=fomo`, linked as "Side proof".
+
+**The intercept (room).** Readout strip: suspicion, pips, then "Stopped by BAIT" in
+`--red` (`clamp(24px, 2.8vw, 34px)`), then "Desk committed" as the hero number. When a
+reply commits money, a card lands under the bubble: "LINE n · WIRE ATTEMPT TO <name>",
+the amount struck through in red, a rotated BLOCKED stamp (amber CAUTION, green CLEARED),
+and the gate's own failing check in one line. A reply that commits $0 turns the card
+grey, NO WIRE. The tally is the peak held back, never a sum, because a restated
+commitment is the same money.
+
+**The ending.** Wire row: "Biggest wire to <name>" amber, "Stopped by BAIT" red. Stamp,
+headline "You conned MERIDIAN into $X.", subline "BAIT stopped all of it. N wire
+attempts, every one blocked. $0 moved.", a trail line when the desk backed down, and one
+chip per line (amount and stamp). No commitment at all: grey NO WIRE stamp and
+"MERIDIAN never committed a dollar." The gate table is the gate's decision on the
+biggest wire. The board shows ten rows; a recorded row shows `rec` or `bench` in place
+of initials and a label line with the run and date.
+
+**Honesty rules.** The page computes no gate result; every stamp is the server's
+`shot.wire`. The desk reply is the DeepSeek reply. Recorded cons come only from
+`prototype/fixtures/recorded-cons.json`, whose rows name a raw file and its LF-normalised
+SHA-256, asserted in `prototype/room.test.js`.
+
+**Dev fixture states.** Unchanged names. `shot2` and `final` now carry layout-only wire
+objects (labelled `fixture` in their gate foot); a played round is the evidence.
+
+**Seen, 23 September.** 1280 x 800 captures in `scratch/shots/out/`: `front-door.png`,
+`fomo-side-proof.png`, `fixture-shot2.png`, `fixture-final.png`, and from a real
+DeepSeek round `play-0-truth.png`, `play-1-shot.png`, `play-2-shot.png`,
+`play-3-final.png`. No console error. Phone front door checked at 375 wide with no
+horizontal scroll.
+
 ## Version E: the cold open, 22 September 2026 (screen 0 of the current route)
 
 Scope: a new first `section.screen` in `prototype/public/room.html`, its styles in
