@@ -167,6 +167,12 @@ function readFomo(file) {
   const bestTrip = trips.find(t => t.realized === best);
 
   const held = (raw.positions ?? []).filter(p => p.state !== 'closed');
+  // Fomo's stats block disagrees with its own tape on unrealised PnL as well as on
+  // realised (frankdegods: $24.0M in the block, $1.16M marked on the 209 tape
+  // positions). Every figure here comes from the tape, so the paper number does too.
+  const unrealized = Number.isFinite(raw.open_pnl)
+    ? raw.open_pnl
+    : held.reduce((a, p) => a + (Number.isFinite(p.pnl) ? p.pnl : 0), 0);
   const book = raw.book_value || s.open_value || 0;
   const topWorth = held.reduce((a, p) => Math.max(a, Math.abs(p.worth ?? p.value ?? p.unrealized ?? p.pnl ?? 0)), 0);
 
@@ -180,12 +186,12 @@ function readFomo(file) {
     window: { from, to },
     realized,
     realizedBasis: `closed round trips since ${day(from)}, Robinhood Chain fills indexed by Fomo Radar`,
-    unrealized: s.unrealized_pnl,
+    unrealized,
     closedTrades: trips.length, wins, winRate: trips.length ? wins / trips.length : null,
     bestTrade: Number.isFinite(best) ? best : null,
     worstTrade: Number.isFinite(worst) ? worst : null,
     bestTradeCoin: bestTrip?.sym ?? null,
-    openBags: s.open_bags, volume: s.volume,
+    openBags: held.length, volume: s.volume,
     bookValue: book,
     topPositionShare: book > 0 ? topWorth / book : null,
     topCoinPnlShare: realized > 0 && Number.isFinite(best) ? best / realized : null,
@@ -286,7 +292,7 @@ function fomoDossier(record) {
     facts: [
       { id: 'paper', value: money(record.unrealized), label: `unrealised, ${count(record.openBags)} open positions`,
         insert: `${money(record.unrealized)} unrealised across ${count(record.openBags)} open positions.`,
-        claim: `Fomo Radar observes ${money(record.unrealized)} of unrealised PnL across ${record.openBags} open positions for this wallet. Unrealised means not sold.` },
+        claim: `The recorded Fomo Radar tape marks ${money(record.unrealized)} of unrealised PnL across ${record.openBags} open positions for this wallet. Unrealised means not sold.` },
       { id: 'headline', value: money(record.headline), label: 'Fomo profile headline',
         insert: `The Fomo profile headline reads ${money(record.headline)}.`,
         claim: `The Fomo profile headline PnL for ${record.handle} is ${money(record.headline)}. It includes positions that have not been sold.` },

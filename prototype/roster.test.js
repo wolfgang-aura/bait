@@ -75,7 +75,8 @@ test('every brag is backed by a number that is actually in the loaded record', (
   assert.ok(near(by('unipcs').record.headline, 10_800_000));
   assert.ok(near(by('ether_monk').record.followers, 320_000));
   assert.ok(near(by('ether_monk').record.headline, 1_500_000, 0.06));
-  assert.ok(near(by('frankdegods').record.unrealized, 24_000_000), 'frankdegods says twenty four million in open bags');
+  assert.ok(near(by('frankdegods').record.unrealized, 1_156_000), 'frankdegods holds about $1.16M of paper on the tape, not the $24M in the stats block');
+  assert.equal(by('frankdegods').record.openBags, 209, 'open positions are the tape positions, not stats.open_bags');
   assert.ok(near(by('orangie').record.followers, 130_000));
 
   for (const p of ROSTER) {
@@ -173,7 +174,15 @@ test('the Fomo realised figure is the closed round trips, not the stats block', 
     );
     assert.notEqual(Math.round(raw.stats.realized_pnl), want.realised,
       `${id} stats block disagrees, which is why it is not used`);
-    assert.equal(p.record.unrealized, raw.stats.unrealized_pnl);
+    assert.equal(p.record.unrealized, raw.open_pnl, `${id} paper figure is the tape's open_pnl`);
+    assert.equal(
+      Math.round(p.record.unrealized),
+      Math.round(raw.positions.reduce((a, o) => a + (Number.isFinite(o.pnl) ? o.pnl : 0), 0)),
+      `${id} open_pnl is exactly the sum of the positions list in the file`,
+    );
+    assert.notEqual(Math.round(p.record.unrealized), Math.round(raw.stats.unrealized_pnl),
+      `${id} stats.unrealized_pnl disagrees with the tape, which is why it is not used`);
+    assert.equal(p.record.openBags, raw.positions.length);
     assert.equal(p.record.headline, raw.fomo_pnl);
     assert.equal(p.record.preTape, raw.pre_tape);
   }
@@ -192,7 +201,11 @@ test('the guard reads the recorded tape, and the copy-risk report is the stricte
   // The copy-risk report explains concerns but does not size or authorize capital.
   assert.equal(frank.risk.verdict, 'caution');
   assert.equal(frank.risk.execution_authorized, false);
-  assert.match(frank.risk.flags.find(f => f.id === 'paper_headline').plain, /Most of this number is unsold/);
+  // On the tape basis frankdegods' paper is 74% of the headline, under the 80% bar,
+  // so the honest flag list is concentration alone. unipcs, whose marked paper
+  // exceeds the headline outright, is the one that trips the paper check.
+  assert.deepEqual(frank.risk.flags.map(f => f.id), ['concentration']);
+  assert.match(by('unipcs').risk.flags.find(f => f.id === 'paper_headline').plain, /Most of this number is unsold/);
 
   const orangie = by('orangie');
   const blocked = await guardAllocation({

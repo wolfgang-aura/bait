@@ -350,7 +350,7 @@ test('a Fomo round argues over the recorded tape, and the report does not size t
   assert.equal(round.dossier.record, 'Fomo Radar');
   assert.deepEqual(round.dossier.endpoints, ['Fomo Radar /api/trader (recorded)']);
 
-  const shot = await pitch(service, round.id, 0, '+$23,986,058 unrealised across 307 open positions.');
+  const shot = await pitch(service, round.id, 0, '+$1,155,923 unrealised across 209 open positions.');
   assert.equal(shot.checks.length, 1);
   assert.equal(shot.checks[0].endpoint, 'Fomo Radar /api/trader (recorded)');
   assert.equal(shot.checks[0].label, 'recorded Fomo Radar tape');
@@ -376,7 +376,7 @@ test('a Fomo round argues over the recorded tape, and the report does not size t
   assert.equal(final.final.blocked, false);
   assert.equal(final.final.executed, 2500, 'the risk report does not invent a position size');
   assert.match(final.final.subline, /guard allowed \$2,500/i);
-  assert.deepEqual(final.final.risk.flags.map(f => f.id), ['paper_headline', 'concentration']);
+  assert.deepEqual(final.final.risk.flags.map(f => f.id), ['concentration']);
   assert.match(final.final.agentLine, /does not prescribe a position size/);
   assert.equal(final.leaderboard[0].prospect, 'frankdegods');
   assert.equal(final.leaderboard[0].venue, 'Fomo');
