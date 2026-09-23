@@ -306,7 +306,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 }
 .ticker {
   position: absolute; top: 14px; left: 0; width: 100%;
-  font: 400 10.5px/1 var(--mono); letter-spacing: .24em; color: #33445A; white-space: nowrap;
+  font: 400 10.5px/1 var(--mono); letter-spacing: .24em; color: #4F4A40; white-space: nowrap;
 }
 .ticker span { display: inline-block; padding-left: 6%; animation: slide 46s linear infinite; }
 
@@ -524,7 +524,7 @@ body.shake { animation: shake 300ms cubic-bezier(.36, .07, .19, .97) both 700ms;
 .mouth { stroke: var(--ink); stroke-width: 7; stroke-linecap: round; fill: none; }
 .mouth-fill { fill: var(--ink); }
 .tooth { fill: #E8E2DA; }
-.sweat { fill: #9FD8F0; opacity: .85; }
+.sweat { fill: #E9C98A; opacity: .85; }
 
 .x { opacity: 0; transition: opacity 150ms linear; }
 .bust[data-x="idle"] .x-idle,
@@ -665,6 +665,8 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
 .reveal-head .stamp { font-size: clamp(28px, 3.6vw, 44px); }
 .reveal-title { margin: 0; font: 700 clamp(20px, 2.4vw, 28px)/1.2 var(--display); letter-spacing: -.02em; }
 .reveal-sub { margin: 6px 0 0; font: 600 clamp(15px, 1.5vw, 18px)/1.4 var(--display); color: var(--text); }
+.reveal-score { margin: 8px 0 0; font: 700 13px/1.3 var(--mono); letter-spacing: .04em; color: var(--bait); }
+.reveal-score[hidden] { display: none; }
 .reveal-why { margin: 6px 0 0; font: 400 12.5px/1.5 var(--mono); color: var(--dim); }
 .reveal-quotes { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
 .reveal-quotes li { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font: 500 14px/1.4 var(--display); color: var(--text); }
@@ -769,6 +771,12 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   padding: 22px 26px 24px; animation: cp-in 220ms ease-out both;
 }
 .cp-brand { display: flex; align-items: baseline; gap: 12px; margin: 0 0 6px; }
+/* Round 15: the BAIT mark stays on screen while a long check list scrolls to its stamp. */
+.cp-head { position: sticky; top: -22px; z-index: 2; background: #15120C; margin: -22px 0 0; padding: 22px 0 8px; }
+@media (max-height: 800px) {
+  .checkpoint { padding-top: 16px; }
+  .cp-card { max-height: calc(100vh - 32px); }
+}
 .cp-brand b { font: 700 28px/1 var(--display); color: var(--bait); letter-spacing: .02em; }
 .cp-brand span { font: 500 11px/1 var(--mono); color: #E9C98A; text-transform: uppercase; letter-spacing: .08em; }
 .cp-title { margin: 6px 0 4px; font: 700 clamp(22px, 2.6vw, 30px)/1.15 var(--display); color: var(--text); }
@@ -785,6 +793,9 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
 .cp-row span { font: 400 12px/1.4 var(--display); color: var(--dim); }
 .cp-row.fail { border-left-color: var(--red); } .cp-row.fail b { color: var(--red); }
 .cp-row.cap { border-left-color: var(--amber); } .cp-row.cap b { color: var(--amber); }
+/* Round 15: a cap the block overrode is shown, greyed, as superseded; it promises no money. */
+.cp-row.superseded, .flagline.check.superseded { border-left-color: var(--faint, #5b6070); } .cp-row.superseded b, .flagline.check.superseded b { color: var(--dim, #8a8f9c); }
+.cp-row.superseded b, .flagline.check.superseded b, .flagline.superseded b { text-decoration: line-through; }
 .cp-row.not_assessed { border-left-color: var(--faint); } .cp-row.not_assessed b { color: var(--faint); }
 .cp-stamp {
   display: inline-block; margin: 16px 0 0; padding: 6px 16px; transform: rotate(-3deg);
@@ -798,6 +809,7 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
 @keyframes cp-row { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
 @media (max-width: 640px) {
   .cp-card { padding: 16px; }
+  .cp-head { top: -16px; margin-top: -16px; padding-top: 16px; }
   .cp-title { font-size: 21px; }
   .cp-row { grid-template-columns: 48px 1fr; padding: 6px 8px; }
   /* On a phone the row keeps its verdict and name; the full sentence is on the reveal's

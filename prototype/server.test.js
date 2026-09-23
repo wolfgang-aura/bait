@@ -422,6 +422,10 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
   try {
     const config = await on.call('/api/room');
     assert.equal(config.body.evidence.liveReady, true, 'a key on the host is enough to go live');
+    // Round 15: /api/health's top level reports what the Pitch Room serves, not the old encounter.
+    const health = await on.call('/api/health');
+    assert.equal(health.body.mode, 'live Nansen reads');
+    assert.equal(health.body.live, true);
   } finally {
     await on.stop();
   }
@@ -429,6 +433,9 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
   try {
     const config = await off.call('/api/room');
     assert.equal(config.body.evidence.liveReady, false, 'NANSEN_LIVE=0 overrides the key');
+    const health = await off.call('/api/health');
+    assert.equal(health.body.mode, 'frozen snapshot');
+    assert.equal(health.body.live, false);
   } finally {
     await off.stop();
   }

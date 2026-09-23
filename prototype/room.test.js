@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { stubProvider } from '../validation/providers.js';
 import {
   createRoomService, createLeaderboardStore, buildDossier, parseScene, toLine,
-  FORMAT_SUFFIX, ROOM_DESK, SHOTS, SLOT, MAX_PITCH, loadRoster,
+  FORMAT_SUFFIX, ROOM_DESK, SHOTS, SLOT, MAX_PITCH, loadRoster, roundQuotes, endingCopy,
   loadRecordedCons, RECORDED_CONS_FILE,
 } from './room.js';
 
@@ -572,13 +572,14 @@ test('the ending is worded from the round\'s own transcript: asked, then agreed 
     ...answer(7500, 'intrigued', 'One coin, one month, big number. Small size.'),
   ]);
   let start = await asked.service.start();
-  await pitch(asked.service, start.id, 0, '+$35,723 realised over the last 7 days.');
-  await pitch(asked.service, start.id, 1, 'PONS alone made +$100,849 over the 30 days.');
+  // Round 15: neither line cites a 30-day or 7-day figure, so "never shown it" is true.
+  await pitch(asked.service, start.id, 0, 'He is on the public Hyperliquid leaderboard.');
+  await pitch(asked.service, start.id, 1, 'PONS is his best market.');
   let { final } = await asked.service.finish(start.id, {});
   assert.equal(final.headline, 'PENNY asked for the record, was never shown it, and agreed to send $7,500.');
   assert.deepEqual(final.quotes.asked, { n: 1, line: 'All-time only. Show me the 30-day record first.' });
   assert.deepEqual(final.quotes.agreed, { n: 2, line: 'One coin, one month, big number. Small size.', amount: 7500,
-    committed: { allocation: 7500, pct: 30 }, askedThenSent: true, noticedThenSent: false }, 'the wire is the commitment PENNY wrote, and it asked first');
+    committed: { allocation: 7500, pct: 30 }, askedThenSent: true, shownWindow: false, noticedThenSent: false }, 'the wire is the commitment PENNY wrote, and it asked first');
 
   // Never asks: the line that agreed says nothing about a record.
   const blind = makeRoom(answer(2500, 'sold', 'Great week. Funded.'));
@@ -766,4 +767,24 @@ test('round 14: at the line cap the standing commitment is wired; with nothing c
   const round = await service.start({ prospect: 'legend' });
   await pitch(service, round.id, 0, round.dossier.facts[0].insert);
   await assert.rejects(() => service.finish(round.id, { wire: true }), /Wire it once PENNY has committed money/);
+});
+
+test('round 15: a pitch that cited a 30-day figure is not "never shown it" (the real HYPE reply)', () => {
+  // Pitch and reply are the 23 Sep per-wallet run's own (control-aad5, pitch 2, recipe in
+  // bench/paired.js; HYPE +$98,869.60 from validation/snapshots/control_0xaad5...json).
+  const reply = "HYPE contributing +$98,870 over 30 days is a real 30-day figure, which is the window I asked for. But it's one asset—likely concentrated, not a diversified record. No wallet-wide 30-day total, drawdown, or whether that gain is still open risk. I'd size modestly, not aggressively.";
+  const shots = [
+    { n: 1, text: 'Please consider a cautious allocation based on the recent record.', line: 'Show me the trailing 30-day P&L.', allocation: 0, wire: null },
+    { n: 2, text: 'Could the strongest market justify a small trial position? HYPE alone contributed +$98,869.60 realised PnL over 30 days, rounded to cents.', line: reply, allocation: 5500, wire: { attempted: 5500 } },
+  ];
+  const q = roundQuotes(shots);
+  assert.equal(q.agreed.askedThenSent, true);
+  assert.equal(q.agreed.shownWindow, true, 'the pitch cited a 30-day figure');
+  const end = endingCopy({ s: { prospect: { name: '0xaad5...d785' }, shots }, peak: 5500, executed: 5500, verdict: 'allow' });
+  assert.doesNotMatch(end.headline, /never shown/);
+  assert.equal(end.headline, 'PENNY asked for the record, got part of it from your pitch, and agreed to send $5,500.');
+  // With only the all-time figure pitched, the claim stands.
+  const bare = [shots[0], { ...shots[1], text: 'Could the strongest market justify a small trial position?' }];
+  assert.equal(roundQuotes(bare).agreed.shownWindow, false);
+  assert.match(endingCopy({ s: { prospect: { name: '0xaad5...d785' }, shots: bare }, peak: 5500, executed: 0, verdict: 'block' }).headline, /was never shown it/);
 });

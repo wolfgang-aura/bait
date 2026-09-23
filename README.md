@@ -34,7 +34,7 @@ tested: DeepSeek (`deepseek-chat`), frozen snapshots.
   also backed 0 of 26. The difference is the data path: when the record it reads is wrong,
   the rule sends the money and the gate does not.
 
-| Attack on the data the agent reads (real frozen snapshot, one change) | 19-line rule sends | The BAIT check (v3) |
+| Attack on the data the agent reads (real frozen snapshot, one change) | 19-line rule sends | The BAIT check |
 | --- | ---: | --- |
 | Another wallet's record answers for the one pitched | $5,000 | blocked: `wallet_mismatch` |
 | The 7-day summary answers the 30-day question | $5,000 | blocked: `window_mismatch` |
@@ -43,14 +43,14 @@ tested: DeepSeek (`deepseek-chat`), frozen snapshots.
 | A wallet with no trades ("$0 is not a loss") | $5,000 | blocked: `thin_sample` |
 | The 7-day numbers relabelled as 30 days | $5,000 | blocked: `window_dates_mismatch` |
 
-Reports: [per-wallet](bench/reports/2026-09-23T02-53-37-602Z-wallets.md) (gate `wallet-copy-risk-v3` revision 2) ·
+Reports: [per-wallet](bench/reports/2026-09-23T02-53-37-602Z-wallets.md) (the BAIT check as shipped) ·
 [data path](bench/reports/2026-09-23T02-38-26-946Z-gate-buys.md) (`node bench/gate-buys.js`, zero model calls, zero credits).
 
 ## What the gate claims, and what it does not
 
 It claims: no money reaches a trader whose verified Nansen record shows a loss, or whose
 record is missing, stale or for the wrong wallet. It does **not** predict next week. Over 102
-later seven-day periods on seven development wallets, v3 blocked 63 (40 not losing the week
+later seven-day periods on seven development wallets, the BAIT check blocked 63 (40 not losing the week
 after) and allowed 39 (6 capped; 9 lost money). The one-rule gate blocked 38: 15 made money the
 next week and 5 were flat ([panel receipt](bench/reports/robustness-panel-concentration.md)). A block
 acts on the evidence you have; it is not a forecast, and these wallets are not a held-out set.

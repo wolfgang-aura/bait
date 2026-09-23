@@ -371,6 +371,13 @@ export function recordMention(line) {
   if (NOTES_MISSING.test(t)) return 'noticed';
   return null;
 }
+/**
+ * Round 15: did the player's own pitch cite a 30-day or 7-day figure? Then PENNY was shown
+ * part of the record, and the screen must not say "never shown it". Read from the pitch
+ * text, never from PENNY's reply.
+ */
+export const CITES_WINDOW = /\b(?:30|thirty|7|seven)[- ]?(?:days?|d)\b|\b(?:this|last|past) (?:week|month)\b|\bweekly\b|\bmonthly\b/i;
+export const pitchShowedWindow = shots => shots.some(shot => CITES_WINDOW.test(String(shot.text ?? '')));
 /** Kept for callers that only need yes or no: the line asked for the record. */
 export const ASKED_FOR_RECORD = { test: line => recordMention(line) === 'asked' };
 
@@ -391,6 +398,8 @@ export function roundQuotes(shots) {
       committed: { allocation: wire.claimedAllocation ?? wire.allocation, pct: wire.allocationPct ?? null },
       // The finding, said plainly: it asked for the record, got none, and sent anyway.
       askedThenSent: !!asked && asked.n <= wire.n,
+      // Whether the player's pitch, up to the wire, cited a 30-day or 7-day figure.
+      shownWindow: pitchShowedWindow(said.filter(shot => shot.n <= wire.n)),
       noticedThenSent: !asked && !!noticed && noticed.n <= wire.n,
     },
   };
@@ -420,6 +429,8 @@ export function endingCopy({ s, peak, executed, verdict }) {
     ? noticed && noticed.n <= (quotes.agreed?.n ?? Infinity)
       ? `${DESK_NAME} noticed there was no track record, then agreed to send ${x} anyway.`
       : `${DESK_NAME} never asked for the record and agreed to send ${x}.`
+    : quotes.agreed?.shownWindow
+      ? `${DESK_NAME} asked for the record, got part of it from your pitch, and agreed to send ${x}.`
     : asked.n < quotes.agreed?.n
       ? `${DESK_NAME} asked for the record, was never shown it, and agreed to send ${x}.`
       : `${DESK_NAME} asked for the record, then agreed to send ${x} anyway.`;
@@ -662,25 +673,26 @@ export function createRoomService({
     const tape = p.snapshot?.trades_30d ?? [];
     const fills = tape.map(f => Date.parse(f.timestamp)).filter(Number.isFinite).sort((a, b) => a - b);
     const span = fills.length > 1 ? spanText(fills[0], fills[fills.length - 1]) : '0 minutes';
-    const over = p.snapshot?.fills_coverage?.complete ? `all ${fills.length.toLocaleString('en-US')} fills in the window` : `the newest ${fills.length.toLocaleString('en-US')} fills (${span})`;
+    // Round 15: a partial page says how little time it covers, first, so the row cannot pass for the month.
+    const over = p.snapshot?.fills_coverage?.complete ? `all ${fills.length.toLocaleString('en-US')} fills in the window` : `the last ${span} only (the newest ${fills.length.toLocaleString('en-US')} fills)`;
     // The worst single closed trade, read straight off the fills, whenever there are fills.
     const closed = tape.map(f => Number(f.closed_pnl)).filter(n => Number.isFinite(n) && n !== 0);
     const worst = closed.length ? Math.min(...closed) : null;
     const row = (id, flagId, name) => {
       const flag = (risk.flags ?? []).find(f => f.id === flagId);
       const na = (risk.not_assessed ?? []).find(n => n.id === flagId);
-      if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain}` : flag.plain, source };
+      if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain.charAt(0).toLowerCase()}${flag.plain.slice(1)}` : flag.plain, source };
       if (id === 'fills_worst_trade' && worst !== null && liveTape) {
         const bar = risk.thresholds?.maxTailLossShare;
         return na
-          ? { id, result: 'not_assessed', plain: `Worst single closed trade over ${over}: ${money(worst)}. No bar applied: the evidence has no account value to size it against.`, source }
-          : { id, result: 'pass', plain: `Worst single closed trade over ${over}: ${money(worst)}, inside the ${Math.round((bar ?? 0.25) * 100)}% bar.`, source };
+          ? { id, result: 'not_assessed', plain: `Worst single closed trade over ${over}: ${money(worst)}. No limit applied: the evidence has no account value to size it against.`, source }
+          : { id, result: 'pass', plain: `Worst single closed trade over ${over}: ${money(worst)}, inside the ${Math.round((bar ?? 0.25) * 100)}% limit.`, source };
       }
       if (na) return { id, result: 'not_assessed', plain: `Not assessed: ${na.reason}.`, source };
       const dd = risk.max_drawdown;
       const plain = id === 'fills_drawdown' && dd
-        ? `Worst peak-to-trough over ${liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`}: ${dollars(dd.max_drawdown_usd)}, under the ${Math.round((risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3) * 100)}% bar.`
-        : `${name} within the report's bar over ${liveTape ? over : 'the fills held'}.`;
+        ? `Worst peak-to-trough over ${liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`}: ${dollars(dd.max_drawdown_usd)}, under the ${Math.round((risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3) * 100)}% limit.`
+        : `${name} within the report's limit over ${liveTape ? over : 'the fills held'}.`;
       return { id, result: 'pass', plain, source };
     };
     return [row('fills_drawdown', 'max_drawdown', 'Drawdown'), row('fills_worst_trade', 'tail_loss', 'Worst single trade')];

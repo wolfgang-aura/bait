@@ -95,3 +95,19 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
 test('the meter never shows a negative figure while it counts up', () => {
   assert.match(js, /const t = Math\.min\(1, Math\.max\(0, \(now - started\) \/ 700\)\);/);
 });
+
+test('round 15: the reveal states the score; the BAIT mark stays in the checkpoint; plain words; no blue', () => {
+  assert.match(html, /<p class="reveal-score" id="reveal-score" hidden>/);
+  assert.match(js, /Your score: \$\{final\.peakLabel\} wired/);
+  assert.match(html, /<div class="cp-head">\s*<p class="cp-brand">/);
+  const css = read('room.css');
+  assert.match(css, /\.cp-head \{ position: sticky;/);
+  assert.match(html, /PENNY backed losing traders in 63 of 78 tries in our benchmark\./);
+  assert.doesNotMatch(html, /exact desk we benchmarked/);
+  for (const f of ['room.css', 'replay.css', 'portraits.js']) assert.doesNotMatch(read(f), /#9FD8F0|#4DA3FF|#063845|#1D3440/i, f);
+  const shown = [html, js, read('replay.html')].join('\n');
+  assert.doesNotMatch(shown, /fill tape|noise band|% bar\b|Policy \$\{gate\.policyId\}/);
+  // A block supersedes a cap in the final table as in the checkpoint.
+  assert.match(js, /renderGate\(el\.finalGate, final\.gate, final\.verdict\)/);
+  assert.match(js, /const v = checkRowView\(c, final\.verdict\);/);
+});

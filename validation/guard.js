@@ -226,8 +226,8 @@ export const V2_CHECK_IDS = Object.freeze([
 
 /** Checks the guard's own evidence path cannot reach: they need per-fill history. */
 const FILL_ONLY_CHECKS = {
-  tail_loss: 'Not assessed. The worst single closed trade needs the fill tape, which this gate does not fetch. The copy-risk report covers it.',
-  max_drawdown: 'Not assessed. Peak-to-trough drawdown needs the time-ordered fill tape, which this gate does not fetch. The copy-risk report covers it.',
+  tail_loss: 'Not assessed. The worst single closed trade needs the individual trade fills, which this gate does not fetch. The copy-risk report covers it.',
+  max_drawdown: 'Not assessed. Peak-to-trough drawdown needs the time-ordered trade fills, which this gate does not fetch. The copy-risk report covers it.',
 };
 
 /** Collect check rows in evaluation order and emit them in the canonical order. */
@@ -630,7 +630,7 @@ export async function guardAllocation({
     const opposite = signOf(shortPnl) !== signOf(pnl30);
     if (opposite && giveback < noiseShare) {
       t.pass('regime_agreement', pair, bar,
-        `The week points the other way, but ${money(shortPnl)} is ${givebackPct} of the ${policy.windowDays}-day ${money(pnl30)}, inside the ${noisePct} noise band, so the month still stands.`);
+        `The week points the other way, but ${money(shortPnl)} is ${givebackPct} of the ${policy.windowDays}-day ${money(pnl30)}, small enough (under ${noisePct}) to count as noise, so the month still stands.`);
     } else if (opposite) {
       t.fail('regime_agreement', pair, bar,
         `The two windows tell opposite stories: ${money(shortPnl)} over ${policy.shortWindowDays} days against ${money(pnl30)} over ${policy.windowDays}. `

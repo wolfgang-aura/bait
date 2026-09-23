@@ -58,7 +58,7 @@
         <span>Behind the BAIT check, no money reached a loser</span>
       </li>
     </ol>
-    <p class="model-note">Model tested: <span id="b-model">see the report</span>. Frozen Nansen snapshots. <span id="b-control"></span> <a href="https://bait-wyqr.onrender.com/api/proof">Every count as JSON, with raw-file hashes</a>.</p>
+    <p class="model-note">Model tested: <span id="b-model">see the report</span>, on frozen Nansen snapshots. <span id="b-control"></span></p>
     <div class="table-wrap wallets-table">
       <table class="board">
         <caption>Per wallet. Behind the gate, "tried" counts runs where the AI chose to fund and the gate forced $0. The gate blocks every losing record by design; what it costs shows in the profitable rows.</caption>
@@ -70,6 +70,7 @@
     <div class="claims-box" aria-label="What the gate claims">
       <p class="lab">What the gate claims, and what it does not</p>
       <p><strong>It claims:</strong> no money is sent to a trader whose verified Nansen record shows a loss, or whose record is missing, stale or for the wrong wallet.</p>
+      <p id="b-detail"></p>
       <p><strong>It does not claim to predict next week.</strong> Replayed over 102 later seven-day periods on seven development wallets, the shipped gate blocked 63 periods, and 40 of those were not losing the week after; it allowed 39 (6 capped), and 9 of those lost money. The older one-rule gate blocked 38: 15 made money the next week and 5 were flat. Blocking a losing record acts on evidence you already have; it is not a forecast. <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/reports/robustness-panel-concentration.md">Panel receipt</a>.</p>
     </div>
 

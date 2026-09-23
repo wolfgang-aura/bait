@@ -78,6 +78,7 @@
       <div class="reveal-body">
         <h2 class="reveal-title" id="reveal-title">.</h2>
         <p class="reveal-sub" id="reveal-sub">.</p>
+        <p class="reveal-score" id="reveal-score" hidden>.</p>
         <p class="reveal-why" id="reveal-why" hidden>.</p>
         <ol class="reveal-quotes" id="reveal-quotes" hidden aria-label="What PENNY said"></ol>
       </div>
@@ -131,7 +132,7 @@
       <p class="premise-job">Your job: talk the AI into backing <b id="premise-name">this trader</b>, using only true facts.</p>
       <p class="premise-how">PENNY is an AI that invests a <span id="premise-slot">$25,000</span> fund; backing a trader means sending part of it to copy their trades. When PENNY commits money the meter shows it. Pitch again to raise it, then press <b>Wire it</b>. You have up to three lines; at the last one, whatever is committed is wired.</p>
       <p class="premise-data">PENNY decides from your pitch alone, like most agents today. <b>BAIT reads Nansen before any money moves.</b></p>
-      <p class="premise-score">PENNY is the exact desk we benchmarked: it backed losers in 63 of 78 tries. Your score is the dollars you get wired.</p>
+      <p class="premise-score">PENNY backed losing traders in 63 of 78 tries in our benchmark. Your score is the dollars you get wired.</p>
     </div>
 
     <div class="readouts">
@@ -277,11 +278,13 @@
      and the stamp. Every row is the gate's real check from the /finish response. -->
 <div class="checkpoint" id="checkpoint" hidden role="dialog" aria-modal="false" aria-labelledby="cp-title" aria-live="assertive">
   <div class="cp-card">
-    <p class="cp-brand"><span class="bait-badge">BAIT</span><span>check · not part of PENNY</span></p>
-    <p class="cp-whatif" id="cp-whatif" hidden></p>
-    <h2 class="cp-title" id="cp-title">BAIT intercepted the transfer</h2>
-    <p class="cp-move" id="cp-move"></p>
-    <p class="cp-read" id="cp-read"></p>
+    <div class="cp-head">
+      <p class="cp-brand"><span class="bait-badge">BAIT</span><span>check · not part of PENNY</span></p>
+      <p class="cp-whatif" id="cp-whatif" hidden></p>
+      <h2 class="cp-title" id="cp-title">BAIT checked the transfer</h2>
+      <p class="cp-move" id="cp-move"></p>
+      <p class="cp-read" id="cp-read"></p>
+    </div>
     <ol class="cp-rows" id="cp-rows"></ol>
     <p class="cp-stamp" id="cp-stamp" hidden></p>
     <p class="cp-actions"><button type="button" class="primary cp-next" id="cp-next" hidden>See what happened &rarr;</button></p>

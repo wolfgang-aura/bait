@@ -196,7 +196,7 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   assert.equal(one.prospect.truth.pnl, -2_000_000);
   assert.equal(one.prospect.truth.pnlLabel, '-$2,000,000');
   assert.match(one.prospect.truth.capturedLabel, /^2026-\d\d-\d\d \d\d:\d\d UTC$/);
-  assert.match(one.prospect.truth.scope, /summaries read live, fill tape from the 2026-09-15 UTC capture/);
+  assert.match(one.prospect.truth.scope, /summaries read live, trade fills from the 2026-09-15 UTC capture/);
   assert.equal(one.dossier.buried.value, '-$2,000,000');
   assert.equal(mock.seen.length, 2, 'one wire, one read');
 
@@ -280,8 +280,8 @@ test('a fill tape more than a day behind the live summaries is shown but not use
   assert.equal(r.tape.stale, true);
   assert.ok(Math.abs(r.tape.ageMs - 2 * 86_400_000) < 1000);
   assert.ok(!r.flags.some(f => ['max_drawdown', 'tail_loss'].includes(f.id)), 'nothing measured on a stale tape reaches the verdict');
-  assert.match(r.coverage, /fill tape is the .* capture, 2\.0 days older than the summaries/);
-  assert.ok(r.not_assessed.filter(n => ['max_drawdown', 'tail_loss'].includes(n.id)).every(n => /nothing measured on it is used/.test(n.reason)));
+  assert.match(r.coverage, /trade fills are the .* capture, 2\.0 days older than the summaries/);
+  assert.ok(r.not_assessed.filter(n => ['max_drawdown', 'tail_loss'].includes(n.id)).every(n => /nothing measured on them is used/.test(n.reason)));
 });
 
 // ------------------------------------------------------------ any wallet (round 10)
@@ -438,5 +438,5 @@ test('the worst-trade row always shows the value read off the live fills, with t
   const res = await pasted.start({ wallet: '0x3333333333333333333333333333333333333333' });
   await say(pasted, res.id, 0, res.dossier.facts[0].insert);
   const pf = (await pasted.finish(res.id, {})).final.gate.checks.find(c => c.id === 'fills_worst_trade');
-  assert.match(pf.plain, /Worst single closed trade over .*: -\$500\. No bar applied/);
+  assert.match(pf.plain, /Worst single closed trade over .*: -\$500\. No limit applied/);
 });

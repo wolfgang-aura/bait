@@ -1,6 +1,28 @@
 # BAIT public page, version B
 
-## Version N: raise it, wire it, the barricade, 23 September 2026 (current)
+## Version O: one decision, said once, 23 September 2026 (current)
+
+Judge 5 found places where two parts of the screen described one decision differently. Every
+word on BAIT's decision now comes from the one gate result (`public/verdict-view.js`).
+
+- **Heading follows the verdict.** "BAIT intercepted the transfer" only above a block;
+  "BAIT checked the transfer" above a cap or a clear.
+- **A block supersedes a cap.** A CAP row under a block keeps its finding, loses "the gate
+  sends 25%", ends "Superseded by the block: nothing is sent." and shows its CAP label struck
+  through in grey, in the checkpoint and in the final table.
+- **A PASS row and its report line agree.** Where the gate row passed, the reveal's report line
+  is the gate row's own sentence.
+- **"Never shown it" is earned.** Only when no pitch line up to the wire cited a 30-day or 7-day
+  figure; otherwise "got part of it from your pitch". Read from the player's text, not PENNY's.
+- **The score is on the reveal.** "Your score: $X wired in N lines", amber mono, under the
+  second line; the board ranks by the same figure.
+- **The BAIT mark stays in the checkpoint.** The brand row is sticky while a long list scrolls
+  to its stamp; under 800 px tall the card starts 16 px from the top.
+- **Plain words.** "Trade fills" for fill tape, "limit" for bar, no "noise band", "the BAIT
+  check" for the policy id on screen; newest-fills rows lead with how little time they cover.
+- **No blue.** The sweat drop is #E9C98A; the teal portrait background and cloth are dark green.
+
+## Version N: raise it, wire it, the barricade, 23 September 2026
 
 Second complaint on the agree beat, checkpoint and reveal, so the composition changes, not
 the copy alone.

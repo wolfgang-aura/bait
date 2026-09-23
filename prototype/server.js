@@ -329,15 +329,22 @@ function nansenQuota() {
 function health() {
   const env = loadEnv();
   const ageMs = Date.now() - Date.parse(snapshot.retrieved_at);
+  // Round 15: the top level describes what the Pitch Room is serving now. The older
+  // single-wallet encounter's refresh is reported under its own name, not as the mode.
+  const room = liveEvidence.status();
+  const roomLive = !!room.available;
   return {
+    mode: roomLive ? 'live Nansen reads' : 'frozen snapshot',
+    live: roomLive,
+    live_reason: roomLive ? null : room.blocked_by ?? (room.enabled ? 'unavailable' : 'disabled'),
     snapshot_wallet: snapshot.wallet,
     snapshot_retrieved_at: snapshot.retrieved_at,
     snapshot_age_hours: Math.round((ageMs / 3_600_000) * 10) / 10,
     snapshot_fills: snapshot.trades_30d.length,
     snapshot_complete: snapshot.trades_pagination?.is_complete === true,
-    mode: dataSource.status().live ? 'live Nansen refresh' : 'frozen snapshot',
+    encounter_mode: dataSource.status().live ? 'live Nansen refresh' : 'frozen snapshot',
     live_data: dataSource.status(),
-    room_live: liveEvidence.status(),
+    room_live: room,
     nansen_quota: nansenQuota(),
     keys_present: ['ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'NANSEN_API_KEY'].filter(
       (k) => !!(process.env[k] || env[k])

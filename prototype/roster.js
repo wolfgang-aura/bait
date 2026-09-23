@@ -185,7 +185,7 @@ function hyperliquidTruth(snapshot, availability) {
   const coverage = live
     ? snapshot.live_read.fills_live
       ? (fillsHeld ? `; summaries and ${count(fillsHeld)} newest fills read live` : '; summaries read live; no closed fills in the window')
-      : `; summaries read live, ${fillsHeld ? `fill tape from the ${stamp(snapshot.live_read.fills_from_capture)} capture` : 'no fill tape held'}`
+      : `; summaries read live, ${fillsHeld ? `trade fills from the ${stamp(snapshot.live_read.fills_from_capture)} capture` : 'no trade fills held'}`
     : !partial ? ''
     : fillsHeld === 0
       ? ', summary only, this capture holds no individual fills'
@@ -309,7 +309,7 @@ export function copyRiskReport(p) {
   const tooFew = `this capture holds only the newest ${count(evidence.series_fills)} of ${count(evidence.closed_trade_count)} closed trades, too few to measure them over ${count(evidence.window_days)} days`;
   const stale = evidence.tape_stale === true;
   const days = evidence.tape.ageMs === null ? 'an unknown time' : `${(evidence.tape.ageMs / 86_400_000).toFixed(1)} days`;
-  const staleWhy = `the fill tape is the ${stamp(evidence.tape.capturedAt)} capture, ${days} older than the summaries this record reads (limit ${evidence.tape.maxAgeMs / 3_600_000} h), so nothing measured on it is used`;
+  const staleWhy = `the trade fills are the ${stamp(evidence.tape.capturedAt)} capture, ${days} older than the summaries this record reads (limit ${evidence.tape.maxAgeMs / 3_600_000} h), so nothing measured on them is used`;
   const coverage = stale
     ? `Drawdown and worst single trade are not assessed: ${staleWhy}.`
     : short

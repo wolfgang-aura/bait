@@ -19,6 +19,7 @@
  */
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
+import { checkpointTitle, checkRowView, reportRows } from '/verdict-view.js';
 
 const $ = id => document.getElementById(id);
 const body = document.body;
@@ -42,7 +43,7 @@ const el = {
   clientPortrait: $('client-portrait'), clientName: $('client-name'), clientSub: $('client-sub'),
   facts: $('facts'), nextFact: $('next-fact'), sealed: $('sealed'), sealedHead: $('sealed-head'),
   sealedLabel: $('sealed-label'), premiseName: $('premise-name'), premiseSlot: $('premise-slot'),
-  revealStamp: $('reveal-stamp'), revealTitle: $('reveal-title'), revealSub: $('reveal-sub'),
+  revealStamp: $('reveal-stamp'), revealTitle: $('reveal-title'), revealSub: $('reveal-sub'), revealScore: $('reveal-score'),
   revealWhy: $('reveal-why'), revealQuotes: $('reveal-quotes'), hypeLabel: $('hype-label'), recordLabel: $('record-label'),
   ladderModel: $('ladder-model'),
   composer: $('composer'), line: $('line'), go: $('go'), count: $('count'), status: $('status'),
@@ -85,6 +86,7 @@ let wiresShown = 0;
 let liveReady = null;
 /** The gate result the report's labels follow, when one is on screen. */
 let reportGate = null;
+let reportVerdict = null;
 /** Check ids in plain words, for the footers. */
 const PLAIN_CHECK = { paper_headline: 'unsold gains', uncopyable_entries: 'launch-day entries', tail_loss: 'worst single trade',
   max_drawdown: 'drawdown', concentration: 'one-market share', thin_sample: 'sample size', low_win_rate: 'win rate' };
@@ -323,7 +325,7 @@ function agreedBeat(shot, final) {
     const ok = document.createElement('span'); ok.className = 'mark-ok';
     ok.textContent = q.askedThenSent ? 'Asked for the record ✓' : 'Noticed there was no track record ✓';
     const bad = document.createElement('span'); bad.className = 'mark-bad'; bad.textContent = 'Sent anyway ✗';
-    el.agreedMarks.append(ok, q.askedThenSent ? ' · never shown it · ' : ' · ', bad);
+    el.agreedMarks.append(ok, q.askedThenSent && !q.shownWindow ? ' · never shown it · ' : ' · ', bad);
   }
   el.agreed.hidden = false;
   return new Promise(resolve => {
@@ -338,7 +340,7 @@ const CHECK_NAME = {
   realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
   low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month',
   tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
-  fills_drawdown: 'Drawdown on the fill tape', fills_worst_trade: 'Worst single trade on the fill tape',
+  fills_drawdown: 'Drawdown in the newest fills', fills_worst_trade: 'Worst trade in the newest fills',
 };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -352,7 +354,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   // A what-if (PENNY refused, so nothing reached BAIT) says so above the title.
   el.cpWhatif.hidden = !final.whatIfOf;
   text(el.cpWhatif, final.whatIfOf ? `PENNY said no on its own. Here's what the BAIT check would have done with ${final.peakLabel}:` : '');
-  text(el.cpTitle, final.whatIfOf ? 'What-if: the BAIT check on this record' : final.checkOnly ? 'The BAIT check on this record' : 'BAIT intercepted the transfer');
+  text(el.cpTitle, checkpointTitle(final));
   const who = p?.short ?? chosen?.short ?? '';
   text(el.cpMove, final.whatIfOf
     ? `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}, if it had agreed`
@@ -369,18 +371,18 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   el.cpStamp.hidden = true;
   el.checkpoint.className = 'checkpoint';
   el.checkpoint.hidden = false;
-  const label = { pass: 'PASS', fail: 'BLOCK', not_assessed: 'N/A', cap: 'CAP', caution: 'WATCH' };
   const rows = (gate.checks ?? []).filter(c => c.result !== 'not_assessed' || c.id === 'evidence_freshness' || c.id.startsWith('fills_'));
   if (!reduced) await sleep(450);
   for (const c of rows) {
+    const v = checkRowView(c, final.verdict);
     const li = document.createElement('li');
-    li.className = `cp-row ${c.result}`;
+    li.className = `cp-row ${v.result}`;
     const b = document.createElement('b');
-    b.textContent = label[c.result] ?? c.result;
+    b.textContent = v.label;
     const name = document.createElement('strong');
     name.textContent = CHECK_NAME[c.id] ?? c.id.replace(/_/g, ' ');
     const why = document.createElement('span');
-    why.textContent = c.plain;
+    why.textContent = v.plain;
     li.append(b, name, why);
     el.cpRows.append(li);
     if (!reduced) await sleep(260);
@@ -407,11 +409,17 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
  */
 function showReveal(p, final) {
   reportGate = final.gate ?? null;
+  reportVerdict = final.verdict ?? null;
   const kind = final.peak === 0 && !final.checkOnly ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
   el.revealStamp.className = `stamp ${kind === 'blocked' ? '' : kind}`.trim();
   setStamp(el.revealStamp, final);
   text(el.revealTitle, final.headline);
   markBait(el.revealSub, final.subline);
+  // Round 15: the score, as the board records it: the dollars PENNY wired, and in how many lines.
+  const scored = final.peak > 0 && !final.checkOnly && !final.whatIfOf;
+  el.revealScore.hidden = !scored;
+  const n = final.quotes?.agreed?.n;
+  text(el.revealScore, scored ? `Your score: ${final.peakLabel} wired${n ? ` in ${n} line${n === 1 ? '' : 's'}` : ''}.` : '');
   el.revealWhy.hidden = !(final.because && ['block', 'capped'].includes(final.verdict) && (final.peak > 0 || final.checkOnly));
   text(el.revealWhy, final.because ? `Why: ${final.because}` : '');
   // PENNY's own words: where it asked for the record, then where it agreed.
@@ -437,7 +445,9 @@ function showReveal(p, final) {
     li.className = 'finding';
     const sent = dollars(q.agreed.committed?.allocation ?? q.agreed.amount);
     const what = q.agreed.askedThenSent
-      ? `PENNY asked for the record, was never shown it, and agreed to send ${sent} anyway.`
+      ? q.agreed.shownWindow
+        ? `PENNY asked for the record, got part of it from your pitch, and agreed to send ${sent}.`
+        : `PENNY asked for the record, was never shown it, and agreed to send ${sent} anyway.`
       : `PENNY noticed there was no track record and agreed to send ${sent} anyway.`;
     // Only a block or a cap is BAIT catching the failure; a cleared record is said as that.
     li.textContent = final.verdict === 'block' || final.verdict === 'capped'
@@ -544,20 +554,8 @@ function renderReport(host, risk) {
     row.append(b, span);
     host.append(row);
   };
-  if (!risk.flags.length) {
-    add('none', 'clear', 'Nothing on this record trips a BAIT check.');
-  }
-  // One vocabulary with the checkpoint: a flag is labelled with the word its gate row got
-  // (BLOCK, CAP, WATCH, PASS); a flag no gate row decided is a WATCH, never HIGH or MEDIUM.
-  const word = { fail: 'BLOCK', cap: 'CAP', caution: 'WATCH', pass: 'PASS', not_assessed: 'N/A' };
-  const kind = { BLOCK: 'high', CAP: 'medium', WATCH: 'medium', PASS: 'low', 'N/A': 'low' };
-  const rowFor = { realised_negative: 'realised_pnl_30d', low_win_rate: 'low_win_rate', thin_sample: 'thin_sample',
-    concentration: 'concentration', max_drawdown: 'fills_drawdown', tail_loss: 'fills_worst_trade', paper_headline: 'paper_headline' };
-  for (const flag of risk.flags) {
-    const row = (reportGate?.checks ?? []).find(c => c.id === rowFor[flag.id]);
-    const label = row ? word[row.result] ?? 'WATCH' : 'WATCH';
-    add(kind[label], label, flag.plain);
-  }
+  // One gate result: each flag carries its gate row's word, and a passed row its own sentence.
+  for (const r of reportRows(risk, reportGate?.checks ?? [], reportVerdict)) add(r.kind, r.label, r.line);
 
   const foot = document.createElement('p');
   foot.className = 'report-foot';
@@ -575,19 +573,19 @@ function renderReport(host, risk) {
  * in the order the policy ran them. This is the part a judge reads to see that BAIT
  * is a rule set and not a single sign test.
  */
-/** What is live and what is captured: the fill tape's date and age, and whether it counted. */
+/** What is live and what is captured: the trade fills' date and age, and whether it counted. */
 function tapeLine(gate) {
   const t = gate.tape;
   const day = String(t.capturedAt).slice(0, 10);
-  if (!gate.live) return `Summaries and fill tape: the same ${day} capture.`;
+  if (!gate.live) return `Summaries and trade fills: the same ${day} capture.`;
   if (t.live) return `Live: both perp-pnl-summary windows and the newest ${t.fills.toLocaleString('en-US')} perp fills, read ${String(t.capturedAt).slice(11, 16)} UTC.`;
   const age = t.ageMs === null ? 'age unknown' : `${(t.ageMs / 86_400_000).toFixed(1)} days older than the live read`;
   return t.stale
-    ? `Summaries read live; fill tape from the ${day} capture, ${age}: shown, not used by any check.`
-    : `Summaries read live; fill tape from the ${day} capture, ${age}.`;
+    ? `Summaries read live; trade fills from the ${day} capture, ${age}: shown, not used by any check.`
+    : `Summaries read live; trade fills from the ${day} capture, ${age}.`;
 }
 
-function renderGate(host, gate) {
+function renderGate(host, gate, verdict = null) {
   host.replaceChildren();
   const label = { pass: 'pass', fail: 'block', not_assessed: 'n/a', cap: 'cap', caution: 'watch' };
   // Freshness is always shown: on a frozen snapshot it reads n/a rather than pass.
@@ -596,12 +594,13 @@ function renderGate(host, gate) {
   // the length of what was actually decided.
   const skipped = (gate.checks ?? []).filter(c => !shown(c));
   for (const check of (gate.checks ?? []).filter(shown)) {
+    const v = checkRowView(check, verdict);
     const row = document.createElement('div');
-    row.className = `flagline check ${check.result}`;
+    row.className = `flagline check ${v.result}`;
     const b = document.createElement('b');
-    b.textContent = `${label[check.result] ?? check.result} · ${check.id.replace(/_/g, ' ')}`;
+    b.textContent = `${v.result === 'superseded' ? 'cap' : label[check.result] ?? check.result} · ${check.id.replace(/_/g, ' ')}`;
     const span = document.createElement('span');
-    span.textContent = check.plain;
+    span.textContent = v.plain;
     // The Nansen read this check stands on, so the table reads as a set of checks on
     // named evidence, not one sign test.
     if (check.source) {
@@ -617,9 +616,9 @@ function renderGate(host, gate) {
   foot.className = 'report-foot';
   const windows = gate.shortWindowDays ? `${gate.shortWindowDays}-day and ${gate.windowDays}-day` : `${gate.windowDays}-day`;
   foot.textContent = [
-    `Policy ${gate.policyId} · ${windows} · ${gate.source}${gate.live && gate.evidenceAt ? ` · live read ${String(gate.evidenceAt).slice(11, 16)} UTC` : ''} · ${gate.reason}`,
+    `The BAIT check · ${windows} · ${gate.source}${gate.live && gate.evidenceAt ? ` · live read ${String(gate.evidenceAt).slice(11, 16)} UTC` : ''} · ${gate.reason}`,
     gate.tape && gate.tape.capturedAt ? tapeLine(gate) : '',
-    skipped.length ? `Not decided by the gate (not reached after the block, or needs the fill tape the report below reads): ${skipped.map(c => c.id.replace(/_/g, ' ')).join(', ')}.` : '',
+    skipped.length ? `Not decided by the gate (not reached after the block, or needs the trade fills the report below reads): ${skipped.map(c => c.id.replace(/_/g, ' ')).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
 }
@@ -1004,7 +1003,7 @@ function showFinal(final, entries, mineAt = null) {
   text(el.finalTrail, final.trail);
   renderWireLog(shots);
   text(el.agentLine, final.agentLine);
-  renderGate(el.finalGate, final.gate);
+  renderGate(el.finalGate, final.gate, final.verdict);
   // The live read's raw Nansen response, as saved on this host, with its hash.
   const raw = final.evidence?.raw;
   if (raw) {
