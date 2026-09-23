@@ -170,13 +170,13 @@ test('a 200 response with no realised PnL is reported as unavailable, not as zer
   assert.equal(decision.allocation, 0);
 });
 
-test('the live executor refuses any tool other than get_pnl_summary', async () => {
+test('the live executor refuses any tool other than get_pnl_summary and get_open_positions', async () => {
   const call = stubCall(() => summary(1));
   const executor = createLiveGuardExecutor({ call, now: () => new Date(NOW) });
 
   await assert.rejects(
     () => executor.execute('get_closed_trades', { wallet: WALLET, days: 30 }),
-    /serves get_pnl_summary only/,
+    /serves get_pnl_summary and get_open_positions only/,
   );
   assert.equal(call.calls.length, 0, 'an unknown tool must not spend a credit');
 });

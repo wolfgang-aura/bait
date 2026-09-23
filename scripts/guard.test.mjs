@@ -71,13 +71,13 @@ test('a profitable wallet prints ALLOW, the enforced amount and the credit line,
     env: ENV, write: out.write, now: NOW, call: pnl(2_450_809.467724999),
   });
   assert.equal(code, 0);
-  assert.match(out.text(), /Fetching Nansen 7- and 30-day PnL summary, at most 2 credits\.\.\./);
+  assert.match(out.text(), /Fetching Nansen 7- and 30-day PnL summary and open positions, at most 3 credits\.\.\./);
   assert.match(out.text(), /DECISION\s+ALLOW/);
   assert.match(out.text(), /enforced\s+\$5,000\.00/);
   assert.match(out.text(), /pnl 30d\s+\$2,450,809\.47/);
   assert.match(out.text(), /pnl 7d\s+\$2,450,809\.47/);
-  // Two windows, two credits, and the named check table is printed under the decision.
-  assert.match(out.text(), /credits\s+2 charged/);
+  // Two windows and the open positions, three credits, and the named check table.
+  assert.match(out.text(), /credits\s+3 charged/);
   assert.match(out.text(), /policy\s+wallet-copy-risk-v3/);
   assert.match(out.text(), /CHECKS/);
   assert.match(out.text(), /PASS regime_agreement/);

@@ -86,6 +86,10 @@ let wiresShown = 0;
 let liveReady = null;
 /** The gate result the report's labels follow, when one is on screen. */
 let reportGate = null;
+/** Round 17: Wire it ignores clicks for this long after it appears or its amount changes. */
+export const WIRE_ARM_MS = 700;
+let wireArmedAt = 0;
+let wireAmount = null;
 let reportVerdict = null;
 /** Check ids in plain words, for the footers. */
 const PLAIN_CHECK = { paper_headline: 'unsold gains', uncopyable_entries: 'launch-day entries', tail_loss: 'worst single trade',
@@ -345,7 +349,7 @@ function agreedBeat(shot, final) {
 const CHECK_NAME = {
   evidence_30d: '30-day record is this wallet\u2019s', evidence_freshness: 'Read is fresh', evidence_7d: '7-day record is this wallet\u2019s',
   realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
-  low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month',
+  low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month', open_book: 'Open positions not deep underwater',
   tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
   fills_drawdown: 'Drawdown in the newest fills', fills_worst_trade: 'Worst trade in the newest fills',
 };
@@ -370,7 +374,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     : `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
   const at = String(gate.evidenceAt ?? '');
   text(el.cpRead, gate.live
-    ? `Reading Nansen perp-pnl-summary${gate.tape?.live ? ' and perp-trades' : ''} for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
+    ? `Reading Nansen perp-pnl-summary${[gate.tape?.live && 'perp-trades', gate.positionsLive && 'perp-positions'].filter(Boolean).map((e, i, a) => (i === a.length - 1 ? ' and ' : ', ') + e).join('')} for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
     : `Reading Nansen perp-pnl-summary for ${who}: the ${at.slice(0, 10)} capture`);
   const raw = final.evidence?.raw;
   if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
@@ -856,7 +860,12 @@ function renderState(state) {
   el.go.textContent = state.finished ? 'See what BAIT did' : `Pitch (${state.shotsLeft} left)`;
   el.line.disabled = state.finished;
   // Wire it: once PENNY has money committed, the player decides when to send it.
-  el.wire.hidden = state.finished || !(state.funded > 0);
+  const wireShown = !(state.finished || !(state.funded > 0));
+  // Round 17: a click that was meant for Pitch must not wire the money. The button arms
+  // WIRE_ARM_MS after it appears or after the committed amount changes.
+  if (wireShown && (el.wire.hidden || wireAmount !== state.funded)) wireArmedAt = performance.now();
+  wireAmount = wireShown ? state.funded : null;
+  el.wire.hidden = !wireShown;
   el.wire.textContent = state.funded > 0 ? `Wire it (${dollars(state.funded)})` : 'Wire it';
 }
 
@@ -1309,7 +1318,10 @@ async function fixture(name, prospectId) {
 async function boot() {
   el.line.addEventListener('input', updateCount);
   el.anyWallet.addEventListener('submit', pasteWallet);
-  el.wire.addEventListener('click', () => { if (!sending && round && !round.finished && round.funded > 0) finish(); });
+  el.wire.addEventListener('click', () => {
+    if (performance.now() - wireArmedAt < WIRE_ARM_MS) return;
+    if (!sending && round && !round.finished && round.funded > 0) finish();
+  });
   el.anyWalletInput.addEventListener('keydown', event => {
     // Round 16: every way a browser reports Enter submits the paste, like the pitch box.
     const enter = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.keyCode === 13;

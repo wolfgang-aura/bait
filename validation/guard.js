@@ -117,8 +117,14 @@ export const PRODUCTION_GUARD_POLICY_V3 = Object.freeze({
   // request. A summary must now carry its date range (`window`, or the request's own
   // `date`), the range must span the policy's days, and a `data_coverage` note saying
   // fewer days were retained is a refusal. A summary with no dates is a refusal too.
-  revision: 2,
-  revisionNotes: '2026-09-23 r2: evidence window verified from its dates (window_dates_mismatch), not only its window_days label.',
+  // Revision 3, 23 Sep 2026 (round 17): a third Nansen read, profiler/perp-positions. When
+  // the open positions are down more than a quarter of the account value, copying now
+  // inherits that loss, so the gate caps the request the way a one-market month is capped.
+  // A read that fails is not assessed; it never refuses on its own and never raises an amount.
+  revision: 3,
+  revisionNotes: '2026-09-23 r2: evidence window verified from its dates (window_dates_mismatch), not only its window_days label. r3: open positions read (profiler/perp-positions); an open loss over 25% of account value caps at 25%.',
+  openBookCheck: true,
+  maxOpenLossShareOfAccount: 0.25,
   verifyWindowDates: true,
   concentrationAction: 'cap',
   concentrationCapShare: 0.25,
@@ -246,7 +252,9 @@ function checkTable() {
       return null;
     },
     finish(fallback = 'Not assessed. An earlier check already decided this request.') {
-      return V2_CHECK_IDS.map(id => rows.get(id) ?? { id, result: 'not_assessed', value: null, threshold: null, plain: fallback });
+      // Round 17: v3 r3's open-book row sits after concentration, only when the policy ran it.
+      const ids = rows.has('open_book') ? V2_CHECK_IDS.flatMap(id => (id === 'concentration' ? [id, 'open_book'] : [id])) : V2_CHECK_IDS;
+      return ids.map(id => rows.get(id) ?? { id, result: 'not_assessed', value: null, threshold: null, plain: fallback });
     },
   };
 }
@@ -643,6 +651,8 @@ export async function guardAllocation({
 
   for (const [id, plain] of Object.entries(FILL_ONLY_CHECKS)) t.skip(id, plain);
 
+  if (policy.openBookCheck && !t.firstFailure()) await openBook(t, executor, wallet, policy, evidence);
+
   const failure = t.firstFailure();
   if (failure) {
     const code = {
@@ -666,17 +676,59 @@ export async function guardAllocation({
     return result({ attempted, policy, evidence, code, reason, checks: t.finish() });
   }
 
-  const cap = t.finish().find(c => c.id === 'concentration' && c.result === 'cap');
-  if (cap) {
+  const caps = t.finish().filter(c => ['concentration', 'open_book'].includes(c.id) && c.result === 'cap');
+  if (caps.length) {
     const cappedTo = Math.floor(attempted * policy.concentrationCapShare);
+    const why = caps.map(c => (c.id === 'concentration'
+      ? `one market carries more than ${Math.round(policy.maxTopCoinPnlShare * 100)}% of the ${policy.windowDays}-day realised PnL`
+      : `the open positions are down more than ${Math.round(policy.maxOpenLossShareOfAccount * 100)}% of the account value`)).join(', and ');
     return result({ attempted, policy, evidence, code: 'capped', cappedTo, checks: t.finish(),
-      reason: `capped: one market carries more than ${Math.round(policy.maxTopCoinPnlShare * 100)}% of the ${policy.windowDays}-day realised PnL, so ${Math.round(policy.concentrationCapShare * 100)}% of the request is allowed` });
+      reason: `capped: ${why}, so ${Math.round(policy.concentrationCapShare * 100)}% of the request is allowed` });
   }
 
   const reason = twoWindow
     ? `allowed: the ${policy.shortWindowDays}-day and ${policy.windowDays}-day evidence passed every check in the policy`
     : `allowed: verified ${policy.windowDays}-day realised PnL meets the policy minimum`;
   return result({ attempted, policy, evidence, code: 'allowed', reason, checks: t.finish() });
+}
+
+/**
+ * Round 17: the open book. One read of the wallet's current Hyperliquid positions
+ * (profiler/perp-positions): its account value and the unrealised PnL on what it holds now.
+ * Down more than `maxOpenLossShareOfAccount` of the account caps the request. A missing or
+ * failed read is not assessed and changes nothing.
+ */
+async function openBook(t, executor, wallet, policy, evidence) {
+  const bar = `open unrealised loss under ${Math.round(policy.maxOpenLossShareOfAccount * 100)}% of account value`;
+  let book;
+  try { book = await executor.execute('get_open_positions', { wallet }); } catch (err) { book = { error: String(err?.message ?? err) }; }
+  const account = finite(book?.account_value_usd) ? book.account_value_usd : null;
+  const open = finite(book?.total_unrealized_pnl_usd) ? book.total_unrealized_pnl_usd : null;
+  if (!book || book.error || account === null || open === null || String(book.wallet ?? '').toLowerCase() !== wallet.toLowerCase()) {
+    t.skip('open_book', 'Not assessed: the current positions could not be read, so the open book is unknown. This check can only cap; a missing read changes nothing.');
+    return;
+  }
+  evidence.account_value_usd = account;
+  evidence.open_unrealized_pnl_usd = open;
+  evidence.open_position_count = book.open_position_count ?? null;
+  const usd = n => `${n < 0 ? '-' : '+'}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
+  const acct = `$${Math.round(account).toLocaleString('en-US')}`;
+  if (!(account > 0)) {
+    t.skip('open_book', `Not assessed: the account value is ${acct}, so there is no base to measure the open book against.`);
+    return;
+  }
+  const share = open < 0 ? -open / account : 0;
+  const pctOf = `${(share * 100).toFixed(1)}%`;
+  const limit = `${Math.round(policy.maxOpenLossShareOfAccount * 100)}%`;
+  const value = `${usd(open)} open on ${acct}`;
+  if (share > policy.maxOpenLossShareOfAccount) {
+    t.set('open_book', 'cap', value, bar,
+      `The open positions are down ${usd(-open).slice(1)}, ${pctOf} of the ${acct} account value, over the ${limit} limit. Copying now inherits that loss, so the gate sends ${Math.round(policy.concentrationCapShare * 100)}% of the request and holds the rest.`);
+  } else {
+    t.pass('open_book', value, bar, open < 0
+      ? `The open positions are down ${usd(-open).slice(1)}, ${pctOf} of the ${acct} account value, under the ${limit} limit.`
+      : `The open positions are ${usd(open)} on a ${acct} account: nothing underwater to inherit.`);
+  }
 }
 
 // ---------------------------------------------------------- copy-risk report

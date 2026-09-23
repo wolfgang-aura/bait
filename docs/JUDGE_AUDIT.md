@@ -32,7 +32,7 @@ the 7-day and 30-day verdicts disagreed on 103 of 420 matched wallet-date pairs,
 ([the robustness panel](../bench/reports/robustness-panel.md)). A gate that reads one
 window is reading a window the other contradicts about a quarter of the time, so v2
 reads both and refuses when they point opposite ways. A week that gives back less than
-10% of the month is treated as noise, not a regime: the control wallet made +$35,083 in
+10% of the month is small against it, so the two windows are read as agreeing: the control wallet made +$35,083 in
 30 days and gave back $1,208 in the last 7, and a gate that blocks on that is a gate
 nobody keeps switched on.
 

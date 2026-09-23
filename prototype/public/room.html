@@ -176,6 +176,8 @@
           <p class="icpt-amt" id="icpt-amt">$0</p>
           <p class="icpt-stamp" id="icpt-stamp">BLOCKED</p>
           <p class="icpt-why" id="icpt-why">.</p>
+          <!-- Round 17: Wire it lives in the commitment card, never where Pitch is. -->
+          <button id="wire-it" type="button" class="wire-btn" hidden>Wire it</button>
         </div>
         <div class="nansen" id="nansen" aria-live="polite">
           <span class="nansen-idle">PENNY has no data tools and only hears your pitch.</span>
@@ -205,7 +207,6 @@
         <textarea id="line" rows="1" maxlength="200"
           placeholder="Your line to PENNY. Keep it true." autocomplete="off"></textarea>
         <button id="go" type="submit">Pitch</button>
-        <button id="wire-it" type="button" class="wire-btn" hidden>Wire it</button>
       </div>
       <p class="composer-foot"><span id="count">0 / 200</span><span id="status"></span></p>
     </form>

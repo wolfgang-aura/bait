@@ -390,6 +390,13 @@ export const pitchShowedWindow = shots => shots.some(shot => CITES_WINDOW.test(S
 /** Kept for callers that only need yes or no: the line asked for the record. */
 export const ASKED_FOR_RECORD = { test: line => recordMention(line) === 'asked' };
 
+/** Round 17: the evidence as the page may see it before the verdict: no figures, no raw pointer. */
+export function sealEvidence(ev) {
+  if (!ev) return ev;
+  const { summary, raw, ...rest } = ev;
+  return rest;
+}
+
 /** The desk's own words that the ending quotes: where it asked, and where it agreed. */
 export function roundQuotes(shots) {
   const said = shots.filter(shot => !shot.caught);
@@ -642,7 +649,9 @@ export function createRoomService({
     busy: s.busy,
     error: s.error,
     submitted: s.submitted,
-    evidence: { ...s.evidence, capturedAt: s.dossier.capturedAt },
+    // Round 17: before the gate runs, the evidence carries where and when it was read, never
+    // what it says: the summary figures and the raw-file pointer arrive with the verdict.
+    evidence: s.final ? { ...s.evidence, capturedAt: s.dossier.capturedAt } : sealEvidence({ ...s.evidence, capturedAt: s.dossier.capturedAt }),
     health: health(),
     };
   };
@@ -693,34 +702,39 @@ export function createRoomService({
     const closed = tape.map(f => Number(f.closed_pnl)).filter(v => Number.isFinite(v) && v !== 0);
     const worst = closed.length ? Math.min(...closed) : null;
     const pct = share => `${(share * 100).toFixed(1)}%`;
-    const limit = share => `${Math.round(share * 100)}%`;
-    // The worst trade's honest base: the account value or the month's volume, whichever makes
-    // the trade look largest (the same comparison the report makes).
-    const bases = [['account value', Number(p.hypeRow?.account_value_usd)], ['30-day volume', Number(p.hypeRow?.month_volume_usd)]]
-      .filter(([, v]) => Number.isFinite(v) && v > 0);
+    const limitOf = share => `${Math.round(share * 100)}%`;
+    // Round 17: the account value comes from Nansen's positions read (profiler/perp-positions)
+    // when it is held, the leaderboard row otherwise. Both rows name their base and limit,
+    // passing or not, so a failing row never shows a bare dollar figure.
+    const account = Number(p.snapshot?.open_positions?.margin_summary_account_value_usd ?? p.hypeRow?.account_value_usd);
+    const accountLabel = Number.isFinite(Number(p.snapshot?.open_positions?.margin_summary_account_value_usd)) ? 'account value (Nansen positions)' : 'account value';
+    const bases = [[accountLabel, account], ['30-day volume', Number(p.hypeRow?.month_volume_usd)]].filter(([, v]) => Number.isFinite(v) && v > 0);
+    const measure = (label, value, share, limit) => `${pct(share)} of the ${dollars(value)} ${label}, ${share > limit ? 'over' : 'under'} the ${limitOf(limit)} limit`;
     const row = (id, flagId, name) => {
       if (tooShort) return { id, result: 'not_assessed', plain: `The newest ${n} fills cover only ${span}, too short to judge.`, source };
       const flag = (risk.flags ?? []).find(f => f.id === flagId);
       const na = (risk.not_assessed ?? []).find(x => x.id === flagId);
-      if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain.charAt(0).toLowerCase()}${flag.plain.slice(1)}` : flag.plain, source };
-      if (id === 'fills_worst_trade' && worst !== null && liveTape) {
-        const bar = risk.thresholds?.maxTailLossShare ?? 0.25;
+      const where = liveTape ? over : 'the fills held';
+      if (id === 'fills_worst_trade' && worst !== null) {
+        const limit = risk.thresholds?.maxTailLossShare ?? 0.25;
         const base = bases.map(([label, v]) => ({ label, v, share: Math.abs(worst) / v })).sort((a, b) => b.share - a.share)[0];
-        return na || !base
-          ? { id, result: 'not_assessed', plain: `Worst single closed trade over ${over}: ${money(worst)}. No limit applied: the evidence has no account value to size it against.`, source }
-          : { id, result: 'pass', plain: `Worst single closed trade over ${over}: ${money(worst)}, ${pct(base.share)} of the ${dollars(base.v)} ${base.label}, inside the ${limit(bar)} limit.`, source };
+        if (!base) return { id, result: 'not_assessed', plain: `Worst single closed trade over ${where}: ${money(worst)}. No limit applied: the evidence has no account value or volume to size it against.`, source };
+        return { id, result: flag || base.share > limit ? 'caution' : 'pass', plain: `Worst single closed trade over ${where}: ${money(worst)}, ${measure(base.label, base.v, base.share, limit)}.`, source };
       }
       if (na) return { id, result: 'not_assessed', plain: `Not assessed: ${na.reason}.`, source };
       const dd = risk.max_drawdown;
-      if (id === 'fills_drawdown' && dd) {
-        const bar = risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3;
-        const where = liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`;
-        if (dd.share_of_peak === null || !(dd.peak_usd > 0)) {
-          return { id, result: 'not_assessed', plain: `Worst peak-to-trough over ${where}: ${dollars(dd.max_drawdown_usd)}. No limit applied: the running result never rose above zero, so there is no peak to measure it against.`, source };
-        }
-        return { id, result: 'pass', plain: `Worst peak-to-trough over ${where}: ${dollars(dd.max_drawdown_usd)}, ${pct(dd.share_of_peak)} of the ${dollars(dd.peak_usd)} peak it fell from, under the ${limit(bar)} limit.`, source };
+      if (id === 'fills_drawdown' && dd && dd.max_drawdown_usd !== null) {
+        const parts = [];
+        if (dd.share_of_peak !== null && dd.peak_usd > 0) parts.push(['peak it fell from', dd.peak_usd, dd.share_of_peak, risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3]);
+        const acct = bases.find(([label]) => label.startsWith('account value'));
+        if (acct) parts.push([acct[0], acct[1], dd.max_drawdown_usd / acct[1], risk.thresholds?.maxDrawdownShareOfAccount ?? 0.15]);
+        const at = `Worst peak-to-trough over ${liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`}: ${dollars(dd.max_drawdown_usd)}`;
+        if (!parts.length) return { id, result: 'not_assessed', plain: `${at}. No limit applied: the running result never rose above zero and no account value is held, so there is no base to measure it against.`, source };
+        const over30 = parts.some(([, , share, limit]) => share > limit);
+        return { id, result: flag || over30 ? 'caution' : 'pass', plain: `${at}, ${parts.map(([label, value, share, limit]) => measure(label, value, share, limit)).join('; ')}.`, source };
       }
-      return { id, result: 'pass', plain: `${name} within the report's limit over ${liveTape ? over : 'the fills held'}.`, source };
+      if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain.charAt(0).toLowerCase()}${flag.plain.slice(1)}` : flag.plain, source };
+      return { id, result: 'pass', plain: `${name} within the report's limit over ${where}.`, source };
     };
     return [row('fills_drawdown', 'max_drawdown', 'Drawdown'), row('fills_worst_trade', 'tail_loss', 'Worst single trade')];
   };
@@ -738,6 +752,8 @@ export function createRoomService({
     thin_sample: 'profiler/perp-pnl-summary, 30 days',
     low_win_rate: 'profiler/perp-pnl-summary, 30 days',
     concentration: 'perp-pnl-summary top5_coins, 30 days',
+    // Round 17: the third Nansen read.
+    open_book: 'profiler/perp-positions, current positions and account value',
   };
 
   /** The report can explain a concern; it never stamps BLOCKED on money the gate let through. */
@@ -778,6 +794,8 @@ export function createRoomService({
       ],
       evidenceAt: decision.evidence.retrieved_at ?? null,
       live: !!p.snapshot?.live_read,
+      // Round 17: the open positions were read live with the summaries (profiler/perp-positions).
+      positionsLive: !!p.snapshot?.open_positions?.live,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
       // The fill tape's age against the summaries the gate read. The gate never reads the
       // tape; the table says how old it is and that nothing on it decided this wire.

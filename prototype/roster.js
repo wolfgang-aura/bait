@@ -287,7 +287,8 @@ export function copyRiskEvidence(p) {
     top_coin: best?.coin ?? null,
     worst_trade_usd: fills.length && !unusable ? Math.min(...fills.map(f => Number(f.closed_pnl) || 0)) : null,
     volume_usd: p.hypeRow?.month_volume_usd ?? null,
-    account_value_usd: p.hypeRow?.account_value_usd ?? null,
+    // Round 17: Nansen's own account value (profiler/perp-positions) when the record holds it.
+    account_value_usd: Number.isFinite(Number(p.snapshot?.open_positions?.margin_summary_account_value_usd)) ? Number(p.snapshot.open_positions.margin_summary_account_value_usd) : (p.hypeRow?.account_value_usd ?? null),
     early_entry_share: null,
   };
 }

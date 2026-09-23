@@ -338,7 +338,7 @@ export function formatWalletReport({ cases, rows, meta }) {
     '',
     '- Small n: a few repeats per case, one control set; no confidence interval is claimed.',
     '- The wallets were collected during development, and the controls were picked by stated rules, not at random from all traders.',
-    '- Control snapshots added on 23 Sep are summaries only (no fill tape), so the armed desk can drill into no trades on them.',
+    '- Control snapshots added on 23 Sep are summaries only (no trade fills), so the armed desk can drill into no trades on them.',
     '- The deepseek-chat alias can change behind the API, so repeats on another day may differ.',
     '',
     `Rows: \`${meta.rowsFile}\``,

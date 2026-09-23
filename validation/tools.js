@@ -273,6 +273,8 @@ export function makeToolExecutor(snapshot, { mode = 'armed', extraSnapshots = []
           open_position_count: positions.length,
           total_position_value_usd: round2(positions.reduce((s, p) => s + (p.position_value_usd || 0), 0)),
           total_unrealized_pnl_usd: round2(positions.reduce((s, p) => s + (p.unrealized_pnl_usd || 0), 0)),
+          // Round 17: the account value the same response carries, for the gate's open-book check.
+          account_value_usd: Number.isFinite(Number(raw.margin_summary_account_value_usd)) ? round2(Number(raw.margin_summary_account_value_usd)) : null,
           positions,
           source: 'Nansen /api/v1/profiler/perp-positions',
           retrieved_at: target.retrieved_at,

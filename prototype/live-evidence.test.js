@@ -36,7 +36,7 @@ function mockNansen({ pnl30 = -2_000_000, pnl7 = 15_000, fail = null, hang = fal
 }
 
 const reader = (mock, extra = {}) => createLiveEvidence({
-  enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 0, ...extra,
+  enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 0, positions: false, ...extra,
 });
 
 // ----------------------------------------------------------------- the reader
@@ -104,9 +104,9 @@ test('a hung provider times out, falls back and keeps the credits reserved', asy
 
 test('no key, or live reads switched off, makes no request at all', async () => {
   const mock = mockNansen();
-  const noKey = createLiveEvidence({ enabled: true, keyPresent: false, call: mock.call });
+  const noKey = createLiveEvidence({ positions: false, enabled: true, keyPresent: false, call: mock.call });
   assert.deepEqual(await noKey.read(GRINDER), { live: false, code: 'no_key', reason: 'no Nansen key is configured' });
-  const off = createLiveEvidence({ enabled: false, keyPresent: true, call: mock.call });
+  const off = createLiveEvidence({ positions: false, enabled: false, keyPresent: true, call: mock.call });
   assert.equal((await off.read(GRINDER)).code, 'disabled');
   assert.equal(mock.seen.length, 0);
   assert.equal(noKey.status().available, false);
@@ -120,7 +120,7 @@ test('a provider error or an incomplete summary is a fallback, never a number', 
 
   const broken = mockNansen();
   const call = async (...args) => { const r = await broken.call(...args); delete r.data.data.win_rate; return r; };
-  const partial = await createLiveEvidence({ enabled: true, keyPresent: true, call, now: () => T0 }).read(GRINDER);
+  const partial = await createLiveEvidence({ positions: false, enabled: true, keyPresent: true, call, now: () => T0 }).read(GRINDER);
   assert.equal(partial.code, 'unusable');
 });
 
@@ -377,7 +377,7 @@ function fillsMock({ fills = 2, last = true, stepMs = 3_600_000, pnl = i => (i %
 test('a live read also reads the newest fills: second endpoint, charged, saved raw, and the tape is live, not stale', async () => {
   const mock = fillsMock({ fills: 6 });
   const rawDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-fills-'));
-  const live = createLiveEvidence({ enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 1, rawDir });
+  const live = createLiveEvidence({ positions: false, enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 1, rawDir });
   const read = await live.read(GRINDER);
   assert.equal(read.live, true);
   assert.deepEqual(mock.seen.map(c => c.pathName).sort(), ['profiler/perp-pnl-summary', 'profiler/perp-pnl-summary', 'profiler/perp-trades']);
@@ -398,7 +398,7 @@ test('a live read also reads the newest fills: second endpoint, charged, saved r
 test('a failed fills page keeps the summaries live and falls back to the capture tape, labelled', async () => {
   const base = fillsMock();
   const call = async (p, b, o) => { if (p === 'profiler/perp-trades') throw Object.assign(new Error('429'), { status: 429 }); return base.call(p, b, o); };
-  const live = createLiveEvidence({ enabled: true, keyPresent: true, call, now: () => T0, fillPages: 1 });
+  const live = createLiveEvidence({ positions: false, enabled: true, keyPresent: true, call, now: () => T0, fillPages: 1 });
   const read = await live.read(GRINDER);
   assert.equal(read.live, true);
   assert.match(read.fills.error, /429/);
@@ -408,7 +408,7 @@ test('a failed fills page keeps the summaries live and falls back to the capture
 
 test('round 16: a live tape shorter than a week is not assessed, and the report says how little it covers', async () => {
   const mock = fillsMock({ fills: 6 });
-  const live = createLiveEvidence({ enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 1 });
+  const live = createLiveEvidence({ positions: false, enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 1 });
   const read = await live.read(GRINDER);
   read.fills.complete = false;
   const { copyRiskReport, refreshProspect } = await import('./roster.js');
@@ -461,11 +461,50 @@ test('round 16: newest fills covering under a week are N/A, "too short to judge"
   await say(full, round.id, 0, round.dossier.facts[0].insert);
   checks = (await full.finish(round.id, {})).final.gate.checks;
   assert.equal(checks.find(c => c.id === 'fills_drawdown').plain,
-    'Worst peak-to-trough over all 6 fills in the window: $200, 6.7% of the $3,000 peak it fell from, under the 30% limit.');
-  // A curve that fell from zero has no peak to measure against: no limit is claimed.
+    'Worst peak-to-trough over all 6 fills in the window: $200, 6.7% of the $3,000 peak it fell from, under the 30% limit; 0.0% of the $2,938,036 account value (Nansen positions), under the 15% limit.');
+  // A curve that fell from zero has no peak; it is measured against the account value alone.
   const flat = liveRoom([...answer(5000, 'intrigued', 'Opening small.')], fillsMock({ fills: 6 }), { fillPages: 1 }).service;
   round = await flat.start({ prospect: 'grinder' });
   await say(flat, round.id, 0, round.dossier.facts[0].insert);
   checks = (await flat.finish(round.id, {})).final.gate.checks;
-  assert.match(checks.find(c => c.id === 'fills_drawdown').plain, /No limit applied: the running result never rose above zero/);
+  assert.equal(checks.find(c => c.id === 'fills_drawdown').plain, 'Worst peak-to-trough over all 6 fills in the window: $500, 0.0% of the $2,938,036 account value (Nansen positions), under the 15% limit.');
+});
+
+test('round 17: nothing the gate reads is in a response before the verdict; the final carries it', async () => {
+  const { service } = liveRoom([...answer(2500, 'intrigued', 'Small.'), ...answer(5000, 'sold', 'More.')], fillsMock({ fills: 6 }), { fillPages: 1 });
+  const round = await service.start({ prospect: 'grinder' });
+  const one = await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const two = await say(service, round.id, 1, round.dossier.facts[1].insert);
+  const leak = /realized_pnl|win_rate_30d|closed_trade_count|trades_30d|open_positions|max_drawdown|"summary"|"raw"|"truth"/;
+  for (const [name, body] of [['start', round], ['line 1', one], ['line 2', two]]) {
+    assert.doesNotMatch(JSON.stringify(body), leak, `${name} response holds no gate figure`);
+  }
+  const { final } = await service.finish(round.id, { wire: true });
+  assert.equal(typeof final.evidence.summary.realized_pnl_30d_usd, 'number', 'the figures arrive with the verdict');
+});
+
+test('round 17: a live read also reads the open positions (one credit), and a failing fill row names its base and limit', async () => {
+  // Positions: down $1,200,000 on a $2,000,000 account, 60%: the open-book check caps.
+  const base = fillsMock({ fills: 6, pnl: i => (i === 2 ? -900_000 : 100_000) });
+  const call = async (pathName, body) => {
+    if (pathName === 'profiler/perp-positions') {
+      return { status: 200, headers: { 'x-nansen-credits-cost': '1' }, data: { data: {
+        asset_positions: [{ position: { token_symbol: 'BTC', unrealized_pnl_usd: '-1200000', position_value_usd: '5000000' } }],
+        margin_summary_account_value_usd: '2000000' } } };
+    }
+    return base.call(pathName, body);
+  };
+  const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], { call }, { fillPages: 1, positions: true });
+  const round = await service.start({ prospect: 'grinder' });
+  assert.equal(live.status().credits_today, 4, 'two summaries, one page of fills, the open positions');
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  const book = final.gate.checks.find(c => c.id === 'open_book');
+  assert.equal(book.result, 'cap');
+  assert.match(book.plain, /^The open positions are down \$1,200,000, 60\.0% of the \$2,000,000 account value, over the 25% limit\./);
+  assert.equal(final.verdict, 'capped');
+  // The drawdown row fails, and still shows its percent of each base and the limit.
+  const dd = final.gate.checks.find(c => c.id === 'fills_drawdown');
+  assert.equal(dd.result, 'caution');
+  assert.equal(dd.plain, 'Worst peak-to-trough over all 6 fills in the window: $900,000, 300.0% of the $300,000 peak it fell from, over the 30% limit; 45.0% of the $2,000,000 account value (Nansen positions), over the 15% limit.');
 });

@@ -275,7 +275,7 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     assert.equal(allowed.body.decision, 'allow');
     assert.equal(allowed.body.allocation, 5000);
     assert.equal(allowed.body.evidence.realized_pnl_usd, 2450809.47);
-    assert.equal(allowed.body.creditsCharged, 2, 'an allow read both windows');
+    assert.equal(allowed.body.creditsCharged, 3, 'an allow read both windows and the open positions');
     assert.equal(allowed.body.checks.find(c => c.id === 'regime_agreement').result, 'pass');
   } finally { await profitable.stop(); }
 });
@@ -394,7 +394,8 @@ test('/healthz reports the live-read caps and counters, and the key never reache
     assert.equal(body.nansen.blocked_by, 'disabled');
     assert.equal(body.nansen.daily_cap, 12);
     assert.equal(body.nansen.total_cap, 99);
-    assert.equal(body.nansen.credits_per_read, 2);
+    // Two summaries and the open positions (round 17); fill pages are off in this test.
+    assert.equal(body.nansen.credits_per_read, 3);
     assert.equal(body.nansen.cache_ttl_minutes, 30);
     assert.ok(Number.isInteger(body.nansen.credits_today));
     assert.ok(Number.isInteger(body.nansen.credits_total));
@@ -418,7 +419,7 @@ test('/healthz reports the live-read caps and counters, and the key never reache
 
 test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 still forces frozen', async () => {
   const stubs = { BAIT_TEST_STUBS: '1', ROOM_NANSEN_CALL_MODULE: ROOM_STUB, NANSEN_API_KEY: 'test-key' };
-  const on = await startServer({ ...stubs, NANSEN_LIVE: '' });
+  const on = await startServer({ ...stubs, NANSEN_LIVE: '', RENDER_GIT_COMMIT: 'abc1234def' });
   try {
     const config = await on.call('/api/room');
     assert.equal(config.body.evidence.liveReady, true, 'a key on the host is enough to go live');
@@ -426,6 +427,8 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
     const health = await on.call('/api/health');
     assert.equal(health.body.mode, 'live Nansen reads');
     assert.equal(health.body.live, true);
+    assert.equal(health.body.commit, 'abc1234def', 'the deployed commit, from RENDER_GIT_COMMIT');
+    assert.equal((await on.call('/healthz')).body.commit, 'abc1234def');
     // Round 16: no nested "live": false left over from the lab encounter.
     assert.equal('live_data' in health.body, false);
     assert.equal(health.body.room_live.available, true);
@@ -447,7 +450,7 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
 test('hosted with NANSEN_LIVE=1: a Hyperliquid pick is live with its fetch time, a Fomo pick is not, and the cap holds', async () => {
   const s = await startServer({
     NANSEN_LIVE: '1', BAIT_TEST_STUBS: '1', ROOM_NANSEN_CALL_MODULE: ROOM_STUB,
-    HOSTED_NANSEN_CREDITS_PER_DAY: '3', HOSTED_LIVE_FILL_PAGES: '0',
+    HOSTED_NANSEN_CREDITS_PER_DAY: '3', HOSTED_LIVE_FILL_PAGES: '0', HOSTED_LIVE_POSITIONS: '0',
   });
   try {
     const config = await s.call('/api/room');
@@ -458,7 +461,8 @@ test('hosted with NANSEN_LIVE=1: a Hyperliquid pick is live with its fetch time,
     assert.equal(live.status, 201);
     assert.equal(live.body.evidence.live, true);
     assert.match(live.body.evidence.fetchedLabel, /^\d\d:\d\d UTC$/);
-    assert.equal(live.body.evidence.summary.realized_pnl_30d_usd, -1234567, 'the stub figure, not the frozen one');
+    // Round 17: the read's figures are sealed until the verdict.
+    assert.equal('summary' in live.body.evidence, false, 'no gate figure before the verdict');
     assert.equal('truth' in live.body.prospect, false, 'the live record is revealed with the verdict');
 
     const health = await s.call('/healthz');

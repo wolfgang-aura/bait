@@ -56,8 +56,9 @@ export function createLiveGuardExecutor({
   let charged = 0;
 
   async function execute(name, args = {}) {
+    if (name === 'get_open_positions') return openPositions(args);
     if (name !== 'get_pnl_summary') {
-      throw new Error(`Live guard executor serves get_pnl_summary only, not "${name}".`);
+      throw new Error(`Live guard executor serves get_pnl_summary and get_open_positions only, not "${name}".`);
     }
 
     const wallet = String(args.wallet ?? '').toLowerCase();
@@ -103,6 +104,28 @@ export function createLiveGuardExecutor({
       top5_coins: Array.isArray(summary.top5_coins) ? summary.top5_coins : undefined,
       retrieved_at: at.toISOString(),
       source: GUARD_SOURCE,
+    };
+  }
+
+  // Round 17: the third read, one credit. A throw reaches the gate's open-book check, which
+  // records it as not assessed.
+  async function openPositions(args = {}) {
+    const wallet = String(args.wallet ?? '').toLowerCase();
+    const at = now();
+    calls.push({ path: 'profiler/perp-positions', body: { address: wallet }, at: at.toISOString() });
+    const response = await call('profiler/perp-positions', { address: wallet }, { note: 'guard live open positions', timeoutMs });
+    charged += creditCostFor('profiler/perp-positions');
+    const d = response?.data?.data ?? response?.data ?? null;
+    const rows = Array.isArray(d?.asset_positions) ? d.asset_positions : null;
+    const account = Number(d?.margin_summary_account_value_usd);
+    if (!rows || !Number.isFinite(account)) return { error: 'positions_unavailable', message: `Nansen returned no open positions for ${wallet}.` };
+    return {
+      wallet,
+      open_position_count: rows.length,
+      total_unrealized_pnl_usd: round2(rows.reduce((s, r) => s + (Number(r.position?.unrealized_pnl_usd) || 0), 0)),
+      account_value_usd: round2(account),
+      source: 'Nansen /api/v1/profiler/perp-positions',
+      retrieved_at: at.toISOString(),
     };
   }
 

@@ -301,6 +301,8 @@ const liveEvidence = createLiveEvidence({
   rawDir: ROOM_STUB ? null : LIVE_READS_DIR,
   // Pages of newest perp fills read live with the summaries (round 11), 1 credit a page.
   fillPages: Number(process.env.HOSTED_LIVE_FILL_PAGES ?? 1),
+  // Round 17: the open positions and account value, one credit (HOSTED_LIVE_POSITIONS=0 turns it off).
+  positions: process.env.HOSTED_LIVE_POSITIONS !== '0',
 });
 
 // Seed the credit guard from the free account endpoint before anything can spend.
@@ -326,6 +328,9 @@ function nansenQuota() {
   };
 }
 
+/** Round 17: the deployed commit, from the host's environment; null when it is not set. */
+const DEPLOYED_COMMIT = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null;
+
 function health() {
   const env = loadEnv();
   const ageMs = Date.now() - Date.parse(snapshot.retrieved_at);
@@ -334,6 +339,7 @@ function health() {
   const room = liveEvidence.status();
   const roomLive = !!room.available;
   return {
+    commit: DEPLOYED_COMMIT,
     mode: roomLive ? 'live Nansen reads' : 'frozen snapshot',
     live: roomLive,
     live_reason: roomLive ? null : room.blocked_by ?? (room.enabled ? 'unavailable' : 'disabled'),
@@ -594,6 +600,8 @@ const server = http.createServer(async (req, res) => {
       const live = liveEvidence.status();
       return send(200, {
         ok: true,
+        // Round 17: the commit this host was deployed from (Render sets RENDER_GIT_COMMIT).
+        commit: DEPLOYED_COMMIT,
         // `live` when a Hyperliquid pick would get a live read right now.
         evidence: live.available ? 'live' : 'frozen',
         roundsToday: s.roundsToday,

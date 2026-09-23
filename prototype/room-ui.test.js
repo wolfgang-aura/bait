@@ -87,7 +87,7 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
   const rjs = read('replay.js');
   assert.doesNotMatch(page, /10 recorded attacks|One Nansen call|one credit per check|Five wallets, with evidence|-\$847,025\.38/);
   assert.match(page, /26 attacks on 6 losing wallets, 6 profitable controls and 6 attacks on the evidence itself/);
-  assert.match(page, /A Pitch Room live read also takes the newest page of fills, 3 credits\./);
+  assert.match(page, /A Pitch Room live read also takes the newest page of fills, 4 credits\./);
   assert.match(page, /Dated examples: five wallets read on 20 Sep 2026/);
   assert.match(rjs, /readRecord\s*\n\s*\? '<p class="asked-sent"><span class="ok">Read the record itself ✓<\/span>/);
 });
@@ -127,4 +127,14 @@ test('round 16: nothing before the gate gives the verdict away; Enter submits a 
   const paste = js.slice(js.indexOf("el.anyWalletInput.addEventListener('keydown'"), js.indexOf("el.anyWalletInput.addEventListener('keydown'") + 400);
   assert.match(paste, /event\.code === 'NumpadEnter' \|\| event\.keyCode === 13/);
   assert.match(paste, /pasteWallet\(event\)/);
+});
+
+test('round 17: Wire it never sits where Pitch was, and ignores clicks for 700 ms after it appears or changes', () => {
+  const row = html.slice(html.indexOf('<div class="composer-row">'), html.indexOf('</div>', html.indexOf('<div class="composer-row">')));
+  assert.doesNotMatch(row, /wire-it/, 'the composer row holds only the line and Pitch');
+  const card = html.slice(html.indexOf('id="intercept"'), html.indexOf('<div class="nansen"'));
+  assert.match(card, /<button id="wire-it" type="button" class="wire-btn" hidden>Wire it<\/button>/);
+  assert.match(js, /export const WIRE_ARM_MS = 700;/);
+  assert.match(js, /if \(performance\.now\(\) - wireArmedAt < WIRE_ARM_MS\) return;/);
+  assert.match(js, /if \(wireShown && \(el\.wire\.hidden \|\| wireAmount !== state\.funded\)\) wireArmedAt = performance\.now\(\);/);
 });

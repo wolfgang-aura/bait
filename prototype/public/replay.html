@@ -186,7 +186,7 @@ if (decision.decision === 'allow') {
       <button type="button" id="b-copy" class="btn-ghost">Copy the snippet</button>
       <span id="b-copy-status" class="copy-status" role="status" aria-live="polite"></span>
     </div>
-    <p class="note guard-live">Run it live with only a Nansen key: <code>npm run guard -- --wallet 0x… --allocation 5000</code> reads the two summaries (2 credits, 1 if the month already refuses). A Pitch Room live read also takes the newest page of fills, 3 credits. Every live read's raw Nansen response is committed in <a href="https://github.com/wolfgang-aura/bait/tree/main/bench/live-reads">bench/live-reads</a> with its SHA-256.</p>
+    <p class="note guard-live">Run it live with only a Nansen key: <code>npm run guard -- --wallet 0x… --allocation 5000</code> reads the two summaries and the open positions (3 credits, 1 if the month already refuses). A Pitch Room live read also takes the newest page of fills, 4 credits. Every live read's raw Nansen response is committed in <a href="https://github.com/wolfgang-aura/bait/tree/main/bench/live-reads">bench/live-reads</a> with its SHA-256.</p>
 
     <details class="audit" id="audit">
       <summary>Audit: prompt-only rule, paired policy test, sources, hashes</summary>

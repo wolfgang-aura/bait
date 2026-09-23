@@ -87,10 +87,14 @@ check-then-decide: gate-buys let-through 6/6 (behind v3: 0/6)
 source; stale evidence (live mode); a losing 30-day month; a week that contradicts the month
 by 10% or more of it; fewer than 20 closed trades; a win rate under 40%. A profitable month
 one market carried (everything else lost) gets 25% of the request: `$X requested, $Y allowed,
-$Z held`. Anything missing or failed means $0. Integration: `guardAllocation({ executor,
+$Z held`. Since revision 3 (round 17) the gate also reads the wallet's current positions
+(`profiler/perp-positions`): open positions down more than 25% of the account value cap the
+request the same way. A failed positions read is not assessed and never raises an amount;
+anything else missing or failed means $0. Integration: `guardAllocation({ executor,
 wallet, allocation })`, [contract](docs/WALLET_ALLOCATION_GUARD.md). In the Pitch Room the AI
 runs the bench's no-data setup (your pitch only); only the gate reads Nansen. Live rounds read
-the two summaries and the newest page of trade fills live (3 credits). Drawdown and worst trade
+the two summaries, the newest page of trade fills and the open positions live (4 credits; the
+guard CLI reads the summaries and positions, 3 credits, 1 if the month already refuses). Drawdown and worst trade
 are measured on those fills only when they cover a week or more; a page that covers less (a
 busy wallet's 1,000 fills can be minutes) shows those rows as N/A, too short to judge. A frozen
 round uses the capture's fills and says how old they are.

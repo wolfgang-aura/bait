@@ -16,8 +16,14 @@ minimum eligibility rule. It does not mean the wallet is safe or worth copying.
 
 ## Default policy: `wallet-copy-risk-v3`
 
-`wallet-copy-risk-v3` is v2 below with one change: a profitable month that one market
-carried is capped at 25% of the request instead of refused. The default gate reads **two** windows of Nansen `profiler/perp-pnl-summary` for the
+`wallet-copy-risk-v3` is v2 below with two changes: a profitable month that one market
+carried is capped at 25% of the request instead of refused, and (revision 3, 23 Sep 2026)
+one more Nansen read, `profiler/perp-positions` (1 credit), runs once the summaries pass:
+when the open positions are down more than 25% of the account value, the request is capped
+at 25% (`open_book`). A failed positions read is `not_assessed` and changes nothing.
+Re-scoring the per-wallet benchmark under revision 3 changed no decision
+(`bench/reports/2026-09-23T11-56-45-011Z-wallets.md`, zero model calls); the frozen control
+captures predate this read, so `open_book` is not assessed on them. The default gate reads **two** windows of Nansen `profiler/perp-pnl-summary` for the
 wallet, the 7-day and the 30-day, and runs a named check on each. It allows only when
 no check fails. One credit per window, and the 7-day window is fetched only after the
 30-day evidence has passed everything it alone can decide, so a refused wallet costs

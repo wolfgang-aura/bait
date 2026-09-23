@@ -5,7 +5,8 @@
  *   npm run guard -- --wallet 0x9546b9d4103be41ce13483a8f299d0df0eeb181c --allocation 5000 --json
  *
  * The default policy is `wallet-copy-risk-v3`: it reads the 7-day AND the 30-day
- * `profiler/perp-pnl-summary` and costs two credits, one per window, and it buys the
+ * `profiler/perp-pnl-summary` and costs two credits, one per window, plus one for the open
+ * positions (`profiler/perp-positions`) when the summaries pass; it buys the
  * second window only after the first one passes. `--policy v1` is the older one-window
  * rule the recorded benchmark row is tied to, at one credit.
  *
@@ -144,7 +145,10 @@ export async function main({
     }
   }
 
-  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary, at most ${windows.length} credit${windows.length === 1 ? '' : 's'}...\n`);
+  // Round 17: v3 revision 3 also reads the open positions (one credit) when the summaries pass.
+  const positions = policy.openBookCheck ? 1 : 0;
+  const most = windows.length + positions;
+  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary${positions ? ' and open positions' : ''}, at most ${most} credit${most === 1 ? '' : 's'}...\n`);
 
   let decision;
   try {

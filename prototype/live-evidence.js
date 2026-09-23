@@ -36,6 +36,8 @@ export const LIVE_READ_CREDITS = 2 * creditCostFor(LIVE_ENDPOINT);
 /** The second live endpoint: the newest perp fills, newest first, one credit a page. */
 export const FILLS_ENDPOINT = 'profiler/perp-trades';
 export const FILLS_PER_PAGE = 1000;
+/** Round 17: the third live endpoint, the wallet's current positions and account value. One credit. */
+export const POSITIONS_ENDPOINT = 'profiler/perp-positions';
 /** Pages of fills per read (round 11). 0 turns the fills read off. At most 3. */
 export const DEFAULT_FILL_PAGES = 1;
 export const DEFAULT_DAILY_CAP = 2000;
@@ -118,11 +120,11 @@ export function createLiveEvidence({
   enabled, keyPresent, call = nansenCall, now = () => new Date(),
   ttlMs = LIVE_EVIDENCE_TTL_MS, dailyCap = DEFAULT_DAILY_CAP, totalCap = DEFAULT_TOTAL_CAP,
   timeoutMs = DEFAULT_READ_TIMEOUT_MS, stateFile = null, log = () => {}, rawDir = null,
-  fillPages = DEFAULT_FILL_PAGES, fillsTimeoutMs = 15_000,
+  fillPages = DEFAULT_FILL_PAGES, fillsTimeoutMs = 15_000, positions = true,
 } = {}) {
   const pages = Math.max(0, Math.min(3, Math.round(fillPages)));
   // What one read can cost: two summaries and up to `pages` pages of fills.
-  const READ_CREDITS = LIVE_READ_CREDITS + pages * creditCostFor(FILLS_ENDPOINT);
+  const READ_CREDITS = LIVE_READ_CREDITS + pages * creditCostFor(FILLS_ENDPOINT) + (positions ? creditCostFor(POSITIONS_ENDPOINT) : 0);
   const cache = new Map();
   const inFlight = new Map();
   const counter = { day: utcDay(now()), creditsToday: 0, creditsTotal: 0, lastSuccessAt: null, lastFailure: null, reads: 0 };
@@ -230,6 +232,25 @@ export function createLiveEvidence({
           log(`live fills failed wallet=${wallet.slice(0, 10)}: ${fills.error}`);
         }
       }
+      // Round 17: the third read, the open positions and account value. A failure keeps
+      // everything else live and leaves the gate's open-book check not assessed.
+      let book = null;
+      if (positions && !(noTrades(summary30) && noTrades(summary7))) {
+        const request = { address: wallet };
+        try {
+          const res = await within(call(POSITIONS_ENDPOINT, request, { note: 'room live open positions', timeoutMs: fillsTimeoutMs }), fillsTimeoutMs);
+          const hdr = res?.headers?.['x-nansen-credits-cost'];
+          const n = hdr === undefined || hdr === null || hdr === '' ? NaN : Number(hdr);
+          charged += Number.isFinite(n) ? n : creditCostFor(POSITIONS_ENDPOINT);
+          responses.positions = { request, status: res?.status ?? null, credits_cost_header: hdr ?? null, body: res?.data ?? null };
+          const d = res?.data?.data ?? res?.data ?? null;
+          book = Array.isArray(d?.asset_positions) ? d : { error: 'no asset_positions in the response' };
+        } catch (err) {
+          if (err?.status) charged += creditCostFor(POSITIONS_ENDPOINT);
+          book = { error: String(err?.message ?? err).slice(0, 160) };
+          log(`live positions failed wallet=${wallet.slice(0, 10)}: ${book.error}`);
+        }
+      }
       // Every response that reached us and was paid for is kept, whatever it says.
       let raw = null;
       try { raw = saveRawRead(rawDir, { wallet, fetchedAt: iso(at), windows, responses }); } catch (err) { log(`raw read save failed: ${err.message}`); }
@@ -245,6 +266,7 @@ export function createLiveEvidence({
         summary7: { ...summary7, top5_coins: Array.isArray(summary7.top5_coins) ? summary7.top5_coins : [] },
         endpoint: LIVE_ENDPOINT,
         fills,
+        positions: book,
         raw,
       };
     } finally {
@@ -354,11 +376,12 @@ export function liveSnapshot(frozen, read) {
         from_capture: read.fetchedAt,
       },
       live_read: {
-        fetched_at: read.fetchedAt, endpoint: read.endpoint, endpoints: [read.endpoint, FILLS_ENDPOINT],
-        credits: read.cached ? 0 : LIVE_READ_CREDITS + read.fills.pages, cached: !!read.cached,
+        fetched_at: read.fetchedAt, endpoint: read.endpoint, endpoints: [read.endpoint, FILLS_ENDPOINT, ...(read.positions ? [POSITIONS_ENDPOINT] : [])],
+        credits: read.cached ? 0 : LIVE_READ_CREDITS + read.fills.pages + (read.positions ? 1 : 0), cached: !!read.cached,
         fills_live: true, fills_from_capture: null,
       },
       reconciliation: { skipped: 'live fills are the newest pages only; not reconciled against the summary' },
+      ...openPositionsOf(read),
     };
   }
   return {
@@ -389,5 +412,17 @@ export function liveSnapshot(frozen, read) {
       fills_from_capture: frozen.retrieved_at,
     },
     reconciliation: { skipped: 'live summaries over a frozen fill tape are not reconciled' },
+    ...openPositionsOf(read),
   };
+}
+
+/**
+ * Round 17: the live open positions replace the capture's, so the gate's open-book check and
+ * the account value the fill rows are measured against come from this read. A failed read
+ * says so; the capture's old positions are never passed off as current.
+ */
+function openPositionsOf(read) {
+  if (!read.positions) return {};
+  if (read.positions.error) return { open_positions: { skipped: `live positions read failed: ${read.positions.error}` } };
+  return { open_positions: { ...read.positions, live: true, fetched_at: read.fetchedAt } };
 }
