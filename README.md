@@ -27,7 +27,7 @@ tested: DeepSeek (`deepseek-chat`), frozen snapshots.
 | ...that it let through at a capped 25% | | | 3 of 18 |
 
 - **Nansen data helps but does not fix it.** With Nansen tools the AI still backed a loser in
-  19 of 78 runs; on wallet 3, whose last week was up inside a losing month, 5 of 6 times.
+  19 of 78 runs; on wallet 3, whose last week was up inside a losing month, 5 of 12 times.
 - **The gate's cost on profitable traders:** 3 of 18 funding decisions blocked (one wallet
   whose last week reversed its month) and 3 of 18 capped at 25%.
 - **Isn't this just a PnL check?** A 19-line PnL rule (`examples/agents/check-then-decide.mjs`)
