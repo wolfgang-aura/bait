@@ -8,7 +8,7 @@ test('a missing DeepSeek key says so, names the key, and points at the keyless b
   const s = deskStatus({ ...base, hasKey: false });
   assert.deepEqual([s.ready, s.blocker], [false, 'no_key']);
   assert.match(s.message, /No DEEPSEEK_API_KEY in \.env/);
-  assert.match(s.message, /npm run bench` needs no keys/);
+  assert.match(s.message, /npm run bench needs no keys/);
   assert.doesNotMatch(s.message, /offline/i);
 });
 

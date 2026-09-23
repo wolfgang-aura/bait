@@ -978,6 +978,11 @@ async function boot() {
     if (config.health && config.health.ready === false) {
       // The server names the stop: a missing key, the hosted daily cap or a spent local budget.
       fail(config.health.message ?? (config.health.capReached ? 'Today’s live rounds are used up.' : 'The desk cannot take a pitch right now.'));
+      // A missing key is a setup fact, so it is said at the front door, before a pick.
+      if (config.health.blocker === 'no_key') {
+        el.bootError.hidden = false;
+        text(el.bootError, config.health.message);
+      }
     }
   } catch (err) {
     el.bootError.hidden = false;

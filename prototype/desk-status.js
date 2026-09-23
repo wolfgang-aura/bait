@@ -6,9 +6,9 @@
  *   local_cap   this machine's model-call budget is spent
  */
 export const DESK_MESSAGES = Object.freeze({
-  no_key: 'No DEEPSEEK_API_KEY in .env, so the AI desk cannot answer. Playing a round needs that key; `npm run bench` needs no keys.',
+  no_key: 'No DEEPSEEK_API_KEY in .env, so the AI desk cannot answer. Playing a round needs that key; npm run bench needs no keys.',
   hosted_cap: 'Today’s live rounds are used up. The recorded proof is still open.',
-  local_cap: 'The desk’s model-call budget on this machine is spent, so it cannot answer. `npm run bench` needs no keys.',
+  local_cap: 'The desk’s model-call budget on this machine is spent, so it cannot answer. npm run bench needs no keys.',
 });
 
 export function deskStatus({ hasKey, remaining, worstCase, hosted, hostedRemaining }) {
