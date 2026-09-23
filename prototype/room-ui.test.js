@@ -91,3 +91,7 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
   assert.match(page, /Dated examples: five wallets read on 20 Sep 2026/);
   assert.match(rjs, /readRecord\s*\n\s*\? '<p class="asked-sent"><span class="ok">Read the record itself ✓<\/span>/);
 });
+
+test('the meter never shows a negative figure while it counts up', () => {
+  assert.match(js, /const t = Math\.min\(1, Math\.max\(0, \(now - started\) \/ 700\)\);/);
+});

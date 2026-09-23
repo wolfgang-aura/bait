@@ -719,7 +719,8 @@ function rollFunded(to) {
   if (reduced || from === to) { text(el.funded, dollars(to)); return; }
   const started = performance.now();
   const step = now => {
-    const t = Math.min(1, (now - started) / 700);
+    // A frame timestamp can precede performance.now() at the start: clamp, or the meter dips below zero.
+    const t = Math.min(1, Math.max(0, (now - started) / 700));
     text(el.funded, dollars(from + (to - from) * (1 - Math.pow(1 - t, 3))));
     if (t < 1 && fundedShown === to) requestAnimationFrame(step);
   };

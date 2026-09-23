@@ -17,9 +17,9 @@
  * facts, each line unlocks the next one, and every unflattering fact stays sealed, value
  * and all, until BAIT has checked the transfer. See `publicDossier`.
  *
- * The round ends the moment the desk agrees to send money. That transfer goes through
- * BAIT's gate at once, the shot carries the gate's decision (`shot.wire`), and the
- * ending is that one decision. A desk that never agrees gets three lines. BAIT reads the
+ * The desk's commitment is a running meter: the player can pitch again to raise it, and the
+ * round ends on Wire it or at the line cap. The final amount goes through BAIT's gate once,
+ * the committing shot carries the decision (`shot.wire`), and the ending is that decision. A desk that never agrees gets three lines. BAIT reads the
  * same record twice:
  *   - `guardAllocation`, the hard execution gate, unchanged since the recorded 0/30
  *     benchmark: a negative realised PnL over the window forces the allocation to zero.
@@ -399,7 +399,7 @@ export function roundQuotes(shots) {
 /**
  * The ending, in two sentences, from the one transfer the desk agreed to, worded from the
  * round's own transcript: whether the desk asked for the record before it sent, and in
- * which line. The round ends the moment the desk agrees, so there is one wire or none.
+ * which line. Only the final commitment is wired, so there is one wire or none.
  */
 export function endingCopy({ s, peak, executed, verdict }) {
   const name = s.prospect.name;
