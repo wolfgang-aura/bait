@@ -7,7 +7,7 @@
   "results": [
     {
       "trader_address": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
-      "trader_address_label": "yellownfts.eth*",
+      "trader_address_label": null,
       "total_pnl": -5194129.04106,
       "realized_pnl_usd": -4988967.505513,
       "unrealized_pnl_usd": -205161.53554699974,
@@ -91,7 +91,7 @@
     },
     {
       "trader_address": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
-      "trader_address_label": "Uses \"MMREFCSI\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -5059693.395642,
       "realized_pnl_usd": -4745429.479047,
       "unrealized_pnl_usd": -314263.9165950001,
@@ -183,7 +183,7 @@
     },
     {
       "trader_address": "0x06bc596fb16734f7abc3a5996b580be932c2fb72",
-      "trader_address_label": "picholas.eth*",
+      "trader_address_label": null,
       "total_pnl": -3588349.9060319965,
       "realized_pnl_usd": -3637195.254852,
       "unrealized_pnl_usd": 48845.348820003506,
@@ -230,7 +230,7 @@
     },
     {
       "trader_address": "0x6daec5ff434924e0839358e710e6ae5f158590de",
-      "trader_address_label": "Uses \"ASD123456\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -2402106.7728810003,
       "realized_pnl_usd": -2403514.137651,
       "unrealized_pnl_usd": 1407.3647700000051,
@@ -298,7 +298,7 @@
     },
     {
       "trader_address": "0xa98143608a6846453c88f29506d64a8b85532e65",
-      "trader_address_label": "Uses \"ASXN\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -6768071.095615,
       "realized_pnl_usd": -2051706.044027,
       "unrealized_pnl_usd": -4716365.051588001,

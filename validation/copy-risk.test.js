@@ -107,8 +107,8 @@ test('each check fires on its own threshold and nowhere else', () => {
 
   assert.match(fires({ win_rate: 0.39 }, 'low_win_rate').plain, /the winners carry it/);
   assert.match(fires({ early_entry_share: 0.21 }, 'uncopyable_entries').plain, /cannot copy with any lag/);
-  assert.match(fires({ top_position_share: 0.51 }, 'concentration').plain, /One bag decides the outcome/);
-  assert.match(fires({ top_coin_pnl_share: 0.61 }, 'concentration').plain, /One bag decides the outcome/);
+  assert.match(fires({ top_position_share: 0.51 }, 'concentration').plain, /One market carried the result/);
+  assert.match(fires({ top_coin_pnl_share: 0.61 }, 'concentration').plain, /One market carried the result/);
   assert.match(fires({ worst_trade_usd: -600_000, account_value_usd: 1_000_000 }, 'tail_loss').plain, /quarter of the book/);
 
   // A drawdown over 30% of the peak, on a series whose arithmetic is obvious.

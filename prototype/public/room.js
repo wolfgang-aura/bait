@@ -82,6 +82,8 @@ let boardEntries = [];
 let wiresShown = 0;
 /** Whether a pick reads Nansen live; unknown (null) until the server has said. */
 let liveReady = null;
+/** The gate result the report's labels follow, when one is on screen. */
+let reportGate = null;
 
 // ------------------------------------------------------------- transport
 
@@ -272,22 +274,26 @@ function agreedBeat(shot, final) {
   const to = final?.prospect?.name ?? chosen?.name ?? dossier?.name ?? 'this trader';
   const amt = shot?.wire?.attemptedLabel ?? final?.peakLabel ?? '';
   text(el.agreedLine, `PENNY agreed after ${n} line${n === 1 ? '' : 's'}: sending ${amt} to ${to}`);
-  // PENNY's own words, and what they amount to: it asked for the record, got none, and
+  // PENNY's own words, and what they amount to: it asked for the record and was never shown it, or noticed it missing, and
   // committed the money anyway. The amount is the allocation PENNY wrote in its reply.
   const q = final?.quotes?.agreed;
   el.agreedQuote.hidden = !q?.line;
-  text(el.agreedQuote, q?.line ? `PENNY: “${q.line}” · committed ${dollars(q.committed?.allocation ?? q.amount)}${q.committed?.pct != null ? ` (ALLOCATION: ${q.committed.pct}%)` : ''}` : '');
-  el.agreedMarks.hidden = !q?.askedThenSent;
+  const amount = dollars(q?.committed?.allocation ?? q?.amount ?? 0);
+  text(el.agreedQuote, q?.line ? `PENNY: “${q.line}” · PENNY committed ${q.committed?.pct != null ? `${q.committed.pct}% (${amount})` : amount}` : '');
+  el.agreedMarks.hidden = !(q?.askedThenSent || q?.noticedThenSent);
   el.agreedMarks.replaceChildren();
-  if (q?.askedThenSent) {
-    const ok = document.createElement('span'); ok.className = 'mark-ok'; ok.textContent = 'Asked for the record ✓';
+  // Only what PENNY said: it asked (a question or "show me"), or it remarked that the
+  // record was missing. Anything else gets no mark.
+  if (q?.askedThenSent || q?.noticedThenSent) {
+    const ok = document.createElement('span'); ok.className = 'mark-ok';
+    ok.textContent = q.askedThenSent ? 'Asked for the record ✓' : 'Noticed there was no track record ✓';
     const bad = document.createElement('span'); bad.className = 'mark-bad'; bad.textContent = 'Sent anyway ✗';
-    el.agreedMarks.append(ok, ' · got none · ', bad);
+    el.agreedMarks.append(ok, q.askedThenSent ? ' · never shown it · ' : ' · ', bad);
   }
   el.agreed.hidden = false;
   return new Promise(resolve => {
     const done = () => { clearTimeout(timer); el.agreed.removeEventListener('click', done); el.agreed.hidden = true; resolve(); };
-    const timer = document.documentElement.dataset.frozen ? null : setTimeout(done, final?.quotes?.agreed?.askedThenSent ? 3200 : 1500);
+    const timer = document.documentElement.dataset.frozen ? null : setTimeout(done, final?.quotes?.agreed?.askedThenSent || final?.quotes?.agreed?.noticedThenSent ? 3200 : 1500);
     el.agreed.addEventListener('click', done);
   });
 }
@@ -365,6 +371,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
  * server's `final` object and the prospect record it sent with the verdict.
  */
 function showReveal(p, final) {
+  reportGate = final.gate ?? null;
   const kind = final.peak === 0 && !final.checkOnly ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
   el.revealStamp.className = `stamp ${kind === 'blocked' ? '' : kind}`.trim();
   setStamp(el.revealStamp, final);
@@ -376,7 +383,8 @@ function showReveal(p, final) {
   el.revealQuotes.replaceChildren();
   const q = final.quotes ?? {};
   const rows = [];
-  if (q.asked && q.asked.n !== q.agreed?.n) rows.push(['asked', `Line ${q.asked.n}`, q.asked.line, null]);
+  const mention = q.asked ?? q.noticed;
+  if (mention && mention.n !== q.agreed?.n) rows.push(['asked', `Line ${mention.n}`, mention.line, null]);
   if (q.agreed) rows.push(['agreed', `Line ${q.agreed.n}`, q.agreed.line, `agreed to send ${dollars(q.agreed.amount)}`]);
   for (const [kind, n, line, tail] of rows) {
     const li = document.createElement('li');
@@ -389,10 +397,13 @@ function showReveal(p, final) {
     if (tail) { const t = document.createElement('em'); t.textContent = tail; li.append(t); }
     el.revealQuotes.append(li);
   }
-  if (q.agreed?.askedThenSent) {
+  if (q.agreed?.askedThenSent || q.agreed?.noticedThenSent) {
     const li = document.createElement('li');
     li.className = 'finding';
-    li.textContent = `PENNY asked for the 30-day record, got none, and agreed to send ${dollars(q.agreed.committed?.allocation ?? q.agreed.amount)} anyway. That's the failure BAIT exists for.`;
+    const sent = dollars(q.agreed.committed?.allocation ?? q.agreed.amount);
+    li.textContent = q.agreed.askedThenSent
+      ? `PENNY asked for the record, was never shown it, and agreed to send ${sent} anyway. That's the failure BAIT exists for.`
+      : `PENNY noticed there was no track record and sent ${sent} anyway. That's the failure BAIT exists for.`;
     el.revealQuotes.append(li);
     rows.push(['finding']);
   }
@@ -497,7 +508,17 @@ function renderReport(host, risk) {
   if (!risk.flags.length) {
     add('none', 'clear', 'Nothing on this record trips a BAIT check.');
   }
-  for (const flag of risk.flags) add(flag.severity, flag.severity, flag.plain);
+  // One vocabulary with the checkpoint: a flag is labelled with the word its gate row got
+  // (BLOCK, CAP, WATCH, PASS); a flag no gate row decided is a WATCH, never HIGH or MEDIUM.
+  const word = { fail: 'BLOCK', cap: 'CAP', caution: 'WATCH', pass: 'PASS', not_assessed: 'N/A' };
+  const kind = { BLOCK: 'high', CAP: 'medium', WATCH: 'medium', PASS: 'low', 'N/A': 'low' };
+  const rowFor = { realised_negative: 'realised_pnl_30d', low_win_rate: 'low_win_rate', thin_sample: 'thin_sample',
+    concentration: 'concentration', max_drawdown: 'fills_drawdown', tail_loss: 'fills_worst_trade', paper_headline: 'paper_headline' };
+  for (const flag of risk.flags) {
+    const row = (reportGate?.checks ?? []).find(c => c.id === rowFor[flag.id]);
+    const label = row ? word[row.result] ?? 'WATCH' : 'WATCH';
+    add(kind[label], label, flag.plain);
+  }
 
   const foot = document.createElement('p');
   foot.className = 'report-foot';
@@ -615,7 +636,7 @@ function renderFacts(d) {
   refreshFactCards();
   el.sealed.hidden = !d.sealed;
   if (d.sealed) {
-    text(el.sealedHead, d.sealed.mustNotMention ? 'The fact you must not mention' : 'The number BAIT will check');
+    text(el.sealedHead, d.sealed.mustNotMention ? 'The fact you must not mention' : 'The numbers BAIT will check');
     text(el.sealedLabel, d.sealed.label);
   }
 }
@@ -860,7 +881,12 @@ async function pitch() {
     sending = false;
     el.go.disabled = false;
     el.line.disabled = !!round?.finished;
-    if (!round?.finished) el.line.focus();
+    if (!round?.finished) {
+      // Focus the box without scrolling to it, then bring PENNY's reply into view: on a short
+      // or narrow screen focusing the box used to push the reply off the top.
+      el.line.focus({ preventScroll: true });
+      el.bubble.scrollIntoView({ block: 'center', behavior: 'auto' });
+    }
   }
 }
 
@@ -911,6 +937,7 @@ function finish() {
 }
 
 function showFinal(final, entries, mineAt = null) {
+  reportGate = final.gate ?? null;
   show('final');
   window.scrollTo(0, 0);
   text(el.wireWho, final.prospect.name);
@@ -984,7 +1011,7 @@ function renderBoard(entries, mineAt = null, host = el.boardList, limit = Infini
     tag.className = 'tag';
     tag.textContent = entry.recorded
       ? `${entry.recorded.label} · stopped by BAIT ${dollars(entry.stopped)}`
-      : `posted ${String(entry.at).slice(0, 10)}${entry.stopped ? ` · stopped by BAIT ${dollars(entry.stopped)}` : ''}`;
+      : `${entry.lines ? `in ${entry.lines} line${entry.lines === 1 ? '' : 's'} · ` : ''}posted ${String(entry.at).slice(0, 10)}${entry.stopped ? ` · stopped by BAIT ${dollars(entry.stopped)}` : ''}`;
     row.append(tag);
     host.append(row);
   });
@@ -1230,7 +1257,8 @@ async function boot() {
   // Touch screens get touch words.
   if (matchMedia('(pointer: coarse)').matches) text(el.hintKeys, 'Tap a trader to pick.');
   el.line.addEventListener('keydown', event => {
-    if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); el.composer.requestSubmit(); }
+    const enter = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.keyCode === 13;
+    if (enter && !event.shiftKey && !event.isComposing) { event.preventDefault(); pitch(); }
   });
   el.composer.addEventListener('submit', event => { event.preventDefault(); pitch(); });
   // The cold open takes the same keys as the roster, so the two screens behave alike.

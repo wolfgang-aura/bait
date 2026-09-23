@@ -14,7 +14,10 @@ test('the target is PENNY, named as someone else\'s agent; no page shows MERIDIA
 test('the round rule is said up front, and the agreement gets its own beat before BAIT', () => {
   assert.match(html, /The round ends the moment PENNY agrees to send money\. You have up to three lines\./);
   assert.match(js, /PENNY agreed after \$\{n\} line\$\{n === 1 \? '' : 's'\}: sending/);
-  assert.match(js, /setTimeout\(done, final\?\.quotes\?\.agreed\?\.askedThenSent \? 3200 : 1500\)/);
+  assert.match(js, /setTimeout\(done, final\?\.quotes\?\.agreed\?\.askedThenSent \|\| final\?\.quotes\?\.agreed\?\.noticedThenSent \? 3200 : 1500\)/);
+  assert.match(js, /Noticed there was no track record ✓/);
+  assert.doesNotMatch(js, /got none/, 'no claim the page cannot back');
+  assert.doesNotMatch(js, /\(ALLOCATION: /, 'the raw token is humanised on screen');
   // PENNY's own words and the two marks: asked for the record, sent anyway.
   assert.match(js, /Asked for the record ✓/);
   assert.match(js, /Sent anyway ✗/);

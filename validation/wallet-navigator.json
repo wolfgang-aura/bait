@@ -15,38 +15,73 @@
       "wallets": [
         {
           "address": "0x9546b9d4103be41ce13483a8f299d0df0eeb181c",
-          "label": "HL Perps Whale",
           "expected": "allow",
           "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0x9546b9d4103be41ce13483a8f299d0df0eeb181c",
-          "evidence": { "wallet": "0x9546b9d4103be41ce13483a8f299d0df0eeb181c", "window_days": 30, "realized_pnl_usd": 2450809.467724999, "closed_trade_count": 213725, "win_rate": 0.43664990057316644, "retrieved_at": "2026-09-20T21:22:27.175Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+          "evidence": {
+            "wallet": "0x9546b9d4103be41ce13483a8f299d0df0eeb181c",
+            "window_days": 30,
+            "realized_pnl_usd": 2450809.467724999,
+            "closed_trade_count": 213725,
+            "win_rate": 0.43664990057316644,
+            "retrieved_at": "2026-09-20T21:22:27.175Z",
+            "source": "Nansen /api/v1/profiler/perp-pnl-summary"
+          }
         },
         {
           "address": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
-          "label": "HL Perps Whale",
           "expected": "allow",
           "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
-          "evidence": { "wallet": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e", "window_days": 30, "realized_pnl_usd": 4372641.27342, "closed_trade_count": 534, "win_rate": 1, "retrieved_at": "2026-09-20T21:22:27.934Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+          "evidence": {
+            "wallet": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
+            "window_days": 30,
+            "realized_pnl_usd": 4372641.27342,
+            "closed_trade_count": 534,
+            "win_rate": 1,
+            "retrieved_at": "2026-09-20T21:22:27.934Z",
+            "source": "Nansen /api/v1/profiler/perp-pnl-summary"
+          }
         },
         {
           "address": "0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508",
-          "label": "Uses TRADEXYZ1 referral code",
           "expected": "allow",
           "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508",
-          "evidence": { "wallet": "0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508", "window_days": 30, "realized_pnl_usd": 4752152.401368, "closed_trade_count": 37257, "win_rate": 0.6800869635236332, "retrieved_at": "2026-09-20T21:22:33.943Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+          "evidence": {
+            "wallet": "0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508",
+            "window_days": 30,
+            "realized_pnl_usd": 4752152.401368,
+            "closed_trade_count": 37257,
+            "win_rate": 0.6800869635236332,
+            "retrieved_at": "2026-09-20T21:22:33.943Z",
+            "source": "Nansen /api/v1/profiler/perp-pnl-summary"
+          }
         },
         {
           "address": "0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd",
-          "label": "HL Perps Whale",
           "expected": "block",
           "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd",
-          "evidence": { "wallet": "0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd", "window_days": 30, "realized_pnl_usd": -847025.384273, "closed_trade_count": 2075, "win_rate": 0.042891566265060244, "retrieved_at": "2026-09-20T21:22:35.005Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+          "evidence": {
+            "wallet": "0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd",
+            "window_days": 30,
+            "realized_pnl_usd": -847025.384273,
+            "closed_trade_count": 2075,
+            "win_rate": 0.042891566265060244,
+            "retrieved_at": "2026-09-20T21:22:35.005Z",
+            "source": "Nansen /api/v1/profiler/perp-pnl-summary"
+          }
         },
         {
           "address": "0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d",
-          "label": "HL Perps Whale",
           "expected": "block",
           "explorer_url": "https://app.hyperliquid.xyz/explorer/address/0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d",
-          "evidence": { "wallet": "0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d", "window_days": 30, "realized_pnl_usd": -399225.514954, "closed_trade_count": 2726, "win_rate": 0.008070432868672046, "retrieved_at": "2026-09-20T21:23:02.620Z", "source": "Nansen /api/v1/profiler/perp-pnl-summary" }
+          "evidence": {
+            "wallet": "0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d",
+            "window_days": 30,
+            "realized_pnl_usd": -399225.514954,
+            "closed_trade_count": 2726,
+            "win_rate": 0.008070432868672046,
+            "retrieved_at": "2026-09-20T21:23:02.620Z",
+            "source": "Nansen /api/v1/profiler/perp-pnl-summary"
+          }
         }
       ]
     }

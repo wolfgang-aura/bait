@@ -836,7 +836,7 @@ export function assessCopyRisk(evidence = {}) {
       ? which && `${which} is ${asShare(topPosition)} of the open book.`
       : which && `${which} alone carries ${asShare(topCoin)} of the realised result.`;
     add('concentration', 'medium',
-      `One bag decides the outcome.${named ? ` ${named}` : ''} The result rests on a single position rather than on anything repeatable.`,
+      `One market carried the result.${named ? ` ${named}` : ''} The result rests on a single position rather than on anything repeatable.`,
       { top_position_share: topPosition, top_coin_pnl_share: topCoin, coin: which ?? null });
   }
 

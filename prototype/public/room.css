@@ -914,3 +914,9 @@ html[data-frozen="true"] .cp-card, html[data-frozen="true"] .cp-row, html[data-f
 /* round 12: the stamp never lands on the last row */
 .cp-stamp { margin-top: 24px; transform: rotate(-2deg); }
 .agreed-card .agreed-quote, .agreed-card .agreed-marks { text-align: left; }
+
+/* ---------------------------------------------- round 13 */
+.premise-score { margin: 4px 0 0; font: 500 12.5px/1.45 var(--mono); color: var(--dim); }
+/* The live/frozen chip stays on screen down to phone width (it was hidden below 900 px). */
+@media (max-width: 900px) { .mast .badge { display: inline-block; font-size: 9px; padding: 4px 6px; } }
+@media (max-width: 420px) { .mast .badge { display: none; } .mast-note { display: none; } }

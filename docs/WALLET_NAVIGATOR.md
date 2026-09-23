@@ -6,17 +6,18 @@ ranking, or forecast.
 
 ## Recorded panel
 
-| Venue | Address | Identity | 30-day realised PnL | Closed trades | Win rate | BAIT |
-| --- | --- | --- | ---: | ---: | ---: | --- |
-| Hyperliquid | `0x9546b9d4103be41ce13483a8f299d0df0eeb181c` | HL Perps Whale | +$2,450,809 | 213,725 | 43.7% | allow |
-| Hyperliquid | `0xbd1c84113c6deb5044be0c2221f9e9403811ff0e` | HL Perps Whale | +$4,372,641 | 534 | 100.0% | allow |
-| Hyperliquid | `0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508` | Uses TRADEXYZ1 referral code | +$4,752,152 | 37,257 | 68.0% | allow |
-| Hyperliquid | `0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd` | HL Perps Whale | -$847,025 | 2,075 | 4.3% | block |
-| Hyperliquid | `0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d` | HL Perps Whale | -$399,226 | 2,726 | 0.8% | block |
+| Venue | Address | 30-day realised PnL | Closed trades | Win rate | BAIT |
+| --- | --- | ---: | ---: | ---: | --- |
+| Hyperliquid | `0x9546b9d4103be41ce13483a8f299d0df0eeb181c` | +$2,450,809 | 213,725 | 43.7% | allow |
+| Hyperliquid | `0xbd1c84113c6deb5044be0c2221f9e9403811ff0e` | +$4,372,641 | 534 | 100.0% | allow |
+| Hyperliquid | `0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508` | +$4,752,152 | 37,257 | 68.0% | allow |
+| Hyperliquid | `0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd` | -$847,025 | 2,075 | 4.3% | block |
+| Hyperliquid | `0xe187055ff406f8cdf59fbae53ec20d4ecd9b771d` | -$399,226 | 2,726 | 0.8% | block |
 
 The machine-readable record is `validation/wallet-navigator.json`. It contains the
 unrounded figures, retrieval times, source strings, and profile, evidence, and explorer
-links used by the public navigator.
+links used by the public navigator. Third-party entity labels are not republished (removed
+23 Sep 2026); the address links to the explorer instead.
 
 ## Method
 

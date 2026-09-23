@@ -21,12 +21,12 @@
         "direction": "ASC"
       }
     ],
-    "premium_labels": false
+    "premium_labels": null
   },
   "rows": [
     {
       "trader_address": "0xf822fa0fd364c573fcdb7009fcf47601bc8be01a",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -23794175.833192002,
       "realized_pnl_usd": -24213817.440668,
       "unrealized_pnl_usd": 419641.60747600044,
@@ -79,7 +79,7 @@
     },
     {
       "trader_address": "0x9c2a2a966ed8e47f0c8b7e2ec2b91424f229f6a8",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -8318323.137886002,
       "realized_pnl_usd": -8438809.747702,
       "unrealized_pnl_usd": 120486.60981599934,
@@ -124,7 +124,7 @@
     },
     {
       "trader_address": "0x498216a21f5b028797c1d3d4250e14d09c9959e6",
-      "trader_address_label": "Uses \"ZUFELO42\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -8844059.453038,
       "realized_pnl_usd": -7187386.738795,
       "unrealized_pnl_usd": -1656672.7142429994,
@@ -177,7 +177,7 @@
     },
     {
       "trader_address": "0x66f889094739dbb7d20aa60f645acd88feba75a9",
-      "trader_address_label": "Uses \"LESSFEES\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -7213046.840590004,
       "realized_pnl_usd": -6943364.621831002,
       "unrealized_pnl_usd": -269682.21875900193,
@@ -206,7 +206,7 @@
     },
     {
       "trader_address": "0xd4c1f7e8d876c4749228d515473d36f919583d1d",
-      "trader_address_label": "Uses \"EH666888\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -6096872.583649,
       "realized_pnl_usd": -6542274.129305,
       "unrealized_pnl_usd": 445401.5456560004,
@@ -259,7 +259,7 @@
     },
     {
       "trader_address": "0xa312114b5795dff9b8db50474dd57701aa78ad1e",
-      "trader_address_label": "Uses \"XYZZYX\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -5777194.576415,
       "realized_pnl_usd": -5791186.157601,
       "unrealized_pnl_usd": 13991.581186000381,
@@ -312,7 +312,7 @@
     },
     {
       "trader_address": "0x525232cb6ed5030d2b052b36bfc0baec96986ee3",
-      "trader_address_label": "Uses \"TYBFNF\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -5698155.110295,
       "realized_pnl_usd": -5744760.423149,
       "unrealized_pnl_usd": 46605.3128540001,
@@ -333,7 +333,7 @@
     },
     {
       "trader_address": "0xcac19662ec88d23fa1c81ac0e8570b0cf2ff26b3",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -7136497.097414001,
       "realized_pnl_usd": -5682683.255779,
       "unrealized_pnl_usd": -1453813.841635001,
@@ -386,7 +386,7 @@
     },
     {
       "trader_address": "0x77375a8c9d13bf79afb2a87f1b0ac1dfd5f5bf66",
-      "trader_address_label": "wamuu.eth",
+      "trader_address_label": null,
       "total_pnl": -4904487.471696999,
       "realized_pnl_usd": -5435788.176583,
       "unrealized_pnl_usd": 531300.7048860014,
@@ -439,7 +439,7 @@
     },
     {
       "trader_address": "0x1ee7a73cb5b0b6b056d8138085b2009e6a6bedf5",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -5468923.950765998,
       "realized_pnl_usd": -5426759.358320998,
       "unrealized_pnl_usd": -42164.59244500033,
@@ -468,7 +468,7 @@
     },
     {
       "trader_address": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
-      "trader_address_label": "yellownfts.eth*",
+      "trader_address_label": null,
       "total_pnl": -5194129.04106,
       "realized_pnl_usd": -4988967.505513,
       "unrealized_pnl_usd": -205161.53554699974,
@@ -505,7 +505,7 @@
     },
     {
       "trader_address": "0xe0ffc829349c88c159462942ad885f12130e7610",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -4207240.269187999,
       "realized_pnl_usd": -4749501.401849,
       "unrealized_pnl_usd": 542261.1326610005,
@@ -526,7 +526,7 @@
     },
     {
       "trader_address": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
-      "trader_address_label": "Uses \"MMREFCSI\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -5059693.395642,
       "realized_pnl_usd": -4745429.479047,
       "unrealized_pnl_usd": -314263.9165950001,
@@ -571,7 +571,7 @@
     },
     {
       "trader_address": "0x45ab58a2034f03aa446baf3bb1d236706f866cbc",
-      "trader_address_label": "Uses \"6525\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -5088644.829059999,
       "realized_pnl_usd": -4270413.071171,
       "unrealized_pnl_usd": -818231.757889,
@@ -608,7 +608,7 @@
     },
     {
       "trader_address": "0x99967871e6c4f9a5185abc57edede9e9540191f6",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -3825434.2064249995,
       "realized_pnl_usd": -3827144.054065,
       "unrealized_pnl_usd": 1709.8476400001164,
@@ -629,7 +629,7 @@
     },
     {
       "trader_address": "0x06bc596fb16734f7abc3a5996b580be932c2fb72",
-      "trader_address_label": "picholas.eth*",
+      "trader_address_label": null,
       "total_pnl": -3588349.9060319965,
       "realized_pnl_usd": -3637195.254852,
       "unrealized_pnl_usd": 48845.348820003506,
@@ -650,7 +650,7 @@
     },
     {
       "trader_address": "0x51f63885534cb494f4592a0311551f369bff2b39",
-      "trader_address_label": "Uses \"PH\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -3353884.6535819992,
       "realized_pnl_usd": -3102856.814643,
       "unrealized_pnl_usd": -251027.8389389997,
@@ -703,7 +703,7 @@
     },
     {
       "trader_address": "0x5647249079e257329ecb6f46ed41821d3c69e7de",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -3221698.7056299997,
       "realized_pnl_usd": -3091782.294771,
       "unrealized_pnl_usd": -129916.410859,
@@ -756,7 +756,7 @@
     },
     {
       "trader_address": "0x27c9fa86c91b84ddfa15de58c482ff662498d65d",
-      "trader_address_label": "High Activity",
+      "trader_address_label": null,
       "total_pnl": -3116966.1755890003,
       "realized_pnl_usd": -3075637.247247,
       "unrealized_pnl_usd": -41328.92834200014,
@@ -809,7 +809,7 @@
     },
     {
       "trader_address": "0x3bcae23e8c380dab4732e9a159c0456f12d866f3",
-      "trader_address_label": "Uses \"JEETERS\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -2597019.133227,
       "realized_pnl_usd": -2662086.553528,
       "unrealized_pnl_usd": 65067.42030099989,
@@ -862,7 +862,7 @@
     },
     {
       "trader_address": "0x7d0c59691fec7f3fea385cdc3126c37a41d91b28",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -2185278.1749569997,
       "realized_pnl_usd": -2467568.099027,
       "unrealized_pnl_usd": 282289.92406999995,
@@ -915,7 +915,7 @@
     },
     {
       "trader_address": "0x6daec5ff434924e0839358e710e6ae5f158590de",
-      "trader_address_label": "Uses \"ASD123456\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -2402106.7728810003,
       "realized_pnl_usd": -2403514.137651,
       "unrealized_pnl_usd": 1407.3647700000051,
@@ -936,7 +936,7 @@
     },
     {
       "trader_address": "0x77ee3604adbdefa66a817b3cf776412a6613a018",
-      "trader_address_label": "Uses \"TRUSTHL\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -2143165.7566950005,
       "realized_pnl_usd": -2384342.005294,
       "unrealized_pnl_usd": 241176.24859899958,
@@ -989,7 +989,7 @@
     },
     {
       "trader_address": "0x0c1fd4fed8679488afb3b23b2b872971e0001d39",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -2282957.511668,
       "realized_pnl_usd": -2224757.469613,
       "unrealized_pnl_usd": -58200.04205500003,
@@ -1042,7 +1042,7 @@
     },
     {
       "trader_address": "0xef96d013bdb1a5dfe553999f19b5091b9a299383",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -2296441.889404,
       "realized_pnl_usd": -2213804.560298,
       "unrealized_pnl_usd": -82637.32910599998,
@@ -1095,7 +1095,7 @@
     },
     {
       "trader_address": "0xbfc79c444c41a74516bf31237ebf586a231480b4",
-      "trader_address_label": "Uses \"CP0X\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -3658909.600354001,
       "realized_pnl_usd": -2141434.994541,
       "unrealized_pnl_usd": -1517474.6058130006,
@@ -1148,7 +1148,7 @@
     },
     {
       "trader_address": "0x17c3c8fdbcb7d1b240ce08965e09b1fc91cba868",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -5654905.218916997,
       "realized_pnl_usd": -2100567.238797,
       "unrealized_pnl_usd": -3554337.9801199967,
@@ -1201,7 +1201,7 @@
     },
     {
       "trader_address": "0x62f82c3ef1da6093118fadb29090c4e3263f02e6",
-      "trader_address_label": "Uses \"RABBYWALLET\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -2264278.077128,
       "realized_pnl_usd": -2086998.276661,
       "unrealized_pnl_usd": -177279.8004670003,
@@ -1230,7 +1230,7 @@
     },
     {
       "trader_address": "0x7a5a42bd6b1fd13368732be8a7b63e06064e0394",
-      "trader_address_label": "HL Perps Whale",
+      "trader_address_label": null,
       "total_pnl": -2046806.2823880003,
       "realized_pnl_usd": -2079022.729521,
       "unrealized_pnl_usd": 32216.447132999674,
@@ -1251,7 +1251,7 @@
     },
     {
       "trader_address": "0xa98143608a6846453c88f29506d64a8b85532e65",
-      "trader_address_label": "Uses \"ASXN\" HL Referral Code",
+      "trader_address_label": null,
       "total_pnl": -6768071.095615,
       "realized_pnl_usd": -2051706.044027,
       "unrealized_pnl_usd": -4716365.051588001,

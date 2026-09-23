@@ -136,7 +136,7 @@
       "request": {
         "chain": "ethereum",
         "token_address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-        "label_type": "smart_money",
+        "label_type": null,
         "pagination": {
           "page": 1,
           "per_page": 5
@@ -147,7 +147,7 @@
         "data": [
           {
             "address": "string",
-            "address_label": "string",
+            "address_label": null,
             "token_amount": "number",
             "total_outflow": "number",
             "total_inflow": "number",
@@ -168,7 +168,7 @@
       "sample": [
         {
           "address": "0x1de591da043aa0b220f1dc6f05efd3df1d47bc52",
-          "address_label": "Token Millionaire",
+          "address_label": null,
           "token_amount": 238.600000074,
           "total_outflow": 401.40000002600004,
           "total_inflow": 640.0000001,
