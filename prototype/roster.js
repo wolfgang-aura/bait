@@ -247,7 +247,9 @@ export function copyRiskEvidence(p) {
   // 30-day window. Drawdown and the worst trade measured over that are not the window's,
   // so under a week of coverage they are not measured at all rather than footnoted.
   const covered = fills.length > 1 ? Date.parse(fills[fills.length - 1].timestamp) - Date.parse(fills[0].timestamp) : 0;
-  const shortTape = !complete && fills.length > 0 && covered < 7 * 86_400_000;
+  // A live tape (round 11) is measured whatever it covers, and every sentence names the
+  // stretch it covers; a capture's short first page is still not measured.
+  const shortTape = !complete && fills.length > 0 && covered < 7 * 86_400_000 && !s.live_read?.fills_live;
   // A tape too far behind the summaries is not measured at all: its drawdown and worst
   // trade are a different stretch of time from the record the decision reads.
   const unusable = shortTape || (fills.length > 0 && tape.stale);
@@ -297,10 +299,10 @@ export function copyRiskReport(p) {
   const short = evidence.series_short === true;
   const partial = !short && evidence.series_complete === false && evidence.series_fills > 0;
   const held = partial && evidence.series_from && evidence.series_to
-    ? `the ${count(evidence.series_fills)} fills held in this capture, `
+    ? `the ${count(evidence.series_fills)} fills ${p.snapshot?.live_read?.fills_live ? "read live" : "held in this capture"}, `
       + `${span(evidence.series_from, evidence.series_to)} of the ${count(evidence.window_days)}-day window `
       + `(${minute(evidence.series_from)} to ${minute(evidence.series_to)} UTC)`
-    : `the ${count(evidence.series_fills)} fills held in this capture`;
+    : `the ${count(evidence.series_fills)} fills ${p.snapshot?.live_read?.fills_live ? "read live" : "held in this capture"}`;
   const tooFew = `this capture holds only the newest ${count(evidence.series_fills)} of ${count(evidence.closed_trade_count)} closed trades, too few to measure them over ${count(evidence.window_days)} days`;
   const stale = evidence.tape_stale === true;
   const days = evidence.tape.ageMs === null ? 'an unknown time' : `${(evidence.tape.ageMs / 86_400_000).toFixed(1)} days`;

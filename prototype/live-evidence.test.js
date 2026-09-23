@@ -397,3 +397,15 @@ test('a failed fills page keeps the summaries live and falls back to the capture
   const grinder = loadRoster().find(p => p.id === 'grinder');
   assert.equal(liveSnapshot(grinder.snapshot, read).live_read.fills_live, undefined);
 });
+
+test('a live tape shorter than a week is measured and labelled with its span, never "not assessed"', async () => {
+  const mock = fillsMock({ fills: 6 });
+  const live = createLiveEvidence({ enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 1 });
+  const read = await live.read(GRINDER);
+  read.fills.complete = false;
+  const { copyRiskReport, refreshProspect } = await import('./roster.js');
+  const grinder = loadRoster().find(p => p.id === 'grinder');
+  const p = refreshProspect(grinder, liveSnapshot(grinder.snapshot, read));
+  assert.ok(!p.risk.not_assessed.some(n => ['max_drawdown', 'tail_loss'].includes(n.id)), 'both measured on the live tape');
+  assert.ok(copyRiskReport(p).max_drawdown, 'a drawdown value exists');
+});

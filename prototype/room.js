@@ -622,15 +622,19 @@ export function createRoomService({
     const risk = p.risk ?? {};
     const liveTape = !!p.snapshot?.live_read?.fills_live;
     const source = liveTape ? 'profiler/perp-trades, read live' : 'profiler/perp-trades, capture';
+    const fills = [...(p.snapshot?.trades_30d ?? [])].map(f => Date.parse(f.timestamp)).filter(Number.isFinite).sort((a, b) => a - b);
+    const hours = fills.length > 1 ? (fills[fills.length - 1] - fills[0]) / 3_600_000 : 0;
+    const span = hours < 48 ? `${hours.toFixed(1)} hours` : `${(hours / 24).toFixed(1)} days`;
+    const over = p.snapshot?.fills_coverage?.complete ? `all ${fills.length.toLocaleString('en-US')} fills in the window` : `the newest ${fills.length.toLocaleString('en-US')} fills (${span})`;
     const row = (id, flagId, name) => {
       const flag = (risk.flags ?? []).find(f => f.id === flagId);
       const na = (risk.not_assessed ?? []).find(n => n.id === flagId);
-      if (flag) return { id, result: 'caution', plain: flag.plain, source };
+      if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain}` : flag.plain, source };
       if (na) return { id, result: 'not_assessed', plain: `Not assessed: ${na.reason}.`, source };
       const dd = risk.max_drawdown;
       const plain = id === 'fills_drawdown' && dd
-        ? `Worst peak-to-trough on ${dd.trades.toLocaleString('en-US')} fills: ${dollars(dd.max_drawdown_usd)}, under the ${Math.round((risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3) * 100)}% bar.`
-        : `${name} within the report's bar on the fills held.`;
+        ? `Worst peak-to-trough over ${liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`}: ${dollars(dd.max_drawdown_usd)}, under the ${Math.round((risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3) * 100)}% bar.`
+        : `${name} within the report's bar over ${liveTape ? over : 'the fills held'}.`;
       return { id, result: 'pass', plain, source };
     };
     return [row('fills_drawdown', 'max_drawdown', 'Drawdown'), row('fills_worst_trade', 'tail_loss', 'Worst single trade')];
