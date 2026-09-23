@@ -51,10 +51,11 @@ const HOST = process.env.HOST || (HOSTED ? '0.0.0.0' : '127.0.0.1');
  */
 const guard = createHostedGuard({
   enabled: HOSTED,
-  // The Pitch Room is the default route and costs at most 4 DeepSeek calls a shot, so
-  // the hosted allowance is 5 rounds per address and 600 calls a day.
-  roundsPerIp: Number(process.env.HOSTED_ROUNDS_PER_IP || 5),
-  dailyCalls: Number(process.env.HOSTED_DAILY_CALLS || 600),
+  // No per-address cap by default (0 = off, 23 Sep 2026: the owner asked for unlimited
+  // live play after buying Nansen credits). The global DeepSeek cap stays as the cost
+  // guard, at 3,000 calls a UTC day.
+  roundsPerIp: Number(process.env.HOSTED_ROUNDS_PER_IP || 0),
+  dailyCalls: Number(process.env.HOSTED_DAILY_CALLS || 3000),
 });
 
 const MODELS = ['claude-sonnet-5', 'deepseek-chat'];
@@ -327,7 +328,7 @@ function health() {
     // The product itself, pointed at live Nansen evidence. One credit per check.
     live_guard: {
       route: HOSTED ? null : GUARD_ROUTE,
-      page: HOSTED ? null : '/guard.html',
+      page: '/replay.html#how',
       cli: 'npm run guard -- --wallet 0x... --allocation 5000',
       enabled: !HOSTED,
       // Two windows, so two credits; a wallet the 30-day evidence already refuses costs one.
@@ -732,8 +733,15 @@ const server = http.createServer(async (req, res) => {
       return send(200, fs.readFileSync(path.join(VALIDATION, 'wallet-navigator.json'), 'utf8'));
     }
 
-    // `/` is the Pitch Room. The guard console keeps /guard.html, the recorded
-    // benchmark keeps /replay.html and the card encounter keeps /index.html.
+    // The guard console page is retired (round 9): its explanation lives on the proof
+    // page. The /api guard route is unchanged.
+    if (url.pathname === '/guard.html') {
+      res.writeHead(302, { location: '/replay.html#how', 'cache-control': 'no-store' });
+      res.end();
+      return;
+    }
+
+    // `/` is the Pitch Room and the recorded benchmark keeps /replay.html.
     const file = url.pathname === '/' ? 'room.html' : url.pathname.replace(/^\//, '');
     const full = path.resolve(PUBLIC_DIR, file);
     if (!full.startsWith(PUBLIC_DIR + path.sep) || !fs.existsSync(full) || !fs.statSync(full).isFile()) return send(404, { error: 'not found' });
@@ -769,7 +777,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  model calls     ${JSON.stringify(h.model_calls_used)} of ${JSON.stringify(h.model_call_caps)}`);
   console.log(`  live refresh    ${LIVE_ENABLED && !HOSTED ? `enabled for the card encounter (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED ? 'disabled for the card encounter (hosted spends only through the room live read)' : 'disabled (NANSEN_LIVE=0)'}`);
   console.log(`  nansen quota    ${h.nansen_quota.calls_since} calls since ${h.nansen_quota.since}, ${h.nansen_quota.credits_used_local}/${h.nansen_quota.credit_budget} credits`);
-  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} and /guard.html (1 credit per check)` : 'disabled (HOSTED=1)'}`);
+  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} (1 credit per check)` : 'disabled (HOSTED=1)'}`);
   console.log(`  default rule    ${h.default_rule}`);
   console.log(`  control wallet  ${h.control_wallet ?? 'none'}`);
   console.log(`  runs loaded     ${h.runs_loaded}`);

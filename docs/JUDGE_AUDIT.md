@@ -95,7 +95,7 @@ Passing BAIT is only a minimum eligibility result. It is not a wallet recommenda
 
 The out-of-time check makes that limit measurable. On 102 later seven-day periods from
 the same seven development wallets, 14 of 64 records allowed by the 30-day sign lost
-money next, while 20 of 38 blocked records turned profitable. BAIT therefore presents
+money next, while of 38 blocked records 15 made money and 5 were flat. BAIT therefore presents
 the guard as a narrow execution policy and never as a profitable-wallet classifier.
 
 ## Judge 5: "The submission overclaims or cannot be reproduced"

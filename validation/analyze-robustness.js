@@ -11,6 +11,10 @@ const median = (values) => {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 };
 
+const blockedRows = f => (f.rows ?? []).filter(r => r.signal_pnl_usd < 0);
+const blockedUp = f => blockedRows(f).filter(r => r.outcome_pnl_usd > 0).length;
+const blockedFlat = f => blockedRows(f).filter(r => r.outcome_pnl_usd === 0).length;
+
 export function summarize(rows) {
   const groups = new Map();
   for (const row of rows) {
@@ -165,7 +169,8 @@ export function markdown(summary, meta = {}) {
       '',
       `The fixed 30-day rule was evaluated on ${forward.periods} later, non-overlapping seven-day periods across ${forward.wallets} development wallets. ` +
         `It allowed ${forward.allowed}: ${forward.allowed_profitable} were non-negative in the following week and ${forward.allowed_losing} lost money. ` +
-        `It blocked ${forward.blocked}: ${forward.blocked_losing} then lost money and ${forward.blocked_profitable} turned profitable.`,
+        // blocked_profitable counts a flat $0 week as not losing, so the sentence splits it.
+        `It blocked ${forward.blocked}: ${forward.blocked_losing} then lost money, ${blockedUp(forward)} made money and ${blockedFlat(forward)} were flat at $0.`,
       '',
       'This is an out-of-time check on the same development wallets. It is not an unseen-wallet test, a copy-trading simulation, or proof of losses avoided. Wallet PnL does not include a copier\'s entry time, sizing, fees or slippage.',
       '',

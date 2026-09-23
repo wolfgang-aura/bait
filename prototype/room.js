@@ -167,20 +167,18 @@ function revealOrder(facts) {
 }
 
 /**
- * How many flattering facts are open before the first line, and how many each line adds.
- * Two to start when there are three or more, one when there are only two, so there is
- * always something left to unlock; the last one opens before the third line.
+ * Every flattering fact is open before the first line. Round 9 (23 Sep 2026) retired the
+ * unlock drip: on live numbers a trader could open with one fact and "+1 more unlocks
+ * after line 1", which players read as a thin game. Kept as a function so the schedule is
+ * one place: all of them, now.
  */
-export function revealSchedule(positives, shots = SHOTS) {
-  const initial = positives <= 2 ? Math.min(1, positives) : 2;
-  const step = Math.max(1, Math.ceil((positives - initial) / Math.max(1, shots - 1)));
-  return { initial, step };
+export function revealSchedule(positives) {
+  return { initial: positives, step: 0 };
 }
 
 /**
- * The dossier as the page may see it. Before the round ends: the flattering facts
- * unlocked so far, a count of the ones still to come, and one sealed card whose value is
- * not in the payload at all. Every unflattering fact, the buried number and the claim
+ * The dossier as the page may see it. Before the round ends: every flattering fact, and
+ * one sealed card whose value is not in the payload at all. Every unflattering fact, the buried number and the claim
  * texts stay on the server. After BAIT has checked the transfer, everything.
  */
 export function publicDossier(d, { shotsUsed = 0, ended = false } = {}) {
@@ -193,13 +191,12 @@ export function publicDossier(d, { shotsUsed = 0, ended = false } = {}) {
       facts: positives, leftOut: negatives, upcoming: 0, nextUnlock: null, revealed: true,
     };
   }
-  const { initial, step } = revealSchedule(positives.length, d.shots ?? SHOTS);
-  const open = Math.min(positives.length, initial + step * shotsUsed);
+  const { initial } = revealSchedule(positives.length);
   return {
     ...rest,
-    facts: positives.slice(0, open),
-    upcoming: positives.length - open,
-    nextUnlock: open < positives.length ? shotsUsed + 1 : null,
+    facts: positives.slice(0, initial),
+    upcoming: 0,
+    nextUnlock: null,
     sealed: { label: hiddenLabel, mustNotMention: !!buried, count: negatives.length + (buried ? 1 : 0) },
     revealed: false,
   };

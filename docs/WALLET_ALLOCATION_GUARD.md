@@ -187,7 +187,7 @@ index footer. Paste any valid Hyperliquid address and proposed amount. The recei
 the wallet, value, source, timestamp, policy, reason and enforced amount. An `allow`
 machine result is displayed as `ELIGIBLE` so nobody mistakes it for a profit forecast.
 
-Two real checks on 21 September 2026, run under `wallet-realized-pnl-30d-v1`, one
+Two real checks on 20 September 2026 (UTC), run under `wallet-realized-pnl-30d-v1`, one
 credit each. No live v2 check has been run; none was budgeted.
 
 | Wallet | Realised PnL, 30d | Decision | Code | Enforced | Retrieved |

@@ -23,6 +23,11 @@
   <div class="mast-inner">
     <a class="mark" href="#top">BAIT</a>
     <p class="mast-note">The check that runs before an AI agent moves money · recorded proof</p>
+    <nav class="mast-nav" aria-label="Pages">
+      <a href="/" data-host-link>Play</a>
+      <a href="/replay.html" data-host-link aria-current="page">Proof</a>
+      <a href="https://github.com/wolfgang-aura/bait" rel="noopener">GitHub</a>
+    </nav>
   </div>
 </header>
 
@@ -65,7 +70,7 @@
     <div class="claims-box" aria-label="What the gate claims">
       <p class="lab">What the gate claims, and what it does not</p>
       <p><strong>It claims:</strong> no money is sent to a trader whose verified Nansen record shows a loss, or whose record is missing, stale or for the wrong wallet.</p>
-      <p><strong>It does not claim to predict next week.</strong> Replayed over 102 later seven-day periods on seven development wallets, the shipped gate blocked 63 periods, and 40 of those were not losing the week after; it allowed 39 (6 capped), and 9 of those lost money. The older one-rule gate blocked 38, of which 20 turned profitable. Blocking a losing record acts on evidence you already have; it is not a forecast. <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/reports/robustness-panel-concentration.md">Panel receipt</a>.</p>
+      <p><strong>It does not claim to predict next week.</strong> Replayed over 102 later seven-day periods on seven development wallets, the shipped gate blocked 63 periods, and 40 of those were not losing the week after; it allowed 39 (6 capped), and 9 of those lost money. The older one-rule gate blocked 38: 15 made money the next week and 5 were flat. Blocking a losing record acts on evidence you already have; it is not a forecast. <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/reports/robustness-panel-concentration.md">Panel receipt</a>.</p>
     </div>
 
     <div class="hero-actions">
@@ -75,6 +80,19 @@
     </div>
 
     <p id="b-endpoints" class="endpoints skeleton-row">&nbsp;</p>
+  </section>
+
+  <section id="how" class="how sec" aria-labelledby="how-title">
+    <div class="sec-head">
+      <h2 id="how-title">How BAIT works</h2>
+      <p class="sec-meta">Three parties · the gate reads Nansen · fails closed</p>
+    </div>
+    <ol class="how-steps">
+      <li><span>01 · The AI agent</span><strong>Proposes a transfer</strong><small>In the Pitch Room that is MERIDIAN: a third-party AI allocator with no data tools. It decides on the pitch alone.</small></li>
+      <li class="bait"><span>02 · BAIT</span><strong>Reads Nansen before it leaves</strong><small>The wallet's 7-day and 30-day perp-pnl-summary, checked for the right wallet, window dates, source and freshness.</small></li>
+      <li><span>03 · What leaves</span><strong>All of it, a capped 25%, or $0</strong><small>A losing month, a week that reverses the month, fewer than 20 closed trades or a win rate under 40%: $0. One market carried the month: 25%.</small></li>
+    </ol>
+    <p class="how-note">The model cannot override it: the check runs in code after the agent decides. Missing, stale or mismatched evidence means $0. Call it from code with <code>guardAllocation</code> (section 3 below), run a local check with <code>npm run guard -- --wallet 0x... --allocation 5000</code>, or put your own agent behind it with <code>npm run bench -- --agent your-agent.mjs</code>.</p>
   </section>
 
   <section id="attack" class="attack sec" aria-labelledby="attack-title" hidden>
@@ -240,7 +258,7 @@ if (decision.decision === 'allow') {
     <p>Recorded proof for one product path: AI allocation to perpetual-trading wallets.</p>
     <nav class="foot-links" aria-label="Repository">
       <a class="foot-link" href="#wallets">Explore 5 wallets</a>
-      <a class="foot-link" href="https://github.com/wolfgang-aura/bait#play-against-the-models">Play it live</a>
+      <a class="foot-link" href="/" data-host-link>Play it live</a>
       <a class="foot-link" href="https://github.com/wolfgang-aura/bait">GitHub</a>
     </nav>
   </div>

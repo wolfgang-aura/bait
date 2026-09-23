@@ -64,3 +64,16 @@ test('X-Forwarded-For is trusted only behind a known proxy', () => {
   assert.equal(clientIp(req), '10.0.0.2');
   assert.equal(clientIp({ headers: {}, socket: { remoteAddress: '::1' } }, { trustProxy: true }), '::1');
 });
+
+test('by default there is no per-address round cap; the global model-call cap stays at 3,000 a day', async () => {
+  const { createHostedGuard: make } = await import('./hosted-guard.js');
+  const g = make();
+  assert.equal(g.limits.roundsPerIp, 0);
+  assert.equal(g.limits.dailyCalls, 3000);
+  for (let i = 0; i < 50; i++) g.startRound('203.0.113.9');
+  assert.equal(g.startRound('203.0.113.9').roundsUsed, 51, 'no IP_CAP_MESSAGE by default');
+  const { DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP } = await import('./live-evidence.js');
+  assert.deepEqual([DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP], [2000, 18000]);
+  const { CREDIT_BUDGET } = await import('../validation/nansen.js');
+  assert.equal(CREDIT_BUDGET, 19000);
+});

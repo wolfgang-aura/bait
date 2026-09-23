@@ -51,14 +51,15 @@ Reports: [per-wallet](bench/reports/2026-09-23T02-53-37-602Z-wallets.md) (gate `
 It claims: no money reaches a trader whose verified Nansen record shows a loss, or whose
 record is missing, stale or for the wrong wallet. It does **not** predict next week. Over 102
 later seven-day periods on seven development wallets, v3 blocked 63 (40 not losing the week
-after) and allowed 39 (6 capped; 9 lost money). The one-rule gate blocked 38, of which 20
-turned profitable ([panel receipt](bench/reports/robustness-panel-concentration.md)). A block
+after) and allowed 39 (6 capped; 9 lost money). The one-rule gate blocked 38: 15 made money the
+next week and 5 were flat ([panel receipt](bench/reports/robustness-panel-concentration.md)). A block
 acts on the evidence you have; it is not a forecast, and these wallets are not a held-out set.
 
 The relabelled-window row was found by our own bench: v3 checked the window label, not its
 dates, and funded it ([report](bench/reports/2026-09-23T02-09-47-226Z-gate-buys.md)). Fixed in
 `5b40663` (v3 revision 2); re-scored at revision 2, no per-wallet or panel decision changed.
-Not counted above: v3 refuses one profitable wallet whose last week reversed its month.
+The data-path table counts 6 attacks on 5 wallets. Its separate policy row, a profitable wallet
+whose last week reversed its month, is the same control behind the 3 of 18 blocked above.
 
 ## Test your own agent
 

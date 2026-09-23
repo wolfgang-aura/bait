@@ -25,13 +25,14 @@ services:
       - key: NANSEN_LIVE
         value: "1"
       - key: HOSTED_NANSEN_CREDITS_PER_DAY
-        value: "20"
+        value: "2000"
       - key: HOSTED_NANSEN_CREDITS_TOTAL
-        value: "300"
+        value: "18000"
+      # 0 = no per-address round cap (23 Sep 2026); the global DeepSeek cap is the cost guard.
       - key: HOSTED_ROUNDS_PER_IP
-        value: "12"
+        value: "0"
       - key: HOSTED_DAILY_CALLS
-        value: "300"
+        value: "3000"
       - key: DEEPSEEK_API_KEY
         sync: false
       - key: NANSEN_API_KEY

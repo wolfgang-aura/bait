@@ -18,6 +18,8 @@
   --red: #FF6B6B;
   --green: #62D49A;
   --accent: #FFB020;
+  /* BAIT, the third party: used for the checkpoint and nothing else. */
+  --bait: #4DA3FF;
   --display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
   --r: 2px;
@@ -708,7 +710,7 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .caller { min-height: 64px; }
 
   .reveal-head { grid-template-columns: 1fr; gap: 14px; }
-  .reveal-head .stamp { font-size: 30px; }
+  .reveal-head .stamp { font-size: 24px; margin: 14px 0 4px; transform: rotate(-4deg); }
   .splash { grid-template-columns: 1fr; min-height: 0; }
   .record-half { clip-path: polygon(0 26px, 100% 0, 100% 100%, 0 100%); margin: -26px 0 0; padding: 34px 18px 18px; }
   /* On the horizontal split the seam runs across, so the VS sits on its right end. */
@@ -746,3 +748,64 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .wire-stopped { margin-left: 0; }
   .flagline { grid-template-columns: 1fr; gap: 3px; }
 }
+
+/* Round 9: a fact card is used once per line. */
+.fact.used, .fact:disabled { opacity: .42; cursor: default; }
+
+/* ---------------------------------------------- round 9: three parties */
+.who .target-tag {
+  display: block; margin-top: 6px; font: 600 10.5px/1.35 var(--mono); letter-spacing: .04em;
+  text-transform: uppercase; color: var(--accent);
+}
+.checkpoint {
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: start center; padding: max(16px, 9vh) 16px 16px;
+  background: rgba(5, 8, 12, .82); backdrop-filter: blur(3px);
+}
+.checkpoint[hidden] { display: none; }
+.cp-card {
+  width: min(760px, 100%); max-height: calc(100vh - max(16px, 9vh) - 16px); overflow: auto;
+  background: #0B1420; border: 2px solid var(--bait); border-radius: var(--r);
+  box-shadow: 0 0 0 6px rgba(77, 163, 255, .12), 0 24px 80px rgba(0, 0, 0, .6);
+  padding: 22px 26px 24px; animation: cp-in 220ms ease-out both;
+}
+.cp-brand { display: flex; align-items: baseline; gap: 12px; margin: 0 0 6px; }
+.cp-brand b { font: 700 28px/1 var(--display); color: var(--bait); letter-spacing: .02em; }
+.cp-brand span { font: 500 11px/1 var(--mono); color: #8FBFF0; text-transform: uppercase; letter-spacing: .08em; }
+.cp-title { margin: 6px 0 4px; font: 700 clamp(22px, 2.6vw, 30px)/1.15 var(--display); color: var(--text); }
+.cp-move { margin: 0; font: 700 16px/1.4 var(--mono); color: var(--amber); }
+.cp-read { margin: 8px 0 14px; font: 500 12.5px/1.45 var(--mono); color: #8FBFF0; overflow-wrap: anywhere; }
+.cp-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.cp-row {
+  display: grid; grid-template-columns: 58px minmax(150px, 220px) 1fr; gap: 12px; align-items: baseline;
+  padding: 7px 10px; background: rgba(77, 163, 255, .06); border-left: 3px solid var(--green);
+  animation: cp-row 200ms ease-out both;
+}
+.cp-row b { font: 700 12px/1 var(--mono); color: var(--green); }
+.cp-row strong { font: 600 13px/1.3 var(--display); }
+.cp-row span { font: 400 12px/1.4 var(--display); color: var(--dim); }
+.cp-row.fail { border-left-color: var(--red); } .cp-row.fail b { color: var(--red); }
+.cp-row.cap { border-left-color: var(--amber); } .cp-row.cap b { color: var(--amber); }
+.cp-row.not_assessed { border-left-color: var(--faint); } .cp-row.not_assessed b { color: var(--faint); }
+.cp-stamp {
+  display: inline-block; margin: 16px 0 0; padding: 6px 16px; transform: rotate(-3deg);
+  font: 700 clamp(22px, 3vw, 34px)/1.1 var(--mono); letter-spacing: .04em;
+  color: var(--red); border: 4px solid currentColor; animation: stamp 260ms cubic-bezier(.2, 1.6, .4, 1) both;
+}
+.cp-stamp[hidden] { display: none; }
+.cp-stamp.caution { color: var(--amber); }
+.cp-stamp.cleared { color: var(--green); }
+@keyframes cp-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes cp-row { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) {
+  .cp-card { padding: 16px; }
+  .cp-title { font-size: 21px; }
+  .cp-row { grid-template-columns: 48px 1fr; padding: 6px 8px; }
+  /* On a phone the row keeps its verdict and name; the full sentence is on the reveal's
+     gate table, one tap away. Every row and the stamp fit in one screen. */
+  .cp-row span { display: none; }
+  .cp-stamp { margin-top: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cp-card, .cp-row, .cp-stamp { animation: none; }
+}
+html[data-frozen="true"] .cp-card, html[data-frozen="true"] .cp-row, html[data-frozen="true"] .cp-stamp { animation: none; }

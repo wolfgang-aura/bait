@@ -12,7 +12,8 @@ test('recorded package contains only audited assets and resolves its local depen
     for (const match of body.matchAll(/(?:src|href)="\.\/([^"#]*)/g)) {
       assert.ok(files.has(match[1] || 'index.html'), `${name} links to missing ${match[1]}`);
     }
-    assert.match(body, /github\.com\/wolfgang-aura\/bait#play-against-the-models/);
+    assert.match(body, /<a href="https:\/\/bait-wyqr\.onrender\.com\/" data-host-link>Play<\/a>/, 'Play goes to the hosted room');
+    assert.doesNotMatch(body, /play-against-the-models/);
     assert.doesNotMatch(body, /RUN_LOCALLY|Run the live game locally|Try your own pitch|Play your own round/);
   }
   assert.doesNotMatch(files.get('replay.js'), /fetch\(['"]\/api\//);

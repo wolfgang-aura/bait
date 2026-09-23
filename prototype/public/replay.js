@@ -344,6 +344,8 @@ async function init() {
     renderWallets();
 
     for (const id of ['attack', 'score', 'guard', 'wallets']) $(id).hidden = false;
+    // Sections above an anchor fill in after load, so land on it again once they have (/guard.html -> #how).
+    if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   } catch (err) {
     $('b-error').hidden = false;
     $('b-error').textContent = `Recorded results could not load. ${err.message}. Reload to retry.`;

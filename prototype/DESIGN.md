@@ -1,5 +1,47 @@
 # BAIT public page, version B
 
+## Version I: three parties on one screen, 23 September 2026 (current)
+
+Changes on top of Version H. Golden viewports unchanged: 1280 x 800 desktop, 375 x 812 phone
+(the phone check moved from 390 to 375, the narrowest the judges used).
+
+**Why.** Player feedback on the hosted room: "The BLOCKED just happens so sudden and out of
+nowhere, even I couldn't tell quick enough it was BAIT doing its work." Nothing on screen
+said MERIDIAN is someone else's AI, and nothing showed BAIT arriving. Composition fix, not
+a patch on the stamp.
+
+**The hierarchy: three parties, three colours.**
+1. **The player** pitches (text box, fact cards). No colour of their own.
+2. **MERIDIAN, the target.** The trader's accent colour (red on THE STREAK) stays MERIDIAN's.
+   A tag under its name: "THE TARGET · a third-party AI agent, not BAIT". It has no data tools.
+3. **BAIT, the check.** Its own colour, `--bait: #4DA3FF` (blue), used for nothing else:
+   the checkpoint panel, its wordmark and the "BY BAIT" on the stamp.
+
+**The sequence when MERIDIAN agrees.**
+- (b) The transfer card says the money is leaving MERIDIAN: "MERIDIAN: sending $X to NAME...",
+  amber amount, no stamp. About 1.4 s.
+- (c) The BAIT checkpoint takes the screen (a blue-bordered panel over a dimmed room), 2 to
+  3 s: the BAIT wordmark, "BAIT intercepted the transfer", "$X from MERIDIAN to NAME", then
+  "Reading Nansen perp-pnl-summary for 0x...". The live read names its UTC fetch time; a
+  frozen round says "the 2026-09-21 capture". The gate's real check rows tick in one by one
+  (about 0.3 s each) with their real values, from the `/finish` response.
+- (d) Only then the stamp lands on the checkpoint: "BLOCKED BY BAIT", "CAPPED BY BAIT" or
+  "CLEARED BY BAIT", and the reveal follows with the same stamp.
+- If MERIDIAN refuses on its own there is no checkpoint: the reveal says so, stamp NO WIRE.
+
+**Fact cards.** Every flattering fact is open from line 1; the unlock drip and its
+"unlocks after line N" line are gone. A card is used once per line (greyed, disabled);
+delete its sentence and it is free again. The sealed "fact you must not mention" card stays.
+
+**Navigation.** One top nav on every page: Play (/) · Proof (/replay.html) · GitHub.
+`/guard.html` (a pico-themed page with its own look) is retired: it 302s to
+`/replay.html#how`, a short "How BAIT works" section in the proof page's theme.
+
+**Motion.** `prefers-reduced-motion`: the checkpoint shows every row at once, no tick, no
+shake; it still holds long enough to read before the reveal.
+
+Seen, 23 September: `scratch/round9/` before-* and after-* at desktop and phone.
+
 ## Version H: the AI never looks, BAIT does, 23 September 2026 (current)
 
 Changes on top of Version G, same tokens, fonts and viewports.

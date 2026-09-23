@@ -28,7 +28,7 @@ five the model proposed nothing. Source: the
 
 What the ladder does not show: that the gate picks profitable wallets. On 102 later
 seven-day periods across the same seven development wallets, 14 of the 64 records it
-allowed lost money next and 20 of the 38 it blocked turned profitable
+allowed lost money next, and of the 38 it blocked, 15 made money and 5 were flat
 ([robustness panel](../bench/reports/robustness-panel.md)). One model, one losing wallet,
 no unseen test set. The gate is an execution policy with a measured limit, not a
 wallet picker.

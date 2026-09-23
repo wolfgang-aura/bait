@@ -6,7 +6,8 @@
  * ephemeral disk, so it cannot be the guard that stops an anonymous judge, or a
  * script, from burning the key. This module adds two in-memory limits:
  *
- *   per IP     at most HOSTED_ROUNDS_PER_IP round starts in any rolling 24 hours
+ *   per IP     at most HOSTED_ROUNDS_PER_IP round starts in any rolling 24 hours; 0 (the
+ *              default since 23 Sep 2026, when the owner bought 20,000 Nansen credits) is off
  *   global     at most HOSTED_DAILY_CALLS DeepSeek call attempts per UTC day
  *
  * Both reset when the process restarts. That is the accepted trade-off for a
@@ -43,7 +44,7 @@ export function clientIp(req, { trustProxy = false } = {}) {
 
 const dayKey = (ms) => new Date(ms).toISOString().slice(0, 10);
 
-export function createHostedGuard({ enabled = true, roundsPerIp = 3, dailyCalls = 300, now = () => Date.now() } = {}) {
+export function createHostedGuard({ enabled = true, roundsPerIp = 0, dailyCalls = 3000, now = () => Date.now() } = {}) {
   const startedAt = new Date(now()).toISOString();
   const roundsByIp = new Map(); // ip -> round-start timestamps inside the last 24h
   let day = dayKey(now());
@@ -75,7 +76,7 @@ export function createHostedGuard({ enabled = true, roundsPerIp = 3, dailyCalls 
     startRound(ip) {
       rollover();
       const list = recentRounds(ip);
-      if (enabled && list.length >= roundsPerIp) {
+      if (enabled && roundsPerIp > 0 && list.length >= roundsPerIp) {
         throw new HostedCapError(`ip has ${list.length}/${roundsPerIp} rounds in the last 24h`, IP_CAP_MESSAGE);
       }
       list.push(now());

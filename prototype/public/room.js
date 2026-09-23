@@ -18,6 +18,7 @@
  * prototype/DESIGN.md, Version D.
  */
 import { portraitSvg } from '/portraits.js';
+import { addFact, isUsed } from '/fact-cards.js';
 
 const $ = id => document.getElementById(id);
 const body = document.body;
@@ -55,6 +56,7 @@ const el = {
   initials: $('initials'), submitScore: $('submit-score'), scoreStatus: $('score-status'),
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
   transcript: $('transcript-body'), bootError: $('boot-error'), setupNote: $('setup-note'),
+  checkpoint: $('checkpoint'), cpMove: $('cp-move'), cpRead: $('cp-read'), cpRows: $('cp-rows'), cpStamp: $('cp-stamp'),
 };
 
 const SCREENS = {
@@ -189,6 +191,68 @@ async function pick() {
 // ------------------------------------------------ 4. the reveal: BAIT's check
 
 /**
+ * The stamp names who decided. A transfer MERIDIAN agreed to is decided by BAIT, so the
+ * stamp says so; a round where MERIDIAN refused on its own keeps the server's NO WIRE.
+ */
+function stampLabel(final) {
+  if (!final.peak) return final.stamp;
+  return { block: 'BLOCKED BY BAIT', capped: 'CAPPED BY BAIT', allow: 'CLEARED BY BAIT', caution: 'CLEARED BY BAIT · CAUTION' }[final.verdict] ?? final.stamp;
+}
+
+const CHECK_NAME = {
+  evidence_30d: '30-day record is this wallet\u2019s', evidence_freshness: 'Read is fresh', evidence_7d: '7-day record is this wallet\u2019s',
+  realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
+  low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month',
+  tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
+};
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * The BAIT checkpoint. MERIDIAN has agreed and the money is leaving; BAIT takes the screen
+ * in its own colour, names the Nansen read, ticks in the gate's real rows one by one, and
+ * only then lands the stamp. Reduced motion: every row at once, no tick, still readable.
+ */
+async function playCheckpoint(p, final, { hold = true } = {}) {
+  const gate = final.gate ?? { checks: [] };
+  const who = p?.short ?? chosen?.short ?? '';
+  text(el.cpMove, `${final.peakLabel} from MERIDIAN to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
+  const at = String(gate.evidenceAt ?? '');
+  text(el.cpRead, gate.live
+    ? `Reading Nansen perp-pnl-summary for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
+    : `Reading Nansen perp-pnl-summary for ${who}: the ${at.slice(0, 10)} capture`);
+  el.cpRows.replaceChildren();
+  el.cpStamp.hidden = true;
+  el.checkpoint.className = 'checkpoint';
+  el.checkpoint.hidden = false;
+  const label = { pass: 'PASS', fail: 'BLOCK', not_assessed: 'N/A', cap: 'CAP' };
+  const rows = (gate.checks ?? []).filter(c => c.result !== 'not_assessed' || c.id === 'evidence_freshness');
+  if (!reduced) await sleep(450);
+  for (const c of rows) {
+    const li = document.createElement('li');
+    li.className = `cp-row ${c.result}`;
+    const b = document.createElement('b');
+    b.textContent = label[c.result] ?? c.result;
+    const name = document.createElement('strong');
+    name.textContent = CHECK_NAME[c.id] ?? c.id.replace(/_/g, ' ');
+    const why = document.createElement('span');
+    why.textContent = c.plain;
+    li.append(b, name, why);
+    el.cpRows.append(li);
+    if (!reduced) await sleep(260);
+  }
+  if (!reduced) await sleep(250);
+  const kind = final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
+  el.cpStamp.className = `cp-stamp ${kind}`;
+  text(el.cpStamp, stampLabel(final));
+  el.cpStamp.hidden = false;
+  el.cpStamp.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
+  if (hold) {
+    await sleep(reduced ? 1800 : 1100);
+    el.checkpoint.hidden = true;
+  }
+}
+
+/**
  * The reveal. BAIT's decision on the one transfer comes first, then what was pitched
  * against what was left out, then the rest of the report. Every word and figure is the
  * server's `final` object and the prospect record it sent with the verdict.
@@ -196,7 +260,7 @@ async function pick() {
 function showReveal(p, final) {
   const kind = final.peak === 0 ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
   el.revealStamp.className = `stamp ${kind === 'blocked' ? '' : kind}`.trim();
-  text(el.revealStamp, final.stamp);
+  text(el.revealStamp, stampLabel(final));
   text(el.revealTitle, final.headline);
   text(el.revealSub, final.subline);
   el.revealWhy.hidden = !(final.because && ['block', 'capped'].includes(final.verdict) && final.peak > 0);
@@ -396,9 +460,8 @@ function renderScene(d) {
 }
 
 /**
- * The dossier as the server released it: the flattering facts unlocked so far, one line
- * saying another is coming, and the sealed card whose value was never sent. A fact that
- * was not on screen a moment ago lands with a flash, so the unlock is seen.
+ * The dossier as the server released it: every flattering fact, open from line 1, and the
+ * sealed card whose value was never sent. A card is used once per line (fact-cards.js).
  */
 function renderFacts(d) {
   const before = new Set([...el.facts.children].map(chip => chip.dataset.id));
@@ -414,13 +477,14 @@ function renderFacts(d) {
     const label = document.createElement('span');
     label.textContent = fact.label;
     chip.append(value, label);
+    chip.dataset.insert = fact.insert;
     chip.addEventListener('click', () => insertFact(fact.insert));
     el.facts.append(chip);
   }
-  el.nextFact.hidden = !d.upcoming;
-  text(el.nextFact, d.upcoming
-    ? `+${d.upcoming} more true fact${d.upcoming === 1 ? '' : 's'} unlock${d.upcoming === 1 ? 's' : ''} after line ${d.nextUnlock}`
-    : '');
+  // Round 9: no unlock drip. Every flattering fact is on the table from the start.
+  el.nextFact.hidden = true;
+  text(el.nextFact, '');
+  refreshFactCards();
   el.sealed.hidden = !d.sealed;
   if (d.sealed) {
     text(el.sealedHead, d.sealed.mustNotMention ? 'The fact you must not mention' : 'The number BAIT will check');
@@ -430,14 +494,27 @@ function renderFacts(d) {
 
 function insertFact(sentence) {
   if (el.line.disabled) return;
-  const current = el.line.value.trim();
-  el.line.value = (current ? `${current} ${sentence}` : sentence).slice(0, dossier?.maxPitch ?? 200);
+  const next = addFact(el.line.value, sentence, dossier?.maxPitch ?? 200);
+  if (next === null) return; // already in this line: a card is used once per line
+  el.line.value = next;
   el.line.focus();
   updateCount();
 }
 
+/** A card whose sentence is in the line is spent; delete the sentence and it is free. */
+function refreshFactCards() {
+  for (const chip of el.facts.children) {
+    const used = isUsed(el.line.value, chip.dataset.insert);
+    chip.disabled = used;
+    chip.classList.toggle('used', used);
+    chip.setAttribute('aria-pressed', String(used));
+    chip.title = used ? 'Already in this line' : 'Add this true fact to your line';
+  }
+}
+
 function updateCount() {
   text(el.count, `${el.line.value.length} / ${dossier?.maxPitch ?? 200}`);
+  refreshFactCards();
 }
 
 /** Count the funded figure up to its new value, and pop the damage number. */
@@ -601,11 +678,13 @@ function showIntercept(shot) {
   const w = shot.wire;
   el.intercept.className = 'intercept pending';
   el.intercept.hidden = false;
-  text(el.icptN, `Line ${shot.n} · MERIDIAN agreed to send`);
+  const to = chosen?.name ?? dossier?.name ?? 'this trader';
+  text(el.icptN, `Line ${shot.n} · MERIDIAN: sending ${w.attemptedLabel} to ${to}...`);
   text(el.icptTo, '');
   text(el.icptAmt, w.attemptedLabel);
-  text(el.icptStamp, 'NEXT: BAIT');
-  text(el.icptWhy, `${w.attemptedLabel} of its ${dollars(dossier?.slot ?? 25000)} into copying ${chosen?.name ?? dossier?.name ?? 'this trader'}. BAIT checks every transfer before it leaves.`);
+  text(el.icptStamp, '');
+  el.icptStamp.hidden = true;
+  text(el.icptWhy, `The transfer is leaving MERIDIAN's ${dollars(dossier?.slot ?? 25000)} fund, decided on your pitch alone.`);
   if (!reduced) { el.intercept.style.animation = 'none'; void el.intercept.offsetWidth; el.intercept.style.animation = ''; }
 }
 
@@ -639,7 +718,8 @@ async function pitch() {
     const last = state.shots[state.shots.length - 1];
     if (last?.caught) text(el.status, 'Caught. That claim is not in the record.');
     // Hold on the transfer card long enough to read it, then the reveal.
-    if (state.finished) setTimeout(finish, reduced ? 0 : last?.wire ? 3000 : 1200);
+    // The transfer card holds long enough to read that the money is leaving MERIDIAN.
+    if (state.finished) setTimeout(finish, reduced ? 600 : last?.wire ? 1600 : 1200);
   } catch (err) {
     stop();
     fail(err.message);
@@ -678,10 +758,14 @@ function finish() {
     try {
       result = await api(`/api/room/${round.id}/finish`, { method: 'POST', body: {} });
       adopt(result);
+      // MERIDIAN agreed: BAIT takes the screen before any stamp. MERIDIAN refused on its
+      // own: no checkpoint, the reveal says so.
+      if (result.final.peak > 0) await playCheckpoint(result.prospect, result.final);
       showReveal(result.prospect, result.final);
       renderTranscript();
     } catch (err) {
       finishing = null;
+      el.checkpoint.hidden = true;
       fail(err.message);
     }
   })();
@@ -697,7 +781,7 @@ function showFinal(final, entries, mineAt = null) {
   text(el.wireStopped, final.stoppedLabel);
   el.wireStopped.classList.toggle('zero', !final.stopped);
   el.stamp.className = `stamp ${final.peak === 0 ? 'none' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : final.verdict === 'allow' ? 'cleared' : ''}`;
-  text(el.stamp, final.stamp);
+  text(el.stamp, stampLabel(final));
   text(el.finalHead, final.headline);
   text(el.finalSub, final.subline);
   el.finalTrail.hidden = !final.trail;
@@ -921,8 +1005,7 @@ async function fixture(name, prospectId) {
       shots: fixtureShots.slice(0, 1), line: 'Fixture reply: tell me more about that record.',
       checks: [],
     });
-    renderFacts({ ...frozen.sealedDossier, facts: frozen.dossier.facts.slice(0, Math.min(frozen.dossier.facts.length, state.dossier.facts.length + 1)),
-      upcoming: Math.max(0, frozen.dossier.facts.length - state.dossier.facts.length - 1), nextUnlock: 2 });
+    renderFacts(state.dossier);
     el.line.value = state.dossier.facts[0].insert;
     el.line.disabled = false;
     updateCount();
@@ -934,6 +1017,15 @@ async function fixture(name, prospectId) {
     enterRoom();
     renderState({ ...state, shotsUsed: 2, shotsLeft: 0, finished: true, funded: amount, suspicion: 20, mood: 'intrigued',
       peak: amount, stopped: 0, shots: fixtureShots, line: 'Fixture reply: fine, a small probe.', checks: [] });
+    return;
+  }
+
+  if (name === 'checkpoint') {
+    // The BAIT checkpoint at rest, every row and the stamp, over the room.
+    enterRoom();
+    renderState({ ...state, shotsUsed: 2, shotsLeft: 0, finished: true, funded: amount, suspicion: 20, mood: 'intrigued',
+      peak: amount, stopped: 0, shots: fixtureShots, line: 'Fixture reply: fine, a small probe.', checks: [] });
+    await playCheckpoint({ ...p, short: target.short }, fixtureFinal, { hold: false });
     return;
   }
 

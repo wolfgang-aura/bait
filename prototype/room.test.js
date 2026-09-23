@@ -220,9 +220,9 @@ test('the facts come out in order: flattering ones a line at a time, the loss se
   // THE LEGEND: two flattering facts (the all-time figure and one market), three that
   // are not (a losing week and two win rates under half), and the buried 30-day loss.
   const d0 = round.dossier;
-  assert.deepEqual(d0.facts.map(f => f.id), ['all-time'], 'the brag goes first, alone');
-  assert.equal(d0.upcoming, 1);
-  assert.equal(d0.nextUnlock, 1);
+  assert.deepEqual(d0.facts.map(f => f.id), ['all-time', 'best-market'], 'the brag goes first, and every flattering fact is open');
+  assert.equal(d0.upcoming, 0);
+  assert.equal(d0.nextUnlock, null);
   assert.equal(d0.sealed.label, '30-day realised PnL');
   assert.equal(d0.sealed.mustNotMention, true);
   assert.equal(d0.sealed.count, 4);
@@ -236,7 +236,7 @@ test('the facts come out in order: flattering ones a line at a time, the loss se
   assert.doesNotMatch(text, /-\$/, 'no negative figure anywhere before the verdict');
 
   const one = await pitch(service, round.id, 0, `${d0.facts[0].insert}`);
-  assert.deepEqual(one.dossier.facts.map(f => f.id), ['all-time', 'best-market'], 'line 1 unlocks the next fact');
+  assert.deepEqual(one.dossier.facts.map(f => f.id), ['all-time', 'best-market'], 'nothing is held back for later lines');
   assert.equal(one.dossier.upcoming, 0);
   assert.equal(one.dossier.nextUnlock, null);
   assert.equal(one.finished, false);
@@ -255,25 +255,24 @@ test('the facts come out in order: flattering ones a line at a time, the loss se
   assert.equal(three.shots[2].wire.stamp, 'BLOCKED');
 });
 
-test('the reveal schedule always leaves something to unlock and opens everything by line 3', async () => {
+test('every flattering fact is open from line 1: no unlock drip, no "unlocks after line N"', async () => {
   const { revealSchedule, publicDossier, factTone } = await import('./room.js');
-  assert.deepEqual(revealSchedule(1), { initial: 1, step: 1 });
-  assert.deepEqual(revealSchedule(2), { initial: 1, step: 1 });
-  assert.deepEqual(revealSchedule(4), { initial: 2, step: 1 });
-  assert.deepEqual(revealSchedule(5), { initial: 2, step: 2 });
+  for (const n of [1, 2, 4, 5]) assert.deepEqual(revealSchedule(n), { initial: n, step: 0 });
   assert.equal(factTone('-$1,208'), 'negative');
   assert.equal(factTone('38.9%'), 'negative');
   assert.equal(factTone('53.9%'), 'positive');
   assert.equal(factTone('514,576'), 'positive');
-  // THE GRINDER: four flattering facts, two open, then one per line.
+  // THE GRINDER: four flattering facts, all four open on every line.
   const d = buildDossier(SNAPSHOT);
   const seen = [0, 1, 2].map(n => publicDossier(d, { shotsUsed: n }).facts.length);
-  assert.deepEqual(seen, [2, 3, 4]);
+  assert.deepEqual(seen, [4, 4, 4]);
   for (const roster of loadRoster()) {
     const dossier = (await import('./room.js')).buildProspectDossier(roster);
-    const last = publicDossier(dossier, { shotsUsed: SHOTS - 1 });
-    assert.equal(last.upcoming, 0, `${roster.id}: every flattering fact is open before the last line`);
-    assert.ok(publicDossier(dossier, { shotsUsed: 0 }).facts.length >= 1, `${roster.id}: something to say on line 1`);
+    const first = publicDossier(dossier, { shotsUsed: 0 });
+    assert.equal(first.upcoming, 0, `${roster.id}: nothing waits for a later line`);
+    assert.equal(first.nextUnlock, null);
+    assert.equal(first.facts.length, dossier.facts.filter(f => f.tone === 'positive').length, `${roster.id}: every flattering fact on line 1`);
+    assert.ok(first.sealed.label, `${roster.id}: the sealed card stays`);
   }
 });
 

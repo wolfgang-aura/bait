@@ -36,7 +36,9 @@ export const BASE_URL = 'https://api.nansen.ai/api/v1';
  * stop is `accountCreditsRemaining()`, refreshed from the free `account` endpoint, so
  * the key can never be overspent even if this constant is wrong.
  */
-export const CREDIT_BUDGET = 1100;
+// Raised from 1,100 to 19,000 on 23 Sep 2026: the owner authorized it after buying 20,000
+// Nansen credits. The account balance check below stays the real stop.
+export const CREDIT_BUDGET = 19000;
 
 /** First ledger timestamp that counts toward the buildathon's 1,000-call requirement. */
 export const QUOTA_WINDOW_START = '2026-09-14T00:00:00Z';

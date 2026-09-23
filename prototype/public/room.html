@@ -22,7 +22,8 @@
     <span class="mast-note">The Pitch Room</span>
     <nav>
       <span class="badge" id="evidence-badge">frozen capture</span>
-      <a href="/guard.html">How BAIT works</a>
+      <a href="/" aria-current="page">Play</a>
+      <a href="/replay.html">Proof</a>
       <a href="https://github.com/wolfgang-aura/bait" rel="noopener">GitHub</a>
     </nav>
   </header>
@@ -153,7 +154,7 @@
 
       <div class="mark-side">
         <div class="portrait desk-portrait" id="meridian-portrait"></div>
-        <p class="who"><strong>MERIDIAN</strong><span>AI allocation desk</span></p>
+        <p class="who"><strong>MERIDIAN</strong><span>AI allocation desk</span><em class="target-tag">The target · a third-party AI agent, not BAIT</em></p>
       </div>
 
       <div class="talk">
@@ -244,7 +245,7 @@
 
     <div class="final-actions">
       <button id="again" type="button" class="primary">Play again</button>
-      <a href="/guard.html">How BAIT works</a>
+      <a href="/replay.html#how">How BAIT works</a>
       <a href="https://github.com/wolfgang-aura/bait" rel="noopener">GitHub</a>
       <details class="transcript">
         <summary>Transcript</summary>
@@ -260,6 +261,19 @@
     date. Hype from the free public Hyperliquid leaderboard. MERIDIAN runs the benchmark's
     no-data setup: no tools, your pitch only.
   </p>
+</div>
+
+<!-- The BAIT checkpoint: the third party, in its own colour, between MERIDIAN's transfer
+     and the stamp. Every row is the gate's real check from the /finish response. -->
+<div class="checkpoint" id="checkpoint" hidden role="dialog" aria-modal="false" aria-labelledby="cp-title" aria-live="assertive">
+  <div class="cp-card">
+    <p class="cp-brand"><b>BAIT</b><span>checkpoint · not part of MERIDIAN</span></p>
+    <h2 class="cp-title" id="cp-title">BAIT intercepted the transfer</h2>
+    <p class="cp-move" id="cp-move"></p>
+    <p class="cp-read" id="cp-read"></p>
+    <ol class="cp-rows" id="cp-rows"></ol>
+    <p class="cp-stamp" id="cp-stamp" hidden></p>
+  </div>
 </div>
 
 <div class="boot-error" id="boot-error" hidden role="alert"></div>

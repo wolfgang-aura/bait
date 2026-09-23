@@ -55,7 +55,7 @@ async function startServer(extraEnv = {}) {
     return { status: res.status, type: res.headers.get('content-type'), body: await res.text() };
   };
   const stop = () => new Promise(resolve => { child.once('exit', () => resolve(log)); child.kill(); });
-  return { call, callRaw, fetchText, stop, log: () => log };
+  return { base, call, callRaw, fetchText, stop, log: () => log };
 }
 
 test('the default route is the Pitch Room, with the guard console still reachable', async () => {
@@ -72,12 +72,20 @@ test('the default route is the Pitch Room, with the guard console still reachabl
     assert.doesNotMatch(page.body, /Sell them anyway/);
     assert.doesNotMatch(page.body, /Can you sell a losing trader/);
 
-    const guardPage = await s.fetchText('/guard.html');
-    assert.equal(guardPage.status, 200);
-    assert.match(guardPage.body, /BAIT checks the trader before your AI agent sends money/);
-    assert.match(guardPage.body, /Amount the AI agent wants to send/);
-    assert.match(guardPage.body, /held\. \$0 sent\./);
-    assert.match(guardPage.body, /ELIGIBLE/);
+    // The guard page is retired: it redirects to the proof page's How BAIT works section.
+    const guardPage = await fetch(`${s.base}/guard.html`, { redirect: 'manual' });
+    assert.equal(guardPage.status, 302);
+    assert.equal(guardPage.headers.get('location'), '/replay.html#how');
+    const proof = await s.fetchText('/replay.html');
+    assert.match(proof.body, /<section id="how"/);
+    assert.match(proof.body, /How BAIT works/);
+    // One nav on every page: Play, Proof, GitHub.
+    for (const html of [page.body, proof.body]) {
+      assert.match(html, /<a href="\/"[^>]*>Play<\/a>/);
+      assert.match(html, /<a href="\/replay\.html"[^>]*>Proof<\/a>/);
+      assert.match(html, />GitHub<\/a>/);
+      assert.doesNotMatch(html, /guard\.html|play-against-the-models/);
+    }
     for (const path of ['/replay.html', '/room.css', '/room.js', '/portraits.js']) {
       assert.equal((await s.fetchText(path)).status, 200, `${path} stays reachable`);
     }
@@ -92,8 +100,8 @@ test('the room serves its dossier from the frozen snapshot and spends nothing to
     assert.equal(body.evidence.live, false);
     assert.equal(body.dossier.desk, 'MERIDIAN');
     assert.equal(body.dossier.slot, 25_000);
-    assert.equal(body.dossier.facts.length, 2, 'two flattering facts open before the first line');
-    assert.equal(body.dossier.upcoming, 2);
+    assert.equal(body.dossier.facts.length, 4, 'every flattering fact is open before the first line');
+    assert.equal(body.dossier.upcoming, 0);
     assert.equal('buried' in body.dossier, false, 'the loss is sealed until BAIT checks a transfer');
     assert.equal(body.dossier.sealed.label, '30-day realised PnL');
     assert.doesNotMatch(JSON.stringify(body.dossier), /4,745,429/);

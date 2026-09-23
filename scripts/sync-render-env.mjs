@@ -27,8 +27,11 @@ export function buildPlan(env) {
     secret: { name: 'NANSEN_API_KEY', length: key.length, looksValid: /^[A-Za-z0-9_-]{20,}$/.test(key) },
     plain: {
       NANSEN_LIVE: '1',
-      HOSTED_NANSEN_CREDITS_PER_DAY: env.HOSTED_NANSEN_CREDITS_PER_DAY || '20',
-      HOSTED_NANSEN_CREDITS_TOTAL: env.HOSTED_NANSEN_CREDITS_TOTAL || '300',
+      HOSTED_NANSEN_CREDITS_PER_DAY: env.HOSTED_NANSEN_CREDITS_PER_DAY || '2000',
+      HOSTED_NANSEN_CREDITS_TOTAL: env.HOSTED_NANSEN_CREDITS_TOTAL || '18000',
+      // 0 = no per-address round cap; the global DeepSeek cap stays the cost guard.
+      HOSTED_ROUNDS_PER_IP: env.HOSTED_ROUNDS_PER_IP || '0',
+      HOSTED_DAILY_CALLS: env.HOSTED_DAILY_CALLS || '3000',
     },
   };
 }

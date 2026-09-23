@@ -7,7 +7,7 @@ test('the Render sync plan describes the key by length and never carries its val
   const plan = buildPlan({ NANSEN_API_KEY: key });
   assert.equal(plan.secret.length, 36);
   assert.equal(plan.secret.looksValid, true);
-  assert.deepEqual(plan.plain, { NANSEN_LIVE: '1', HOSTED_NANSEN_CREDITS_PER_DAY: '20', HOSTED_NANSEN_CREDITS_TOTAL: '300' });
+  assert.deepEqual(plan.plain, { NANSEN_LIVE: '1', HOSTED_NANSEN_CREDITS_PER_DAY: '2000', HOSTED_NANSEN_CREDITS_TOTAL: '18000', HOSTED_ROUNDS_PER_IP: '0', HOSTED_DAILY_CALLS: '3000' });
   const printed = describePlan(plan) + JSON.stringify(plan);
   assert.ok(!printed.includes(key));
   assert.ok(!printed.includes(key.slice(-4)));

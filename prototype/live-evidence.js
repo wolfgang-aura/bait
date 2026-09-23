@@ -10,8 +10,9 @@
  * Every call goes through `validation/nansen.js`, so it is written to the call ledger,
  * counted against CREDIT_BUDGET and refused below the account balance. On top of that
  * this module holds two hard caps of its own, checked before a read is attempted:
- *   HOSTED_NANSEN_CREDITS_PER_DAY  (default 20)   credits per UTC day
- *   HOSTED_NANSEN_CREDITS_TOTAL    (default 300)  credits for the life of the counter
+ *   HOSTED_NANSEN_CREDITS_PER_DAY  (default 2000)   credits per UTC day
+ *   HOSTED_NANSEN_CREDITS_TOTAL    (default 18000)  credits for the life of the counter
+ * (raised 23 Sep 2026 from 20 and 300 after the owner bought 20,000 credits)
  * The counter is written to a small JSON file when one is given. On a free host whose
  * disk is wiped on every restart or deploy that file does not survive, so there the
  * total cap is per process lifetime and the Nansen account balance is the backstop.
@@ -31,8 +32,8 @@ export const LIVE_ENDPOINT = 'profiler/perp-pnl-summary';
 export const LIVE_EVIDENCE_TTL_MS = 30 * 60_000;
 /** Two summaries per read. */
 export const LIVE_READ_CREDITS = 2 * creditCostFor(LIVE_ENDPOINT);
-export const DEFAULT_DAILY_CAP = 20;
-export const DEFAULT_TOTAL_CAP = 300;
+export const DEFAULT_DAILY_CAP = 2000;
+export const DEFAULT_TOTAL_CAP = 18000;
 export const DEFAULT_READ_TIMEOUT_MS = 8_000;
 
 /**
