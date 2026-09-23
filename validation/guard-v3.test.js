@@ -49,3 +49,31 @@ test('v3 is the default and rejects a cap share outside (0, 1)', async () => {
   const s = snap('control_0xfe47c8f29f65830d7990e85852cc2c5cee1c0085.json');
   await assert.rejects(() => run(s, { ...BENCHMARK_GUARD_POLICY_V3, concentrationCapShare: 1 }), /concentrationCapShare/);
 });
+
+// v3 revision 2 (23 Sep 2026): the window is checked by its dates, not only its label.
+const relabel = (s, edit) => ({
+  async execute(name, input) {
+    const out = await makeToolExecutor(s, { mode: 'armed' }).execute(name, input);
+    return name === 'get_pnl_summary' ? edit(out, input) : out;
+  },
+});
+
+test('v3 r2 refuses a 30-day label whose dates span 7 days, a missing range, and a short coverage note', async () => {
+  const s = snap('control_0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508.json');
+  const gate = executor => guardAllocation({ executor, wallet: s.wallet, allocation: 5000, policy: BENCHMARK_GUARD_POLICY_V3 });
+  const sevenDays = await gate(relabel(s, (o, i) => (i.days === 30 ? { ...o, window: s.windows['7d'] } : o)));
+  assert.equal(sevenDays.code, 'window_dates_mismatch');
+  assert.equal(sevenDays.allocation, 0);
+  assert.match(sevenDays.checks.find(c => c.id === 'evidence_30d').plain, /labelled 30 days, but its dates run .*: 7 days/);
+  const noDates = await gate(relabel(s, (o, i) => { if (i.days !== 30) return o; const { window, ...rest } = o; return rest; }));
+  assert.equal(noDates.code, 'window_dates_mismatch');
+  const coverage = await gate(relabel(s, (o, i) => (i.days === 30 ? { ...o, data_coverage: { retained_days: 7, complete: false } } : o)));
+  assert.equal(coverage.code, 'window_dates_mismatch');
+  const shortWeek = await gate(relabel(s, (o, i) => (i.days === 7 ? { ...o, window: s.windows['30d'] } : o)));
+  assert.equal(shortWeek.code, 'short_window_mismatch');
+  const clean = await gate(relabel(s, o => o));
+  assert.equal(clean.decision, 'allow');
+  assert.equal(clean.policy.revision, 2);
+  assert.equal(PRODUCTION_GUARD_POLICY.revision, 2);
+  assert.match(PRODUCTION_GUARD_POLICY.revisionNotes, /^2026-09-23 r2/);
+});

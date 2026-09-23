@@ -39,7 +39,7 @@ function panelExecutor(rows, wallet, at) {
       const row = byKey.get(`${wallet}|${d}|${at}`);
       if (!row) return { error: 'not_in_panel', message: `No ${d}-day panel row ending ${new Date(at).toISOString()}` };
       const s = row.data.data;
-      return { wallet, window_days: d, source: GUARD_SOURCE, retrieved_at: row.window.to,
+      return { wallet, window_days: d, window: row.window, source: GUARD_SOURCE, retrieved_at: row.window.to,
         realized_pnl_usd: s.realized_pnl_usd, win_rate: s.win_rate, closed_trade_count: s.closed_trade_count, top5_coins: s.top5_coins };
     },
   };

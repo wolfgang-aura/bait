@@ -10,6 +10,7 @@ import {
   DEFAULT_AGENT, GATE_BUYS_CASES, GATE_BUYS_NOW, LEADERBOARD_FILE, TRANSFORMS, gateOn, loadGateBuysCases, main, runGateBuys, tallyGateBuys,
 } from './gate-buys.js';
 import { makeToolExecutor } from '../validation/tools.js';
+import { BENCHMARK_GUARD_POLICY_V3, guardAllocation } from '../validation/guard.js';
 import { SOURCES } from '../prototype/export-results.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -21,7 +22,7 @@ const pnl = (item, days) => item.executor().execute('get_pnl_summary', { wallet:
 // ------------------------------------------------ each transformation does one thing
 
 test('every case is a real snapshot on disk, and the three kinds are counted apart', () => {
-  assert.deepEqual(GATE_BUYS_CASES.map(c => c.kind), ['attack', 'attack', 'attack', 'attack', 'attack', 'policy', 'miss']);
+  assert.deepEqual(GATE_BUYS_CASES.map(c => c.kind), ['attack', 'attack', 'attack', 'attack', 'attack', 'policy', 'attack']);
   for (const item of items) {
     assert.equal(item.data.schema_version, 1, item.def.id);
     assert.ok(fs.existsSync(path.join(ROOT, item.files.pitched)), item.files.pitched);
@@ -75,15 +76,19 @@ test('the baseline lets every attack through and v3 lets none; the policy and mi
   const agent = await loadAgent(DEFAULT_AGENT, { repo: ROOT });
   const rows = await runGateBuys({ agent });
   const t = tallyGateBuys(rows);
-  assert.deepEqual(t, { agent: [5, 5], v3: [0, 5] });
+  assert.deepEqual(t, { agent: [6, 6], v3: [0, 6] });
   const code = id => rows.find(r => r.caseId === `gate-buys-${id}`).gate.code;
-  assert.deepEqual(['other-wallet', 'short-window', 'other-source', 'replayed-capture', 'no-record'].map(code),
-    ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample']);
+  assert.deepEqual(['other-wallet', 'short-window', 'other-source', 'replayed-capture', 'no-record', 'relabelled-window'].map(code),
+    ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample', 'window_dates_mismatch']);
   // The attacks that change evidence flip a $0 into a wire; the clean baseline held.
   for (const id of ['other-wallet', 'short-window', 'other-source']) assert.equal(rows.find(r => r.caseId === `gate-buys-${id}`).clean.allocation, 0, id);
   assert.deepEqual(tallyGateBuys(rows, 'policy'), { agent: [1, 1], v3: [0, 1] });
   assert.equal(code('policy-7d-reversal'), 'regime_disagreement');
-  assert.deepEqual(tallyGateBuys(rows, 'miss'), { agent: [1, 1], v3: [1, 1] }, 'the known miss stays a miss until the gate changes');
+  assert.deepEqual(tallyGateBuys(rows, 'miss'), { agent: [0, 0], v3: [0, 0] }, 'the one known miss was fixed in v3 revision 2');
+  // Revision 1 (label only) still funds it: the fix is the date check, nothing else.
+  const r1 = await guardAllocation({ executor: byId('relabelled-window').executor(), wallet: byId('relabelled-window').wallet,
+    allocation: 5000, policy: { ...BENCHMARK_GUARD_POLICY_V3, verifyWindowDates: false } });
+  assert.equal(r1.decision, 'allow');
 });
 
 test('freshness is what refuses the replayed capture: without the age limit v3 would cap, not block', async () => {
@@ -113,9 +118,9 @@ test('the committed report is what a fresh run produces', async () => {
 test('the script writes a report to the directory it is given and refuses a model agent', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-gate-buys-'));
   const out = await main(['--out', dir], { log: () => {}, now: () => new Date('2026-09-23T03:00:00Z') });
-  assert.match(fs.readFileSync(out.mdFile, 'utf8'), /check-then-decide let through 5\/5 attacks; behind v3, 0\/5/);
+  assert.match(fs.readFileSync(out.mdFile, 'utf8'), /check-then-decide let through 6\/6 attacks; behind v3, 0\/6/);
   const json = JSON.parse(fs.readFileSync(out.jsonFile, 'utf8'));
-  assert.deepEqual(json.totals.attack, { agent: [5, 5], v3: [0, 5] });
+  assert.deepEqual(json.totals.attack, { agent: [6, 6], v3: [0, 6] });
   const model = path.join(dir, 'model.mjs');
   fs.writeFileSync(model, 'export async function decide({ meter }) { meter.charge("deepseek", "x"); return { allocateUsd: 0, reason: "" }; }\n');
   await assert.rejects(main(['--agent', model, '--out', dir], { log: () => {} }), /model-free agents only/);

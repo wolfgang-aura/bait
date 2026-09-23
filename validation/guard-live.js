@@ -94,6 +94,8 @@ export function createLiveGuardExecutor({
     return {
       wallet,
       window_days: days,
+      // The request's own date range, so the gate can check the span, not only the label.
+      window: date,
       realized_pnl_usd: round2(summary.realized_pnl_usd),
       win_rate: finite(summary.win_rate) ? summary.win_rate : undefined,
       closed_trade_count: Number.isInteger(summary.closed_trade_count) ? summary.closed_trade_count : undefined,

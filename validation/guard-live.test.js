@@ -47,6 +47,7 @@ test('a live summary maps into the exact evidence shape the snapshot tools serve
   assert.deepEqual(evidence, {
     wallet: WALLET.toLowerCase(),
     window_days: 30,
+    window: { from: '2026-08-22T09:00:00Z', to: '2026-09-21T09:00:00Z' },
     realized_pnl_usd: 12_345.68,
     // Same response, same two fields the frozen snapshot path serves, so the sample
     // size and win-rate checks read the same numbers live as they do in the bench.

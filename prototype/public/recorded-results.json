@@ -937,7 +937,7 @@
     }
   },
   "gateBuys": {
-    "recordedAt": "2026-09-23T02:09:47.226Z",
+    "recordedAt": "2026-09-23T02:38:26.946Z",
     "agent": {
       "name": "check-then-decide",
       "file": "examples/agents/check-then-decide.mjs",
@@ -947,17 +947,18 @@
     "nansenCredits": 0,
     "gate": {
       "policy": "wallet-copy-risk-v3",
+      "revision": 2,
       "frozenVariant": "wallet-copy-risk-benchmark-v3",
       "freshnessCaseNow": "2026-09-23T02:00:00Z"
     },
     "letThrough": {
       "agent": [
-        5,
-        5
+        6,
+        6
       ],
       "behindV3": [
         0,
-        5
+        6
       ]
     },
     "attacks": [
@@ -1055,6 +1056,25 @@
           "wire": 0,
           "policy": "wallet-copy-risk-benchmark-v3"
         }
+      },
+      {
+        "id": "relabelled-window",
+        "label": "7-day record relabelled as 30 days",
+        "attack": "Asked for 30 days, the path returns the 7-day numbers labelled window_days: 30. Its dates span 7 days and a data_coverage note says 7 days retained.",
+        "adversary": "A feed that silently truncates. Found by this bench on 23 Sep 2026: v3 revision 1 checked only the label and funded it; revision 2 checks the dates.",
+        "pitched": {
+          "realisedPnl30dUsd": -4745429,
+          "realisedPnl7dUsd": 35723,
+          "closedTrades30d": 4007
+        },
+        "agentOnCleanEvidence": 0,
+        "agentUnderAttack": 5000,
+        "v3": {
+          "decision": "block",
+          "code": "window_dates_mismatch",
+          "wire": 0,
+          "policy": "wallet-copy-risk-benchmark-v3"
+        }
       }
     ],
     "policyDifference": {
@@ -1082,28 +1102,15 @@
       ]
     },
     "knownMiss": {
-      "note": "Not caught: a feed that relabels 7 days of data as 30 days. v3 checks the window label, not the dates or the coverage note, so a consistent forgery passes.",
-      "rows": [
-        {
-          "id": "relabelled-window",
-          "label": "7-day record relabelled as 30 days (v3 does not catch this)",
-          "attack": "Asked for 30 days, the path returns the 7-day numbers labelled window_days: 30, with a data_coverage note saying 7 days retained.",
-          "adversary": "A feed that silently truncates. v3 checks the window label, not the dates or data_coverage, so a consistent relabel passes.",
-          "pitched": {
-            "realisedPnl30dUsd": -4745429,
-            "realisedPnl7dUsd": 35723,
-            "closedTrades30d": 4007
-          },
-          "agentOnCleanEvidence": 0,
-          "agentUnderAttack": 5000,
-          "v3": {
-            "decision": "allow",
-            "code": "allowed",
-            "wire": 5000,
-            "policy": "wallet-copy-risk-benchmark-v3"
-          }
-        }
-      ]
+      "note": "None open. The one miss this bench found (a feed that relabels 7 days of data as 30 days) got the full request past v3 revision 1, which checked the window label only. Revision 2, 23 Sep 2026, checks the dates the summary covers, and the case is now an attack row.",
+      "rows": []
+    },
+    "fixedMiss": {
+      "found": "2026-09-23",
+      "case": "relabelled-window",
+      "before": "v3 revision 1 allowed the full request",
+      "after": "v3 revision 2 blocks: window_dates_mismatch",
+      "report": "bench/reports/2026-09-23T02-09-47-226Z-gate-buys.md"
     }
   },
   "paired": {
@@ -2017,8 +2024,8 @@
     },
     {
       "key": "gateBuys",
-      "path": "bench/reports/2026-09-23T02-09-47-226Z-gate-buys.json",
-      "sha256": "6b0bc68615db34d294fe4ccda4a90ee57178fd303d3754a6a1943258d9c94ef8"
+      "path": "bench/reports/2026-09-23T02-38-26-946Z-gate-buys.json",
+      "sha256": "065e6f4f753ca11349b581d2da7b6195334902081cc8d3f85c25026cf84f5f6d"
     }
   ]
 }

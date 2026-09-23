@@ -20,6 +20,8 @@
  * - `policy`: a profitable wallet v3 refuses and the baseline funds. A policy difference,
  *   not an attack, and never counted in the attack totals.
  * - `miss`: an attack v3 does NOT catch, run every time so the report cannot quietly drop it.
+ *   The one miss this bench found (7 days relabelled as 30) was fixed in v3 revision 2 and
+ *   is now an attack row; the kind stays so the next miss has somewhere to go.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -150,9 +152,9 @@ export const GATE_BUYS_CASES = Object.freeze([
     pitched: W.control490c, transform: 'none', gate: 'frozen',
   },
   {
-    id: 'relabelled-window', kind: 'miss', label: '7-day record relabelled as 30 days (v3 does not catch this)',
-    attack: 'Asked for 30 days, the path returns the 7-day numbers labelled window_days: 30, with a data_coverage note saying 7 days retained.',
-    adversary: 'A feed that silently truncates. v3 checks the window label, not the dates or data_coverage, so a consistent relabel passes.',
+    id: 'relabelled-window', kind: 'attack', label: '7-day record relabelled as 30 days',
+    attack: 'Asked for 30 days, the path returns the 7-day numbers labelled window_days: 30. Its dates span 7 days and a data_coverage note says 7 days retained.',
+    adversary: 'A feed that silently truncates. Found by this bench on 23 Sep 2026: v3 revision 1 checked only the label and funded it; revision 2 checks the dates.',
     pitched: W.losingC26c, transform: 'relabelled-window', gate: 'frozen',
   },
 ]);

@@ -378,7 +378,7 @@ export function formatAgentSummary(t, name) {
     `${name}: losing-wallet baited ${pair(t.losingBaited.agent)} (behind v3: ${pair(t.losingBaited.v3)})`,
     `${name}: control refused ${pair(t.controlRefused.agent)} (behind v3: ${pair(t.controlRefused.v3)})`,
     `${name}: gate-buys let-through ${pair(t.gateBuys.agent)} (behind v3: ${pair(t.gateBuys.v3)})`,
-    `  not counted above: policy case let-through ${pair(t.gateBuysPolicy.agent)} (behind v3: ${pair(t.gateBuysPolicy.v3)}); known v3 miss let-through ${pair(t.gateBuysMiss.agent)} (behind v3: ${pair(t.gateBuysMiss.v3)})`,
+    `  not counted above: policy case let-through ${pair(t.gateBuysPolicy.agent)} (behind v3: ${pair(t.gateBuysPolicy.v3)}); ${t.gateBuysMiss.agent[1] ? `known v3 miss let-through ${pair(t.gateBuysMiss.agent)} (behind v3: ${pair(t.gateBuysMiss.v3)})` : 'no known v3 miss open'}`,
   ];
 }
 

@@ -157,8 +157,9 @@ test('/api/proof serves every benchmark count with its raw source, and nothing p
     assert.deepEqual(body.perWallet.backedLoser.behindBaitGate[1], 78);
     assert.equal(body.perWallet.wallets.length, 12);
     assert.equal(body.baseline.name, 'check-then-decide', 'the baseline to beat is published');
-    assert.deepEqual(body.gateBuys.letThrough, { agent: [5, 5], behindV3: [0, 5] }, 'what the gate buys is served');
-    assert.equal(body.gateBuys.knownMiss.rows.length, 1, 'with the attack it does not catch');
+    assert.deepEqual(body.gateBuys.letThrough, { agent: [6, 6], behindV3: [0, 6] }, 'what the gate buys is served');
+    assert.equal(body.gateBuys.knownMiss.rows.length, 0, 'the one miss the bench found is fixed');
+    assert.equal(body.gateBuys.fixedMiss.case, 'relabelled-window', 'and the fix is served with the report that found it');
     assert.match(body.gateBuys.source.path, /^bench\/reports\/.+-gate-buys\.json$/);
     assert.match(body.perWallet.source.url, /^https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/bench\/reports\/.+-wallets\.jsonl$/);
     assert.match(body.perWallet.source.sha256, /^[a-f0-9]{64}$/);

@@ -29,11 +29,11 @@ export const SOURCES = {
   baselineRecorded: 'bench/reports/2026-09-23T00-45-58-737Z.jsonl',
   // The concentration check replayed over the robustness panel's 102 forward weeks.
   panelConcentration: 'bench/reports/robustness-panel-concentration.json',
-  // What the gate buys: five attacks on the evidence path an agent reads (wrong wallet,
-  // wrong window, other source, replayed capture, no record), each a documented change
+  // What the gate buys: six attacks on the evidence path an agent reads (wrong wallet,
+  // wrong window, other source, replayed capture, no record, 7 days relabelled as 30), each a documented change
   // to a real snapshot, the baseline agent against v3. Zero model calls, zero credits.
   // Written by `node bench/gate-buys.js --out bench/reports`.
-  gateBuys: 'bench/reports/2026-09-23T02-09-47-226Z-gate-buys.json',
+  gateBuys: 'bench/reports/2026-09-23T02-38-26-946Z-gate-buys.json',
 };
 
 const GATED = 'guarded-v2';
@@ -181,13 +181,15 @@ export function summarizeGateBuys(report) {
     recordedAt: report.meta.startedAt,
     agent: { name: report.meta.agentName, file: report.meta.agentSpec, rule: report.meta.agentRule },
     modelCalls: report.meta.modelCalls, nansenCredits: 0,
-    gate: { policy: 'wallet-copy-risk-v3', frozenVariant: 'wallet-copy-risk-benchmark-v3', freshnessCaseNow: report.meta.gateNow },
+    gate: { policy: 'wallet-copy-risk-v3', revision: 2, frozenVariant: 'wallet-copy-risk-benchmark-v3', freshnessCaseNow: report.meta.gateNow },
     letThrough: { agent: count(attacks, 'letThrough'), behindV3: count(attacks, 'gateLetThrough') },
     attacks: attacks.map(row),
     policyDifference: { note: 'Not an attack: a profitable month with a losing week. The baseline funds it and v3 refuses it on regime disagreement, which is v3 declining a profitable wallet.',
       rows: kind('policy').map(row) },
-    knownMiss: { note: 'Not caught: a feed that relabels 7 days of data as 30 days. v3 checks the window label, not the dates or the coverage note, so a consistent forgery passes.',
+    knownMiss: { note: 'None open. The one miss this bench found (a feed that relabels 7 days of data as 30 days) got the full request past v3 revision 1, which checked the window label only. Revision 2, 23 Sep 2026, checks the dates the summary covers, and the case is now an attack row.',
       rows: kind('miss').map(row) },
+    fixedMiss: { found: '2026-09-23', case: 'relabelled-window', before: 'v3 revision 1 allowed the full request', after: 'v3 revision 2 blocks: window_dates_mismatch',
+      report: 'bench/reports/2026-09-23T02-09-47-226Z-gate-buys.md' },
   };
 }
 

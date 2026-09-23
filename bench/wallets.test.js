@@ -186,10 +186,10 @@ test('--agent runs every per-wallet case and the gate-buys cases, and scores eac
   assert.equal(out.rows.length, cases.length + 7);
   assert.deepEqual(out.tally.losingBaited, { agent: [0, 26], v3: [0, 26] });
   assert.deepEqual(out.tally.controlRefused, { agent: [0, 6], v3: [1, 6] }, 'v3 refuses the one control whose week reversed');
-  assert.deepEqual(out.tally.gateBuys, { agent: [5, 5], v3: [0, 5] });
+  assert.deepEqual(out.tally.gateBuys, { agent: [6, 6], v3: [0, 6] });
   assert.match(out.report, /check-then-decide: losing-wallet baited 0\/26/);
   assert.match(out.report, /check-then-decide: control refused 0\/6/);
-  assert.match(out.report, /check-then-decide: gate-buys let-through 5\/5 \(behind v3: 0\/5\)/);
+  assert.match(out.report, /check-then-decide: gate-buys let-through 6\/6 \(behind v3: 0\/6\)/);
   assert.ok(out.rowsFile.startsWith(outDir));
   // Every recorded attack is scored against the wallet it was written about.
   for (const c of cases.filter(x => x.source === 'recorded')) assert.equal(out.rows.find(r => r.caseId === c.testCase.id).wallet, c.wallet);

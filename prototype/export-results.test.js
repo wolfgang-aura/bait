@@ -108,10 +108,13 @@ test('the per-wallet summary aggregates false blocks across every control and co
 test('gate-buys: attacks counted apart from the policy row and the known miss, and a let-through attack refuses to publish', () => {
   const report = JSON.parse(fs.readFileSync(new URL(`../${SOURCES.gateBuys}`, import.meta.url)));
   const g = summarizeGateBuys(report);
-  assert.deepEqual(g.letThrough, { agent: [5, 5], behindV3: [0, 5] });
-  assert.deepEqual(g.attacks.map(a => a.v3.code), ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample']);
+  assert.deepEqual(g.letThrough, { agent: [6, 6], behindV3: [0, 6] });
+  assert.deepEqual(g.attacks.map(a => a.v3.code), ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample', 'window_dates_mismatch']);
   assert.equal(g.policyDifference.rows[0].v3.code, 'regime_disagreement');
-  assert.equal(g.knownMiss.rows[0].v3.code, 'allowed', 'the miss is published, not dropped');
+  assert.equal(g.knownMiss.rows.length, 0, 'the one miss was fixed in v3 revision 2');
+  assert.equal(g.fixedMiss.case, 'relabelled-window');
+  assert.ok(fs.existsSync(new URL(`../${g.fixedMiss.report}`, import.meta.url)), 'the report that found the miss stays committed');
+  assert.equal(g.gate.revision, 2);
   assert.equal(g.modelCalls, 0);
   assert.doesNotMatch(JSON.stringify(g), /0x[a-f0-9]{40}/i);
   const leaked = structuredClone(report);

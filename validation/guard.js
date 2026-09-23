@@ -111,6 +111,15 @@ export const PRODUCTION_GUARD_POLICY_V3 = Object.freeze({
   ...PRODUCTION_GUARD_POLICY_V2,
   id: 'wallet-copy-risk-v3',
   version: 'v3',
+  // Revision 2, 23 Sep 2026: the gate checks the dates a summary covers, not only its
+  // `window_days` label. Our own bench (bench/gate-buys.js, case "relabelled-window")
+  // served the 7-day numbers labelled window_days: 30, and revision 1 funded the full
+  // request. A summary must now carry its date range (`window`, or the request's own
+  // `date`), the range must span the policy's days, and a `data_coverage` note saying
+  // fewer days were retained is a refusal. A summary with no dates is a refusal too.
+  revision: 2,
+  revisionNotes: '2026-09-23 r2: evidence window verified from its dates (window_dates_mismatch), not only its window_days label.',
+  verifyWindowDates: true,
   concentrationAction: 'cap',
   concentrationCapShare: 0.25,
 });
@@ -278,6 +287,7 @@ function result({ attempted, policy, evidence, code, reason, diagnostic = null, 
     policy: {
       id: policy.id,
       version: policy.version ?? 'v1',
+      revision: policy.revision ?? null,
       window_days: policy.windowDays,
       short_window_days: policy.shortWindowDays ?? null,
       minimum_realized_pnl_usd: policy.minimumRealizedPnlUsd,
@@ -291,6 +301,34 @@ function result({ attempted, policy, evidence, code, reason, diagnostic = null, 
 const signOf = n => (n < 0 ? 'negative' : 'non-negative');
 const money = n => `${n < 0 ? '-' : '+'}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
 const pct = n => `${(n * 100).toFixed(1)}%`;
+
+/** Slack on a window's span. A request built as "now minus N days" is exact to the ms. */
+const WINDOW_SPAN_SLACK_MS = 60 * 60 * 1000;
+
+/**
+ * The dates a summary covers, checked against the days the policy asked for. The label
+ * (`window_days`) is what the path says; the range is what it served. Reads `window`
+ * (what the desk serves) or `date` (the live request's own params). Null when they agree.
+ */
+function windowDatesProblem(raw, days) {
+  const range = raw?.window ?? raw?.date ?? null;
+  const from = Date.parse(range?.from ?? '');
+  const to = Date.parse(range?.to ?? '');
+  if (!Number.isFinite(from) || !Number.isFinite(to)) {
+    return { value: null, plain: `The summary is labelled ${days} days but carries no date range, so what it covers cannot be checked.` };
+  }
+  const span = to - from;
+  const spanDays = Math.round((span / 86_400_000) * 10) / 10;
+  const shown = `${String(range.from).slice(0, 10)} to ${String(range.to).slice(0, 10)}`;
+  if (Math.abs(span - days * 86_400_000) > WINDOW_SPAN_SLACK_MS) {
+    return { value: `${spanDays}d (${shown})`, plain: `The summary is labelled ${days} days, but its dates run ${shown}: ${spanDays} days.` };
+  }
+  const cov = raw?.data_coverage;
+  if (cov && (cov.complete === false || (Number.isFinite(cov.retained_days) && cov.retained_days < days))) {
+    return { value: `${cov.retained_days ?? '?'}d retained`, plain: `The summary is labelled ${days} days, but its own coverage note says only ${cov.retained_days ?? 'part of the window'} days were retained.` };
+  }
+  return null;
+}
 
 /**
  * Top-coin concentration, from evidence the gate already holds: the 30-day
@@ -439,8 +477,15 @@ export async function guardAllocation({
     t.fail('evidence_30d', evidence.source, policy.source, 'The summary did not come from the endpoint this policy trusts.');
     return stop('source_mismatch', 'blocked: evidence source does not match the policy', evidence);
   }
+  if (policy.verifyWindowDates) {
+    const bad = windowDatesProblem(raw, policy.windowDays);
+    if (bad) {
+      t.fail('evidence_30d', bad.value, `dates spanning ${policy.windowDays} days`, bad.plain);
+      return stop('window_dates_mismatch', `blocked: evidence dates do not cover the required ${policy.windowDays}-day window`, evidence);
+    }
+  }
   t.pass('evidence_30d', `${policy.windowDays}d ${evidence.wallet}`, longBar,
-    `The ${policy.windowDays}-day summary is for this wallet, covers ${policy.windowDays} days and came from the approved endpoint.`);
+    `The ${policy.windowDays}-day summary is for this wallet, covers ${policy.windowDays} days${policy.verifyWindowDates ? ' by its dates' : ''} and came from the approved endpoint.`);
 
   // ------------------------------------------------------------- freshness
   const retrievedAt = Date.parse(evidence.retrieved_at ?? '');
@@ -559,7 +604,8 @@ export async function guardAllocation({
     }
     const mismatch = String(shortRaw.wallet ?? '').toLowerCase() !== wallet.toLowerCase() ? 'wallet'
       : shortRaw.window_days !== policy.shortWindowDays ? 'window'
-        : shortRaw.source !== policy.source ? 'source' : null;
+        : shortRaw.source !== policy.source ? 'source'
+          : policy.verifyWindowDates && windowDatesProblem(shortRaw, policy.shortWindowDays) ? 'dates' : null;
     if (mismatch) {
       t.fail('evidence_7d', mismatch, shortBar, `The ${policy.shortWindowDays}-day summary has the wrong ${mismatch}, so it cannot speak for this wallet's recent week.`);
       return stop('short_window_mismatch', `blocked: ${policy.shortWindowDays}-day evidence does not match the requested wallet, window or source`, evidence);

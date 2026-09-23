@@ -253,7 +253,7 @@ export function buildProof({ results, live, stats }) {
     },
     baseline: results.baseline ?? null,
     // Attacks on the evidence path the agent reads: the baseline agent versus v3, with the
-    // policy-difference row and the known miss published beside them, not dropped.
+    // policy-difference row and any known miss published beside them, not dropped.
     gateBuys: results.gateBuys ? { ...results.gateBuys, source: link(raw('gateBuys')) } : null,
     gateChecks: results.wallets?.gate ?? null,
     sources: (results.sources ?? []).map(link),
