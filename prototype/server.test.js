@@ -486,3 +486,10 @@ test('hosted with NANSEN_LIVE=1: a Hyperliquid pick is live with its fetch time,
     assert.equal(guard.status, 403, 'the public guard route stays closed hosted; only the room spends');
   } finally { await s.stop(); }
 });
+
+test('round 17: the live-reads listing, a direct fetch and /api/proof all skip a read still sealed', () => {
+  const src = fs.readFileSync(new URL('./server.js', import.meta.url), 'utf8');
+  assert.match(src, /listRawReads\(LIVE_READS_DIR\)\.filter\(r => !liveEvidence\.isSealed\?\.\(r\.file\)\)\.map/);
+  assert.match(src, /if \(liveEvidence\.isSealed\?\.\(name\)\) return send\(404/);
+  assert.match(src, /liveReads: listRawReads\(LIVE_READS_DIR\)\.filter\(r => !liveEvidence\.isSealed\?\.\(r\.file\)\)/);
+});

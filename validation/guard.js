@@ -905,7 +905,9 @@ export function assessCopyRisk(evidence = {}) {
 
   if (drawdown.max_drawdown_usd === null) skip('max_drawdown', 'no time-ordered closed trades in the evidence');
   else {
-    const ofPeak = drawdown.share_of_peak;
+    // Round 17: a drop larger than the peak it fell from says the peak is the wrong base, so
+    // only a share of peak up to 100% is judged; past that the account value decides.
+    const ofPeak = drawdown.share_of_peak !== null && drawdown.share_of_peak <= 1 ? drawdown.share_of_peak : null;
     const ofAccount = account && account > 0 ? drawdown.max_drawdown_usd / account : null;
     if ((ofPeak !== null && ofPeak > t.maxDrawdownShareOfPeak) || (ofAccount !== null && ofAccount > t.maxDrawdownShareOfAccount)) {
       add('max_drawdown', 'high',

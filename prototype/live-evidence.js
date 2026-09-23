@@ -121,7 +121,12 @@ export function createLiveEvidence({
   ttlMs = LIVE_EVIDENCE_TTL_MS, dailyCap = DEFAULT_DAILY_CAP, totalCap = DEFAULT_TOTAL_CAP,
   timeoutMs = DEFAULT_READ_TIMEOUT_MS, stateFile = null, log = () => {}, rawDir = null,
   fillPages = DEFAULT_FILL_PAGES, fillsTimeoutMs = 15_000, positions = true,
+  embargoMs = LIVE_EVIDENCE_TTL_MS,
 } = {}) {
+  // Round 17: a fresh read's raw file holds the numbers the round keeps sealed, so it is
+  // hidden from /api/live-reads until a gate has run on it (release), or embargoMs passes
+  // for a round nobody finished. Receipts stay public; they just arrive with the verdict.
+  const sealedRaw = new Map();
   const pages = Math.max(0, Math.min(3, Math.round(fillPages)));
   // What one read can cost: two summaries and up to `pages` pages of fills.
   const READ_CREDITS = LIVE_READ_CREDITS + pages * creditCostFor(FILLS_ENDPOINT) + (positions ? creditCostFor(POSITIONS_ENDPOINT) : 0);
@@ -254,6 +259,7 @@ export function createLiveEvidence({
       // Every response that reached us and was paid for is kept, whatever it says.
       let raw = null;
       try { raw = saveRawRead(rawDir, { wallet, fetchedAt: iso(at), windows, responses }); } catch (err) { log(`raw read save failed: ${err.message}`); }
+      if (raw?.file) sealedRaw.set(raw.file, now().getTime() + embargoMs);
       if (noTrades(summary30) && noTrades(summary7)) {
         throw Object.assign(new Error('No closed Hyperliquid perp trade in the last 30 days'), { code: 'no_history', raw });
       }
@@ -282,6 +288,16 @@ export function createLiveEvidence({
   return {
     ttlMs,
     policy: ROOM_LIVE_GUARD_POLICY,
+
+    /** Round 17: the gate has run on this read, so its raw file may be listed and fetched. */
+    release(file) { if (file) sealedRaw.delete(file); },
+    /** True while a raw file is embargoed (no gate has run on it yet, and embargoMs has not passed). */
+    isSealed(file) {
+      const until = sealedRaw.get(file);
+      if (until === undefined) return false;
+      if (now().getTime() >= until) { sealedRaw.delete(file); return false; }
+      return true;
+    },
 
     /** True when a Hyperliquid pick would try a live read right now. */
     available: () => blocker() === null,

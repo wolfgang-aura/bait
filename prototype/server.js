@@ -582,17 +582,19 @@ const server = http.createServer(async (req, res) => {
     // so a figure on screen or in the video can be checked against the file.
     if (url.pathname === '/api/live-reads' && req.method === 'GET') {
       return send(200, { dir: 'bench/live-reads', addressPolicy: ADDRESS_POLICY,
-        reads: listRawReads(LIVE_READS_DIR).map(r => ({ ...r, url: `/api/live-reads/${r.file}` })) });
+        reads: listRawReads(LIVE_READS_DIR).filter(r => !liveEvidence.isSealed?.(r.file)).map(r => ({ ...r, url: `/api/live-reads/${r.file}` })) });
     }
     if (url.pathname.startsWith('/api/live-reads/') && req.method === 'GET') {
       const name = url.pathname.slice('/api/live-reads/'.length);
       const full = path.join(LIVE_READS_DIR, name);
       if (!RAW_NAME.test(name) || !fs.existsSync(full)) return send(404, { error: 'no such live read' });
+      // Round 17: a read whose round has not reached the gate stays sealed.
+      if (liveEvidence.isSealed?.(name)) return send(404, { error: 'no such live read' });
       return send(200, fs.readFileSync(full, 'utf8'));
     }
 
     if (url.pathname === '/api/proof' && req.method === 'GET') {
-      return send(200, buildProof({ results: loadRecordedResults(), live: liveEvidence.status(), stats: guard.stats(), liveReads: listRawReads(LIVE_READS_DIR) }));
+      return send(200, buildProof({ results: loadRecordedResults(), live: liveEvidence.status(), stats: guard.stats(), liveReads: listRawReads(LIVE_READS_DIR).filter(r => !liveEvidence.isSealed?.(r.file)) }));
     }
 
     if (url.pathname === '/healthz') {

@@ -461,7 +461,7 @@ test('round 16: newest fills covering under a week are N/A, "too short to judge"
   await say(full, round.id, 0, round.dossier.facts[0].insert);
   checks = (await full.finish(round.id, {})).final.gate.checks;
   assert.equal(checks.find(c => c.id === 'fills_drawdown').plain,
-    'Worst peak-to-trough over all 6 fills in the window: $200, 6.7% of the $3,000 peak it fell from, under the 30% limit; 0.0% of the $2,938,036 account value (Nansen positions), under the 15% limit.');
+    'Worst peak-to-trough over all 6 fills in the window: $200, 0.0% of the $2,938,036 account value (Nansen positions), under the 15% limit; 6.7% of the $3,000 peak it fell from, under the 30% limit.');
   // A curve that fell from zero has no peak; it is measured against the account value alone.
   const flat = liveRoom([...answer(5000, 'intrigued', 'Opening small.')], fillsMock({ fills: 6 }), { fillPages: 1 }).service;
   round = await flat.start({ prospect: 'grinder' });
@@ -506,5 +506,30 @@ test('round 17: a live read also reads the open positions (one credit), and a fa
   // The drawdown row fails, and still shows its percent of each base and the limit.
   const dd = final.gate.checks.find(c => c.id === 'fills_drawdown');
   assert.equal(dd.result, 'caution');
-  assert.equal(dd.plain, 'Worst peak-to-trough over all 6 fills in the window: $900,000, 300.0% of the $300,000 peak it fell from, over the 30% limit; 45.0% of the $2,000,000 account value (Nansen positions), over the 15% limit.');
+  // The drop ($900,000) is larger than the $300,000 peak it fell from, so the peak is the wrong
+  // base: no "300% of the peak"; the account value leads and decides the row.
+  assert.equal(dd.plain, 'Worst peak-to-trough over all 6 fills in the window: $900,000, 45.0% of the $2,000,000 account value (Nansen positions), over the 15% limit.');
+  assert.doesNotMatch(dd.plain, /peak it fell from/);
+});
+
+test('round 17: a fresh read is hidden from /api/live-reads until a gate has run on it, or the embargo passes', async () => {
+  const rawDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-embargo-'));
+  let clock = Date.parse('2026-09-23T10:15:00Z');
+  const { service, live } = liveRoom([...answer(3000, 'intrigued', 'Small.')], fillsMock({ fills: 6 }), { fillPages: 1, rawDir, now: () => new Date(clock) });
+  const round = await service.start({ prospect: 'grinder' });
+  const [file] = fs.readdirSync(rawDir);
+  assert.ok(file, 'the raw read is saved at once');
+  assert.equal(live.isSealed(file), true, 'sealed while the round is open');
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  assert.equal(live.isSealed(file), true, 'still sealed after a line');
+  await service.finish(round.id, { wire: true });
+  assert.equal(live.isSealed(file), false, 'released once the gate has run');
+  // A round nobody finishes: released when the embargo (30 minutes) passes.
+  const dir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-embargo-'));
+  const other = liveRoom([...answer(0, 'neutral', 'No.')], fillsMock({ fills: 6 }), { fillPages: 1, rawDir: dir2, now: () => new Date(clock) });
+  await other.service.start({ prospect: 'grinder' });
+  const [second] = fs.readdirSync(dir2);
+  assert.equal(other.live.isSealed(second), true);
+  clock += 30 * 60_000;
+  assert.equal(other.live.isSealed(second), false);
 });

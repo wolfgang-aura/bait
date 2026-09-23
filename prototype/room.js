@@ -724,14 +724,17 @@ export function createRoomService({
       if (na) return { id, result: 'not_assessed', plain: `Not assessed: ${na.reason}.`, source };
       const dd = risk.max_drawdown;
       if (id === 'fills_drawdown' && dd && dd.max_drawdown_usd !== null) {
+        // Round 17: the account value leads; it is the base that means something. A drop larger
+        // than the peak it fell from means that peak was the wrong base (the curve started near
+        // zero), so the percent of the peak is left out rather than printed as 1826%.
         const parts = [];
-        if (dd.share_of_peak !== null && dd.peak_usd > 0) parts.push(['peak it fell from', dd.peak_usd, dd.share_of_peak, risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3]);
         const acct = bases.find(([label]) => label.startsWith('account value'));
         if (acct) parts.push([acct[0], acct[1], dd.max_drawdown_usd / acct[1], risk.thresholds?.maxDrawdownShareOfAccount ?? 0.15]);
+        if (dd.share_of_peak !== null && dd.peak_usd > 0 && dd.share_of_peak <= 1) parts.push(['peak it fell from', dd.peak_usd, dd.share_of_peak, risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3]);
         const at = `Worst peak-to-trough over ${liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`}: ${dollars(dd.max_drawdown_usd)}`;
         if (!parts.length) return { id, result: 'not_assessed', plain: `${at}. No limit applied: the running result never rose above zero and no account value is held, so there is no base to measure it against.`, source };
         const over30 = parts.some(([, , share, limit]) => share > limit);
-        return { id, result: flag || over30 ? 'caution' : 'pass', plain: `${at}, ${parts.map(([label, value, share, limit]) => measure(label, value, share, limit)).join('; ')}.`, source };
+        return { id, result: over30 ? 'caution' : 'pass', plain: `${at}, ${parts.map(([label, value, share, limit]) => measure(label, value, share, limit)).join('; ')}.`, source };
       }
       if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain.charAt(0).toLowerCase()}${flag.plain.slice(1)}` : flag.plain, source };
       return { id, result: 'pass', plain: `${name} within the report's limit over ${where}.`, source };
@@ -811,6 +814,7 @@ export function createRoomService({
    */
   async function checkOnly(p, evidence) {
     const gate = await runGate(p, SLOT);
+    liveEvidence?.release?.(evidence?.raw?.file);
     const verdict = verdictOf(gate, p.risk);
     const name = p.name;
     return {
@@ -1152,6 +1156,8 @@ export function createRoomService({
         final.subline = `PENNY said no on its own. Had it agreed to ${whatIf.amountLabel}, the BAIT check would have ${word} it on ${final.prospect.name}'s record.`;
       }
       s.final = final;
+      // Round 17: the gate has run on this read; its raw file joins the public receipts.
+      liveEvidence?.release?.(s.evidence?.raw?.file);
       return place(s, body);
     },
   };
