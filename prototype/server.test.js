@@ -398,7 +398,8 @@ test('/healthz reports the live-read caps and counters, and the key never reache
     assert.equal(body.nansen.total_cap, 99);
     // The most one read can cost: two summaries, the open positions (round 17), and gate v4's
     // perp-screener (1) and perp-leaderboard (5); fill pages are off in this test.
-    assert.equal(body.nansen.credits_per_read, 9);
+    assert.deepEqual([body.nansen.credits_per_round.refused, body.nansen.credits_per_round.full], [4, 9]);
+    assert.equal('credits_per_read' in body.nansen, false, 'one honest shape, not a single number');
     assert.equal(body.nansen.cache_ttl_minutes, 30);
     assert.ok(Number.isInteger(body.nansen.credits_today));
     assert.ok(Number.isInteger(body.nansen.credits_total));
@@ -438,6 +439,8 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
     assert.match(usage.body.dev_ledger.covers, /^A snapshot, committed to the repo/);
     assert.match(usage.body.this_host.covers, /since it booted/);
     assert.equal(typeof usage.body.this_host.credits_counted, 'number');
+    assert.deepEqual(usage.body.this_host.credits_per_round, (await on.call('/healthz')).body.nansen.credits_per_round, '/api/usage and /healthz give one cost shape');
+    assert.ok(usage.body.this_host.credits_per_round.refused < usage.body.this_host.credits_per_round.full);
     assert.equal((await on.call('/healthz')).body.commit, 'abc1234def');
     // Round 16: no nested "live": false left over from the lab encounter.
     assert.equal('live_data' in health.body, false);

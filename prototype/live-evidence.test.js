@@ -387,7 +387,7 @@ test('a live read also reads the newest fills: second endpoint, charged, saved r
   assert.deepEqual(mock.seen.map(c => c.pathName).sort(), ['profiler/perp-pnl-summary', 'profiler/perp-pnl-summary', 'profiler/perp-trades']);
   assert.equal(read.fills.rows.length, 6);
   assert.equal(live.status().credits_today, 3, 'two summaries and one page of fills');
-  assert.equal(live.status().credits_per_read, 3);
+  assert.deepEqual([live.status().credits_per_round.refused, live.status().credits_per_round.full], [3, 3], 'no v4 reads here: the same either way');
   const { listRawReads } = await import('./live-evidence.js');
   const body = JSON.parse(fs.readFileSync(path.join(rawDir, listRawReads(rawDir)[0].file), 'utf8'));
   assert.equal(body.responses.fills[0].body.data.length, 6, 'the fills are in the same raw file');
@@ -598,7 +598,8 @@ test('v4 live round: smart money against the book caps, the leaderboard record i
   const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], mock, { fillPages: 1, positions: true, rawDir });
   const round = await service.start({ prospect: 'grinder' });
   assert.equal(live.status().credits_today, 10, 'two summaries, fills, positions, perp-screener (1) and perp-leaderboard (5)');
-  assert.equal(live.status().credits_per_read, 10);
+  assert.equal(live.status().credits_per_round.full, 10);
+  assert.equal(live.status().credits_per_round.refused, 5, 'a refused round skips the 5-credit leaderboard');
   const screener = mock.seen.find(c => c.pathName === 'perp-screener');
   assert.deepEqual(screener.body.filters, { trader_type: 'sm', token_symbol: 'HYPE' }, 'the market of the largest open position');
   const board = mock.seen.find(c => c.pathName === 'perp-leaderboard');

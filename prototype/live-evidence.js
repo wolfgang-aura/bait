@@ -446,7 +446,16 @@ export function createLiveEvidence({
         key_present: !!keyPresent,
         available: stop === null,
         blocked_by: stop?.code ?? null,
-        credits_per_read: READ_CREDITS,
+        // What one round's read can cost, by outcome (gate v4). A round the 30-day record already
+        // refuses skips perp-leaderboard; one the gate clears or caps buys it. Both are maxima: no
+        // open position means no perp-screener read, and a fill page is only read when there are trades.
+        credits_per_round: {
+          refused: READ_CREDITS - (v4Reads ? creditCostFor(RECORD_ENDPOINT) : 0),
+          full: READ_CREDITS,
+          note: v4Reads
+            ? 'At most. refused: the 30-day record already refuses, perp-leaderboard is not bought. full: the gate clears or caps, perp-leaderboard (5) is bought. No open position: no perp-screener (1). A cached read costs 0.'
+            : 'At most. A cached read costs 0.',
+        },
         fill_pages_per_read: pages,
         // Credits of reads that succeeded and were used by a round.
         credits_today: counter.creditsToday,

@@ -282,7 +282,7 @@ export function buildProof({ results, live, stats, liveReads = [] }) {
     gateChecks: results.wallets?.gate ?? null,
     sources: (results.sources ?? []).map(link),
     nansen: {
-      liveReadsEnabled: live.enabled, creditsPerRead: live.credits_per_read,
+      liveReadsEnabled: live.enabled, creditsPerRound: live.credits_per_round,
       creditsToday: live.credits_today, creditsTotal: live.credits_total,
       dailyCap: live.daily_cap, totalCap: live.total_cap,
       lastLiveSuccessAt: live.last_live_success_at, counterPersistence: live.counter_persistence,
@@ -634,7 +634,7 @@ const server = http.createServer(async (req, res) => {
           live_reads: live.reads_this_process ?? 0,
           credits_counted: live.credits_total ?? 0,
           credits_today: live.credits_today ?? 0,
-          credits_per_read: live.credits_per_read ?? null,
+          credits_per_round: live.credits_per_round ?? null,
         },
         dev_ledger: fs.existsSync(file)
           ? { covers: 'A snapshot, committed to the repo, of every Nansen call made from the development machine (bench, captures, local rounds). It does not include this host\'s reads above.', ...JSON.parse(fs.readFileSync(file, 'utf8')) }
@@ -665,7 +665,7 @@ const server = http.createServer(async (req, res) => {
           credits_total: live.credits_total,
           daily_cap: live.daily_cap,
           total_cap: live.total_cap,
-          credits_per_read: live.credits_per_read,
+          credits_per_round: live.credits_per_round,
           cache_ttl_minutes: live.cache_ttl_minutes,
           last_live_success_at: live.last_live_success_at,
           last_live_failure: live.last_live_failure,
@@ -892,7 +892,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  nansen key      ${ROOM_STUB ? 'stub (tests)' : NANSEN_KEY.present ? `present (length ${NANSEN_KEY.length})` : 'absent'}`);
   const rl = h.room_live;
   console.log(`  room live read  ${rl.available
-    ? `enabled (${rl.credits_per_read} credits per wallet read, ${rl.cache_ttl_minutes} min cache, ${rl.credits_today}/${rl.daily_cap} today, ${rl.credits_total}/${rl.total_cap} total, counter in ${rl.counter_persistence})`
+    ? `enabled (${rl.credits_per_round.refused} credits per refused round, ${rl.credits_per_round.full} when the gate clears or caps, ${rl.cache_ttl_minutes} min cache, ${rl.credits_today}/${rl.daily_cap} today, ${rl.credits_total}/${rl.total_cap} total, counter in ${rl.counter_persistence})`
     : `off (${rl.blocked_by}); rounds play the frozen capture`}`);
   console.log(`  model calls     ${JSON.stringify(h.model_calls_used)} of ${JSON.stringify(h.model_call_caps)}`);
   console.log(`  live refresh    ${LIVE_ENABLED && !HOSTED ? `enabled for the card encounter (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED ? 'disabled for the card encounter (hosted spends only through the room live read)' : 'disabled (NANSEN_LIVE=0)'}`);

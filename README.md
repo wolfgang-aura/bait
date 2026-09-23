@@ -15,10 +15,12 @@
   backed a losing trader **63 of 78** times alone, **19 of 78** with Nansen tools, and **0 of 78**
   behind BAIT. When the evidence itself is faked, a simple PnL rule sends the money in
   **49 of 67** attacked paths; BAIT in **0**.
-- **What decides it:** five Nansen endpoints, six reads. The gate (v4, since 23 Sep) reads the wallet's
-  7-day and 30-day `profiler/perp-pnl-summary`, its `profiler/perp-positions`, smart money's
-  side of its largest position from `perp-screener`, and a second record of its month from
-  `perp-leaderboard`; `profiler/perp-trades` shows the newest fills.
+- **What decides it:** up to six reads on five Nansen endpoints. The gate (v4, since 23 Sep)
+  reads the wallet's 7-day and 30-day `profiler/perp-pnl-summary`, its `profiler/perp-positions`,
+  smart money's side of its largest position from `perp-screener`, and `profiler/perp-trades`
+  for the newest fills. A round the 30-day record refuses stops there: five reads, 5 credits.
+  A round the gate clears or caps also buys a second record of the month from
+  `perp-leaderboard`: six reads, 10 credits.
 
 AI agents are starting to move real money, and true facts can talk them into bad bets.
 BAIT sits between an agent's decision and the transfer, reads the trader's record from
@@ -144,8 +146,10 @@ Cost: 194 Nansen credits for the benchmark reads, zero model calls.
 ## How BAIT uses Nansen
 
 The gate (`validation/guard.js`, policy `wallet-copy-risk-v4`) sits outside the model. A live
-round makes six reads on five endpoints: 4 or 5 credits when the 30-day record already refuses, 10 when the gate
-has to clear or cap; each read took under 2 s.
+round makes up to six reads on five endpoints: five (5 credits) when the 30-day record already
+refuses, since the leaderboard could not change a block; six (10 credits) when the gate has to
+clear or cap. With no open position there is no `perp-screener` read (one credit less). Each read
+took under 2 s.
 
 | Nansen endpoint | Credits | What it decides |
 | --- | ---: | --- |
@@ -155,6 +159,19 @@ has to clear or cap; each read took under 2 s.
 | `perp-screener`, smart money, that position's market | 1 | At least two thirds of at least $1M of smart money's open positions on the other side caps at 25% |
 | `perp-leaderboard`, the same 30 days | 5 | A summary that claims more realised PnL than this record (by over 25% of it and $1,000) blocks. Bought only when nothing earlier refused |
 | `profiler/perp-trades`, newest 1,000 fills | 1 | Drawdown and worst trade against the account value (watch); N/A when the fills cover under a week |
+
+Where v4's two reads decided something on the hosted site, 23 Sep 2026 (raw responses committed):
+
+- **`perp-screener`, 16:09 UTC, THE LEGEND** (`bench/live-reads/20260923T160919Z-0x7fdafde5.json`,
+  the video's round 1): his largest open position was short ETH, and smart money held 67% of its
+  $103.4M in ETH on the other side, so the smart-money row returned CAP. The losing 30-day record
+  (-$30,619,686) had already blocked the $1,500, so the cap was superseded: nothing was sent.
+  The leaderboard was not bought (5 credits a read, and it could not change a block).
+- **`perp-leaderboard`, 16:08 UTC, THE REAL DEAL** (`bench/live-reads/20260923T160814Z-0xfe47c8f2.json`):
+  a profitable month the gate capped, so all six reads were bought (10 credits). The leaderboard
+  recorded +$70,580 for the same 30 days against the summary's +$70,917, within the 25% bar, so
+  the independent-record row passed and the summary was trusted. The cap came from the open book
+  (positions down more than 25% of the account).
 
 The held-out wallets were picked by three more endpoints, one call each:
 
