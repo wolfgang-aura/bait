@@ -25,7 +25,7 @@
 
 **How it's checked**
 
-- `npm test`: 404 tests, no keys, no network.
+- `npm test`: 405 tests, no keys, no network.
 - `node bench/wallets.js --execute --resume bench/reports/2026-09-23T02-53-37-602Z-wallets.jsonl`
   re-scores the whole benchmark with zero model calls and zero Nansen credits.
 - Every live read's raw Nansen responses are committed in `bench/live-reads/` and listed with

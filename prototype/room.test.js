@@ -791,3 +791,12 @@ test('round 15: a pitch that cited a 30-day figure is not "never shown it" (the 
   assert.equal(roundQuotes(bare).agreed.shownWindow, false);
   assert.match(endingCopy({ s: { prospect: { name: '0xaad5...d785' }, shots: bare }, peak: 5500, executed: 0, verdict: 'block' }).headline, /was never shown it/);
 });
+
+test('round 18: "the 30-day window I asked for" is PENNY asking for the record, never "never asked"', () => {
+  // PENNY's own line from the 23 Sep v22 take (THE LEGEND, line 1).
+  const line = "All-time PnL isn't the 30-day window I asked for; size accordingly.";
+  const shots = [{ n: 1, text: '+$118,975,612 all time on the public Hyperliquid leaderboard.', line, allocation: 3000, wire: { attempted: 3000 } }];
+  const end = endingCopy({ s: { prospect: { name: 'THE LEGEND' }, shots }, peak: 3000, executed: 0, verdict: 'block' });
+  assert.doesNotMatch(end.headline, /never asked/);
+  assert.equal(end.headline, 'PENNY asked for the record, then agreed to send $3,000 anyway.');
+});

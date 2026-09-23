@@ -74,7 +74,7 @@ export function saveRawRead(dir, { wallet, fetchedAt, windows, responses }) {
     kind: 'nansen-live-read', endpoint: LIVE_ENDPOINT,
     // Every endpoint this file holds a response from (round 12). Files saved before then
     // carry `endpoint` only, though some also hold perp-trades fills: bench/live-reads/README.md.
-    endpoints: responses.fills ? [LIVE_ENDPOINT, 'profiler/perp-trades'] : [LIVE_ENDPOINT],
+    endpoints: [LIVE_ENDPOINT, ...(responses.fills ? ['profiler/perp-trades'] : []), ...(responses.positions ? [POSITIONS_ENDPOINT] : [])],
     wallet, fetched_at: fetchedAt, windows,
     // As Nansen sent them: status, the credit header and the whole JSON body, per window.
     responses,
