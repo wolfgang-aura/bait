@@ -5,7 +5,8 @@ of their votes. Each answer links to code or tracked evidence.
 
 ## First objection: "This is just a 30-day PnL checker"
 
-It was, until 22 September. The default gate is now `wallet-copy-risk-v2`, and it
+It was, until 22 September. The default gate is now `wallet-copy-risk-v3` (v2's refusals, with a one-market month capped
+rather than refused), and it
 publishes its whole reasoning on every decision, allow or block:
 
 | Check | Reads | Bar |
@@ -18,7 +19,7 @@ publishes its whole reasoning on every decision, allow or block:
 | `thin_sample` | 30-day closed trades | At least 20 |
 | `low_win_rate` | 30-day win rate | At least 40% |
 | `paper_headline` | Unrealised share of the headline | At most 80% |
-| `concentration`, `tail_loss`, `max_drawdown` | Per-fill tape | Reported `not_assessed`: the gate reads summaries, not fills |
+| `concentration`, `tail_loss`, `max_drawdown` | Per-trade fills | Reported `not_assessed`: the gate reads summaries, not fills |
 
 Every row carries the number it read, the bar it wanted and one plain sentence. A
 block names the first row that failed. A row the evidence could not answer says so
@@ -38,7 +39,7 @@ nobody keeps switched on.
 Two honest limits. On the recorded ten-case corpus both gates score 0 funded of 30,
 because the benchmark wallet lost $4.7M over 30 days and fails the first check either
 way; v2 is not catching a wallet v1 missed there. And three of the eleven checks need
-the fill tape the gate does not fetch, so they report `not_assessed` and are covered
+the trade fills the gate does not fetch, so they report `not_assessed` and are covered
 by the separate copy-risk report instead.
 
 The earlier rule, `wallet-realized-pnl-30d-v1`, is still shipped by id, because the

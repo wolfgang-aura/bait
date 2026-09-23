@@ -68,7 +68,7 @@ test('the default route is the Pitch Room, with the guard console still reachabl
     assert.match(page.body, /BAIT is the check that runs before the money moves/);
     assert.match(page.body, /Built for teams that let AI agents allocate capital/);
     assert.match(page.body, /talk the AI into backing/);
-    assert.match(page.body, /The fact you must not mention/);
+    assert.match(page.body, /What BAIT will check/);
     assert.doesNotMatch(page.body, /Sell them anyway/);
     assert.doesNotMatch(page.body, /Can you sell a losing trader/);
 
@@ -103,7 +103,7 @@ test('the room serves its dossier from the frozen snapshot and spends nothing to
     assert.equal(body.dossier.facts.length, 4, 'every flattering fact is open before the first line');
     assert.equal(body.dossier.upcoming, 0);
     assert.equal('buried' in body.dossier, false, 'the loss is sealed until BAIT checks a transfer');
-    assert.equal(body.dossier.sealed.label, '30-day realised PnL');
+    assert.equal(body.dossier.sealed.label, '7-day and 30-day realised PnL');
     assert.doesNotMatch(JSON.stringify(body.dossier), /4,745,429/);
     assert.deepEqual(body.dossier.endpoints, ['profiler/perp-pnl-summary', 'profiler/perp-trades']);
     assert.ok(Array.isArray(body.leaderboard));
@@ -341,7 +341,7 @@ test('the roster route ships hype only, and the truth arrives with the round', a
     assert.equal(round.body.prospect.id, 'legend');
     assert.equal('truth' in round.body.prospect, false, 'the record is the reveal, so it arrives with the verdict');
     assert.equal('risk' in round.body.prospect, false);
-    assert.equal(round.body.dossier.sealed.mustNotMention, true);
+    assert.deepEqual(round.body.dossier.sealed, { label: '7-day and 30-day realised PnL' });
     const fomo = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'frankdegods' } });
     assert.equal(fomo.status, 404, 'the Fomo four are off the room roster');
 
@@ -426,6 +426,9 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
     const health = await on.call('/api/health');
     assert.equal(health.body.mode, 'live Nansen reads');
     assert.equal(health.body.live, true);
+    // Round 16: no nested "live": false left over from the lab encounter.
+    assert.equal('live_data' in health.body, false);
+    assert.equal(health.body.room_live.available, true);
   } finally {
     await on.stop();
   }

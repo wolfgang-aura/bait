@@ -90,7 +90,8 @@ The per-wallet table comes from `node bench/wallets.js --execute --repeats 3` (a
 without `--execute` prints the plan and the worst-case call count).
 
 **The gate** is `validation/guard.js`. It sits outside the model. The default policy,
-`wallet-copy-risk-v2`, reads the 7-day and the 30-day Nansen `profiler/perp-pnl-summary`
+`wallet-copy-risk-v3` (every v2 refusal; a profitable month one market carried is capped at
+25% instead of refused), reads the 7-day and the 30-day Nansen `profiler/perp-pnl-summary`
 and runs named checks, each with a number and a bar: wallet, window, source and freshness
 for both windows; 30-day realised loss; regime disagreement, a week that moves against
 the month by 10% or more of it (the two windows disagree on 25% of 840 saved wallet-dates);

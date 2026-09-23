@@ -142,7 +142,7 @@ const CAST = {
   legend: {
     m: metrics({ w: 1.08, jaw: 1.3, top: 42, chin: 224, eyeRx: 9, eyeRy: 5.5, browTilt: 9, mouthW: 30, noseW: 6.5, noseL: 32 }),
     skin: '#C08A61', shade: '#7A5033', light: '#F0CFA6', cloth: '#262C36', clothShade: '#131820', ink: '#20141A',
-    bg: ['#3A1B0E', '#0B0A0B'],
+    bg: ['#2A2724', '#0A0A0A'],
     hair: `<path class="hair" d="M120 18 C172 18 198 56 194 116 C186 92 178 74 160 64 C142 54 98 54 80 64 C62 74 54 92 46 116 C42 56 68 18 120 18 Z"/>
            <path class="hair-light" d="M104 26 C78 38 62 64 54 100 C56 56 74 30 104 26 Z"/>
            <path class="hair" d="M46 96 c-14 -22 -6 -48 10 -58 c-4 20 -2 40 6 56 Z"/>`,
@@ -157,7 +157,7 @@ const CAST = {
   streak: {
     m: metrics({ w: 0.9, jaw: 0.72, top: 40, chin: 226, eyeRx: 11, eyeRy: 5, browTilt: 10, eyeX: 26, mouthW: 18, noseW: 4, noseL: 24 }),
     skin: '#B0805F', shade: '#6C4630', light: '#E3B98C', cloth: '#4A2537', clothShade: '#22101B', ink: '#1E1018',
-    bg: ['#3D1030', '#0A080B'],
+    bg: ['#2A2724', '#0A0A0A'],
     behind: `<path class="hood" d="M120 -14 C190 -14 232 46 226 126 C223 170 210 214 192 248 L48 248 C30 214 17 170 14 126 C8 46 50 -14 120 -14 Z"/>`,
     hair: `<path class="hood-inner" fill-rule="evenodd" d="M120 4 C180 4 214 54 209 124 C206 160 196 196 182 224 L58 224 C44 196 34 160 31 124 C26 54 60 4 120 4 Z M120 32 a76 98 0 1 0 0.1 0 Z"/>
            <path class="hood-rim" d="M196 36 c22 30 30 76 25 128 c-2 -56 -14 -98 -39 -134 Z"/>`,
@@ -173,7 +173,7 @@ const CAST = {
   realdeal: {
     m: metrics({ w: 1, jaw: 0.98, top: 44, chin: 214, eyeRx: 9.5, eyeRy: 9, browTilt: 2, mouthW: 19, noseW: 4.5, noseL: 24 }),
     skin: '#C79B72', shade: '#845B3C', light: '#F2D6B0', cloth: '#2A3A44', clothShade: '#16222A', ink: '#171A1E',
-    bg: ['#08382A', '#070A0A'],
+    bg: ['#2A2724', '#0A0A0A'],
     hair: `<path class="hair" d="M120 22 C168 22 194 56 192 106 C182 86 170 74 152 68 C132 61 96 62 80 70 C64 78 54 90 48 106 C46 56 72 22 120 22 Z"/>
            <path class="hair-light" d="M110 28 C86 38 68 60 58 92 C60 54 80 32 110 28 Z"/>
            <path class="hair" d="M126 24 c26 6 44 24 52 48 c-20 -22 -40 -36 -60 -42 Z"/>`,
@@ -188,7 +188,7 @@ const CAST = {
   grinder: {
     m: metrics({ w: 0.94, jaw: 1.04, top: 34, chin: 230, eyeRx: 11, eyeRy: 5, browTilt: -3, mouthW: 27, noseW: 5.5, noseL: 34 }),
     skin: '#A57E60', shade: '#654833', light: '#D9B58C', cloth: '#272B33', clothShade: '#14171C', ink: '#1A1418',
-    bg: ['#3A2A06', '#09090A'],
+    bg: ['#2A2724', '#0A0A0A'],
     behind: `<path class="hood" d="M120 -10 C186 -10 226 48 221 124 C218 166 206 210 189 244 L51 244 C34 210 22 166 19 124 C14 48 54 -10 120 -10 Z"/>`,
     hair: `<path class="hood-inner" fill-rule="evenodd" d="M120 8 C178 8 210 56 205 122 C202 158 192 194 179 222 L61 222 C48 194 38 158 35 122 C30 56 62 8 120 8 Z M120 34 a74 96 0 1 0 0.1 0 Z"/>
            <path class="hood-rim" d="M192 40 c21 30 28 74 23 124 c-2 -54 -13 -94 -37 -130 Z"/>

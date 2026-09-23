@@ -4,7 +4,7 @@
  *   npm run guard -- --wallet 0xc26cbb6483229e0d0f9a1cab675271eda535b8f4 --allocation 5000
  *   npm run guard -- --wallet 0x9546b9d4103be41ce13483a8f299d0df0eeb181c --allocation 5000 --json
  *
- * The default policy is `wallet-copy-risk-v2`: it reads the 7-day AND the 30-day
+ * The default policy is `wallet-copy-risk-v3`: it reads the 7-day AND the 30-day
  * `profiler/perp-pnl-summary` and costs two credits, one per window, and it buys the
  * second window only after the first one passes. `--policy v1` is the older one-window
  * rule the recorded benchmark row is tied to, at one credit.
@@ -24,7 +24,7 @@ import {
 } from '../validation/guard.js';
 
 export const USAGE =
-  'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2] [--json] [--timeout <ms>]';
+  'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2|v3] [--json] [--timeout <ms>]';
 
 /** v2 is the default gate. v1 stays selectable so a recorded result can be rerun. */
 export const POLICIES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3 };

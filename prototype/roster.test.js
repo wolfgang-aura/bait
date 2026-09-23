@@ -223,10 +223,9 @@ test('a capture holding under a week of fills does not measure drawdown or the w
       Date.parse(fills[fills.length - 1].timestamp) - Date.parse(fills[0].timestamp) < 7 * 86_400_000,
       `${id} really does hold under a week of its 30-day window`,
     );
-    // No drawdown or tail figure measured over an hour of a 30-day window: not assessed,
-    // and the sentence says why in counts, not in a self-undermining time span.
-    assert.match(p.risk.coverage, /^Drawdown and worst single trade are not assessed: this capture holds only the newest [\d,]+ of [\d,]+ closed trades, too few to measure them over 30 days\.$/);
-    assert.doesNotMatch(p.risk.coverage, /hour|minute/);
+    // No drawdown or tail figure measured over an hour of a 30-day window: not assessed.
+    // Round 16: the sentence names how little time the fills cover (judge 6's wording).
+    assert.match(p.risk.coverage, /^Drawdown and worst single trade are not assessed: the newest [\d,]+ fills cover only [^,]+, too short to judge\.$/);
     for (const id2 of ['max_drawdown', 'tail_loss']) {
       assert.equal(p.risk.flags.find(f => f.id === id2), undefined, `${id}/${id2} is not flagged off a slice`);
       assert.ok(p.risk.not_assessed.find(n => n.id === id2), `${id}/${id2} is listed as not assessed`);

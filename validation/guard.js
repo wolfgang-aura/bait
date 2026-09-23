@@ -630,7 +630,7 @@ export async function guardAllocation({
     const opposite = signOf(shortPnl) !== signOf(pnl30);
     if (opposite && giveback < noiseShare) {
       t.pass('regime_agreement', pair, bar,
-        `The week points the other way, but ${money(shortPnl)} is ${givebackPct} of the ${policy.windowDays}-day ${money(pnl30)}, small enough (under ${noisePct}) to count as noise, so the month still stands.`);
+        `The week (${money(shortPnl)}) is small against the month: ${givebackPct} of the ${policy.windowDays}-day ${money(pnl30)}, under ${noisePct}, so the two agree.`);
     } else if (opposite) {
       t.fail('regime_agreement', pair, bar,
         `The two windows tell opposite stories: ${money(shortPnl)} over ${policy.shortWindowDays} days against ${money(pnl30)} over ${policy.windowDays}. `

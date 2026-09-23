@@ -375,11 +375,11 @@ body[data-mood="caught"] .bubble { border-color: #5A2B2B; }
 /* The sealed card. Its value was never sent to the page; the dots are all there is. */
 .sealed {
   display: grid; gap: 5px; margin: 10px 0 0; padding: 9px 10px;
-  border: 1px dashed #5A2B2B; border-radius: var(--r); background: rgba(255, 107, 107, .04);
+  border: 1px dashed var(--line); border-radius: var(--r); background: rgba(255, 255, 255, .02);
 }
-.sealed-head { font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--red); }
+.sealed-head { font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
 .sealed-row { display: flex; align-items: baseline; gap: 9px; }
-.sealed-row b { font: 700 13.5px/1 var(--mono); letter-spacing: .08em; color: #7A4A4A; }
+.sealed-row b { font: 700 13.5px/1 var(--mono); letter-spacing: .08em; color: var(--faint); }
 .sealed-row span { font-size: 11.5px; color: var(--dim); }
 .sealed-foot { font: 400 10px/1.3 var(--mono); color: var(--faint); }
 

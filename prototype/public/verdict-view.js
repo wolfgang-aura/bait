@@ -45,7 +45,9 @@ export function reportRows(risk, checks = [], verdict = null) {
     if (!row) { rows.push({ kind: kind.WATCH, label: 'WATCH', line: flag.plain }); continue; }
     const view = checkRowView(row, verdict);
     const label = view.result === 'caution' ? 'WATCH' : view.label;
-    const line = row.result === 'pass' || view.result === 'superseded' ? view.plain : flag.plain;
+    // A row the gate passed or could not judge says so in its own words (round 16: a drawdown
+    // on 17 minutes of fills is N/A, not a finding).
+    const line = ['pass', 'not_assessed'].includes(row.result) || view.result === 'superseded' ? view.plain : flag.plain;
     rows.push({ kind: view.result === 'superseded' ? 'low superseded' : kind[label] ?? 'medium', label, line });
   }
   return rows;

@@ -1,6 +1,24 @@
 # BAIT public page, version B
 
-## Version O: one decision, said once, 23 September 2026 (current)
+## Version P: nothing before the gate, 23 September 2026 (current)
+
+Judge 6: the card colours gave the verdict away before BAIT ran, and some rows passed on a
+sliver of data.
+
+- **One neutral theme until the gate decides.** Every tile, portrait rim, the room wash and
+  the Pitch button use one accent, #C9C3B6 (warm grey), for every trader. The reveal takes
+  the verdict's colour: block #FF6B6B, cap #E9A23B, clear #62D49A.
+- **One sealed card for everyone.** "What BAIT will check: 7-day and 30-day realised PnL",
+  dim grey dashed border, no red. The payload carries only that label.
+- **Partial fills are N/A.** When the newest fills cover under a week, the drawdown and worst
+  trade rows read "The newest 1,000 fills cover only 17 minutes, too short to judge." A
+  measured drawdown names its base: "$X, Y% of the $Z peak it fell from, under the 30% limit".
+- **A PASS row reads as a pass.** "The week (-$1,208) is small against the month: 3.4% of the
+  30-day +$35,083, under 10%, so the two agree." No "noise", no "points the other way".
+- **The video ends on the product.** The last frames hold the final BLOCKED reveal with the
+  core-value line as the caption and the URL under it, not a text card.
+
+## Version O: one decision, said once, 23 September 2026
 
 Judge 5 found places where two parts of the screen described one decision differently. Every
 word on BAIT's decision now comes from the one gate result (`public/verdict-view.js`).

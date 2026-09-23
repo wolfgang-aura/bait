@@ -90,8 +90,10 @@ one market carried (everything else lost) gets 25% of the request: `$X requested
 $Z held`. Anything missing or failed means $0. Integration: `guardAllocation({ executor,
 wallet, allocation })`, [contract](docs/WALLET_ALLOCATION_GUARD.md). In the Pitch Room the AI
 runs the bench's no-data setup (your pitch only); only the gate reads Nansen. Live rounds read
-the two summaries live; the fill tape (drawdown, worst trade) is a capture, and when it is more
-than a day behind the summaries the room shows its age and nothing measured on it is used.
+the two summaries and the newest page of trade fills live (3 credits). Drawdown and worst trade
+are measured on those fills only when they cover a week or more; a page that covers less (a
+busy wallet's 1,000 fills can be minutes) shows those rows as N/A, too short to judge. A frozen
+round uses the capture's fills and says how old they are.
 
 ## Run it yourself
 

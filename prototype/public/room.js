@@ -113,6 +113,13 @@ function show(phase) {
   for (const [name, id] of Object.entries(SCREENS)) $(id).hidden = name !== phase;
 }
 
+/**
+ * Round 16: one neutral accent for every trader until the gate decides; a red or green
+ * theme on the card gave the verdict away (judge 6). The reveal takes the verdict's colour.
+ */
+export const NEUTRAL_ACCENT = '#C9C3B6';
+const VERDICT_ACCENT = { block: '#FF6B6B', capped: '#E9A23B', allow: '#62D49A' };
+let revealAccent = NEUTRAL_ACCENT;
 /** One accent drives the tile, the wash, the rim light and the name plate. */
 function setAccent(accent) {
   document.documentElement.style.setProperty('--accent', accent);
@@ -127,13 +134,13 @@ function renderRoster(tiles) {
     const tile = document.createElement('button');
     tile.type = 'button';
     tile.className = 'tile';
-    tile.style.setProperty('--accent', p.accent);
+    tile.style.setProperty('--accent', NEUTRAL_ACCENT);
     tile.setAttribute('role', 'option');
     tile.setAttribute('aria-selected', 'false');
     tile.dataset.id = p.id;
     const art = document.createElement('span');
     art.className = 'tile-art';
-    art.innerHTML = portraitSvg(p.portrait, { mood: 'idle', accent: p.accent, title: p.name, crop: 'face' });
+    art.innerHTML = portraitSvg(p.portrait, { mood: 'idle', accent: NEUTRAL_ACCENT, title: p.name, crop: 'face' });
     const chip = document.createElement('span');
     chip.className = 'venue-chip';
     chip.textContent = p.venueLabel;
@@ -176,8 +183,8 @@ function focus(index) {
     const bust = tile.querySelector('.bust');
     if (bust) bust.dataset.x = i === focused ? 'confident' : 'idle';
   });
-  setAccent(p.accent);
-  el.caller.style.setProperty('--accent', p.accent);
+  setAccent(NEUTRAL_ACCENT);
+  el.caller.style.setProperty('--accent', NEUTRAL_ACCENT);
   text(el.callerLine, p.voice);
   text(el.callerMeta, [
     // The venue and the chain are the same word on Hyperliquid, so say it once.
@@ -225,7 +232,7 @@ async function pasteWallet(event) {
   text(el.anyWalletNote, 'Reading Nansen: the 7-day and 30-day perp PnL summary for this wallet...');
   try {
     const res = await api('/api/room/start', { method: 'POST', body: { wallet } });
-    chosen = { name: res.prospect.name, short: res.prospect.short, accent: res.prospect.accent };
+    chosen = { name: res.prospect.name, short: res.prospect.short, accent: NEUTRAL_ACCENT };
     if (res.checkOnly) {
       dossier = res.dossier;
       await playCheckpoint(res.prospect, res.final);
@@ -408,6 +415,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
  * server's `final` object and the prospect record it sent with the verdict.
  */
 function showReveal(p, final) {
+  revealAccent = VERDICT_ACCENT[final.verdict] ?? NEUTRAL_ACCENT;
   reportGate = final.gate ?? null;
   reportVerdict = final.verdict ?? null;
   const kind = final.peak === 0 && !final.checkOnly ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
@@ -484,13 +492,13 @@ function showReveal(p, final) {
 
 function showTruth(p) {
   chosen = p;
-  setAccent(p.accent);
+  setAccent(revealAccent);
   show('truth');
   // The camera follows the number, not the verdict: a losing record catches them in
   // the light, a gain leaves them smiling. The verdict speaks through the report below.
   const losing = p.truth.pnl < 0;
   el.truthPortrait.innerHTML = portraitSvg(p.portrait, {
-    mood: losing ? 'caught' : 'confident', accent: p.accent, title: p.name, crop: 'face',
+    mood: losing ? 'caught' : 'confident', accent: revealAccent, title: p.name, crop: 'face',
   });
   text(el.truthName, p.name);
   text(el.truthHandle, p.handle ? `${p.handle} · ${p.short}` : `no display name · ${p.short}`);
@@ -638,8 +646,8 @@ function renderScene(d) {
   text(el.slotSub, dollars(d.slot));
   text(el.premiseSlot, dollars(d.slot));
   text(el.premiseName, d.name);
-  el.meridian.innerHTML = portraitSvg('meridian', { mood: 'neutral', accent: d.accent, title: 'PENNY, the AI allocation desk' });
-  el.clientPortrait.innerHTML = portraitSvg(d.portrait, { mood: 'confident', accent: d.accent, title: d.name, crop: 'face' });
+  el.meridian.innerHTML = portraitSvg('meridian', { mood: 'neutral', accent: NEUTRAL_ACCENT, title: 'PENNY, the AI allocation desk' });
+  el.clientPortrait.innerHTML = portraitSvg(d.portrait, { mood: 'confident', accent: NEUTRAL_ACCENT, title: d.name, crop: 'face' });
   text(el.clientName, d.name);
   text(el.clientSub, [d.venueLabel, d.trader].filter(Boolean).join(' · '));
   text(el.ticker.firstElementChild, `${d.name}   ${d.endpoints.join('   ')}   ${d.evidenceLabel ?? `captured ${String(d.capturedAt).slice(0, 10)}`}   `.repeat(3).toUpperCase());
@@ -674,7 +682,7 @@ function renderFacts(d) {
   refreshFactCards();
   el.sealed.hidden = !d.sealed;
   if (d.sealed) {
-    text(el.sealedHead, d.sealed.mustNotMention ? 'The fact you must not mention' : 'The numbers BAIT will check');
+    text(el.sealedHead, 'What BAIT will check');
     text(el.sealedLabel, d.sealed.label);
   }
 }
@@ -821,7 +829,7 @@ function adopt(state) {
   if (state.evidence && 'live' in state.evidence) setBadge(state.evidence);
   shots = state.shots ?? [];
   dossier = state.dossier;
-  if (state.prospect) { chosen = state.prospect; setAccent(state.prospect.accent); }
+  if (state.prospect) { chosen = state.prospect; setAccent(NEUTRAL_ACCENT); }
   return state;
 }
 
@@ -1303,7 +1311,9 @@ async function boot() {
   el.anyWallet.addEventListener('submit', pasteWallet);
   el.wire.addEventListener('click', () => { if (!sending && round && !round.finished && round.funded > 0) finish(); });
   el.anyWalletInput.addEventListener('keydown', event => {
-    if (event.key === 'Enter') { event.preventDefault(); el.anyWallet.requestSubmit(); }
+    // Round 16: every way a browser reports Enter submits the paste, like the pitch box.
+    const enter = event.key === 'Enter' || event.code === 'Enter' || event.code === 'NumpadEnter' || event.keyCode === 13;
+    if (enter && !event.isComposing) { event.preventDefault(); pasteWallet(event); }
   });
   // Touch screens get touch words.
   if (matchMedia('(pointer: coarse)').matches) text(el.hintKeys, 'Tap a trader to pick.');

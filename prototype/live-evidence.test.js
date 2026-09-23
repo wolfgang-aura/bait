@@ -180,7 +180,7 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   assert.match(round.evidence.fetchedLabel, /^\d\d:\d\d UTC$/);
   assert.equal(round.evidence.credits, LIVE_READ_CREDITS);
   assert.equal('truth' in round.prospect, false, 'the live record is sealed until the verdict');
-  assert.equal(round.dossier.sealed.mustNotMention, true);
+  assert.deepEqual(round.dossier.sealed, { label: '7-day and 30-day realised PnL' });
   assert.match(round.dossier.evidenceLabel, /^live Nansen read /);
 
   const said = await say(service, round.id, 0, '+$15,000 realised over the last 7 days.');
@@ -221,7 +221,7 @@ test('a live record that is no longer losing plays as a clean record: the gate c
     ...answer(5000, 'sold', 'Funded.'),
   ], mock);
   const round = await service.start({ prospect: 'grinder' });
-  assert.equal(round.dossier.sealed.mustNotMention, false);
+  assert.deepEqual(round.dossier.sealed, { label: '7-day and 30-day realised PnL' }, 'a clean record looks the same before the gate');
   await say(service, round.id, 0, '+$20,000 realised over the last 7 days.');
   const one = await service.finish(round.id, { wire: true });
   assert.equal(one.dossier.buried, null);
@@ -357,14 +357,14 @@ test('a wallet with nothing flattering still gets the BAIT check and its verdict
 
 // ------------------------------------------------------------ live fills (round 11)
 
-function fillsMock({ fills = 2 } = {}) {
+function fillsMock({ fills = 2, last = true, stepMs = 3_600_000, pnl = i => (i % 2 ? -500 : 900) } = {}) {
   const seen = [];
   const call = async (pathName, body) => {
     seen.push({ pathName, body });
     if (pathName === 'profiler/perp-trades') {
-      const rows = Array.from({ length: fills }, (_, i) => ({ timestamp: new Date(Date.parse('2026-09-23T10:00:00Z') - i * 3_600_000).toISOString(),
-        token_symbol: 'BTC', side: 'Long', action: 'Close', closed_pnl: i % 2 ? -500 : 900, value_usd: 10_000 }));
-      return { status: 200, headers: { 'x-nansen-credits-cost': '1' }, data: { data: rows, pagination: { is_last_page: true } } };
+      const rows = Array.from({ length: fills }, (_, i) => ({ timestamp: new Date(Date.parse('2026-09-23T10:00:00Z') - i * stepMs).toISOString(),
+        token_symbol: 'BTC', side: 'Long', action: 'Close', closed_pnl: pnl(i), value_usd: 10_000 }));
+      return { status: 200, headers: { 'x-nansen-credits-cost': '1' }, data: { data: rows, pagination: { is_last_page: last } } };
     }
     const days = Math.round((Date.parse(body.date.to) - Date.parse(body.date.from)) / 86_400_000);
     return { status: 200, headers: { 'x-nansen-credits-cost': '1' }, data: { data: {
@@ -406,7 +406,7 @@ test('a failed fills page keeps the summaries live and falls back to the capture
   assert.equal(liveSnapshot(grinder.snapshot, read).live_read.fills_live, undefined);
 });
 
-test('a live tape shorter than a week is measured and labelled with its span, never "not assessed"', async () => {
+test('round 16: a live tape shorter than a week is not assessed, and the report says how little it covers', async () => {
   const mock = fillsMock({ fills: 6 });
   const live = createLiveEvidence({ enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 1 });
   const read = await live.read(GRINDER);
@@ -414,8 +414,10 @@ test('a live tape shorter than a week is measured and labelled with its span, ne
   const { copyRiskReport, refreshProspect } = await import('./roster.js');
   const grinder = loadRoster().find(p => p.id === 'grinder');
   const p = refreshProspect(grinder, liveSnapshot(grinder.snapshot, read));
-  assert.ok(!p.risk.not_assessed.some(n => ['max_drawdown', 'tail_loss'].includes(n.id)), 'both measured on the live tape');
-  assert.ok(copyRiskReport(p).max_drawdown, 'a drawdown value exists');
+  const na = p.risk.not_assessed.filter(n => ['max_drawdown', 'tail_loss'].includes(n.id));
+  assert.equal(na.length, 2, 'neither is judged on five hours of fills');
+  assert.ok(na.every(n => /^the newest 6 fills cover only 5 hours, too short to judge$/.test(n.reason)), JSON.stringify(na));
+  assert.ok(!copyRiskReport(p).flags.some(f => ['max_drawdown', 'tail_loss'].includes(f.id)), 'no finding from a sliver');
 });
 
 test('the worst-trade row always shows the value read off the live fills, with the span', async () => {
@@ -439,4 +441,31 @@ test('the worst-trade row always shows the value read off the live fills, with t
   await say(pasted, res.id, 0, res.dossier.facts[0].insert);
   const pf = (await pasted.finish(res.id, {})).final.gate.checks.find(c => c.id === 'fills_worst_trade');
   assert.match(pf.plain, /Worst single closed trade over .*: -\$500\. No limit applied/);
+});
+
+test('round 16: newest fills covering under a week are N/A, "too short to judge"; a full window shows the drawdown as a share of its peak', async () => {
+  // A full page of 1,000 fills a second apart, and Nansen says there are more: 17 minutes of a month.
+  const short = liveRoom([...answer(5000, 'intrigued', 'Opening small.')], fillsMock({ fills: 1000, last: false, stepMs: 1_000 }), { fillPages: 1 }).service;
+  let round = await short.start({ prospect: 'grinder' });
+  await say(short, round.id, 0, round.dossier.facts[0].insert);
+  let checks = (await short.finish(round.id, {})).final.gate.checks;
+  for (const id of ['fills_drawdown', 'fills_worst_trade']) {
+    const row = checks.find(c => c.id === id);
+    assert.equal(row.result, 'not_assessed', id);
+    assert.equal(row.plain, 'The newest 1,000 fills cover only 17 minutes, too short to judge.');
+  }
+  // The whole window held (last page): the drawdown is measured, with its base and the limit.
+  // Six fills, newest first; the one loss (-$200) comes after a $3,000 peak.
+  const full = liveRoom([...answer(5000, 'intrigued', 'Opening small.')], fillsMock({ fills: 6, pnl: i => (i === 2 ? -200 : 1000) }), { fillPages: 1 }).service;
+  round = await full.start({ prospect: 'grinder' });
+  await say(full, round.id, 0, round.dossier.facts[0].insert);
+  checks = (await full.finish(round.id, {})).final.gate.checks;
+  assert.equal(checks.find(c => c.id === 'fills_drawdown').plain,
+    'Worst peak-to-trough over all 6 fills in the window: $200, 6.7% of the $3,000 peak it fell from, under the 30% limit.');
+  // A curve that fell from zero has no peak to measure against: no limit is claimed.
+  const flat = liveRoom([...answer(5000, 'intrigued', 'Opening small.')], fillsMock({ fills: 6 }), { fillPages: 1 }).service;
+  round = await flat.start({ prospect: 'grinder' });
+  await say(flat, round.id, 0, round.dossier.facts[0].insert);
+  checks = (await flat.finish(round.id, {})).final.gate.checks;
+  assert.match(checks.find(c => c.id === 'fills_drawdown').plain, /No limit applied: the running result never rose above zero/);
 });

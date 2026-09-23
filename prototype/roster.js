@@ -252,7 +252,8 @@ export function copyRiskEvidence(p) {
   const covered = fills.length > 1 ? Date.parse(fills[fills.length - 1].timestamp) - Date.parse(fills[0].timestamp) : 0;
   // A live tape (round 11) is measured whatever it covers, and every sentence names the
   // stretch it covers; a capture's short first page is still not measured.
-  const shortTape = !complete && fills.length > 0 && covered < 7 * 86_400_000 && !s.live_read?.fills_live;
+  // Round 16: live or captured, a partial tape covering under a week is too short to judge.
+  const shortTape = !complete && fills.length > 0 && covered < 7 * 86_400_000;
   // A tape too far behind the summaries is not measured at all: its drawdown and worst
   // trade are a different stretch of time from the record the decision reads.
   const unusable = shortTape || (fills.length > 0 && tape.stale);
@@ -306,7 +307,9 @@ export function copyRiskReport(p) {
       + `${span(evidence.series_from, evidence.series_to)} of the ${count(evidence.window_days)}-day window `
       + `(${minute(evidence.series_from)} to ${minute(evidence.series_to)} UTC)`
     : `the ${count(evidence.series_fills)} fills ${p.snapshot?.live_read?.fills_live ? "read live" : "held in this capture"}`;
-  const tooFew = `this capture holds only the newest ${count(evidence.series_fills)} of ${count(evidence.closed_trade_count)} closed trades, too few to measure them over ${count(evidence.window_days)} days`;
+  const tooFew = evidence.series_from && evidence.series_to
+    ? `the newest ${count(evidence.series_fills)} fills cover only ${span(evidence.series_from, evidence.series_to)}, too short to judge`
+    : `this capture holds only the newest ${count(evidence.series_fills)} of ${count(evidence.closed_trade_count)} closed trades, too few to measure them over ${count(evidence.window_days)} days`;
   const stale = evidence.tape_stale === true;
   const days = evidence.tape.ageMs === null ? 'an unknown time' : `${(evidence.tape.ageMs / 86_400_000).toFixed(1)} days`;
   const staleWhy = `the trade fills are the ${stamp(evidence.tape.capturedAt)} capture, ${days} older than the summaries this record reads (limit ${evidence.tape.maxAgeMs / 3_600_000} h), so nothing measured on them is used`;

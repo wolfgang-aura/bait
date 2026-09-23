@@ -342,8 +342,9 @@ function health() {
     snapshot_age_hours: Math.round((ageMs / 3_600_000) * 10) / 10,
     snapshot_fills: snapshot.trades_30d.length,
     snapshot_complete: snapshot.trades_pagination?.is_complete === true,
-    encounter_mode: dataSource.status().live ? 'live Nansen refresh' : 'frozen snapshot',
-    live_data: dataSource.status(),
+    // Round 16: the older single-wallet lab encounter keeps its own frozen snapshot; it is
+    // reported under its own name so nothing here reads as the Pitch Room's mode.
+    lab_encounter: { mode: dataSource.status().live ? 'live Nansen refresh' : 'frozen snapshot', data: dataSource.status() },
     room_live: room,
     nansen_quota: nansenQuota(),
     keys_present: ['ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'NANSEN_API_KEY'].filter(

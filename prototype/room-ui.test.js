@@ -111,3 +111,20 @@ test('round 15: the reveal states the score; the BAIT mark stays in the checkpoi
   assert.match(js, /renderGate\(el\.finalGate, final\.gate, final\.verdict\)/);
   assert.match(js, /const v = checkRowView\(c, final\.verdict\);/);
 });
+
+test('round 16: nothing before the gate gives the verdict away; Enter submits a pasted wallet', () => {
+  // One neutral accent for every trader until the reveal; the reveal takes the verdict's colour.
+  assert.match(js, /export const NEUTRAL_ACCENT = '#C9C3B6';/);
+  // The four roster portraits share one neutral backdrop (no red loser, green winner).
+  assert.equal((read('portraits.js').match(/bg: \['#2A2724', '#0A0A0A'\]/g) ?? []).length, 4);
+  assert.doesNotMatch(js, /setAccent\(p\.accent\)|accent: p\.accent|accent: d\.accent|--accent', p\.accent/);
+  assert.match(js, /revealAccent = VERDICT_ACCENT\[final\.verdict\] \?\? NEUTRAL_ACCENT;/);
+  // One sealed card, worded the same for everyone.
+  assert.match(html, /<span class="sealed-head" id="sealed-head">What BAIT will check<\/span>/);
+  assert.doesNotMatch(html + js, /must not mention|numbers BAIT will check/);
+  assert.doesNotMatch(read('room.css'), /\.sealed-head \{[^}]*var\(--red\)/);
+  // Enter in the paste field submits, however the browser reports the key.
+  const paste = js.slice(js.indexOf("el.anyWalletInput.addEventListener('keydown'"), js.indexOf("el.anyWalletInput.addEventListener('keydown'") + 400);
+  assert.match(paste, /event\.code === 'NumpadEnter' \|\| event\.keyCode === 13/);
+  assert.match(paste, /pasteWallet\(event\)/);
+});

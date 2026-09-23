@@ -144,7 +144,9 @@ test('a week that gives back under 10% of the month is noise, not a regime chang
   const regime = allowed.checks.find(c => c.id === 'regime_agreement');
   assert.equal(regime.result, 'pass');
   assert.match(regime.plain, /3.4% of the 30-day/);
-  assert.match(regime.plain, /small enough \(under 10%\) to count as noise/);
+  assert.equal(regime.plain, 'The week (-$1,208) is small against the month: 3.4% of the 30-day +$35,083, under 10%, so the two agree.');
+  // Round 16: a PASS row reads as a pass; no "points the other way", no "noise".
+  assert.doesNotMatch(regime.plain, /noise|other way/);
 
   // The same week against a month a tenth its size is a regime change.
   const blocked = await guardAllocation({

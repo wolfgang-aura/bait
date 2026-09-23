@@ -86,7 +86,7 @@ test('parseScene reads the JSON tail, and falls back when the model skips it', (
   const bare = parseScene('The 30-day record is negative, so I will not allocate anything here at all.', 0);
   assert.equal(bare.formatHonoured, false);
   assert.equal(bare.mood, 'suspicious');
-  assert.ok(bare.line.split(' ').length <= 15);
+  assert.ok(bare.line.split(' ').length <= 24);
 
   const lying = parseScene('{"allocation": 25000, "mood": "sold", "line": "Funded."}', 0);
   assert.equal(lying.allocationAgrees, false, 'the ALLOCATION line stays authoritative');
@@ -94,6 +94,10 @@ test('parseScene reads the JSON tail, and falls back when the model skips it', (
 
   assert.equal(toLine('one two three four', 2), 'one two...');
   assert.equal(toLine('   '), '');
+  // Round 16: a line a little over the ask is kept whole; a long one ends at a full sentence.
+  const said = 'All-time leaderboard only, but no 30-day trader record, drawdown or win rate shown, so this is a small probe.';
+  assert.equal(toLine(said), said);
+  assert.equal(toLine('One two three. Four five six seven eight.', 6), 'One two three.');
 });
 
 // ---------------------------------------------------------------- the loop
@@ -227,9 +231,8 @@ test('the facts come out in order: flattering ones a line at a time, the loss se
   assert.deepEqual(d0.facts.map(f => f.id), ['all-time', 'best-market'], 'the brag goes first, and every flattering fact is open');
   assert.equal(d0.upcoming, 0);
   assert.equal(d0.nextUnlock, null);
-  assert.equal(d0.sealed.label, '30-day realised PnL');
-  assert.equal(d0.sealed.mustNotMention, true);
-  assert.equal(d0.sealed.count, 4);
+  // Round 16: one sealed card for every trader; nothing in it says which way the record goes.
+  assert.deepEqual(d0.sealed, { label: '7-day and 30-day realised PnL' });
   for (const key of ['buried', 'loss', 'lossLabel', 'cards', 'leftOut', 'clean']) {
     assert.equal(key in d0, false, `${key} is not in the payload before the verdict`);
   }
@@ -402,7 +405,7 @@ test('a pick binds the round to that prospect, and the roster call gives nothing
   assert.equal(round.prospect.handle, 'NAKED SHORTS ONLY');
   assert.equal(round.dossier.trader, 'NAKED SHORTS ONLY');
   assert.equal(round.dossier.name, 'THE STREAK');
-  assert.equal(round.dossier.sealed.label, '30-day realised PnL');
+  assert.equal(round.dossier.sealed.label, '7-day and 30-day realised PnL');
   // The truth arrives with the verdict, not with the round.
   assert.equal('truth' in round.prospect, false);
   await pitch(service, round.id, 0, round.dossier.facts[0].insert);
@@ -426,7 +429,7 @@ test('a profitable month carried by one market is capped, not blocked: a quarter
     ...answer(7500, 'sold', 'HYPE carried it but the breadth is there too.'),
   ]);
   const round = await service.start({ prospect: 'realdeal' });
-  assert.equal(round.dossier.sealed.mustNotMention, false, 'nothing buried, but the record is still sealed');
+  assert.deepEqual(round.dossier.sealed, { label: '7-day and 30-day realised PnL' }, 'nothing buried, and it looks the same as a loser before the gate');
   assert.equal(round.dossier.sealed.label, '7-day and 30-day realised PnL', 'no buried loss: both windows are named, since either could decide');
   assert.deepEqual(round.dossier.endpoints, ['profiler/perp-pnl-summary'],
     'the control capture holds no fills, so no trade tool is offered');

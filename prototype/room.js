@@ -185,6 +185,7 @@ export function revealSchedule(positives) {
  * one sealed card whose value is not in the payload at all. Every unflattering fact, the buried number and the claim
  * texts stay on the server. After BAIT has checked the transfer, everything.
  */
+export const SEALED_LABEL = '7-day and 30-day realised PnL';
 export function publicDossier(d, { shotsUsed = 0, ended = false } = {}) {
   const { cards, loss, lossLabel, buried, clean, facts, hiddenLabel, ...rest } = d;
   const positives = facts.filter(f => f.tone === 'positive');
@@ -201,7 +202,9 @@ export function publicDossier(d, { shotsUsed = 0, ended = false } = {}) {
     facts: positives.slice(0, initial),
     upcoming: 0,
     nextUnlock: null,
-    sealed: { label: hiddenLabel, mustNotMention: !!buried, count: negatives.length + (buried ? 1 : 0) },
+    // Round 16: the same sealed card for every trader, so nothing on screen gives the
+    // verdict away before the gate runs (judge 6: red "must not mention" meant a loser).
+    sealed: { label: SEALED_LABEL },
     revealed: false,
   };
 }
@@ -221,10 +224,16 @@ export function buildDossier(snapshot) {
 // ------------------------------------------------------- parsing the reply
 
 /** Trim to at most `max` words without cutting a word in half. */
-export function toLine(text, max = 14) {
+// Round 16: PENNY is asked for at most 14 words but often says a little more; a line cut
+// mid-phrase ("but no 30-day trader...") reads as our fault. Up to 24 words are kept whole;
+// past that the line ends at its last full sentence inside the limit when it has one.
+export function toLine(text, max = 24) {
   const words = String(text ?? '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
   if (!words.length) return '';
-  return words.length <= max ? words.join(' ') : `${words.slice(0, max).join(' ')}...`;
+  if (words.length <= max) return words.join(' ');
+  const head = words.slice(0, max).join(' ');
+  const stop = Math.max(head.lastIndexOf('. '), head.lastIndexOf('? '), head.lastIndexOf('! '));
+  return stop > 0 ? head.slice(0, stop + 1) : `${head}...`;
 }
 
 /**
@@ -673,27 +682,45 @@ export function createRoomService({
     const tape = p.snapshot?.trades_30d ?? [];
     const fills = tape.map(f => Date.parse(f.timestamp)).filter(Number.isFinite).sort((a, b) => a - b);
     const span = fills.length > 1 ? spanText(fills[0], fills[fills.length - 1]) : '0 minutes';
-    // Round 15: a partial page says how little time it covers, first, so the row cannot pass for the month.
-    const over = p.snapshot?.fills_coverage?.complete ? `all ${fills.length.toLocaleString('en-US')} fills in the window` : `the last ${span} only (the newest ${fills.length.toLocaleString('en-US')} fills)`;
+    const complete = !!p.snapshot?.fills_coverage?.complete;
+    const n = fills.length.toLocaleString('en-US');
+    const over = complete ? `all ${n} fills in the window` : `the last ${span} only (the newest ${n} fills)`;
+    // Round 16: a page of fills that covers less than a week is too short to judge a drawdown
+    // or a worst trade by. Both rows say so (N/A) instead of passing on a sliver of the month.
+    const spanMs = fills.length > 1 ? fills[fills.length - 1] - fills[0] : 0;
+    const tooShort = !complete && spanMs < 7 * 86_400_000;
     // The worst single closed trade, read straight off the fills, whenever there are fills.
-    const closed = tape.map(f => Number(f.closed_pnl)).filter(n => Number.isFinite(n) && n !== 0);
+    const closed = tape.map(f => Number(f.closed_pnl)).filter(v => Number.isFinite(v) && v !== 0);
     const worst = closed.length ? Math.min(...closed) : null;
+    const pct = share => `${(share * 100).toFixed(1)}%`;
+    const limit = share => `${Math.round(share * 100)}%`;
+    // The worst trade's honest base: the account value or the month's volume, whichever makes
+    // the trade look largest (the same comparison the report makes).
+    const bases = [['account value', Number(p.hypeRow?.account_value_usd)], ['30-day volume', Number(p.hypeRow?.month_volume_usd)]]
+      .filter(([, v]) => Number.isFinite(v) && v > 0);
     const row = (id, flagId, name) => {
+      if (tooShort) return { id, result: 'not_assessed', plain: `The newest ${n} fills cover only ${span}, too short to judge.`, source };
       const flag = (risk.flags ?? []).find(f => f.id === flagId);
-      const na = (risk.not_assessed ?? []).find(n => n.id === flagId);
+      const na = (risk.not_assessed ?? []).find(x => x.id === flagId);
       if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain.charAt(0).toLowerCase()}${flag.plain.slice(1)}` : flag.plain, source };
       if (id === 'fills_worst_trade' && worst !== null && liveTape) {
-        const bar = risk.thresholds?.maxTailLossShare;
-        return na
+        const bar = risk.thresholds?.maxTailLossShare ?? 0.25;
+        const base = bases.map(([label, v]) => ({ label, v, share: Math.abs(worst) / v })).sort((a, b) => b.share - a.share)[0];
+        return na || !base
           ? { id, result: 'not_assessed', plain: `Worst single closed trade over ${over}: ${money(worst)}. No limit applied: the evidence has no account value to size it against.`, source }
-          : { id, result: 'pass', plain: `Worst single closed trade over ${over}: ${money(worst)}, inside the ${Math.round((bar ?? 0.25) * 100)}% limit.`, source };
+          : { id, result: 'pass', plain: `Worst single closed trade over ${over}: ${money(worst)}, ${pct(base.share)} of the ${dollars(base.v)} ${base.label}, inside the ${limit(bar)} limit.`, source };
       }
       if (na) return { id, result: 'not_assessed', plain: `Not assessed: ${na.reason}.`, source };
       const dd = risk.max_drawdown;
-      const plain = id === 'fills_drawdown' && dd
-        ? `Worst peak-to-trough over ${liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`}: ${dollars(dd.max_drawdown_usd)}, under the ${Math.round((risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3) * 100)}% limit.`
-        : `${name} within the report's limit over ${liveTape ? over : 'the fills held'}.`;
-      return { id, result: 'pass', plain, source };
+      if (id === 'fills_drawdown' && dd) {
+        const bar = risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3;
+        const where = liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`;
+        if (dd.share_of_peak === null || !(dd.peak_usd > 0)) {
+          return { id, result: 'not_assessed', plain: `Worst peak-to-trough over ${where}: ${dollars(dd.max_drawdown_usd)}. No limit applied: the running result never rose above zero, so there is no peak to measure it against.`, source };
+        }
+        return { id, result: 'pass', plain: `Worst peak-to-trough over ${where}: ${dollars(dd.max_drawdown_usd)}, ${pct(dd.share_of_peak)} of the ${dollars(dd.peak_usd)} peak it fell from, under the ${limit(bar)} limit.`, source };
+      }
+      return { id, result: 'pass', plain: `${name} within the report's limit over ${liveTape ? over : 'the fills held'}.`, source };
     };
     return [row('fills_drawdown', 'max_drawdown', 'Drawdown'), row('fills_worst_trade', 'tail_loss', 'Worst single trade')];
   };
