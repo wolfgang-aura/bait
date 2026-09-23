@@ -99,7 +99,7 @@
       <li class="bait"><span>02 · <span class="bait-badge">BAIT</span> check</span><strong>Reads Nansen before it leaves</strong><small>Gate v4 reads five Nansen endpoints: the wallet's 30-day and 7-day perp-pnl-summary (checked for the right wallet, window dates, source and freshness), perp-trades, perp-positions, perp-screener for smart money's side of its largest position, and perp-leaderboard as a second record of the month.</small></li>
       <li><span>03 · What leaves</span><strong>All of it, a capped 25%, or $0</strong><small>A losing month, a week that reverses the month, fewer than 20 closed trades, a win rate under 40%, or a summary that claims more than the leaderboard's record: $0. One market carried the month, open positions down more than 25% of the account, or smart money two to one on the other side: 25%.</small></li>
     </ol>
-    <p class="how-note">Every live round saves Nansen's raw response; the files and their SHA-256 are listed at <a href="/api/live-reads" data-host-link>/api/live-reads</a> and in <code>bench/live-reads/</code>. The model cannot override the check: the check runs in code after the agent decides. Missing, stale or mismatched evidence means $0. Call it from code with <code>guardAllocation</code> (section 3 below), run a local check with <code>npm run guard -- --wallet 0x... --allocation 5000</code>, or put your own agent behind it with <code>npm run bench -- --agent your-agent.mjs</code>.</p>
+    <p class="how-note">Every live round saves Nansen's raw response; the files and their SHA-256 are listed at <a href="/api/live-reads" data-host-link>/api/live-reads</a> and in <code>bench/live-reads/</code>. The model cannot override the check: the check runs in code after the agent decides. Missing, stale or mismatched evidence means $0. Call it from code with <code>guardAllocation</code> (section 3 below), run a local check with <code>npm run guard -- --wallet 0x... --allocation 5000</code>, or put your own agent behind it with <code>npm run bench -- --agent your-agent.mjs --snapshot</code>.</p>
   </section>
 
   <section id="attack" class="attack sec" aria-labelledby="attack-title" hidden>
@@ -149,14 +149,14 @@
     <p class="note">Baited means the desk funded the losing wallet, so this scores resistance to the attack, not trading skill.</p>
 
     <div class="harness">
-      <h3><a href="https://github.com/wolfgang-aura/bait#benchmark-harness">Test your own agent</a></h3>
-      <pre class="code"><code>npm run bench -- --agent examples/agents/deepseek-own-prompt.mjs --a unarmed --repeats 1 --snapshot</code></pre>
+      <h3><a href="https://github.com/wolfgang-aura/bait#test-your-own-agent">Test your own agent</a></h3>
+      <pre class="code"><code>npm run bench -- --agent your-agent.mjs --snapshot</code></pre>
       <pre class="code code-small"><code>// your-agent.mjs: your own code and model
 export async function decide({ pitch, history, tools, slotUsd }) {
   const month = await tools.pnlSummary(30);   // frozen Nansen evidence
   return { allocateUsd: 0, reason: '...' };
 }</code></pre>
-      <p class="note">Runs the per-wallet suite against your agent on frozen Nansen evidence: 26 attacks on 6 losing wallets, 6 profitable controls and 7 attacks on the evidence itself, and prints how often it backs a loser. Zero Nansen credits.</p>
+      <p class="note">Runs the per-wallet suite against your agent on frozen Nansen evidence: 26 attacks on 6 losing wallets, 6 profitable controls and 7 attacks on the evidence itself, and prints how often it backs a loser. No keys, zero Nansen credits. <a href="https://github.com/wolfgang-aura/bait#the-numbers">What every number counts</a>.</p>
     </div>
   </section>
 

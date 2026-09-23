@@ -20,8 +20,12 @@ publishes its whole reasoning on every decision, allow or block:
 | `regime_agreement` | Sign of the 7-day vs the 30-day | Same sign, or the week is under 10% of the month |
 | `thin_sample` | 30-day closed trades | At least 20 |
 | `low_win_rate` | 30-day win rate | At least 40% |
-| `paper_headline` | Unrealised share of the headline | At most 80% |
-| `concentration`, `tail_loss`, `max_drawdown` | Per-trade fills | Reported `not_assessed`: the gate reads summaries, not fills |
+| `paper_headline` | Unrealised share of the headline | At most 80% (`not_assessed` on the Nansen adapter, which carries no unrealised figure) |
+| `concentration` | Best market in the 30-day summary's top five | Carrying more than the whole month caps at 25% (v3) |
+| `open_book` | `profiler/perp-positions` | Open positions down more than 25% of the account value cap at 25% (v3 r3) |
+| `smart_money_side` | `perp-screener`, smart money in the largest open position's market | Two thirds of at least $1M on the other side caps at 25% (v4) |
+| `independent_record` | `perp-leaderboard`, the same 30 days | A summary claiming more realised PnL than this record by over 25% of it and $1,000 blocks (v4) |
+| `tail_loss`, `max_drawdown` | Per-trade fills | Reported `not_assessed` by the gate; the Pitch Room shows them from `profiler/perp-trades` as watch rows that never decide |
 
 Every row carries the number it read, the bar it wanted and one plain sentence. A
 block names the first row that failed. A row the evidence could not answer says so
@@ -40,9 +44,9 @@ nobody keeps switched on.
 
 Two honest limits. On the recorded ten-case corpus both gates score 0 funded of 30,
 because the benchmark wallet lost $4.7M over 30 days and fails the first check either
-way; v2 is not catching a wallet v1 missed there. And three of the eleven checks need
-the trade fills the gate does not fetch, so they report `not_assessed` and are covered
-by the separate copy-risk report instead.
+way; v2 is not catching a wallet v1 missed there. And two of the gate's rows,
+`tail_loss` and `max_drawdown`, need the trade fills the gate does not fetch, so they report
+`not_assessed` and are covered by the separate copy-risk report instead.
 
 The earlier rule, `wallet-realized-pnl-30d-v1`, is still shipped by id, because the
 recorded `guarded` benchmark row depends on exactly that rule and a number whose rule
@@ -73,9 +77,10 @@ The guard is the product an operator integrates.
 ## Judge 2: "The model can ignore the rule"
 
 The production guard sits outside the model. The guarded benchmark gives the model no
-tools and no policy text. The model attempted to fund the losing wallet in 25 of 30
-final decisions, with a mean attempted allocation of $4,000. The guard forced every
-one to zero. See `validation/guard.js` and the tracked four-row report.
+tools and no policy text. Across the six losing wallets the model tried to fund a loser in
+62 of 78 final decisions and the gate forced every one to zero
+([per-wallet report](../bench/reports/2026-09-23T15-44-55-161Z-wallets.md)). See
+`validation/guard.js`.
 
 ## Judge 3: "Your evidence check can pass the wrong or stale data"
 
@@ -89,8 +94,10 @@ itself separately. The page labels its proof as recorded.
 
 ## Judge 4: "Zero allocations prove only that you reject everything"
 
-The guard passes a fresh matching result at or above the configured threshold without
-changing the model's amount. Tests cover positive and exactly-zero PnL. The earlier
+The guard passes a fresh matching result at or above the configured threshold and never
+raises the model's amount; a cap row can only lower it to 25%. Across all 53 good-trader
+funding decisions, 38 went through in full, 9 were capped and 6 were blocked
+([the numbers](../README.md#the-numbers)). Tests cover positive and exactly-zero PnL. The earlier
 paired prompt-policy experiment also funded its profitable control, although that is a
 small development sample and is not presented as guard validation.
 
@@ -106,24 +113,27 @@ the guard as a narrow execution policy and never as a profitable-wallet classifi
 The public copy says exactly what the product covers and excludes. It does not claim to
 execute trades, pick wallets, predict profit, or protect every trading action. The
 repository contains the attack rows, frozen evidence, source hashes, deterministic
-referee, reproduction command, production contract, and failure tests. The 45-second
-video shows the attack, score, guard contract, and recorded status without narration.
+referee, reproduction command, production contract, and failure tests. The 59.5-second
+video (`SUBMISSION.md`) shows two real rounds played on the hosted site on fresh live Nansen
+reads, then the benchmark card, without narration. Every headline figure is checked against
+`bench/FIGURES.json` by `npm test`, and every denominator is explained once in the
+[README](../README.md#the-numbers).
 
 ## Wallet-panel objection: "You picked winners and losers from whichever metric suited you"
 
 The navigator uses one rule for every address: independently observed 30-day realised
 PnL at or above zero allows; negative blocks. Discovery metrics do not decide the label.
 One Hyperliquid candidate found through a negative total-PnL result was excluded because
-its independently fetched realised PnL was positive. Conversely, two Fomo profiles with
-positive headline PnL remain blocked because their observed closed-trade realised PnL
-is negative. The page exposes both Fomo figures rather than hiding the disagreement.
+its independently fetched realised PnL was positive. The five Fomo rows were removed on
+22 September because the available aggregate disagreed with the same provider's
+closed-round-trip records ([WALLET_NAVIGATOR.md](WALLET_NAVIGATOR.md)).
 
-`validation/wallet-navigator.test.js` reruns the guard over all ten frozen records and
-asserts five addresses per venue, with exactly three allows and two blocks in each.
-The evidence table records addresses, timestamps, sources, trade counts, and links.
+`validation/wallet-navigator.test.js` reruns the guard over the five frozen Hyperliquid
+records and derives each expected decision from the saved Nansen result; it does not
+enforce a chosen allow/block split. The evidence table records addresses, timestamps,
+sources, trade counts, and links.
 
 ## Remaining external steps
 
-The repository, page, video, post copy, and preflight can be completed locally. The
-founder must publish the X post and submit its URL in Nansen's form. Hosted interactive
-play remains optional unless the founder supplies a hosting account and secrets.
+The founder publishes the X post and submits its URL in Nansen's form. The hosted
+build (<https://bait-wyqr.onrender.com/>) plays live rounds on real Nansen reads.

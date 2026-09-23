@@ -618,7 +618,10 @@ export async function main(argv = process.argv.slice(2), { log = write } = {}) {
   const rowsFile = path.resolve(ROOT, outDir, `${stamp}-wallets.jsonl`);
   const mdFile = path.resolve(ROOT, outDir, `${stamp}-wallets.md`);
   const append = row => fs.appendFileSync(rowsFile, `${JSON.stringify(row)}\n`, 'utf8');
-  const inner = deepseekProvider({ maxTokens: 600, timeoutMs: 30_000 });
+  // A re-score with nothing fresh to replay makes no model call, so it needs no model key
+  // (README: "zero model calls and zero Nansen credits"). The provider is built only when a
+  // desk replay is actually due.
+  const inner = fresh.some(j => !j.config.agent) ? deepseekProvider({ maxTokens: 600, timeoutMs: 30_000 }) : null;
   const agent = agentSpec ? await loadAgent(agentSpec, { repo: ROOT }) : null;
   let calls = 0;
   // A model-calling agent charges the same run budget as the desks.

@@ -846,7 +846,7 @@ function setBadge(evidence) {
   el.badge.textContent = live ? `live Nansen · fetched ${evidence.fetchedLabel}` : 'frozen capture';
   el.badge.classList.toggle('live', live);
   el.badge.title = live
-    ? `Two Nansen profiler/perp-pnl-summary reads for this trader, fetched ${evidence.fetchedAt}${evidence.cached ? ' (cached, no new credit)' : ''}.`
+    ? `Live Nansen read for this trader (up to six reads on five endpoints), fetched ${evidence.fetchedAt}${evidence.cached ? ' (cached, no new credit)' : ''}.`
     : evidence?.reason ?? 'Frozen capture. No live read in this round.';
 }
 

@@ -16,9 +16,11 @@ Current evidence:
   holds 1,509 charged credits since 14 September (23 Sep 19:02 UTC); hosted rounds are counted
   separately at /api/usage.
 - Public repository: <https://github.com/wolfgang-aura/bait>
-- Playable build: <https://bait-wyqr.onrender.com/>, serving public commit 4ef7b40 (later public
-  commits change documentation, plus the Proof page's static text and styles on 24 Sep, which
-  the hosted copy shows only after its next deploy).
+- Playable build: <https://bait-wyqr.onrender.com/>, serving public commit 4ef7b40 (gate v4, the
+  build both video rounds were played on). Later public commits change documentation and, on
+  24 Sep, served text only (the Proof page's copy, styles and bench command, a tooltip, an
+  aria label, the hosted-mode label and the startup banner); no gate rule or figure changed. The hosted copy shows
+  them after its next deploy.
 - Recorded proof page: <https://wolfgang-aura.github.io/bait/> (updated 24 Sep for gate v4 and
   both findings; the repository homepage now points at the playable build)
 
@@ -44,7 +46,8 @@ SHA-256: `a314fbeb7bd3c3b032259617080e48ff847fe437aa6665df8295b1f1d3b8bdd6`.
 | The result (0:50.7) | Headline: "Faked evidence: a simple PnL rule let 49 of 67 through. BAIT let 0." Four columns (AI alone, with Nansen tools, simple PnL rule, behind BAIT). True facts only: 63/78, 19/78, 0/26, 0/78. Faked evidence: 49/67 (PnL rule), 0/67 (BAIT); the AI columns were not run on faked evidence and are blank. "Cost: 6 of 53 good-trader decisions blocked, 9 capped." Footnote: 6 losing wallets · 26 true-fact attacks · 3 tries each · +12 unseen wallets (the 12 losing wallets of the 24-wallet held-out set; its 12 good traders are in the cost line). |
 | Order and end | Cold open 0:00, round 1 0:03.0, round 2 0:26.5, benchmark card 0:50.7, "Test your own agent" card 0:56.7 to the end (0:59.5): the bench command, bait-wyqr.onrender.com, the repository, Built on the Nansen API, and "BAIT: the check between the agent and the money." |
 
-Where the card's numbers come from: 63/78, 19/78 and 0/78 from `prototype/public/recorded-results.json`
+Where the card's numbers come from (canonical values: `bench/FIGURES.json`; each denominator
+is explained in the README's "The numbers" section): 63/78, 19/78 and 0/78 from `prototype/public/recorded-results.json`
 (`wallets`); the PnL rule's 0/26 from its `baseline` (one run per attack); 49 of 67 is 7 of 7
 original data-path attacks (`gateBuys`), 30 of 48 held-out transforms (`bench/HELDOUT.md`) and
 12 of 12 held-out doctored PnL (`bench/V4.md`), each 0 behind BAIT; the cost line, 6 of 53
@@ -79,6 +82,7 @@ up: +$186,449 over 30 days, +$185,617 over 7, 3,176 closed trades, 50.6% won, an
 leaderboard agreed (+$193,739). Its largest open position was short SOL while Nansen smart money
 held 82% of $47.8M in SOL long, so `perp-screener` capped the $5,000 PENNY agreed to: $1,250
 allowed, $3,750 held. Every other check passed, so without that read the round clears in full.
+
 A second round on 23 Sep (THE REAL DEAL, 16:08 UTC) bought all six reads and passed the
 leaderboard row (+$70,580 against the summary's +$70,917,
 `bench/live-reads/20260923T160814Z-0xfe47c8f2.json`); `perp-leaderboard` has not yet decided a
@@ -114,11 +118,14 @@ Two findings. Pitched losing traders with true facts only, the AI alone backed o
 runs; behind BAIT, 0 of 78. When the evidence itself is faked (another wallet's record, the
 wrong window, relabelled dates, a stale capture, a doctored number), a 19-line PnL rule sent the
 money in 49 of 67 attacked paths; BAIT in 0. The cost: 6 of 53 good-trader funding decisions
-blocked, 9 capped at 25% (18 on the original controls, 35 on the 12 unseen good traders). Gate v4, pre-registered in `bench/V4.md`, adds `perp-screener` and
-`perp-leaderboard` to the decision; on 23 Sep a live round was capped by `perp-screener` alone.
-`npm run bench -- --agent your-agent.mjs` runs any agent against the same attacks with zero
-Nansen credits. Per-wallet, held-out (24 unseen wallets: 12 losing, 12 good traders) and v3-against-v4 results: the README,
-`bench/HELDOUT.md` and `bench/V4.md`.
+blocked, 9 capped at 25%, and 38 of 53 good-trader transfers went through in full (18 decisions
+on the original controls, 35 on the 12 unseen good traders). Gate v4, pre-registered in
+`bench/V4.md`, adds `perp-screener` and `perp-leaderboard` to the decision; on 23 Sep a live
+round was capped by `perp-screener` alone. `npm run bench -- --agent your-agent.mjs --snapshot`
+runs any agent against the same attacks with zero Nansen credits. Per-wallet, held-out (24
+unseen wallets: 12 losing, 12 good traders) and v3-against-v4 results: the README (every
+denominator is explained once in its "The numbers" section), `bench/HELDOUT.md` and
+`bench/V4.md`.
 
 BAIT does not select wallets, predict returns or execute trades.
 

@@ -1,7 +1,8 @@
 # BAIT in detail
 
-The README keeps the finding and one command. This page holds the rest: the single-wallet
-ladder, how the Pitch Room plays, the bench, the gate and why Nansen is structural.
+The README keeps the findings, the commands and [every denominator](../README.md#the-numbers).
+This page holds the rest: the single-wallet ladder, how the Pitch Room plays, the bench, the
+gate and why Nansen is structural.
 
 ### How the gate works
 
@@ -117,9 +118,10 @@ you send unlocks the next. Every unflattering fact, and the number you must not 
 stays sealed: the page shows a locked card and the server does not send the value.
 
 **The round ends the moment the AI agrees to send money.** That transfer goes to BAIT's
-gate. The reveal comes next: BAIT's stamp (BLOCKED, CAUTION or CLEARED), "The AI sent $X and never
-looked. BAIT's Nansen read blocked it", what you pitched against what you left out, and the gate's
-own reason, then the full check table, each check naming the Nansen read it stands on. The
+gate. The reveal comes next: BAIT's stamp (BLOCKED, CAPPED or CLEARED), one line such as
+"BAIT's Nansen read blocked it: $3,000 held, $0 reached THE LEGEND." with the deciding figure,
+what you pitched against what you left out, then the full check table, each check naming the
+Nansen read it stands on. The
 desk reply is the real model reply; the stamp is the gate's decision. Posted cons share the
 board with recorded ones, each traceable to a raw file (`prototype/fixtures/recorded-cons.json`).
 
@@ -159,9 +161,10 @@ before quoting a rate. Report: [bench/reports/2026-09-22T22-43-46-684Z.md](../be
 The per-wallet table comes from `node bench/wallets.js --execute --repeats 3` (a dry run
 without `--execute` prints the plan and the worst-case call count).
 
-**The gate** is `validation/guard.js`. It sits outside the model. The default policy,
-`wallet-copy-risk-v3` (every v2 refusal; a profitable month one market carried is capped at
-25% instead of refused), reads the 7-day and the 30-day Nansen `profiler/perp-pnl-summary`
+**The gate** is `validation/guard.js`. It sits outside the model. The default policy since
+23 Sep is `wallet-copy-risk-v4` (see "How the gate works" above). Its base, v3 (every v2
+refusal; a profitable month one market carried is capped at 25% instead of refused), reads the
+7-day and the 30-day Nansen `profiler/perp-pnl-summary`
 and runs named checks, each with a number and a bar: wallet, window, source and freshness
 for both windows; 30-day realised loss; regime disagreement, a week that moves against
 the month by 10% or more of it (the two windows disagree on 25% of 840 saved wallet-dates);
@@ -170,8 +173,9 @@ summary carries it. Every decision returns the whole table, pass, fail or not as
 and forces the allocation to $0 on anything invalid, stale, mismatched, missing or timed
 out. The model is checked, not asked to check. The earlier single-wallet rows ran the original
 one-window rule, `wallet-realized-pnl-30d-v1`, still reachable by id; v2 on the same
-frozen suite gave the same result ([report](../bench/reports/2026-09-22T10-00-23-863Z.md)). One credit per
-live check, two when the 30-day evidence passes and the week is bought:
+frozen suite gave the same result ([report](../bench/reports/2026-09-22T10-00-23-863Z.md)). A live
+check with the guard CLI costs 1 credit when the 30-day month already refuses and at most 9
+under v4 (two summaries, positions, `perp-screener`, `perp-leaderboard`):
 
 ```powershell
 npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000
@@ -195,12 +199,13 @@ allocator with the data in hand still funds the loser. The
    one more per line, and a sealed card for the number you must not mention.
 2. Talk PENNY into backing him in up to three lines. It has no data tools, like most
    agents today. The round ends when it agrees to send money; that transfer goes to BAIT.
-3. Read the reveal: "The AI sent $X and never looked", BAIT's stamp and reason, then the
-   live Nansen record you left out. "See every check BAIT ran" shows the gate's check
+3. Read the reveal: BAIT's stamp, the one line with what was held and the deciding figure,
+   then the live Nansen record you left out. "See every check BAIT ran" shows the gate's check
    table, each row naming its Nansen read.
-4. Run your own agent against the recorded attacks with the command at the top.
-5. With your own Nansen key, run the gate live with the command above. One or two
-   credits, under a minute.
+4. Run your own agent against the recorded attacks:
+   `npm run bench -- --agent your-agent.mjs --snapshot`.
+5. With your own Nansen key, run the gate live with the command above: 1 credit when the
+   month already refuses, at most 9 otherwise, under a minute.
 
 ## Why Nansen is structural
 

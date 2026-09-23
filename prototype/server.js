@@ -897,7 +897,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  model calls     ${JSON.stringify(h.model_calls_used)} of ${JSON.stringify(h.model_call_caps)}`);
   console.log(`  live refresh    ${LIVE_ENABLED && !HOSTED ? `enabled for the card encounter (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED ? 'disabled for the card encounter (hosted spends only through the room live read)' : 'disabled (NANSEN_LIVE=0)'}`);
   console.log(`  nansen quota    ${h.nansen_quota.calls_since} calls since ${h.nansen_quota.since}, ${h.nansen_quota.credits_used_local}/${h.nansen_quota.credit_budget} credits`);
-  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} (1 credit per check)` : 'disabled (HOSTED=1)'}`);
+  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} (${PRODUCTION_GUARD_POLICY.id}: 1 credit if the month refuses, at most 9)` : 'disabled (HOSTED=1)'}`);
   console.log(`  default rule    ${h.default_rule}`);
   console.log(`  control wallet  ${h.control_wallet ?? 'none'}`);
   console.log(`  runs loaded     ${h.runs_loaded}`);

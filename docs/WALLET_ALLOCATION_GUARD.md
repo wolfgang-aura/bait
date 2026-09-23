@@ -34,7 +34,7 @@ when the open positions are down more than 25% of the account value, the request
 at 25% (`open_book`). A failed positions read is `not_assessed` and changes nothing.
 Re-scoring the per-wallet benchmark under revision 3 changed no decision
 (`bench/reports/2026-09-23T11-56-45-011Z-wallets.md`, zero model calls); the frozen control
-captures predate this read, so `open_book` is not assessed on them. The default gate reads **two** windows of Nansen `profiler/perp-pnl-summary` for the
+captures predate this read, so `open_book` is not assessed on them. From v2 on, the gate reads **two** windows of Nansen `profiler/perp-pnl-summary` for the
 wallet, the 7-day and the 30-day, and runs a named check on each. It allows only when
 no check fails. One credit per window, and the 7-day window is fetched only after the
 30-day evidence has passed everything it alone can decide, so a refused wallet costs
@@ -62,9 +62,15 @@ a one-line `plain` explanation. The public `reason` names the first failing row.
 | `thin_sample` | `closed_trade_count`, 30 days | At least 20 | block `thin_sample` |
 | `low_win_rate` | `win_rate`, 30 days | At least 0.40 | block `low_win_rate` |
 | `paper_headline` | Unrealised share of the headline | At most 80% | block `paper_headline` |
-| `concentration` | Top position and top-coin share | 50% / 60% | not assessed here, see below |
+| `concentration` | Best market in the 30-day summary's `top5_coins` | Made more than the whole 30-day realised PnL | cap at 25% (`capped`; v2 refused) |
+| `open_book` | `profiler/perp-positions` (v3 r3) | Open positions down at most 25% of the account value | cap at 25% (`capped`) |
+| `smart_money_side` | `perp-screener`, smart money, the largest open position's market (v4) | Under two thirds of at least $1M on the other side | cap at 25% (`capped`) |
+| `independent_record` | `perp-leaderboard`, the same 30 calendar days (v4) | The summary claims no more than this record plus max($1,000, 25% of it) | block `record_disagreement` |
 | `tail_loss` | Worst single closed trade | At most 25% of volume or account | not assessed here, see below |
 | `max_drawdown` | Peak-to-trough realised curve | 30% of peak, 15% of account | not assessed here, see below |
+
+A cap never stacks: any number of cap rows send 25% of the request. A failed or empty read on
+`open_book`, `smart_money_side` or `independent_record` is `not_assessed` and changes nothing.
 
 The numeric bars come from `COPY_RISK_THRESHOLDS` in `validation/guard.js`, the same
 table `assessCopyRisk` uses, so the game's copy-risk report and this gate refuse a
@@ -72,12 +78,11 @@ wallet for the same reason at the same number.
 
 ### What the gate does not assess, and why
 
-`concentration`, `tail_loss` and `max_drawdown` need the per-trade fills from
-`profiler/perp-trades`. The guard's evidence adapter fetches PnL summaries only, so
-these three always report `not_assessed` with that reason in the row. They are covered
-by `assessCopyRisk`, which the game's `/api/assess` and `npm run assess` serve from a
-snapshot that does hold the fills. Adding them to the gate would mean paging fills on
-every check, which is a different cost profile and is not in this version.
+`tail_loss` and `max_drawdown` need the per-trade fills from `profiler/perp-trades`. The
+guard does not read fills, so these two always report `not_assessed` with that reason in the
+row. They are covered by `assessCopyRisk`, which the game's `/api/assess` and `npm run assess`
+serve from a snapshot that does hold the fills, and the Pitch Room shows them from its live
+fill page as watch rows that never decide.
 
 `paper_headline` reports `not_assessed` on the shipped Nansen adapter, because
 `profiler/perp-pnl-summary` reports realised PnL only and carries no unrealised figure.
@@ -104,8 +109,9 @@ Every other state blocks: invalid input, a provider error, a timeout, missing Pn
 stale evidence, and wallet, window or source mismatches on either window. Missing
 evidence is never an allowance. The model cannot override any of this.
 
-Neither policy ever emits a size of its own. The enforced amount is the caller's
-proposed amount, or $0. There is no calibrated or scaled allocation.
+No policy emits a size of its own. The enforced amount is the caller's proposed amount,
+25% of it when a cap row fires (v3 and v4), or $0. There is no calibrated allocation, and
+the enforced amount is never above the proposal.
 
 The $0 threshold is deliberately modest. Non-negative trailing PnL is an eligibility
 check, not a complete investment policy. An integrator can raise the minimum, or any
@@ -113,7 +119,9 @@ other bar in the table, without changing the agent prompt.
 
 ## Evidence adapters and current coverage
 
-The production default is Nansen's Hyperliquid `profiler/perp-pnl-summary` endpoint.
+The production default reads Nansen's Hyperliquid `profiler/perp-pnl-summary` (the record
+every rule is judged on), plus `profiler/perp-positions`, `perp-screener` and
+`perp-leaderboard` under v4.
 The earlier public Fomo navigator rows were removed because the available aggregate
 disagreed with the same provider's closed-round-trip records. A production Fomo adapter
 still needs authenticated first-party coverage, freshness guarantees, monitoring, and
@@ -147,10 +155,11 @@ for (const check of decision.checks) {
 }
 ```
 
-The `executor` contract is unchanged. `guardAllocation` calls
-`executor.execute('get_pnl_summary', { wallet, days })`, and under v2 it makes that
-call twice, once with `days: 30` and once with `days: 7`. An adapter that already
-serves 30 days serves 7 the same way.
+`guardAllocation` calls `executor.execute('get_pnl_summary', { wallet, days })`, twice
+from v2 on, once with `days: 30` and once with `days: 7`. v3 adds
+`get_open_positions({ wallet })`; v4 adds `get_smart_money_market({ token_symbol, days })`
+and `get_independent_record({ wallet, days, window })`. An adapter that throws or does not
+serve one of the later three leaves its row `not_assessed`.
 
 The caller receives the proposed amount, enforced amount, stable decision code,
 operator-safe reason, policy snapshot, and evidence snapshot. Provider diagnostics are
@@ -168,8 +177,10 @@ instead of at a frozen snapshot. `createLiveGuardExecutor` serves `get_pnl_summa
 with one `profiler/perp-pnl-summary` call per window and maps the response into the
 same evidence shape `validation/tools.js` serves from disk, including `win_rate` and
 `closed_trade_count`, so the numbers judged live are the numbers the benchmark judged
-frozen. Any other tool name throws. The credit guard in `validation/nansen.js` stays in
-the path.
+frozen. It also serves `get_open_positions` (`profiler/perp-positions`),
+`get_smart_money_market` (`perp-screener`) and `get_independent_record`
+(`perp-leaderboard`). Any other tool name throws. The credit guard in `validation/nansen.js`
+stays in the path.
 
 Cost is one credit per window: one for `wallet-realized-pnl-30d-v1`, two for
 `wallet-copy-risk-v2` or `-v3`, and only one when the 30-day evidence already refuses. v3 and
@@ -178,8 +189,8 @@ v4 add `profiler/perp-positions` (1) once the summaries pass; v4 adds `perp-scre
 
 `runLiveGuard` wraps that adapter, enforces 15-minute freshness, and adds
 `creditsCharged` and `creditsRemaining` to the decision. Its own default policy is
-pinned to v1, because `POST /api/guard` in `prototype/server.js` calls it and its
-contract test asserts the one-credit v1 behaviour; pass `policy` for v2.
+pinned to v1, because its contract test asserts the one-credit v1 behaviour; callers pass
+`policy`. `POST /api/guard` in `prototype/server.js` and the CLI both pass the v4 default.
 
 Two ways to run it, both needing only `NANSEN_API_KEY` in `.env`:
 
@@ -202,13 +213,14 @@ decision, so it returns 200 with an `invalid_request` block; only unreadable JSO
 visitor must not be able to spend the key's credits. `/api/health` reports the route,
 the page and the policy id under `live_guard`.
 
-`prototype/public/guard.html` is the form for the same route, linked from the local
-index footer. Paste any valid Hyperliquid address and proposed amount. The receipt shows
-the wallet, value, source, timestamp, policy, reason and enforced amount. An `allow`
-machine result is displayed as `ELIGIBLE` so nobody mistakes it for a profit forecast.
+The earlier form page, `/guard.html`, was retired; it now redirects to the Proof page's
+"How BAIT works" section. In the Pitch Room, "Or paste any Hyperliquid wallet" runs the same
+v4 gate on one live read.
 
 Two real checks on 20 September 2026 (UTC), run under `wallet-realized-pnl-30d-v1`, one
-credit each. No live v2 check has been run; none was budgeted.
+credit each. *Note, 24 Sep 2026: since then every hosted Pitch Room round has run the live
+gate (v4 from 23 Sep), and its raw Nansen responses are committed in
+[bench/live-reads/](../bench/live-reads/README.md).*
 
 | Wallet | Realised PnL, 30d | Decision | Code | Enforced | Retrieved |
 | --- | ---: | --- | --- | ---: | --- |
@@ -228,18 +240,21 @@ than a fault.
 | Code | Result | Failing check | Meaning |
 | --- | --- | --- | --- |
 | `allowed` | allow | none | Every check in the policy passed. |
+| `capped` | allow | `concentration`, `open_book` or `smart_money_side` | Every refusal check passed and at least one cap row fired: 25% of the request is authorized, the rest held. v3 and v4. |
 | `pnl_below_minimum` | block | `realised_pnl_30d` | Verified 30-day realised PnL is below the configured threshold. |
-| `regime_disagreement` | block | `regime_agreement` | The 7-day and 30-day realised PnL have opposite signs and the 7-day move is at least 10% of the 30-day figure. v2 only. |
-| `thin_sample` | block | `thin_sample` | Fewer than 20 closed trades in 30 days. v2 only. |
-| `low_win_rate` | block | `low_win_rate` | The 30-day win rate is below the policy minimum. v2 only. |
-| `paper_headline` | block | `paper_headline` | More than 80% of the headline is unsold. v2 only, and only when the adapter supplies unrealised PnL. |
+| `regime_disagreement` | block | `regime_agreement` | The 7-day and 30-day realised PnL have opposite signs and the 7-day move is at least 10% of the 30-day figure. v2 and later. |
+| `thin_sample` | block | `thin_sample` | Fewer than 20 closed trades in 30 days. v2 and later. |
+| `low_win_rate` | block | `low_win_rate` | The 30-day win rate is below the policy minimum. v2 and later. |
+| `paper_headline` | block | `paper_headline` | More than 80% of the headline is unsold. v2 and later, and only when the adapter supplies unrealised PnL. |
+| `record_disagreement` | block | `independent_record` | The 30-day summary claims more realised PnL than `perp-leaderboard` records for the same days, by over 25% of that record and $1,000. v4. |
+| `window_dates_mismatch` | block | `evidence_30d` | The response is labelled 30 days but its dates do not span them (v3 revision 2). |
 | `evidence_unavailable` | block | `evidence_30d` or `evidence_7d` | The evidence adapter returned no usable PnL, or threw. |
 | `evidence_timeout` | block | `evidence_30d` or `evidence_7d` | The evidence check exceeded the deadline. |
 | `wallet_mismatch` | block | `evidence_30d` | The 30-day response belongs to another wallet. |
 | `window_mismatch` | block | `evidence_30d` | The 30-day response does not cover the required period. |
 | `source_mismatch` | block | `evidence_30d` | The 30-day response does not identify the required endpoint. |
-| `short_window_unavailable` | block | `evidence_7d` | The 7-day response carried no usable realised PnL. v2 only. |
-| `short_window_mismatch` | block | `evidence_7d` | The 7-day response has the wrong wallet, window, source or timestamp. v2 only. |
+| `short_window_unavailable` | block | `evidence_7d` | The 7-day response carried no usable realised PnL. v2 and later. |
+| `short_window_mismatch` | block | `evidence_7d` | The 7-day response has the wrong wallet, window, source or timestamp. v2 and later. |
 | `stale_evidence` | block | `evidence_freshness` | The response is older than the production limit. |
 | `invalid_timestamp` or `future_evidence` | block | `evidence_freshness` | Evidence time cannot be trusted. |
 | `invalid_request` | block | none reached | Wallet, amount, executor, or timeout input is invalid. |
@@ -259,15 +274,16 @@ than a fault.
 | `checks` | The full check table, one row per check: `id`, `result`, `value`, `threshold`, `plain`. Present on every decision, allow and block. |
 | `policy` | `id`, `version`, `window_days`, `short_window_days`, `minimum_realized_pnl_usd`, `max_evidence_age_ms`. |
 | `evidence` | `wallet`, `window_days`, `realized_pnl_usd`, `realized_pnl_30d_usd`, `realized_pnl_7d_usd`, `closed_trade_count_30d`, `win_rate_30d`, `retrieved_at`, `short_window_days`, `short_window_retrieved_at`, `source`. Every field is null when the check could not read it. |
-| `creditsCharged` | Nansen credits this check spent. Added by `runLiveGuard`, one per window read. |
+| `creditsCharged` | Nansen credits this check spent. Added by `runLiveGuard`: 1 per summary window, positions or screener read, 5 for the leaderboard. |
 | `creditsRemaining` | Account balance last reported by Nansen, or null if unknown. |
 
 ## Benchmark versus production
 
 The benchmark uses tracked frozen evidence so every agent sees byte-identical facts.
-Its named benchmark policies, `wallet-realized-pnl-30d-benchmark-v1` and
-`wallet-copy-risk-benchmark-v2`, disable only the age limit. Wallet, period, source and
-every numeric check still run. The production policies require fresh evidence by
+Its named benchmark policies, `wallet-realized-pnl-30d-benchmark-v1` through
+`wallet-copy-risk-benchmark-v4` (the one the published tables use; its `perp-screener` and
+`perp-leaderboard` rows read the saved responses in `bench/v4/reads/`), disable only the age
+limit. Wallet, period, source and every numeric check still run. The production policies require fresh evidence by
 default. The public page labels its results as recorded and never presents frozen
 evidence as a live authorization.
 
@@ -288,8 +304,8 @@ wallets and are superseded; see the correction in [DETAILS.md](DETAILS.md).
 
 On losing wallets every gate version returns 0 funded, because each refuses a negative
 30-day month first. The versions differ on profitable wallets: across six controls (18
-funding decisions) v1 blocked 0, v2 blocked 6, and v3 blocks 3 (one month whose last
-week reversed) and caps 3 at 25% (one month carried by a single market). v2 and v3
+funding decisions) v1 blocked 0, v2 blocked 6, and v3 and v4 block 3 (one month whose last
+week reversed) and cap 3 at 25% (one month carried by a single market). v2 and v3
 also refuse a wallet whose 30 days look fine while its last week does not.
 The unit test `guarded-v2 scores on the two-window gate` in `bench/bench.test.js`
 constructs exactly that wallet and shows v1 funding $2,000 where v2 enforces $0.
@@ -317,9 +333,9 @@ blocked-decision counts.
 Run the contract tests with:
 
 ```powershell
-node --test validation/guard.test.js validation/guard-v2.test.js validation/guard-live.test.js scripts/guard.test.mjs
+node --test validation/guard.test.js validation/guard-v2.test.js validation/guard-v3.test.js validation/guard-v4.test.js validation/guard-live.test.js scripts/guard.test.mjs
 ```
 
-The tests cover the allow path and every fail-closed branch listed above, plus one test
-per v2 block reason. The live tests stub the Nansen client, so they make no network
+The tests cover the allow path and every fail-closed branch listed above, one test per
+v2 block reason, and the v3 and v4 cap and record rows. The live tests stub the Nansen client, so they make no network
 call and spend no credits.

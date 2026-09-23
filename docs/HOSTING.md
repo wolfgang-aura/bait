@@ -1,9 +1,11 @@
 # Hosting the live BAIT demo on Render (free tier)
 
-The hosted server runs with `HOSTED=1`: it serves the frozen 15 Sep Nansen snapshot
-(zero Nansen credits), allows 12 rounds per visitor IP per 24h, and stops after 300
-DeepSeek calls per UTC day. Both counters live in memory and reset when the free
-instance restarts or wakes from idle. The lab runner (`/api/play`) is off.
+The hosted server runs with `HOSTED=1` and the values in `render.yaml`: live Nansen reads
+(`NANSEN_LIVE=1`, capped at `HOSTED_NANSEN_CREDITS_PER_DAY` 2,000 and
+`HOSTED_NANSEN_CREDITS_TOTAL` 18,000), no per-visitor round cap (`HOSTED_ROUNDS_PER_IP` 0) and
+at most 3,000 DeepSeek calls per UTC day (`HOSTED_DAILY_CALLS`). The counters reset when the
+free instance restarts. Without a Nansen key the room plays the frozen captures and says so.
+The lab runner (`/api/play`) and `POST /api/guard` are off.
 
 ## One-time setup (about 10 minutes)
 
@@ -22,7 +24,7 @@ instance restarts or wakes from idle. The lab runner (`/api/play`) is off.
 
 ### Live Nansen evidence
 
-The room reads live Nansen summaries when `NANSEN_LIVE=1` and `NANSEN_API_KEY` are set.
+The room reads live Nansen evidence when `NANSEN_LIVE=1` and `NANSEN_API_KEY` are set.
 From the repository root, with `RENDER_API_KEY` (Render: Account settings, API keys) in
 the local `.env`:
 
@@ -44,17 +46,19 @@ the variable, then **Save, rebuild, and deploy**.
 
 1. Open `https://<your-service>.onrender.com/healthz`. `evidence` reads `live` when a
    Hyperliquid pick would buy a live read and `frozen` otherwise. `nansen` carries
-   `key_present`, `credits_today`, `credits_total`, both caps, `blocked_by` and
-   `last_live_success_at`.
+   `key_present`, `credits_today`, `credits_total`, both caps, `credits_per_round`,
+   `blocked_by` and `last_live_success_at`.
 2. Open `https://<your-service>.onrender.com/`. Before a pick the badge reads LIVE
    NANSEN · READ ON PICK (or FROZEN CAPTURE). Pick THE LEGEND: the badge turns green,
-   LIVE NANSEN · FETCHED HH:MM UTC, and the truth screen says "live Nansen read". Two
-   credits. `/healthz` `credits_today` rises by 2.
+   LIVE NANSEN · FETCHED HH:MM UTC, and the truth screen says "live Nansen read". A read the
+   30-day record refuses costs 5 credits; one the gate clears or caps costs 10; a read cached
+   in the last 30 minutes costs 0. `/healthz` `credits_today` rises by that amount.
 
 ## Limits to tell the judges
 
 - Free instances sleep after 15 minutes idle; the first request takes about 30 s to wake.
-- A visitor who starts a fourth round in 24h sees "Today's live rounds are used up.
-  Watch the recorded attack instead." with a link to the recorded round.
+- Setting `HOSTED_ROUNDS_PER_IP` above 0 turns on a per-address round cap; a visitor past it
+  sees "Today's live rounds are used up." with a link to the recorded round. It is 0 (off)
+  since 23 Sep 2026.
 - Raise a cap by editing `HOSTED_ROUNDS_PER_IP` or `HOSTED_DAILY_CALLS` under
   **Environment**; the model-call ledger cap in `validation/providers.js` still applies.

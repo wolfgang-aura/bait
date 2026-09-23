@@ -85,7 +85,7 @@ function renderEndpoints() {
   });
   const line = $('b-endpoints');
   line.classList.remove('skeleton-row');
-  line.innerHTML = `Evidence: Nansen ${parts.join(' · ')} · the replayed attack in section 1 was recorded ${escape(day(results.round.dataRetrievedAt))}; live rounds keep their raw Nansen reads at <a href="/api/live-reads">/api/live-reads</a>`;
+  line.innerHTML = `Evidence: Nansen ${parts.join(' · ')} · the replayed attack in section 1 was recorded ${escape(day(results.round.dataRetrievedAt))}; live rounds keep their raw Nansen reads at <a href="https://bait-wyqr.onrender.com/api/live-reads">/api/live-reads</a>`;
 }
 
 /* ---------- 1 · attack: the recorded round ---------- */

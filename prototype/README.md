@@ -1,5 +1,13 @@
 # BAIT playable prototype
 
+> *Note, 24 Sep 2026: this page documents the 15-20 September two-desk lab page and is kept
+> for audit; it is not the current game. The game is now the Pitch Room at `/`, played against
+> one AI (PENNY) with the BAIT check (gate v4) between it and the money: see
+> [docs/DETAILS.md](../docs/DETAILS.md) and the [README](../README.md). The costs, caps, test
+> counts and results below are those of that date; the current figures are in
+> [bench/FIGURES.json](../bench/FIGURES.json) and the README's
+> [numbers](../README.md#the-numbers).*
+
 One pitch, two AI desks. Both get the same evidence and the same rule. Only one of
 them can query the Nansen record. You have three turns to talk either of them into
 backing a trader who lost money over the full 30 days.

@@ -21,7 +21,7 @@ export const labelFor = (mode, provider) => (mode === 'hosted' && provider?.stat
   ? `${REPLAY_LABEL} (the hosted server did not answer, so recorded replies stand in.)` : MODE_LABEL[mode] ?? null);
 export const MODE_LABEL = {
   deepseek: null,
-  hosted: 'PENNY via hosted server: this clone has no model key, so PENNY answers from bait-wyqr.onrender.com under its per-IP limits. The Nansen gate runs here.',
+  hosted: 'PENNY via hosted server: this clone has no model key, so PENNY answers from bait-wyqr.onrender.com under its daily limits. The Nansen gate runs here.',
   replay: REPLAY_LABEL,
 };
 

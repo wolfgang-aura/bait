@@ -10,6 +10,7 @@
     "guard": "node scripts/guard.mjs",
     "assess": "node scripts/assess.mjs",
     "bench": "node bench/run.js",
+    "figures": "node bench/figures.js",
     "bench:paired": "node bench/paired.js",
     "bench:export": "node bench/export.js",
     "results:export": "node prototype/export-results.js",

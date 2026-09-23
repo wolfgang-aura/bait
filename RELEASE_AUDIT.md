@@ -2,6 +2,12 @@
 
 Prepared 19 September 2026 and updated after publication on 20 September 2026.
 
+> *Note, 24 Sep 2026: this is the record of the first public release and is kept as it was.
+> Its counts (files, tests) and its "pending" section describe 20 September; issue #3 closed
+> that day. The current state, figures and commands are in [README.md](README.md) and
+> [SUBMISSION.md](SUBMISSION.md), with every headline figure in
+> [bench/FIGURES.json](bench/FIGURES.json).*
+
 - Public repository: <https://github.com/wolfgang-aura/bait>
 - Recorded demo: <https://wolfgang-aura.github.io/bait/>
 - Published commit: `ab617aac5febcbe7312f1777243d554bd814990b`
