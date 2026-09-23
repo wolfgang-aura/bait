@@ -1,0 +1,131 @@
+{
+  "kind": "nansen-live-read",
+  "endpoint": "profiler/perp-pnl-summary",
+  "wallet": "0x2385aae82b8ff5ec9e72f122f3462b9a1b9db98a",
+  "fetched_at": "2026-09-23T06:01:27Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-24T06:01:27Z",
+      "to": "2026-09-23T06:01:27Z"
+    },
+    "7d": {
+      "from": "2026-09-16T06:01:27Z",
+      "to": "2026-09-23T06:01:27Z"
+    }
+  },
+  "responses": {
+    "7d": {
+      "request": {
+        "address": "0x2385aae82b8ff5ec9e72f122f3462b9a1b9db98a",
+        "date": {
+          "from": "2026-09-16T06:01:27Z",
+          "to": "2026-09-23T06:01:27Z"
+        }
+      },
+      "status": 200,
+      "credits_cost_header": "1",
+      "body": {
+        "data": {
+          "top5_coins": [
+            {
+              "coin": "BTC",
+              "realized_pnl_usd": 24565.809294,
+              "realized_roi": 0.027291091336810885,
+              "closed_trade_count": 31,
+              "fees_usd": 571.638713
+            },
+            {
+              "coin": "ETH",
+              "realized_pnl_usd": 23964.59405,
+              "realized_roi": 0.03909655325195767,
+              "closed_trade_count": 103,
+              "fees_usd": 360.249387
+            },
+            {
+              "coin": "para:TREAD",
+              "realized_pnl_usd": -9.67024,
+              "realized_roi": -0.014458556495938127,
+              "closed_trade_count": 4,
+              "fees_usd": 0.8489
+            },
+            {
+              "coin": "WLD",
+              "realized_pnl_usd": -692.340292,
+              "realized_roi": -0.009765009784066143,
+              "closed_trade_count": 109,
+              "fees_usd": 57.938834
+            }
+          ],
+          "traded_coin_count": 4,
+          "traded_times": 346,
+          "closed_trade_count": 247,
+          "winning_trade_count": 134,
+          "realized_pnl_usd": 47828.392812,
+          "realized_pnl_percent": 0.030181956146232175,
+          "win_rate": 0.5425101214574899,
+          "fees_usd": 990.6758340000001
+        }
+      }
+    },
+    "30d": {
+      "request": {
+        "address": "0x2385aae82b8ff5ec9e72f122f3462b9a1b9db98a",
+        "date": {
+          "from": "2026-08-24T06:01:27Z",
+          "to": "2026-09-23T06:01:27Z"
+        }
+      },
+      "status": 200,
+      "credits_cost_header": "1",
+      "body": {
+        "data": {
+          "top5_coins": [
+            {
+              "coin": "BTC",
+              "realized_pnl_usd": 49314.267946,
+              "realized_roi": 0.013657752314408834,
+              "closed_trade_count": 229,
+              "fees_usd": 2165.441207
+            },
+            {
+              "coin": "ETH",
+              "realized_pnl_usd": 18968.196371,
+              "realized_roi": 0.015569885120294035,
+              "closed_trade_count": 150,
+              "fees_usd": 644.834469
+            },
+            {
+              "coin": "CASHCAT",
+              "realized_pnl_usd": 16643.722713,
+              "realized_roi": 0.04274213567182974,
+              "closed_trade_count": 495,
+              "fees_usd": 116.053895
+            },
+            {
+              "coin": "ZEC",
+              "realized_pnl_usd": 11310.012478,
+              "realized_roi": 0.024993155044228728,
+              "closed_trade_count": 140,
+              "fees_usd": 196.60951
+            },
+            {
+              "coin": "PONS",
+              "realized_pnl_usd": 2760.687122,
+              "realized_roi": 0.05025704488467167,
+              "closed_trade_count": 110,
+              "fees_usd": 13.549676
+            }
+          ],
+          "traded_coin_count": 14,
+          "traded_times": 3530,
+          "closed_trade_count": 2516,
+          "winning_trade_count": 1304,
+          "realized_pnl_usd": 79746.25164699998,
+          "realized_pnl_percent": 0.011156602833121797,
+          "win_rate": 0.5182829888712241,
+          "fees_usd": 3590.6939879999995
+        }
+      }
+    }
+  }
+}

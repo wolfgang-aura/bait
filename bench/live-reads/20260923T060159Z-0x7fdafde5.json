@@ -1,0 +1,138 @@
+{
+  "kind": "nansen-live-read",
+  "endpoint": "profiler/perp-pnl-summary",
+  "wallet": "0x7fdafde5cfb5465924316eced2d3715494c517d1",
+  "fetched_at": "2026-09-23T06:01:59Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-24T06:01:59Z",
+      "to": "2026-09-23T06:01:59Z"
+    },
+    "7d": {
+      "from": "2026-09-16T06:01:59Z",
+      "to": "2026-09-23T06:01:59Z"
+    }
+  },
+  "responses": {
+    "7d": {
+      "request": {
+        "address": "0x7fdafde5cfb5465924316eced2d3715494c517d1",
+        "date": {
+          "from": "2026-09-16T06:01:59Z",
+          "to": "2026-09-23T06:01:59Z"
+        }
+      },
+      "status": 200,
+      "credits_cost_header": "1",
+      "body": {
+        "data": {
+          "top5_coins": [
+            {
+              "coin": "xyz:CL",
+              "realized_pnl_usd": 446227.087767,
+              "realized_roi": 0.034833283414287174,
+              "closed_trade_count": 5428,
+              "fees_usd": 91.768249
+            },
+            {
+              "coin": "xyz:SNDK",
+              "realized_pnl_usd": 209174.646052,
+              "realized_roi": 0.023097317252639925,
+              "closed_trade_count": 6224,
+              "fees_usd": -16.950177
+            },
+            {
+              "coin": "xyz:SKHY",
+              "realized_pnl_usd": 108107.504677,
+              "realized_roi": 0.027681976445007132,
+              "closed_trade_count": 3124,
+              "fees_usd": -7.597182
+            },
+            {
+              "coin": "PUMP",
+              "realized_pnl_usd": 67300.481438,
+              "realized_roi": 0.1965525544112618,
+              "closed_trade_count": 417,
+              "fees_usd": -3.423837
+            },
+            {
+              "coin": "AVAX",
+              "realized_pnl_usd": 58966.133916,
+              "realized_roi": 0.6692378590167833,
+              "closed_trade_count": 310,
+              "fees_usd": -0.880929
+            }
+          ],
+          "traded_coin_count": 28,
+          "traded_times": 171931,
+          "closed_trade_count": 127025,
+          "winning_trade_count": 30150,
+          "realized_pnl_usd": -8024215.2350200005,
+          "realized_pnl_percent": -0.037169009304526456,
+          "win_rate": 0.2373548514072033,
+          "fees_usd": -3378.3429959999994
+        }
+      }
+    },
+    "30d": {
+      "request": {
+        "address": "0x7fdafde5cfb5465924316eced2d3715494c517d1",
+        "date": {
+          "from": "2026-08-24T06:01:59Z",
+          "to": "2026-09-23T06:01:59Z"
+        }
+      },
+      "status": 200,
+      "credits_cost_header": "1",
+      "body": {
+        "data": {
+          "top5_coins": [
+            {
+              "coin": "FARTCOIN",
+              "realized_pnl_usd": 351144.30667,
+              "realized_roi": 0.059633286822493005,
+              "closed_trade_count": 18114,
+              "fees_usd": -120.889569
+            },
+            {
+              "coin": "PUMP",
+              "realized_pnl_usd": 183062.648174,
+              "realized_roi": 0.2409430864651559,
+              "closed_trade_count": 1104,
+              "fees_usd": -57.008875
+            },
+            {
+              "coin": "xyz:SNDK",
+              "realized_pnl_usd": 168975.745956,
+              "realized_roi": 0.0029800368374129703,
+              "closed_trade_count": 42882,
+              "fees_usd": -13.364045
+            },
+            {
+              "coin": "DOGE",
+              "realized_pnl_usd": 165258.433796,
+              "realized_roi": 0.03701485810545772,
+              "closed_trade_count": 20426,
+              "fees_usd": -75.323664
+            },
+            {
+              "coin": "AVAX",
+              "realized_pnl_usd": 136657.001514,
+              "realized_roi": 0.7182627081678028,
+              "closed_trade_count": 597,
+              "fees_usd": -1.902302
+            }
+          ],
+          "traded_coin_count": 37,
+          "traded_times": 841432,
+          "closed_trade_count": 576144,
+          "winning_trade_count": 228721,
+          "realized_pnl_usd": -30131059.363863,
+          "realized_pnl_percent": -0.0321725743122635,
+          "win_rate": 0.3969858229886973,
+          "fees_usd": -13240.509491
+        }
+      }
+    }
+  }
+}

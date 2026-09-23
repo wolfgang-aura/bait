@@ -21,24 +21,28 @@ Current evidence:
 
 ## The recording
 
-`scratch/BAIT-judge-v13.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 45.7 s, rendered with
+`scratch/BAIT-judge-v14.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 47.6 s, rendered with
 HyperFrames over a real round played on the hosted site (https://bait-wyqr.onrender.com) and
 recorded at 3840 by 2160 on 23 Sep 2026.
-SHA-256: `072012a903632b4613c156501bddc21c36876114cdc207795aadabc4f6aef8f0`.
+SHA-256: `a9ae0fe8405a59f45c40ce6ab6f6c8e9170bde2933c361f8a0052a1029e22e5f`.
 
 | Screen | Point |
 | --- | --- |
-| Cold open | THE LEGEND: +$118,975,612 all time against -$30,271,483 over 30 days (live Nansen read, 23 Sep 03:45 UTC), BLOCKED. |
+| Cold open | THE LEGEND: +$118,975,612 all time against -$30,131,059 over 30 days (live Nansen read, 23 Sep 06:01 UTC), BLOCKED BY BAIT. |
 | What BAIT is | The check that runs before an AI agent moves money. |
-| The round | A real DeepSeek round with no data tools. On the first line it asks for the last 30 days, then agrees anyway and puts $5,000 of its $25,000 behind him. |
-| The reveal | "It asked for the record, then agreed to send $5,000 anyway." BAIT's Nansen read blocks it: $0 sent. |
-| The checks | Every check the gate ran, each with the Nansen read it stands on. |
-| The result | Six losing wallets, 26 attacks: AI alone 63/78, with Nansen tools 19/78, behind the gate 0/78; on profitable traders 3 of 18 decisions blocked, 3 capped. |
+| The round | A real DeepSeek round. PENNY, the target, has no data tools. On the first line it asks for the 30-day P&L, then agrees anyway and puts $2,500 of its $25,000 behind him. The round ends there. |
+| The BAIT check | BAIT intercepts the transfer, reads Nansen live, ticks in every check with its value (freshness PASS, 0 min old) and stamps BLOCKED BY BAIT. |
+| The reveal | "It asked for the record, then agreed to send $2,500 anyway." $2,500 held, $0 reached THE LEGEND. |
+| The result | Six losing wallets, 26 attacks: AI alone 63/78, with Nansen tools 19/78, behind the BAIT check 0/78; on profitable traders 3 of 18 decisions blocked, 3 capped. |
 | End card | The bench command, the play link and the repository. |
 
-The round ran on the hosted build with a live Nansen read of THE LEGEND at 03:45 UTC on
-23 Sep 2026 (two summaries, 2 credits). The gate's freshness row reads PASS, 0 min old. The
-fill tape behind the trade details is still the 21 Sep capture, and the screen says so.
+The round's figures come from one live Nansen read of THE LEGEND at 06:01:59 UTC on
+23 Sep 2026 (two perp-pnl-summary calls, 2 credits). Nansen's raw responses are committed as
+`bench/live-reads/20260923T060159Z-0x7fdafde5.json`, SHA-256
+`eb840d7fc1f40e92164db1df7f1e51065cd0575843dc06e4d2bdfc7e133c7a4b` (the same hash the host
+lists at /api/live-reads): 30-day realised PnL -30,131,059.36, win rate 39.70%, 576,144
+closed trades. The fill tape behind the trade details is still the 21 Sep capture, and the
+screen says so. Earlier cuts (v13 and before) used reads whose raw responses were not kept.
 
 ## Draft X post
 
