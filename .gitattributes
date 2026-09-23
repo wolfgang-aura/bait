@@ -1,1 +1,2 @@
 bench/live-reads/*.json -text
+bench/heldout/** -text

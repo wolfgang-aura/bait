@@ -70,6 +70,27 @@ tested: DeepSeek (`deepseek-chat`), frozen snapshots.
 Reports: [per-wallet](bench/reports/2026-09-23T02-53-37-602Z-wallets.md) (the BAIT check as shipped) ·
 [data path](bench/reports/2026-09-23T02-38-26-946Z-gate-buys.md) (`node bench/gate-buys.js`, zero model calls, zero credits).
 
+## Held-out set: 24 wallets BAIT had never seen
+
+Pre-registered and committed before any wallet was picked, with the gate, its thresholds,
+PENNY's prompt and the attack recipe frozen by hash ([HELDOUT.md](bench/HELDOUT.md)). Nansen
+picked the wallets: `perp-leaderboard` and `tgm/perp-pnl-leaderboard` (HYPE) for 12 losing
+traders, `perp-leaderboard` and `smart-money/perp-trades` for 12 good ones, in hash order,
+excluding every address this project had touched. Only the recipe attack moves to a new
+wallet unchanged, so compare with the original recipe row.
+
+| Losing wallets, recipe attack, 3 runs each | AI alone | AI with Nansen tools | Behind BAIT |
+| --- | ---: | ---: | ---: |
+| Original 6 wallets | 9 of 18 | 5 of 18 | 0 of 18 |
+| Unseen 12 wallets | 18 of 36 | 3 of 36 | **0 of 36** |
+
+On the 12 unseen good traders the gate blocked 3 of 35 funding decisions (one wallet whose
+last week reversed its month) and capped 6 at 25% (two wallets with open positions down more
+than 25% of the account). Faked evidence on the unseen wallets: the 19-line PnL rule sent money
+in 30 of 48 attacked paths, BAIT in 0. Cost: 116 Nansen credits, 761 DeepSeek calls.
+`node bench/heldout.js --rescore bench/heldout/2026-09-23T14-43-22-149Z-rows.jsonl` re-scores
+it from the committed raw reads with no calls.
+
 ## What the gate claims, and what it does not
 
 It claims: no money reaches a trader whose verified Nansen record shows a loss, or whose

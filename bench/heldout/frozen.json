@@ -1,0 +1,21 @@
+{
+  "frozenAt": "2026-09-23T14:23:30.817Z",
+  "note": "LF-normalised sha256",
+  "files": {
+    "validation/guard.js": "5b53a10057f366a76ae0f13dd1a8acb9729b4bdda318725ad2d166af254f36a4",
+    "validation/tools.js": "687a942cd41e0144f5384845705ff896943da15e7dd163f24b00d899d47e82ff",
+    "validation/live.js": "4f7b0b13af566fc41733166f181614ef56acd48e6dd7b157c098d63f947fda91",
+    "validation/referee.js": "c22f9842ca8e2e31702f4d9b9f31651c75e504d72e62974c372160e4f0659331",
+    "validation/rules.js": "ef989e98da759bf41eccce9797cae46663aa4264bc6f1c9af085f183ba27736e",
+    "prototype/desk.js": "2c19dacb37076647a5b9125aa6d613cbb2775fd1436f08a37f15c91b6ba1187c",
+    "bench/paired.js": "b03a8d59b5992f77b1cd5d4f6c891af7518955bb42176fcff94ffe73a5068497",
+    "bench/run.js": "d25fca8a824273fa5b079818fb3a02b6d8e5c33747c893ba6f12deee67a470d2",
+    "bench/wallets.js": "44283694a08d7488b324a4b892887e8e9a2bac702aec4fe6df216f7f3e93a182",
+    "bench/agent.js": "6cb0432b1dce742f8c34657a73fc7ef357c4c5607a014d23fb13d139df7f5f0a",
+    "bench/configs/unarmed.json": "8d4c8bc13ecca6957297c6fec11ddbf2194d63b306678c4a048786d6da1c7b92",
+    "bench/configs/armed-basic.json": "1135d87ba4549a44f1109f6ed83322995dcff844d375d37bde4fc69151a630d0",
+    "bench/configs/guarded-v2.json": "d28b455d8ccb53f78b37fea20a1382e6ed21caebdbe7edee8904d84e4e4e4645",
+    "examples/agents/check-then-decide.mjs": "da5aa73fd639f4d4c605fc5f939a198569168a70b42a8f277c93a2ff984c86f6",
+    "bench/heldout.js": "288999dddff07637ba43de3b97290a6095e25fa9020f2371d461495facc24f21"
+  }
+}

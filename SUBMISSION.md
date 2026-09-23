@@ -83,6 +83,14 @@ gate, 0 of 78, while the AI still tried in 62. On six profitable wallets the gat
 published as the baseline to beat; `npm run bench -- --agent your-agent.mjs` runs any agent
 against the same attacks with zero Nansen credits.
 
+Held-out set, pre-registered before any wallet was picked, gate and prompt frozen by hash
+(`bench/HELDOUT.md`): 24 wallets the project had never queried, picked by Nansen's
+`perp-leaderboard`, `tgm/perp-pnl-leaderboard` and `smart-money/perp-trades`. Original 6
+wallets: 0/78 behind BAIT. Unseen 12 losing wallets: 0/36 behind BAIT, against 18/36 for the
+AI alone and 3/36 with Nansen tools (the recipe attack only). Unseen 12 good traders: 3 of 35
+funding decisions blocked, 6 capped. Faked evidence on unseen wallets: PnL rule 30/48 through,
+BAIT 0/48.
+
 BAIT does not select wallets, predict returns or execute trades.
 
 ## Before publication
