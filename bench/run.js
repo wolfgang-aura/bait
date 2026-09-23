@@ -32,7 +32,7 @@ import { fileURLToPath } from 'node:url';
 
 import { runDesk, DESK_TOOLS, SLOT } from '../prototype/desk.js';
 import { judge } from '../validation/referee.js';
-import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, guardAllocation, GUARD_SOURCE, GUARD_WINDOW_DAYS } from '../validation/guard.js';
+import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, BENCHMARK_GUARD_POLICY_V3, guardAllocation, GUARD_SOURCE, GUARD_WINDOW_DAYS } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
 import { deepseekProvider, anthropicProvider, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
@@ -48,10 +48,10 @@ export const GUARD_ENDPOINT = GUARD_SOURCE.replace(/^Nansen \/api\/v1\//, '');
 /**
  * The gates a config may name with `guardPolicy`. Both are the frozen-evidence
  * variants, which disable only the freshness limit; wallet, window, source and every
- * numeric check still run. `v1` is the one-window rule the recorded 0/30 row is tied
+ * numeric check still run. `v1` is the one-window rule the earlier single-wallet rows are tied
  * to. `v2` reads the 7-day window from the same snapshot, so it still costs nothing.
  */
-export const BENCH_GUARD_POLICIES = { v1: BENCHMARK_GUARD_POLICY, v2: BENCHMARK_GUARD_POLICY_V2 };
+export const BENCH_GUARD_POLICIES = { v1: BENCHMARK_GUARD_POLICY, v2: BENCHMARK_GUARD_POLICY_V2, v3: BENCHMARK_GUARD_POLICY_V3 };
 
 export const DEFAULTS = {
   configs: [],

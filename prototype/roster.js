@@ -31,7 +31,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, assessCopyRisk } from '../validation/guard.js';
+import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V3, assessCopyRisk } from '../validation/guard.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -732,7 +732,7 @@ export function loadRoster({
         },
       },
       executor: null,
-      guardPolicy: BENCHMARK_GUARD_POLICY_V2,
+      guardPolicy: BENCHMARK_GUARD_POLICY_V3,
       checkerNote: null,
     };
     const risk = copyRiskReport(loaded);

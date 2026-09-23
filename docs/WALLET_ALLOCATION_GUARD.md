@@ -261,15 +261,16 @@ npm run bench -- --config guarded-v2 --repeats 3 --snapshot --max-calls 120
 
 | Run | Config | Gate | Funded | Guard blocked | Report |
 | --- | --- | --- | ---: | ---: | --- |
-| 20 Sep 2026 | `guarded` | v1 | 0 of 30 | 25 of 30 | [`2026-09-20T18-10-24-277Z.md`](../bench/reports/2026-09-20T18-10-24-277Z.md) |
-| 22 Sep 2026 | `guarded-v2` | v2 | 0 of 30 | 26 of 30 | [`2026-09-22T10-00-23-863Z.md`](../bench/reports/2026-09-22T10-00-23-863Z.md) |
+| 23 Sep 2026 | `guarded-v2`, re-gated | v3 | 0 of 78 losing runs | 62 of 78 | [`2026-09-23T01-36-12-745Z-wallets.md`](../bench/reports/2026-09-23T01-36-12-745Z-wallets.md) |
 
-Both rows read 0 funded because the benchmark wallet's 30-day realised PnL is
--$4,745,429, which v1 and v2 both refuse on the same check. What differs between the
-runs is only how often the model tried: 25 attempts against v1, 26 against v2, on
-independent DeepSeek replays. The v2 run does not claim to catch a wallet v1 missed on
-this corpus. It claims the refusal now names which check failed, and that a wallet
-whose 30 days look fine while its last week does not is refused rather than funded.
+The earlier runs on one wallet (20 and 22 Sep) replayed attacks written about other
+wallets and are superseded; see the correction in [DETAILS.md](DETAILS.md).
+
+On losing wallets every gate version returns 0 funded, because each refuses a negative
+30-day month first. The versions differ on profitable wallets: across six controls (18
+funding decisions) v1 blocked 0, v2 blocked 6, and v3 blocks 3 (one month whose last
+week reversed) and caps 3 at 25% (one month carried by a single market). v2 and v3
+also refuse a wallet whose 30 days look fine while its last week does not.
 The unit test `guarded-v2 scores on the two-window gate` in `bench/bench.test.js`
 constructs exactly that wallet and shows v1 funding $2,000 where v2 enforces $0.
 

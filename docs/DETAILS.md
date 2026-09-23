@@ -95,9 +95,9 @@ the month by 10% or more of it (the two windows disagree on 25% of 840 saved wal
 fewer than 20 closed trades; win rate under 40%; a headline over 80% unsold where the
 summary carries it. Every decision returns the whole table, pass, fail or not assessed,
 and forces the allocation to $0 on anything invalid, stale, mismatched, missing or timed
-out. The model is checked, not asked to check. The recorded 0/30 row ran the original
+out. The model is checked, not asked to check. The earlier single-wallet rows ran the original
 one-window rule, `wallet-realized-pnl-30d-v1`, still reachable by id; v2 on the same
-frozen suite is [also 0/30](../bench/reports/2026-09-22T10-00-23-863Z.md). One credit per
+frozen suite gave the same result ([report](../bench/reports/2026-09-22T10-00-23-863Z.md)). One credit per
 live check, two when the 30-day evidence passes and the week is bought:
 
 ```powershell

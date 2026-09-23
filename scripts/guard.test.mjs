@@ -24,11 +24,11 @@ function capture() {
 
 test('parseArgs reads the wallet, the amount and the json flag', () => {
   assert.deepEqual(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--json']), {
-    wallet: WALLET, allocation: 5000, json: true, timeoutMs: 10_000, policy: 'v2',
+    wallet: WALLET, allocation: 5000, json: true, timeoutMs: 10_000, policy: 'v3',
   });
   assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--timeout', '2500']).timeoutMs, 2500);
   assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v1']).policy, 'v1');
-  assert.match(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v3']).error, /--policy must be v1 or v2/);
+  assert.match(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v4']).error, /--policy must be v1, v2 or v3/);
 });
 
 test('parseArgs refuses missing, unknown and non-numeric arguments', () => {
@@ -78,7 +78,7 @@ test('a profitable wallet prints ALLOW, the enforced amount and the credit line,
   assert.match(out.text(), /pnl 7d\s+\$2,450,809\.47/);
   // Two windows, two credits, and the named check table is printed under the decision.
   assert.match(out.text(), /credits\s+2 charged/);
-  assert.match(out.text(), /policy\s+wallet-copy-risk-v2/);
+  assert.match(out.text(), /policy\s+wallet-copy-risk-v3/);
   assert.match(out.text(), /CHECKS/);
   assert.match(out.text(), /PASS regime_agreement/);
   assert.match(out.text(), /PASS thin_sample/);

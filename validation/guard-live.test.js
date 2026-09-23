@@ -98,7 +98,7 @@ test('the v2 check reads both windows, charges two credits and publishes the tab
   assert.equal(decision.creditsCharged, 2);
   assert.equal(decision.decision, 'allow');
   assert.equal(decision.execution_authorized, true);
-  assert.equal(decision.policy.id, PRODUCTION_GUARD_POLICY.id, 'v2 is the library default');
+  assert.equal(decision.policy.id, PRODUCTION_GUARD_POLICY_V2.id, 'the policy asked for is the policy applied');
   assert.equal(decision.evidence.realized_pnl_30d_usd, 500);
   assert.equal(decision.evidence.realized_pnl_7d_usd, 120);
   // The 30-day request is asked first, and the 7-day window covers seven days.

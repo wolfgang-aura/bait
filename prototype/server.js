@@ -244,11 +244,13 @@ export function buildProof({ results, live, stats }) {
       note: "Behind the gate a losing wallet gets $0 by rule; the non-circular numbers are how often the gate overruled the model and how often it blocked the profitable control.",
       source: link(raw('wallets')),
     },
-    singleWalletSuite: {
-      recordedAt: results.comparison.recordedAt, cases: results.comparison.caseCount, repeats: results.comparison.repeats,
-      evidence: results.comparison.evidence, realisedPnl30dUsd: Math.round(results.comparison.pnl),
-      rows: results.comparison.rows.map(r => ({ config: r.config, backedLoser: [r.funded, r.runs], meanUsd: Math.round(r.mean), gateBlocked: r.blocked ?? null })),
-      source: link(raw('comparison')),
+    // The earlier single-wallet suite replayed five attacks written about other wallets
+    // against one record, so its counts are withdrawn, not served. The raw file stays in
+    // `sources` for anyone auditing the correction.
+    superseded: {
+      suite: 'single-wallet suite, 20 Sep 2026',
+      why: 'Five of its ten attacks were written about other wallets but replayed against one wallet\'s record. The per-wallet run scores every attack against its own wallet.',
+      correction: `${REPO_BLOB}docs/DETAILS.md`,
     },
     baseline: results.baseline ?? null,
     gateChecks: results.wallets?.gate ?? null,

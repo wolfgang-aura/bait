@@ -7,7 +7,7 @@
  * on an allow as well as on a block.
  *
  * `wallet-realized-pnl-30d-v1` stays reachable by id in the same file, because the
- * recorded 0/30 benchmark row is tied to exactly that rule on exactly one call.
+ * earlier single-wallet benchmark rows are tied to exactly that rule on exactly one call.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -82,9 +82,10 @@ const checkFor = (out, id) => out.checks.find(c => c.id === id);
 
 // --------------------------------------------------------------- the policies
 
-test('v2 is the default policy and v1 is still reachable by its own id', async () => {
-  assert.equal(PRODUCTION_GUARD_POLICY.id, 'wallet-copy-risk-v2');
-  assert.equal(PRODUCTION_GUARD_POLICY, PRODUCTION_GUARD_POLICY_V2);
+test('v3 is the default policy; v2 and v1 are still reachable by their own ids', async () => {
+  assert.equal(PRODUCTION_GUARD_POLICY.id, 'wallet-copy-risk-v3');
+  assert.equal(PRODUCTION_GUARD_POLICY.version, 'v3');
+  assert.equal(PRODUCTION_GUARD_POLICY_V2.id, 'wallet-copy-risk-v2');
   assert.equal(PRODUCTION_GUARD_POLICY_V1.id, 'wallet-realized-pnl-30d-v1');
   assert.equal(PRODUCTION_GUARD_POLICY_V2.windowDays, GUARD_WINDOW_DAYS);
   assert.equal(PRODUCTION_GUARD_POLICY_V2.shortWindowDays, GUARD_SHORT_WINDOW_DAYS);

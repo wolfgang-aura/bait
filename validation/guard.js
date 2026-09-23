@@ -9,8 +9,8 @@
  * Two policies ship.
  *
  * `wallet-realized-pnl-30d-v1` is one `profiler/perp-pnl-summary` call and one sign
- * test on 30-day realised PnL. It is kept, by id, because the recorded 0/30 benchmark
- * row is tied to exactly that rule.
+ * test on 30-day realised PnL. It is kept, by id, because the earlier recorded
+ * single-wallet benchmark rows are tied to exactly that rule.
  *
  * `wallet-copy-risk-v2` is the default. It reads the 7-day AND the 30-day summary and
  * runs a named check per refusal, so a block says which number failed which bar. The
@@ -23,7 +23,14 @@
  * at no extra call: a positive month whose best market made more than the whole month
  * is refused, because the rest of the book lost money (`gateMaxTopCoinPnlShare`).
  *
- * Neither policy ever emits a size of its own. The answer is the caller's amount or $0.
+ * `wallet-copy-risk-v3` (default since 23 Sep 2026) keeps every v2 refusal but turns the
+ * concentration check from a refusal into a size cap: a profitable month carried by one
+ * market is real money made, so the gate lets a quarter of the request through and holds
+ * the rest. Under v2 that check refused 3 of 18 funding decisions on profitable control
+ * wallets (bench/reports/2026-09-23T00-47-45-126Z-wallets.md).
+ *
+ * v1 and v2 never emit a size of their own: the caller's amount or $0. v3 adds exactly
+ * one: `concentrationCapShare` of the caller's amount when the concentration check caps.
  */
 
 export const GUARD_WINDOW_DAYS = 30;
@@ -94,8 +101,22 @@ export const PRODUCTION_GUARD_POLICY_V2 = Object.freeze({
   maxTopCoinPnlShare: COPY_RISK_THRESHOLDS.gateMaxTopCoinPnlShare,
 });
 
-/** The default gate. v1 stays reachable as `PRODUCTION_GUARD_POLICY_V1`. */
-export const PRODUCTION_GUARD_POLICY = PRODUCTION_GUARD_POLICY_V2;
+/**
+ * v3: v2's checks and bars, with the concentration check capping instead of refusing.
+ * The cap is a quarter of the request, the same fraction the game's copy-risk caution used
+ * for its wire since 22 Sep: enough to follow a trader whose month is real, small enough
+ * that one market going the other way costs a quarter, not the whole request.
+ */
+export const PRODUCTION_GUARD_POLICY_V3 = Object.freeze({
+  ...PRODUCTION_GUARD_POLICY_V2,
+  id: 'wallet-copy-risk-v3',
+  version: 'v3',
+  concentrationAction: 'cap',
+  concentrationCapShare: 0.25,
+});
+
+/** The default gate. v1 and v2 stay reachable by name. */
+export const PRODUCTION_GUARD_POLICY = PRODUCTION_GUARD_POLICY_V3;
 
 export const BENCHMARK_GUARD_POLICY = Object.freeze({
   ...PRODUCTION_GUARD_POLICY_V1,
@@ -109,7 +130,13 @@ export const BENCHMARK_GUARD_POLICY_V2 = Object.freeze({
   maxEvidenceAgeMs: null,
 });
 
-const POLICY_BASES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2 };
+export const BENCHMARK_GUARD_POLICY_V3 = Object.freeze({
+  ...PRODUCTION_GUARD_POLICY_V3,
+  id: 'wallet-copy-risk-benchmark-v3',
+  maxEvidenceAgeMs: null,
+});
+
+const POLICY_BASES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3 };
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const walletPattern = /^0x[a-fA-F0-9]{40}$/;
@@ -150,7 +177,10 @@ function normalizePolicy(policy) {
   if (!finite(merged.maxFutureSkewMs) || merged.maxFutureSkewMs < 0 || typeof merged.source !== 'string') {
     throw new TypeError('Guard policy source and maxFutureSkewMs are invalid');
   }
-  if (merged.version === 'v2') {
+  if (merged.version === 'v3' && (!finite(merged.concentrationCapShare) || merged.concentrationCapShare <= 0 || merged.concentrationCapShare >= 1)) {
+    throw new TypeError('Guard policy concentrationCapShare must be between 0 and 1');
+  }
+  if (merged.version === 'v2' || merged.version === 'v3') {
     if (!Number.isInteger(merged.shortWindowDays) || merged.shortWindowDays < 1 || merged.shortWindowDays >= merged.windowDays) {
       throw new TypeError('Guard policy shortWindowDays must be a positive integer shorter than windowDays');
     }
@@ -228,12 +258,14 @@ function emptyEvidence(policy) {
   };
 }
 
-function result({ attempted, policy, evidence, code, reason, diagnostic = null, checks = [] }) {
-  const allowed = code === 'allowed';
-  const allocation = allowed ? attempted : 0;
+function result({ attempted, policy, evidence, code, reason, diagnostic = null, checks = [], cappedTo = null }) {
+  const allowed = code === 'allowed' || code === 'capped';
+  const allocation = code === 'capped' ? cappedTo : allowed ? attempted : 0;
   return {
     decision: allowed ? 'allow' : 'block',
     code,
+    capped: code === 'capped',
+    held: Math.max(0, attempted - allocation),
     // Never a size of its own: the caller's amount, or nothing. Issue #7 removed
     // implied calibrated sizing on purpose, and it is not coming back through here.
     allocation,
@@ -296,9 +328,14 @@ function concentrationCheck(t, policy, pnl30, raw) {
   // as 100.0000001% and fail a 100% bar on rounding alone.
   if (best.realized_pnl_usd - bar * pnl30 > 0.01) {
     const rest = pnl30 - best.realized_pnl_usd;
-    t.fail('concentration', value, barText,
-      `${best.coin} alone made ${money(best.realized_pnl_usd)}, ${pct(share)} of the ${policy.windowDays}-day ${money(pnl30)}. `
-      + `Everything else it traded came to ${money(rest)}, so one market carried a book that otherwise lost money.`);
+    const said = `${best.coin} alone made ${money(best.realized_pnl_usd)}, ${pct(share)} of the ${policy.windowDays}-day ${money(pnl30)}. `
+      + `Everything else it traded came to ${money(rest)}, so one market carried a book that otherwise lost money.`;
+    if (policy.concentrationAction === 'cap') {
+      t.set('concentration', 'cap', value, barText,
+        `${said} The month is real, so the gate sends ${Math.round(policy.concentrationCapShare * 100)}% of the request and holds the rest.`);
+    } else {
+      t.fail('concentration', value, barText, said);
+    }
   } else {
     t.pass('concentration', value, barText,
       `The best market, ${best.coin}, made ${pct(share)} of the ${policy.windowDays}-day result, so the profit does not rest on one market alone.`);
@@ -324,7 +361,7 @@ export async function guardAllocation({
   now = () => new Date(),
 } = {}) {
   const policy = normalizePolicy(policyInput);
-  const twoWindow = policy.version === 'v2';
+  const twoWindow = policy.version === 'v2' || policy.version === 'v3';
   const attempted = finite(allocation) && allocation > 0 ? allocation : 0;
   const blank = emptyEvidence(policy);
   const t = checkTable();
@@ -583,6 +620,13 @@ export async function guardAllocation({
     return result({ attempted, policy, evidence, code, reason, checks: t.finish() });
   }
 
+  const cap = t.finish().find(c => c.id === 'concentration' && c.result === 'cap');
+  if (cap) {
+    const cappedTo = Math.floor(attempted * policy.concentrationCapShare);
+    return result({ attempted, policy, evidence, code: 'capped', cappedTo, checks: t.finish(),
+      reason: `capped: one market carries more than ${Math.round(policy.maxTopCoinPnlShare * 100)}% of the ${policy.windowDays}-day realised PnL, so ${Math.round(policy.concentrationCapShare * 100)}% of the request is allowed` });
+  }
+
   const reason = twoWindow
     ? `allowed: the ${policy.shortWindowDays}-day and ${policy.windowDays}-day evidence passed every check in the policy`
     : `allowed: verified ${policy.windowDays}-day realised PnL meets the policy minimum`;
@@ -596,7 +640,7 @@ export async function guardAllocation({
  * would copying this wallet have been survivable?
  *
  * `guardAllocation` above is untouched and stays the hard execution gate, because the
- * recorded 0/30 benchmark result depends on exactly that function. `assessCopyRisk` is
+ * recorded benchmark rows depend on exactly that function. `assessCopyRisk` is
  * additive and deterministic: same evidence in, same verdict out. No model, no network,
  * no clock. It reads only fields a caller has already pulled out of a frozen snapshot
  * or a recorded venue response.

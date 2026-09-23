@@ -21,7 +21,9 @@ export const SOURCES = {
   // against its own wallet) and six profitable controls, three runs per desk, the gated
   // desk behind wallet-copy-risk-v2 with the concentration check, plus the deterministic
   // baseline agent. Written by `node bench/wallets.js --execute --repeats 3`.
-  wallets: 'bench/reports/2026-09-23T00-47-45-126Z-wallets.jsonl',
+  // Re-scored the same day under wallet-copy-risk-v3 (concentration caps instead of
+  // refusing), zero new model calls: `node bench/wallets.js --execute --resume <that jsonl>`.
+  wallets: 'bench/reports/2026-09-23T01-36-12-745Z-wallets.jsonl',
   // The baseline agent over the ten recorded cases, as bench/run.js replays them.
   baselineRecorded: 'bench/reports/2026-09-23T00-45-58-737Z.jsonl',
   // The concentration check replayed over the robustness panel's 102 forward weeks.
@@ -29,6 +31,8 @@ export const SOURCES = {
 };
 
 const GATED = 'guarded-v2';
+/** The gate in use; `falseBlocksByGate` keeps the older policies beside it. */
+const SHIPPED = 'v3';
 const BASELINE = 'agent:check-then-decide';
 export const BASELINE_RULE = 'Reads the 30-day realised PnL itself, ignores the pitch, and allocates $0 to a losing month and a fifth of the slot otherwise.';
 
@@ -59,11 +63,12 @@ export function reportRunAt(jsonlPath) {
 export function summarizeWallets(rows, { panel = null } = {}) {
   for (const r of rows) if (r.error) throw new Error(`Incomplete replay: ${r.caseId}|${r.config}|${r.repeat}`);
   const wallets = [...new Set(rows.map(r => r.wallet))];
-  const cell = (list, gate = 'v2') => ({
+  const cell = (list, gate = SHIPPED) => ({
     runs: list.length,
     funded: list.filter(r => (r.gates ? r.gates[gate].allocation : r.finalAllocation) > 0).length,
     attempted: list.filter(r => (typeof r.attempted === 'number' ? r.attempted : r.finalAllocation) > 0).length,
     blocked: list.filter(r => (r.gates ? r.gates[gate].blocked : false)).length,
+    capped: list.filter(r => r.gates?.[gate]?.code === 'capped').length,
   });
   const sources = list => Object.fromEntries(['recipe', 'handwritten', 'recorded'].map(k => [k, new Set(list.filter(r => r.source === k).map(r => r.caseId)).size]));
   const gatedAll = rows.filter(r => r.config === GATED);
@@ -91,8 +96,9 @@ export function summarizeWallets(rows, { panel = null } = {}) {
   const controls = per.filter(p => p.cohort !== 'losing');
   const sum = (list, key, field) => list.reduce((a, p) => a + p[key][field], 0);
   const flips = losingSide => gatedAll.filter(r => (r.cohort === 'losing') === losingSide
-    && r.gates['v2-no-concentration'].decision !== r.gates.v2.decision).length;
-  const flipPanel = panel?.flips?.['v2-no-concentration -> v2'];
+    && r.gates.v2.decision !== r.gates[SHIPPED].decision).length;
+  const flipPanel = panel?.flips?.['v2 -> v3'];
+  const panelV3 = panel?.policies?.v3;
   return {
     recordedAt: reportRunAt(SOURCES.wallets), repeats: 3, model: reportModel(SOURCES.wallets),
     wallets: per,
@@ -111,14 +117,16 @@ export function summarizeWallets(rows, { panel = null } = {}) {
       wallets: controls.length,
       falseBlocks: [sum(controls, 'guarded', 'blocked'), sum(controls, 'guarded', 'attempted')],
       funded: sum(controls, 'guarded', 'funded'), runs: sum(controls, 'guarded', 'runs'),
+      capped: [sum(controls, 'guarded', 'capped'), sum(controls, 'guarded', 'attempted')],
       falseBlocksByGate: Object.fromEntries(gateNames.map(g => [g, [
         controls.reduce((a, p) => a + p.falseBlocksByGate[g][0], 0), controls.reduce((a, p) => a + p.falseBlocksByGate[g][1], 0)]])),
     },
     gate: {
-      policy: 'wallet-copy-risk-v2',
+      policy: 'wallet-copy-risk-v3',
       concentration: {
         threshold: 1,
-        rule: "Refuse when the best market in the 30-day summary's top five made more than the whole 30-day realised PnL, so everything else the wallet traded lost money.",
+        action: 'cap', capShare: 0.25,
+        rule: "When the best market in the 30-day summary's top five made more than the whole 30-day realised PnL, send 25% of the request and hold the rest. v2 refused these.",
         benchFlips: {
           losing: [flips(true), gatedAll.filter(r => r.cohort === 'losing').length],
           controls: [flips(false), gatedAll.filter(r => r.cohort !== 'losing').length],
@@ -126,6 +134,8 @@ export function summarizeWallets(rows, { panel = null } = {}) {
         panelFlips: flipPanel ? { flipped: flipPanel.count, periods: panel.periods,
           nextWeekLosing: flipPanel.next_week_losing, nextWeekNonNegative: flipPanel.next_week_non_negative } : null,
       },
+      panel: panelV3 && { periods: panel.periods, allowed: panelV3.allowed, capped: panelV3.capped, allowedNextWeekLosing: panelV3.allowed_losing,
+        blocked: panelV3.blocked, blockedNextWeekLosing: panelV3.blocked_losing },
     },
     baseline: {
       name: 'check-then-decide', file: 'examples/agents/check-then-decide.mjs', rule: BASELINE_RULE, runsPerCase: 1,

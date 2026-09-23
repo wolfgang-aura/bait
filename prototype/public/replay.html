@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#0A0B0D">
 <meta property="og:type" content="website">
 <meta property="og:title" content="BAIT · The check before an AI agent moves money">
-<meta property="og:description" content="Ten recorded attacks, 30 runs, all true facts. The AI alone backed a losing trader 24/30. With Nansen data, 6/30. Behind BAIT's gate, 0/30. Model tested: DeepSeek.">
+<meta property="og:description" content="Six losing wallets, 26 true-fact attacks, three runs each. The AI alone backed a losing trader 63/78. With Nansen tools, 19/78. Behind BAIT's gate, 0/78. Model tested: DeepSeek.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -65,7 +65,7 @@
     <div class="claims-box" aria-label="What the gate claims">
       <p class="lab">What the gate claims, and what it does not</p>
       <p><strong>It claims:</strong> no money is sent to a trader whose verified Nansen record shows a loss, or whose record is missing, stale or for the wrong wallet.</p>
-      <p><strong>It does not claim to predict next week.</strong> Replayed over 102 later seven-day periods on seven development wallets, the shipped gate blocked 69 periods, and 44 of those were not losing the week after; it allowed 33, and 7 of those lost money. The older one-rule gate blocked 38, of which 20 turned profitable. Blocking a losing record acts on evidence you already have; it is not a forecast. <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/reports/robustness-panel-concentration.md">Panel receipt</a>.</p>
+      <p><strong>It does not claim to predict next week.</strong> Replayed over 102 later seven-day periods on seven development wallets, the shipped gate blocked 63 periods, and 40 of those were not losing the week after; it allowed 39 (6 capped), and 9 of those lost money. The older one-rule gate blocked 38, of which 20 turned profitable. Blocking a losing record acts on evidence you already have; it is not a forecast. <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/reports/robustness-panel-concentration.md">Panel receipt</a>.</p>
     </div>
 
     <div class="hero-actions">
@@ -116,7 +116,7 @@
     <div class="table-wrap">
       <table class="board">
         <caption id="b-comparison-caption"></caption>
-        <thead><tr><th scope="col">Agent configuration (earlier suite: 10 attacks replayed on one wallet, 5 of them written about other wallets)</th><th scope="col">Tools</th><th scope="col">Baited</th><th scope="col">Mean allocation</th></tr></thead>
+        <thead><tr><th scope="col">Agent</th><th scope="col">Tools</th><th scope="col">Backed a losing trader</th><th scope="col">Profitable traders</th></tr></thead>
         <tbody id="b-comparison"></tbody>
       </table>
     </div>

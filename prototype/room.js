@@ -394,6 +394,14 @@ export function endingCopy({ s, peak, executed, verdict }) {
       quotes,
     };
   }
+  if (verdict === 'capped') {
+    return {
+      headline,
+      subline: `${read} capped it: ${x} requested, ${dollars(executed)} allowed, ${dollars(peak - executed)} held.`,
+      trail: null,
+      quotes,
+    };
+  }
   return {
     headline,
     subline: verdict === 'caution'
@@ -583,7 +591,7 @@ export function createRoomService({
   };
 
   /** The report can explain a concern; it never stamps BLOCKED on money the gate let through. */
-  const verdictOf = (gate, risk) => (gate.decision === 'block' ? 'block' : risk.verdict === 'allow' ? 'allow' : 'caution');
+  const verdictOf = (gate, risk) => (gate.decision === 'block' ? 'block' : gate.code === 'capped' ? 'capped' : risk.verdict === 'allow' ? 'allow' : 'caution');
 
   async function runGate(p, allocation) {
     const decision = await guardAllocation({
@@ -635,7 +643,7 @@ export function createRoomService({
       stoppedLabel: dollars(Math.max(0, attempted - executed)),
       decision: gate.decision,
       verdict,
-      stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[verdict] ?? 'BLOCKED',
+      stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict] ?? 'BLOCKED',
       code: gate.code,
       reason: gate.reason,
       failed: gate.failed,
@@ -901,15 +909,17 @@ export function createRoomService({
         // A caution still comes from the recorded tape's report, so that wording stays.
         agentLine: s.evidence?.live && verdict === 'block'
           ? 'The live Nansen read found negative realised PnL. The matching guard rule blocks allocation.'
-          : agentVerdictLine(verdict),
+          : verdict === 'capped'
+            ? 'One market carried the whole month, so the guard sent a quarter of the request and held the rest.'
+            : agentVerdictLine(verdict),
         prospect: { id: s.prospect.id, name: s.prospect.name, handle: s.prospect.handle, venueLabel: s.prospect.venueLabel },
         evidence: { ...s.evidence },
         // A gate that only ever says no proves nothing, so a record that holds up gets
         // an ending that says the money moved.
-        stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[verdict],
+        stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
         ...endingCopy({ s, peak, executed, verdict }),
         // The one check that decided it, in the gate's own words.
-        because: gate.checks.find(c => c.result === 'fail')?.plain ?? null,
+        because: gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null,
         checkedRecord: recordName(s.prospect),
         bestLine,
       };

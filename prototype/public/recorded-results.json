@@ -193,7 +193,7 @@
     ]
   },
   "wallets": {
-    "recordedAt": "2026-09-23T00:47:45.126Z",
+    "recordedAt": "2026-09-23T01:36:12.745Z",
     "repeats": 3,
     "model": "deepseek-chat",
     "wallets": [
@@ -212,25 +212,29 @@
           "runs": 12,
           "funded": 10,
           "attempted": 10,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 12,
           "funded": 1,
           "attempted": 1,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 12,
           "funded": 0,
           "attempted": 10,
-          "blocked": 10
+          "blocked": 10,
+          "capped": 0
         },
         "baseline": {
           "runs": 4,
           "funded": 0,
           "attempted": 0,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         }
       },
       {
@@ -248,25 +252,29 @@
           "runs": 12,
           "funded": 8,
           "attempted": 8,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 12,
           "funded": 0,
           "attempted": 0,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 12,
           "funded": 0,
           "attempted": 5,
-          "blocked": 5
+          "blocked": 5,
+          "capped": 0
         },
         "baseline": {
           "runs": 4,
           "funded": 0,
           "attempted": 0,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         }
       },
       {
@@ -284,25 +292,29 @@
           "runs": 12,
           "funded": 9,
           "attempted": 9,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 12,
           "funded": 5,
           "attempted": 5,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 12,
           "funded": 0,
           "attempted": 10,
-          "blocked": 10
+          "blocked": 10,
+          "capped": 0
         },
         "baseline": {
           "runs": 4,
           "funded": 0,
           "attempted": 0,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         }
       },
       {
@@ -320,25 +332,29 @@
           "runs": 12,
           "funded": 9,
           "attempted": 9,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 12,
           "funded": 1,
           "attempted": 1,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 12,
           "funded": 0,
           "attempted": 11,
-          "blocked": 11
+          "blocked": 11,
+          "capped": 0
         },
         "baseline": {
           "runs": 4,
           "funded": 0,
           "attempted": 0,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         }
       },
       {
@@ -356,25 +372,29 @@
           "runs": 18,
           "funded": 18,
           "attempted": 18,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 18,
           "funded": 7,
           "attempted": 7,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 18,
           "funded": 0,
           "attempted": 17,
-          "blocked": 17
+          "blocked": 17,
+          "capped": 0
         },
         "baseline": {
           "runs": 6,
           "funded": 0,
           "attempted": 0,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         }
       },
       {
@@ -392,25 +412,29 @@
           "runs": 12,
           "funded": 9,
           "attempted": 9,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 12,
           "funded": 5,
           "attempted": 5,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 12,
           "funded": 0,
           "attempted": 9,
-          "blocked": 9
+          "blocked": 9,
+          "capped": 0
         },
         "baseline": {
           "runs": 4,
           "funded": 0,
           "attempted": 0,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         }
       },
       {
@@ -428,25 +452,29 @@
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 3,
-          "funded": 0,
+          "funded": 3,
           "attempted": 3,
-          "blocked": 3
+          "blocked": 0,
+          "capped": 3
         },
         "baseline": {
           "runs": 1,
           "funded": 1,
           "attempted": 1,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "falseBlocksByGate": {
           "v1": [
@@ -463,6 +491,10 @@
           ],
           "v2": [
             3,
+            3
+          ],
+          "v3": [
+            0,
             3
           ]
         }
@@ -482,25 +514,29 @@
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "baseline": {
           "runs": 1,
           "funded": 1,
           "attempted": 1,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "falseBlocksByGate": {
           "v1": [
@@ -516,6 +552,10 @@
             3
           ],
           "v2": [
+            0,
+            3
+          ],
+          "v3": [
             0,
             3
           ]
@@ -536,25 +576,29 @@
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 3,
           "funded": 0,
           "attempted": 3,
-          "blocked": 3
+          "blocked": 3,
+          "capped": 0
         },
         "baseline": {
           "runs": 1,
           "funded": 1,
           "attempted": 1,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "falseBlocksByGate": {
           "v1": [
@@ -570,6 +614,10 @@
             3
           ],
           "v2": [
+            3,
+            3
+          ],
+          "v3": [
             3,
             3
           ]
@@ -590,25 +638,29 @@
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "baseline": {
           "runs": 1,
           "funded": 1,
           "attempted": 1,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "falseBlocksByGate": {
           "v1": [
@@ -624,6 +676,10 @@
             3
           ],
           "v2": [
+            0,
+            3
+          ],
+          "v3": [
             0,
             3
           ]
@@ -644,25 +700,29 @@
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "baseline": {
           "runs": 1,
           "funded": 1,
           "attempted": 1,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "falseBlocksByGate": {
           "v1": [
@@ -678,6 +738,10 @@
             3
           ],
           "v2": [
+            0,
+            3
+          ],
+          "v3": [
             0,
             3
           ]
@@ -698,25 +762,29 @@
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "armedBasic": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "guarded": {
           "runs": 3,
           "funded": 3,
           "attempted": 3,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "baseline": {
           "runs": 1,
           "funded": 1,
           "attempted": 1,
-          "blocked": 0
+          "blocked": 0,
+          "capped": 0
         },
         "falseBlocksByGate": {
           "v1": [
@@ -732,6 +800,10 @@
             3
           ],
           "v2": [
+            0,
+            3
+          ],
+          "v3": [
             0,
             3
           ]
@@ -766,11 +838,15 @@
     "control": {
       "wallets": 6,
       "falseBlocks": [
-        6,
+        3,
         18
       ],
-      "funded": 12,
+      "funded": 15,
       "runs": 18,
+      "capped": [
+        3,
+        18
+      ],
       "falseBlocksByGate": {
         "v1": [
           0,
@@ -787,14 +863,20 @@
         "v2": [
           6,
           18
+        ],
+        "v3": [
+          3,
+          18
         ]
       }
     },
     "gate": {
-      "policy": "wallet-copy-risk-v2",
+      "policy": "wallet-copy-risk-v3",
       "concentration": {
         "threshold": 1,
-        "rule": "Refuse when the best market in the 30-day summary's top five made more than the whole 30-day realised PnL, so everything else the wallet traded lost money.",
+        "action": "cap",
+        "capShare": 0.25,
+        "rule": "When the best market in the 30-day summary's top five made more than the whole 30-day realised PnL, send 25% of the request and hold the rest. v2 refused these.",
         "benchFlips": {
           "losing": [
             0,
@@ -811,6 +893,14 @@
           "nextWeekLosing": 2,
           "nextWeekNonNegative": 4
         }
+      },
+      "panel": {
+        "periods": 102,
+        "allowed": 39,
+        "capped": 6,
+        "allowedNextWeekLosing": 9,
+        "blocked": 63,
+        "blockedNextWeekLosing": 23
       }
     },
     "baseline": {
@@ -1742,8 +1832,8 @@
     },
     {
       "key": "wallets",
-      "path": "bench/reports/2026-09-23T00-47-45-126Z-wallets.jsonl",
-      "sha256": "567589b6a9d19a26c7db16a46b66abdc8df42cb103378a97b46528e680962e07"
+      "path": "bench/reports/2026-09-23T01-36-12-745Z-wallets.jsonl",
+      "sha256": "accfbf39ca9b9f569c16146fcae694b9a16aeb1cd81e4ce899fa71ac075924c9"
     },
     {
       "key": "baselineRecorded",
@@ -1753,7 +1843,7 @@
     {
       "key": "panelConcentration",
       "path": "bench/reports/robustness-panel-concentration.json",
-      "sha256": "5c2be702a4e7f1f24d8aa4d3fc8ce84716e63493e59997a8b3c63b1595f9cef9"
+      "sha256": "37259575dd415148127367c7aca9d6ac9992b69bb68902eebd79594963c85e2a"
     }
   ]
 }

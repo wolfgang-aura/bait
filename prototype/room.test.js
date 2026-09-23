@@ -416,7 +416,7 @@ test('the Fomo four are not on the room roster: the gate needs a Nansen record',
   }
 });
 
-test('a profitable month carried by one market is blocked by the concentration check', async () => {
+test('a profitable month carried by one market is capped, not blocked: a quarter goes through', async () => {
   const { service } = makeRosterRoom([
     ...answer(0, 'intrigued', 'Nine million over the month is a real print.'),
     ...answer(7500, 'sold', 'HYPE carried it but the breadth is there too.'),
@@ -433,10 +433,12 @@ test('a profitable month carried by one market is blocked by the concentration c
   assert.match(two.dossier.clean, /Nothing buried/);
   const final = await service.finish(round.id, { initials: 'OUT' });
   // THE REAL DEAL made +$35,083 over 30 days, but HYPE alone made +$52,030: every other
-  // market lost money. The v2 gate refuses that month (23 Sep 2026).
-  assert.equal(final.final.gate.decision, 'block');
-  assert.equal(final.final.gate.failed, 'concentration');
-  assert.equal(final.final.executed, 0);
+  // market lost money. v3 caps that month at a quarter of the request instead of refusing it.
+  assert.equal(final.final.gate.decision, 'allow');
+  assert.equal(final.final.gate.code, 'capped');
+  assert.equal(final.final.executed, 1875);
+  assert.equal(final.final.stamp, 'CAPPED');
+  assert.equal(final.final.subline, "BAIT's Nansen read capped it: $7,500 requested, $1,875 allowed, $5,625 held.");
   assert.equal(final.final.headline, 'It never asked for the record. It sent $7,500.');
   assert.equal(final.leaderboard[0].prospect, 'THE REAL DEAL');
 });
@@ -531,11 +533,13 @@ test('a caught lie sends no wire, and the wire is judged on the spot', async () 
   const { service } = makeRosterRoom(answer(7500, 'sold', 'Funded.'));
   const clean = await service.start({ prospect: 'realdeal' });
   const shot = await pitch(service, clean.id, 0, 'HYPE alone made +$52,030 over the 30 days.');
-  assert.equal(shot.shots[0].wire.decision, 'block');
-  assert.equal(shot.shots[0].wire.failed, 'concentration');
+  assert.equal(shot.shots[0].wire.decision, 'allow');
+  assert.equal(shot.shots[0].wire.stamp, 'CAPPED');
+  assert.equal(shot.shots[0].wire.executed, 1875);
+  assert.equal(shot.shots[0].wire.stopped, 5625);
   const { final } = await service.finish(clean.id, {});
-  assert.equal(final.stamp, 'BLOCKED');
-  assert.equal(final.executed, 0);
+  assert.equal(final.stamp, 'CAPPED');
+  assert.equal(final.executed, 1875);
   assert.equal(final.headline, 'It never asked for the record. It sent $7,500.');
 });
 

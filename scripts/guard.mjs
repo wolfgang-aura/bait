@@ -20,13 +20,14 @@ import {
   GUARD_WINDOW_DAYS,
   PRODUCTION_GUARD_POLICY_V1,
   PRODUCTION_GUARD_POLICY_V2,
+  PRODUCTION_GUARD_POLICY_V3,
 } from '../validation/guard.js';
 
 export const USAGE =
   'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2] [--json] [--timeout <ms>]';
 
 /** v2 is the default gate. v1 stays selectable so a recorded result can be rerun. */
-export const POLICIES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2 };
+export const POLICIES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3 };
 
 const FLAGS_WITH_VALUES = new Set(['--wallet', '--allocation', '--timeout', '--policy']);
 
@@ -35,7 +36,7 @@ const FLAGS_WITH_VALUES = new Set(['--wallet', '--allocation', '--timeout', '--p
  * never silent defaults: a guard that guesses its own input is not a guard.
  */
 export function parseArgs(argv = []) {
-  const out = { wallet: null, allocation: null, json: false, timeoutMs: DEFAULT_GUARD_TIMEOUT_MS, policy: 'v2' };
+  const out = { wallet: null, allocation: null, json: false, timeoutMs: DEFAULT_GUARD_TIMEOUT_MS, policy: 'v3' };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     if (flag === '--json') {
@@ -57,7 +58,7 @@ export function parseArgs(argv = []) {
       out.timeoutMs = n;
     }
     if (flag === '--policy') {
-      if (!(value in POLICIES)) return { error: `--policy must be v1 or v2, got "${value}".` };
+      if (!(value in POLICIES)) return { error: `--policy must be v1, v2 or v3, got "${value}".` };
       out.policy = value;
     }
   }

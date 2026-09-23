@@ -16,7 +16,8 @@
       "allowed_outcome_pnl_usd": -4923381.0375930015,
       "block_codes": {
         "pnl_below_minimum": 38
-      }
+      },
+      "capped": 0
     },
     "v2-no-concentration": {
       "allowed": 39,
@@ -31,7 +32,8 @@
         "low_win_rate": 3,
         "pnl_below_minimum": 38,
         "regime_disagreement": 4
-      }
+      },
+      "capped": 0
     },
     "v2-concentration-0.6": {
       "allowed": 15,
@@ -46,7 +48,8 @@
         "thin_sample": 18,
         "low_win_rate": 3,
         "pnl_below_minimum": 38
-      }
+      },
+      "capped": 0
     },
     "v2": {
       "allowed": 33,
@@ -62,7 +65,24 @@
         "pnl_below_minimum": 38,
         "top_coin_concentration": 9,
         "regime_disagreement": 1
-      }
+      },
+      "capped": 0
+    },
+    "v3": {
+      "allowed": 39,
+      "allowed_profitable": 30,
+      "allowed_losing": 9,
+      "blocked": 63,
+      "blocked_losing": 23,
+      "blocked_profitable": 40,
+      "allowed_outcome_pnl_usd": -617328.3561599997,
+      "block_codes": {
+        "thin_sample": 18,
+        "low_win_rate": 3,
+        "pnl_below_minimum": 38,
+        "regime_disagreement": 4
+      },
+      "capped": 6
     }
   },
   "flips": {
@@ -516,6 +536,241 @@
           "at": "2026-09-13T00:00:00Z",
           "from": "allowed",
           "to": "top_coin_concentration",
+          "next_week_pnl_usd": 18821.88086
+        }
+      ]
+    },
+    "v2 -> v3": {
+      "count": 6,
+      "to_block": 0,
+      "next_week_losing": 2,
+      "next_week_non_negative": 4,
+      "next_week_pnl_usd": 1213379.826977,
+      "rows": [
+        {
+          "wallet": "0x3b88…",
+          "at": "2026-06-07T00:00:00Z",
+          "from": "top_coin_concentration",
+          "to": "capped",
+          "next_week_pnl_usd": 1063429.7792280002
+        },
+        {
+          "wallet": "0x3b88…",
+          "at": "2026-06-14T00:00:00Z",
+          "from": "top_coin_concentration",
+          "to": "capped",
+          "next_week_pnl_usd": -153407.1901740001
+        },
+        {
+          "wallet": "0x3b88…",
+          "at": "2026-08-02T00:00:00Z",
+          "from": "top_coin_concentration",
+          "to": "capped",
+          "next_week_pnl_usd": 319474.1008400001
+        },
+        {
+          "wallet": "0xfe47…",
+          "at": "2026-08-09T00:00:00Z",
+          "from": "top_coin_concentration",
+          "to": "capped",
+          "next_week_pnl_usd": 2956.077136
+        },
+        {
+          "wallet": "0xfe47…",
+          "at": "2026-08-30T00:00:00Z",
+          "from": "top_coin_concentration",
+          "to": "capped",
+          "next_week_pnl_usd": 4113.717264
+        },
+        {
+          "wallet": "0xfe47…",
+          "at": "2026-09-06T00:00:00Z",
+          "from": "top_coin_concentration",
+          "to": "capped",
+          "next_week_pnl_usd": -23186.657317
+        }
+      ]
+    },
+    "v1 -> v3": {
+      "count": 25,
+      "to_block": 25,
+      "next_week_losing": 5,
+      "next_week_non_negative": 20,
+      "next_week_pnl_usd": -4306052.681433001,
+      "rows": [
+        {
+          "wallet": "0xc26c…",
+          "at": "2026-07-05T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0xc26c…",
+          "at": "2026-07-12T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 130552.139309
+        },
+        {
+          "wallet": "0xc26c…",
+          "at": "2026-08-16T00:00:00Z",
+          "from": "allowed",
+          "to": "low_win_rate",
+          "next_week_pnl_usd": -4970579.815667001
+        },
+        {
+          "wallet": "0x3b88…",
+          "at": "2026-06-21T00:00:00Z",
+          "from": "allowed",
+          "to": "regime_disagreement",
+          "next_week_pnl_usd": 506830.075131
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-06-07T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-06-14T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-06-21T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-06-28T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-07-05T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-07-12T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-07-19T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-07-26T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-08-02T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-08-09T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0x3dd2…",
+          "at": "2026-08-16T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": -18527.286274
+        },
+        {
+          "wallet": "0xa844…",
+          "at": "2026-06-14T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 65.1678
+        },
+        {
+          "wallet": "0xa844…",
+          "at": "2026-06-21T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 19413.253885
+        },
+        {
+          "wallet": "0xa844…",
+          "at": "2026-08-02T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 1916.05534
+        },
+        {
+          "wallet": "0xa844…",
+          "at": "2026-08-16T00:00:00Z",
+          "from": "allowed",
+          "to": "low_win_rate",
+          "next_week_pnl_usd": 0
+        },
+        {
+          "wallet": "0xa844…",
+          "at": "2026-08-23T00:00:00Z",
+          "from": "allowed",
+          "to": "low_win_rate",
+          "next_week_pnl_usd": -16756.772119999998
+        },
+        {
+          "wallet": "0xd894…",
+          "at": "2026-06-14T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": 7.2139060000000015
+        },
+        {
+          "wallet": "0xd894…",
+          "at": "2026-06-21T00:00:00Z",
+          "from": "allowed",
+          "to": "thin_sample",
+          "next_week_pnl_usd": -3586.570464
+        },
+        {
+          "wallet": "0xd894…",
+          "at": "2026-08-30T00:00:00Z",
+          "from": "allowed",
+          "to": "regime_disagreement",
+          "next_week_pnl_usd": -7967.6971
+        },
+        {
+          "wallet": "0xfe47…",
+          "at": "2026-08-23T00:00:00Z",
+          "from": "allowed",
+          "to": "regime_disagreement",
+          "next_week_pnl_usd": 33759.67396099999
+        },
+        {
+          "wallet": "0xfe47…",
+          "at": "2026-09-13T00:00:00Z",
+          "from": "allowed",
+          "to": "regime_disagreement",
           "next_week_pnl_usd": 18821.88086
         }
       ]

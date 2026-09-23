@@ -207,10 +207,10 @@ ablation and is still tracked.
 snapshot (30-day realised PnL -$4,745,429), DeepSeek, 213 model calls, no Nansen credits.
 Report: `bench/reports/2026-09-20T16-02-18-561Z.md`.
 
-| config | mean final $ | baited rate | runs |
-|---|---|---|---|
-| unarmed | $3,908 | 24/30 (80%) | 30 |
-| armed-strict | **$0** | **0/30 (0%)** | 30 |
+> Withdrawn 23 Sep 2026: this suite replayed five attacks written about other wallets
+> against one wallet's record (correction in `docs/DETAILS.md`). The per-wallet run in
+> `bench/reports/2026-09-23T01-36-12-745Z-wallets.md` replaces it. The report file above
+> stays for audit.
 
 armed-strict held at $0 on every case and every repeat, with no errors. It has the same
 tools as armed-basic and differs only in its policy text, so this is a policy effect on

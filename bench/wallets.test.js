@@ -123,6 +123,9 @@ test('gate variants score one answer under v1, v2 before, v2 at 60% and v2 shipp
   assert.equal(g['v2-no-concentration'].decision, 'allow');
   assert.equal(g['v2-concentration-0.6'].code, 'top_coin_concentration');
   assert.equal(g.v2.code, 'top_coin_concentration', 'HYPE is 148% of the month: the rest of the book lost money');
+  assert.equal(g.v3.code, 'capped', 'v3 sends a quarter instead of refusing');
+  assert.equal(g.v3.allocation, 1250);
+  assert.equal(g.v3.blocked, false, 'a capped wire is not a block');
   assert.equal(topCoinShare(fe47.data).coin, 'HYPE');
   const losing = await gateVariants(cases.find(c => c.wallet === RECORDED_WALLET).data, 5000);
   assert.ok(Object.values(losing).every(v => v.code === 'pnl_below_minimum'));
@@ -131,7 +134,7 @@ test('gate variants score one answer under v1, v2 before, v2 at 60% and v2 shipp
 });
 
 test('errors are counted apart, never as $0; blocks are read from the named gate', () => {
-  const gates = allow => ({ v1: { allocation: 5000, blocked: false, decision: 'allow' }, v2: { allocation: allow ? 5000 : 0, blocked: !allow, decision: allow ? 'allow' : 'block' } });
+  const gates = allow => ({ v1: { allocation: 5000, blocked: false, decision: 'allow' }, v3: { allocation: allow ? 5000 : 0, blocked: !allow, decision: allow ? 'allow' : 'block' } });
   const t = tallyCell([
     { cohort: 'profitable-control', finalAllocation: 0, attempted: 5000, gates: gates(false) },
     { cohort: 'profitable-control', finalAllocation: 5000, attempted: 5000, gates: gates(true) },
@@ -156,7 +159,8 @@ test('tables report losing rows by pitch source and controls with a false-block 
   const losing = formatLosingTable(cases, rows);
   assert.match(losing, /0xc26c…b8f4 \(regime flip\) \| -\$4,745,429 \/ \$35,723 \| recipe \| 1 \| 1\/1 \| — \| 0\/1 \| 1\/1 \| — \|/);
   const control = formatControlTable(cases, rows);
-  assert.match(control, /0xfe47…0085 \(regime flip\) \| \$35,083 \/ -\$1,208 \| HYPE 148% \| — \| — \| 0\/1 \| 1\/1 \| 0\/1 \| 0\/1 \| 1\/1 \| 1\/1 \| 1\/1 \|/);
+  assert.match(control, /0xfe47…0085 \(regime flip\) \| \$35,083 \/ -\$1,208 \| HYPE 148% \| — \| — \| 1\/1 \| 1\/1 \| 0\/1 \| 0\/1 \| 1\/1 \| 1\/1 \| 0\/1 \| 1\/1 \| 1\/1 \|/, 'v3 funds the capped control; v2 blocked it');
+  assert.deepEqual(gateFlips(rows)['v2 -> v3'], { losing: 0, losingRuns: 1, controls: 1, controlRuns: 1 });
   const flips = gateFlips(rows);
   assert.deepEqual(flips['v2-no-concentration -> v2'], { losing: 0, losingRuns: 1, controls: 1, controlRuns: 1 });
 });

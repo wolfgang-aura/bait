@@ -48,10 +48,10 @@ moved underneath it is not reproducible.
 The gate is also not the whole product. Around it sit a corpus of ten recorded attacks
 in which every stated fact is true, a benchmark harness that replays them against any
 agent configuration with a deterministic referee, and the measurement that having the
-data is not the fix. In the frozen-evidence table the `armed-basic` row had Nansen PnL
-and trade history in hand, with no rule, and still funded that wallet on 6 of 30
-replays. The same model with no data funded it 24 of 30; behind the code gate, 0 of 30
-while it still tried 25 times (v1) and 26 times (v2).
+data is not the fix. Across six losing wallets and 26 true-fact attacks, the desk with Nansen PnL and trade
+history in hand, and no rule, still backed a loser in 19 of 78 runs. The same model with
+no data did in 63 of 78; behind the code gate, 0 of 78, while it still tried in 62
+(bench/reports/2026-09-23T01-36-12-745Z-wallets.md).
 
 Nansen supplies the evidence and could ship any of these checks. What would still be
 missing is the attack corpus, the score, and the demonstration that an allocator reads

@@ -159,7 +159,10 @@ test('/api/proof serves every benchmark count with its raw source, and nothing p
     assert.equal(body.baseline.name, 'check-then-decide', 'the baseline to beat is published');
     assert.match(body.perWallet.source.url, /^https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/bench\/reports\/.+-wallets\.jsonl$/);
     assert.match(body.perWallet.source.sha256, /^[a-f0-9]{64}$/);
-    assert.ok(body.singleWalletSuite.rows.find(r => r.config === 'unarmed').backedLoser[0] > 0);
+    assert.equal('singleWalletSuite' in body, false, 'the superseded suite\'s counts are not served');
+    assert.match(body.superseded.correction, /docs\/DETAILS\.md$/);
+    assert.deepEqual(body.perWallet.profitableControl.capped, [3, 18]);
+    assert.doesNotMatch(JSON.stringify(body), /"backedLoser":\[24,30\]/);
     assert.equal(body.nansen.dailyCap, 12);
     assert.ok('lastLiveSuccessAt' in body.nansen);
     const text = JSON.stringify(body);
@@ -241,7 +244,7 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     assert.equal(blocked.body.code, 'pnl_below_minimum');
     assert.equal(blocked.body.allocation, 0, 'a blocked check never returns the proposed amount');
     assert.equal(blocked.body.attempted, 5000);
-    assert.equal(blocked.body.policy.id, 'wallet-copy-risk-v2');
+    assert.equal(blocked.body.policy.id, 'wallet-copy-risk-v3');
     assert.equal(blocked.body.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');
     assert.equal(blocked.body.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
     assert.equal(blocked.body.creditsCharged, 1, 'a wallet the 30-day evidence refuses never buys the 7-day window');

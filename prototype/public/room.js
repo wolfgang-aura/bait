@@ -388,12 +388,12 @@ async function pick() {
  * server's `final` object and the prospect record it sent with the verdict.
  */
 function showReveal(p, final) {
-  const kind = final.peak === 0 ? 'none' : final.verdict === 'block' ? 'blocked' : final.verdict === 'caution' ? 'caution' : 'cleared';
+  const kind = final.peak === 0 ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
   el.revealStamp.className = `stamp ${kind === 'blocked' ? '' : kind}`.trim();
   text(el.revealStamp, final.stamp);
   text(el.revealTitle, final.headline);
   text(el.revealSub, final.subline);
-  el.revealWhy.hidden = !(final.because && final.verdict === 'block' && final.peak > 0);
+  el.revealWhy.hidden = !(final.because && ['block', 'capped'].includes(final.verdict) && final.peak > 0);
   text(el.revealWhy, final.because ? `Why: ${final.because}` : '');
   // MERIDIAN's own words: where it asked for the record, then where it agreed.
   el.revealQuotes.replaceChildren();
@@ -415,6 +415,7 @@ function showReveal(p, final) {
   el.revealQuotes.hidden = rows.length === 0;
   text(el.hypeLabel, 'What you pitched');
   text(el.recordLabel, final.verdict === 'block' ? 'What you left out' : 'What the record shows');
+  if (final.verdict === 'capped') text(el.recordLabel, 'Why BAIT capped it');
   showTruth(p);
   window.scrollTo(0, 0);
   if (final.verdict === 'block' && final.peak > 0 && !reduced) {
@@ -519,7 +520,7 @@ function renderReport(host, risk) {
  */
 function renderGate(host, gate) {
   host.replaceChildren();
-  const label = { pass: 'pass', fail: 'block', not_assessed: 'n/a' };
+  const label = { pass: 'pass', fail: 'block', not_assessed: 'n/a', cap: 'cap' };
   // Freshness is always shown: on a frozen snapshot it reads n/a rather than pass.
   const shown = c => c.result !== 'not_assessed' || c.id === 'evidence_freshness';
   // Rows the gate could not look at are named once in the footer, so the table stays
@@ -877,7 +878,7 @@ function showFinal(final, entries, mineAt = null) {
   text(el.wireAmount, final.peakLabel);
   text(el.wireStopped, final.stoppedLabel);
   el.wireStopped.classList.toggle('zero', !final.stopped);
-  el.stamp.className = `stamp ${final.peak === 0 ? 'none' : final.verdict === 'caution' ? 'caution' : final.verdict === 'allow' ? 'cleared' : ''}`;
+  el.stamp.className = `stamp ${final.peak === 0 ? 'none' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : final.verdict === 'allow' ? 'cleared' : ''}`;
   text(el.stamp, final.stamp);
   text(el.finalHead, final.headline);
   text(el.finalSub, final.subline);
@@ -944,7 +945,7 @@ function renderWireLog(list) {
   for (const shot of list) {
     const row = document.createElement('li');
     const w = shot.wire;
-    row.className = shot.caught ? 'caught' : !w ? 'none' : w.decision === 'block' ? 'blocked' : 'cleared';
+    row.className = shot.caught ? 'caught' : !w ? 'none' : w.decision === 'block' ? 'blocked' : w.verdict === 'capped' ? 'capped' : 'cleared';
     row.textContent = shot.caught
       ? `Line ${shot.n} · caught lie, no wire`
       : !w
@@ -1055,20 +1056,24 @@ async function fixture(name, prospectId) {
   const state = await api('/api/room/start', { method: 'POST', body: { prospect: target.id } });
   adopt(state);
   const p = frozen.prospect;
-  const block = p.risk.verdict === 'block';
+  // The verdict is the gate's real decision on the frozen record, not the report's.
+  const block = frozen.gate.decision === 'block';
+  const capped = frozen.gate.code === 'capped';
   const amount = 2500;
+  const sent = Math.round(frozen.gate.executed);
+  const verdict = block ? 'block' : capped ? 'capped' : p.risk.verdict === 'allow' ? 'allow' : 'caution';
   // Layout only: the amount is a fixture value shaped like the server's `wire` object.
   const wire = {
     attempted: amount, attemptedLabel: dollars(amount), decision: block ? 'block' : 'allow',
-    verdict: p.risk.verdict, stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED' }[p.risk.verdict],
-    stopped: block ? amount : 0, stoppedLabel: dollars(block ? amount : 0), executedLabel: dollars(block ? 0 : amount),
+    verdict, stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
+    stopped: amount - sent, stoppedLabel: dollars(amount - sent), executedLabel: dollars(sent),
     reason: 'fixture',
   };
   const fixtureFinal = {
     funded: amount, fundedLabel: dollars(amount), peak: amount, peakLabel: dollars(amount),
     stopped: wire.stopped, stoppedLabel: wire.stoppedLabel,
-    executed: block ? 0 : amount, executedLabel: wire.executedLabel,
-    verdict: p.risk.verdict, blocked: block, stamp: wire.stamp,
+    executed: sent, executedLabel: wire.executedLabel,
+    verdict, blocked: block, stamp: wire.stamp,
     prospect: { id: p.id, name: p.name, handle: p.handle, venueLabel: p.venueLabel },
     // Same sentences the server's endingCopy writes; the gate table is the gate's real
     // decision on the frozen record, run by the fixture route for this $2,500.
@@ -1076,8 +1081,9 @@ async function fixture(name, prospectId) {
     quotes: { asked: { n: 1, line: 'Fixture reply: show me the 30-day record.' }, agreed: { n: 2, line: 'Fixture reply: fine, a small probe.', amount } },
     subline: block
       ? `BAIT's Nansen read blocked it: ${dollars(amount)} held, $0 reached ${p.name}.`
-      : `BAIT's Nansen read let it through: ${dollars(amount)} sent.`,
-    because: frozen.gate.checks.find(c => c.result === 'fail')?.plain ?? null,
+      : capped ? `BAIT's Nansen read capped it: ${dollars(amount)} requested, ${dollars(sent)} allowed, ${dollars(amount - sent)} held.`
+      : `BAIT's Nansen read let it through: ${dollars(sent)} reached ${p.name}.`,
+    because: frozen.gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null,
     trail: null,
     agentLine: assessed?.agent_line ?? '',
     gate: frozen.gate,

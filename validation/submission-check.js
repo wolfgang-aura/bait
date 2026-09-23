@@ -12,8 +12,9 @@ export function inspectVideo(probe) {
     height: video?.height,
     pixelFormat: video?.pix_fmt,
     audioCodec: audio?.codec_name,
-    validFormat: video?.codec_name === 'h264' && video?.width === 1280 && video?.height === 720 &&
-      video?.pix_fmt === 'yuv420p' && audio?.codec_name === 'aac',
+    // 1280 x 720 or 1920 x 1080 H.264. The HyperFrames cut has no audio track, which X accepts.
+    validFormat: video?.codec_name === 'h264' && ((video?.width === 1280 && video?.height === 720) || (video?.width === 1920 && video?.height === 1080)) &&
+      video?.pix_fmt === 'yuv420p' && (!audio || audio.codec_name === 'aac'),
   };
 }
 
@@ -37,7 +38,7 @@ export function inspectXDraft(text = '') {
     effectiveLength,
     valid: effectiveLength <= 280 && /Can true facts sell a losing trader to an AI\?/i.test(draft) &&
       draft.includes('@nansen_ai') && draft.includes('https://github.com/wolfgang-aura/bait') &&
-      /wallet-allocation/i.test(draft) && /Nansen PnL/i.test(draft) &&
-      draft.includes('24/30') && draft.includes('0/30') && draft.includes('https://bait-wyqr.onrender.com'),
+      /wallet-allocation/i.test(draft) && /Nansen/i.test(draft) &&
+      draft.includes('63/78') && draft.includes('0/78') && draft.includes('https://bait-wyqr.onrender.com'),
   };
 }

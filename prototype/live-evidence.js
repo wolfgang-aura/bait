@@ -25,7 +25,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { call as nansenCall, creditCostFor } from '../validation/nansen.js';
-import { PRODUCTION_GUARD_POLICY_V2 } from '../validation/guard.js';
+import { PRODUCTION_GUARD_POLICY_V3 } from '../validation/guard.js';
 
 export const LIVE_ENDPOINT = 'profiler/perp-pnl-summary';
 export const LIVE_EVIDENCE_TTL_MS = 30 * 60_000;
@@ -43,7 +43,7 @@ export const DEFAULT_READ_TIMEOUT_MS = 8_000;
  * closed, not a pass.
  */
 export const ROOM_LIVE_GUARD_POLICY = Object.freeze({
-  ...PRODUCTION_GUARD_POLICY_V2,
+  ...PRODUCTION_GUARD_POLICY_V3,
   id: 'wallet-copy-risk-room-live-v2',
   maxEvidenceAgeMs: 60 * 60_000,
 });

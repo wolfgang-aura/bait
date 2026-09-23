@@ -48,8 +48,8 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   assert.match(html, /href="https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/docs\/WALLET_ALLOCATION_GUARD\.md"[^>]*>Integration contract</);
   assert.match(html, /Copy the snippet/);
   assert.doesNotMatch(html, /Copy the rule|3<\/span>Fix|BAIT rule|Red-team kit for AI trading agents/);
-  assert.match(js, /rows\.find\(r => r\.config === 'guarded'\)/);
-  assert.match(js, /The guard that held: \$\{guarded\.funded\} of \$\{guarded\.runs\}\. Blocked \$\{guarded\.blocked\} attempts\./);
-  assert.match(js, /guarded: 'BAIT guard · code, no model tools'/);
-  assert.match(js, /typeof r\.blocked === 'number'/);
+  // The page renders the per-wallet run; the superseded single-wallet headline is gone.
+  assert.match(js, /Behind the gate: \$\{w\.losing\.guarded\[0\]\} of \$\{w\.losing\.guarded\[1\]\} losing runs funded/);
+  assert.match(js, /capped \$\{c\.capped\[0\]\}/);
+  assert.doesNotMatch(js + html, /24\/30|6\/30|0\/30|24 of 30|The guard that held/);
 });

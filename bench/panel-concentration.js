@@ -52,7 +52,7 @@ export async function scorePanel(rows) {
     const at = Date.parse(period.at);
     const gates = {};
     for (const [name, policy] of Object.entries(GATE_VARIANTS)) {
-      const g = await guardAllocation({ executor: panelExecutor(rows, period.wallet, at), wallet: period.wallet, allocation: 1,
+      const g = await guardAllocation({ executor: panelExecutor(rows, period.wallet, at), wallet: period.wallet, allocation: 100,
         policy, now: () => new Date(at) });
       gates[name] = { decision: g.decision, code: g.code };
     }
@@ -67,7 +67,8 @@ export async function scorePanel(rows) {
     return { allowed: allowed.length, allowed_profitable: allowed.filter(d => d.outcome_pnl_usd >= 0).length,
       allowed_losing: allowed.filter(d => d.outcome_pnl_usd < 0).length, blocked: blocked.length,
       blocked_losing: blocked.filter(d => d.outcome_pnl_usd < 0).length, blocked_profitable: blocked.filter(d => d.outcome_pnl_usd >= 0).length,
-      allowed_outcome_pnl_usd: sum(allowed), block_codes: codes };
+      allowed_outcome_pnl_usd: sum(allowed), block_codes: codes,
+      capped: allowed.filter(d => d.gates[name].code === 'capped').length };
   };
   const flips = (a, b) => {
     const list = decisions.filter(d => d.gates[a].decision !== d.gates[b].decision);
@@ -83,6 +84,8 @@ export async function scorePanel(rows) {
       'v2-no-concentration -> v2': flips('v2-no-concentration', 'v2'),
       'v2-no-concentration -> v2-concentration-0.6': flips('v2-no-concentration', 'v2-concentration-0.6'),
       'v1 -> v2': flips('v1', 'v2'),
+      'v2 -> v3': flips('v2', 'v3'),
+      'v1 -> v3': flips('v1', 'v3'),
     },
   };
 }
@@ -94,12 +97,12 @@ export function markdown(result, meta) {
     '# Concentration check on the robustness panel',
     '',
     `- input: \`${meta.input}\` (${meta.rows} saved summaries, sha256 \`${meta.sha256}\`)`,
-    `- decisions: the ${result.periods} forward weeks of \`bench/reports/robustness-panel.md\` (${result.wallets} development wallets), each replayed through \`guardAllocation\` under four policies`,
+    `- decisions: the ${result.periods} forward weeks of \`bench/reports/robustness-panel.md\` (${result.wallets} development wallets), each replayed through \`guardAllocation\` under each policy (v3, shipped, caps the concentration case at 25% instead of refusing it; a capped week counts as allowed)`,
     '- the 7-day summary each v2 policy reads is the panel row ending on the same date as the 30-day row',
     '',
-    '| policy | allowed | allowed, next week lost | blocked | blocked, next week lost | next-week PnL of allowed weeks |',
-    '| --- | ---: | ---: | ---: | ---: | ---: |',
-    ...Object.entries(result.policies).map(([n, t]) => `| ${n} | ${t.allowed} | ${t.allowed_losing} | ${t.blocked} | ${t.blocked_losing} | ${usd(t.allowed_outcome_pnl_usd)} |`),
+    '| policy | allowed | of which capped | allowed, next week lost | blocked | blocked, next week lost | next-week PnL of allowed weeks |',
+    '| --- | ---: | ---: | ---: | ---: | ---: | ---: |',
+    ...Object.entries(result.policies).map(([n, t]) => `| ${n} | ${t.allowed} | ${t.capped} | ${t.allowed_losing} | ${t.blocked} | ${t.blocked_losing} | ${usd(t.allowed_outcome_pnl_usd)} |`),
     '',
     '## Decisions flipped',
     '',

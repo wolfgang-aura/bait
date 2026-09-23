@@ -37,11 +37,10 @@ let results;
 let walletData;
 let step = 0;
 
-/* ---------- hero: the quoted attack line, the 24/6/0 ladder, evidence line ---------- */
+/* ---------- hero: the per-wallet ladder, the control line, evidence line ---------- */
 
 function renderHero() {
   // The headline is the multi-wallet result: six losing wallets and a profitable control.
-  // The single-wallet 24/30 ladder stays in the score table below, labelled as one wallet.
   const w = results.wallets;
   if (!w) throw new Error('The per-wallet table is missing from the bundle');
   const rungs = [['unarmed', w.losing.unarmed], ['armed-basic', w.losing.armedBasic], ['guarded', w.losing.guarded]];
@@ -55,7 +54,7 @@ function renderHero() {
   if (model) $('b-model').textContent = model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : model;
   if (w.control) {
     const b = results.baseline;
-    $('b-control').textContent = `On ${w.wallets.filter(x => x.cohort !== 'losing').length} profitable traders the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions to fund them (one month carried by one market, one month whose last week reversed). Under the gate the AI still tried to fund a loser in ${w.losing.overruled[0]} of ${w.losing.overruled[1]} runs.${b ? ` Baseline to beat: a ${b.name} rule with no model backed ${b.baited[0]} of ${b.baited[1]} losing cases and refused ${b.controlRefused[0]} of ${b.controlRefused[1]} profitable ones.` : ''}`;
+    $('b-control').textContent = `On ${w.wallets.filter(x => x.cohort !== 'losing').length} profitable traders the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions to fund them (all on one month whose last week reversed) and capped ${w.control.capped[0]} at 25% (a month one market carried). Under the gate the AI still tried to fund a loser in ${w.losing.overruled[0]} of ${w.losing.overruled[1]} runs.${b ? ` Baseline to beat: a ${b.name} rule with no model backed ${b.baited[0]} of ${b.baited[1]} losing cases and refused ${b.controlRefused[0]} of ${b.controlRefused[1]} profitable ones.` : ''}`;
   }
   const frac = c => `${c.funded}/${c.runs}`;
   $('b-wallets').innerHTML = w.wallets.map(x => `<tr>
@@ -135,30 +134,35 @@ $('b-back').addEventListener('click', () => { if (step > 0) { step--; renderRoun
 /* ---------- 2 · score: leaderboard over every configuration the bundle has ---------- */
 
 function renderScore() {
-  const cmp = results.comparison;
-  const rows = [...cmp.rows].sort((a, b) => (rate(b) - rate(a)) || (configRank(a.config) - configRank(b.config)));
-  const totalRuns = rows.reduce((sum, r) => sum + r.runs, 0);
-  const evidenceNote = cmp.evidence === 'frozen' ? ', frozen Nansen evidence' : '';
-  $('b-comparison-caption').textContent = `${totalRuns} replays recorded ${day(cmp.recordedAt)}, ${results.round.provider}${evidenceNote}, ${cmp.caseCount} attacks times ${cmp.repeats} repeats per row.`;
-  $('b-comparison').innerHTML = rows.map(r =>
-    `<tr data-config="${escape(r.config)}">
-      <th scope="row"><code>${escape(r.config)}</code></th>
-      <td>${escape(configTools(r.config))}</td>
-      <td><strong>${r.funded} / ${r.runs}</strong> <em>(${percent(r)})</em>${typeof r.blocked === 'number' ? ` <span class="chip">blocked ${r.blocked}/${r.runs}</span>` : ''}</td>
-      <td>${money(r.mean)}</td>
+  // One row per desk over the per-wallet run: losing wallets backed, and on the profitable
+  // controls, funding decisions the gate refused or capped.
+  const w = results.wallets;
+  const b = results.baseline;
+  const c = w.control;
+  const rowsHtml = [
+    ['unarmed', 'No tools, pitch only', w.losing.unarmed, '—'],
+    ['armed-basic', 'Nansen PnL + trades tools', w.losing.armedBasic, '—'],
+    [`${w.gate.policy}`, 'BAIT gate, no model tools', w.losing.guarded, `blocked ${c.falseBlocks[0]}/${c.falseBlocks[1]}, capped ${c.capped[0]}/${c.capped[1]}`],
+    [b.name, 'Rule, no model', b.baited, `refused ${b.controlRefused[0]}/${b.controlRefused[1]}`],
+  ];
+  $('b-comparison-caption').textContent = `${w.losing.wallets} losing wallets, ${Object.values(w.losing.cases).reduce((x, y) => x + y, 0)} attacks, ${w.repeats} runs each (the rule runs once per attack), recorded ${day(w.recordedAt)}, ${w.model}, frozen Nansen snapshots; ${c.wallets} profitable controls.`;
+  $('b-comparison').innerHTML = rowsHtml.map(([id, tools, [n, d], ctl]) =>
+    `<tr data-config="${escape(id)}">
+      <th scope="row"><code>${escape(id)}</code></th>
+      <td>${escape(tools)}</td>
+      <td><strong>${n} / ${d}</strong> <em>(${Math.round((n / d) * 100)}%)</em></td>
+      <td>${escape(ctl)}</td>
     </tr>`).join('');
 }
 
 /* ---------- 3 · guard: the code gate, its snippet, and the prompt-only rule in the audit fold ---------- */
 
 function renderGuard() {
-  const guarded = results.comparison.rows.find(r => r.config === 'guarded');
-  const strict = results.comparison.rows.find(r => r.config === 'armed-strict');
+  const w = results.wallets;
   const policy = results.paired.policies.find(p => p.id === 'armed-strict');
-  if (typeof guarded?.blocked !== 'number') throw new Error('The guarded row has no block count in the bundle');
-  if (!strict || !policy?.text) throw new Error('The strict policy text is missing from the bundle');
-  $('b-rule-title').textContent = `The guard that held: ${guarded.funded} of ${guarded.runs}. Blocked ${guarded.blocked} attempts.`;
-  $('b-policy-note').textContent = `Prompt-only version of the same rule also held ${strict.funded}/${strict.runs}; the guard does not depend on the model reading it.`;
+  if (!policy?.text) throw new Error('The strict policy text is missing from the bundle');
+  $('b-rule-title').textContent = `Behind the gate: ${w.losing.guarded[0]} of ${w.losing.guarded[1]} losing runs funded, though the AI tried in ${w.losing.overruled[0]}. On profitable traders: ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions blocked, ${w.control.capped[0]} capped at 25%.`;
+  $('b-policy-note').textContent = 'The prompt-only version of the rule, tested on the earlier single-wallet suite (see docs/DETAILS.md). The gate does not depend on the model reading it.';
   $('b-policy').textContent = policy.text;
 }
 
