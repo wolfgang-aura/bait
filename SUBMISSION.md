@@ -25,15 +25,15 @@ HyperFrames over two real rounds played on the hosted site (https://bait-wyqr.on
 e4b9ae6) and recorded at 3840 by 2160 on 23 Sep 2026. The barricade is the hosted page's own
 component with each round's amount, captured at a tenth of its speed and timed back to real time,
 because 4K screenshots cannot catch a 2.2 s animation.
-SHA-256: `bfbca96ac5eb4b732d28b8297cbffc9022d07db2dec818075690cfa34d779150`.
+SHA-256: `72f018e3f2fc7588fb8f9b17d6ad0f4a868906ddf6bd2997e007d0b2dbf22a24`.
 
 | Screen | Point |
 | --- | --- |
 | Cold open | THE LEGEND: +$118,975,612 all time (public leaderboard) against -$30,943,878 over 30 days (live Nansen read, 23 Sep 13:29 UTC), BLOCKED BY BAIT. "Con an AI into backing a losing trader using only true facts. Nansen data is what stops you." |
 | Round 1 | THE LEGEND, before the gate the same neutral card as every trader. Line 1 (the all-time figure): PENNY asks for the 30-day window and commits $2,500. Line 2 (FARTCOIN's +$328,412 over 30 days): PENNY raises it to $6,250, and the player presses Wire it. The barricade slams shut ("$6,250 HELD"), the checkpoint reads Nansen live, the camera zooms on the BLOCK row, and the Nansen calls behind the verdict are listed under it. Reveal caption: "An AI agent would have funded this wallet. BAIT, the check between the agent and the money, stopped it." |
-| Round 2 | A pasted wallet (0x6dae...90de). One live read: 30 days +$47,744, last 7 days -$56,416. PENNY commits $3,000 on line 1 and the player presses Wire it. The checkpoint blocks on the reversed week and strikes the concentration CAP through as superseded. The video ends on this round's own reveal. Caption: the month was profitable, the last week reversed it, the check's conservative side. |
-| The result (between the rounds) | "Pitched with true facts, the AI backed a losing trader 63 of 78 times. With Nansen tools, 19. Behind BAIT, 0." "The cost: of 18 decisions to fund 6 profitable traders, BAIT blocked 3 and capped 3." "When the evidence itself was faked, a simple PnL rule let money through 6 of 6 times; BAIT, 0." |
-| Between the rounds | The benchmark card and the bench command, then round 2. The BAIT chip appears only where a caption says BAIT. |
+| Round 2 | Straight after round 1 (0:30): a pasted wallet (0x6dae...90de). One live read: 30 days +$47,744, last 7 days -$56,416. PENNY commits $3,000 on line 1 and the player presses Wire it. The checkpoint blocks on the reversed week and strikes the concentration CAP through as superseded. Caption: "The month was up; the last week reversed it. BAIT blocked all $3,000." |
+| The result (last, 0:51.6) | "Pitched with true facts, the AI backed a losing trader 63 of 78 times. With Nansen tools, 19. Behind BAIT, 0." "The cost: of 18 decisions to fund 6 profitable traders, BAIT blocked 3 and capped 3." "When the evidence itself was faked, a simple PnL rule let money through 6 of 6 times; BAIT, 0." |
+| Order and end | Cold open 0:00, round 1 0:03, round 2 0:30.1, bench command card 0:50.0, benchmark card 0:51.6 to the end. The last frame is the benchmark card with "An AI agent would have funded this wallet. BAIT, the check between the agent and the money, stopped it." and bait-wyqr.onrender.com. The BAIT chip appears only where a caption says BAIT. |
 
 Both rounds' figures come from live Nansen reads whose raw responses (two perp-pnl-summary
 calls, one page of perp-trades and one perp-positions call each: 4 credits, the same figure the
