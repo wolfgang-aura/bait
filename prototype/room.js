@@ -347,7 +347,8 @@ const recordName = () => 'Nansen';
  * Did the desk ask for the record? Read from its own spoken lines: a line that asks for,
  * or doubts the absence of, the longer track record. Anything else counts as not asking.
  */
-export const ASKED_FOR_RECORD = /\b(30[- ]?day|thirty[- ]day|thirty days|last month|trailing|track record|the record|window|show me|verif|evidence|drawdown|longer history|whole book)\b/i;
+// "30 days" as well as "30-day": a desk asking "where are the last 30 days?" has asked.
+export const ASKED_FOR_RECORD = /\b(30[- ]?days?|thirty[- ]days?|last month|trailing|track record|(?:the|recent|your|his|her|full) record|window|show me|verif|evidence|drawdown|longer history|whole book)\b/i;
 
 /** The desk's own words that the ending quotes: where it asked, and where it agreed. */
 export function roundQuotes(shots) {

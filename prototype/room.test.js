@@ -653,3 +653,13 @@ test('the board merges posted cons with recorded ones and labels only the record
   assert.ok(posted.leaderboard.slice(1).every(r => r.recorded));
   assert.equal(loadRecordedCons(path.join(os.tmpdir(), 'no-such-cons.json')).length, 0, 'a missing seed is an empty list');
 });
+
+test('a desk that asks for "the last 30 days" or "the recent record" has asked for the record', async () => {
+  const { ASKED_FOR_RECORD } = await import('./room.js');
+  for (const line of [
+    "All-time PnL says nothing about the last 30 days; where's the recent record?",
+    'Where is the 30-day window?',
+    'Show me thirty days of trades.',
+  ]) assert.match(line, ASKED_FOR_RECORD, line);
+  assert.doesNotMatch('Great week. Funded.', ASKED_FOR_RECORD);
+});

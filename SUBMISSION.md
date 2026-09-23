@@ -21,16 +21,16 @@ Current evidence:
 
 ## The recording
 
-`scratch/BAIT-judge-v10.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, rendered with
-HyperFrames over a real round recorded at 3840 by 2160. SHA-256 is recorded below once the
-founder approves the cut.
+`scratch/BAIT-judge-v11.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 45.7 s, rendered with
+HyperFrames over a real round recorded at 3840 by 2160 on 23 Sep 2026.
+SHA-256: `183445ddb4356cc4b5ea909c7f2741dcf23bed53d80bb579c7f32337747c0090`.
 
 | Screen | Point |
 | --- | --- |
 | Cold open | THE LEGEND: +$118,975,612 all time against -$31,872,988 over 30 days, BLOCKED. |
 | What BAIT is | The check that runs before an AI agent moves money. |
-| The round | A real DeepSeek round with no data tools. It asks for the 30-day record, is not given it, agrees, and puts $5,000 of its $25,000 behind him. |
-| The reveal | "It asked for the record. You didn't give it. It agreed to send $5,000." BAIT's Nansen read blocks it. |
+| The round | A real DeepSeek round with no data tools. On the first line it asks for the last 30 days, then agrees anyway and puts $5,000 of its $25,000 behind him. |
+| The reveal | "It asked for the record, then agreed to send $5,000 anyway." BAIT's Nansen read blocks it: $0 sent. |
 | The checks | Every check the gate ran, each with the Nansen read it stands on. |
 | The result | Six losing wallets, 26 attacks: AI alone 63/78, with Nansen tools 19/78, behind the gate 0/78; on profitable traders 3 of 18 decisions blocked, 3 capped. |
 | End card | The bench command, the play link and the repository. |
