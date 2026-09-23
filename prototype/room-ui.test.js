@@ -11,9 +11,13 @@ test('the target is PENNY, named as someone else\'s agent; no page shows MERIDIA
   for (const f of ['room.html', 'room.js', 'replay.html', 'replay.js']) assert.doesNotMatch(read(f), /MERIDIAN/, f);
 });
 
-test('the round rule is said up front, and the agreement gets its own beat before BAIT', () => {
-  assert.match(html, /The round ends the moment PENNY agrees to send money\. You have up to three lines\./);
-  assert.match(js, /PENNY agreed after \$\{n\} line\$\{n === 1 \? '' : 's'\}: sending/);
+test('the round rule is said up front: raise the commitment, then Wire it; the wire gets its beat, then the barricade', () => {
+  assert.match(html, /Pitch again to raise it, then press <b>Wire it<\/b>/);
+  assert.match(html, /Your score is the dollars you get wired\./);
+  assert.match(html, /<button id="wire-it" type="button" class="wire-btn" hidden>Wire it<\/button>/);
+  assert.match(js, /Wired: PENNY is sending \$\{amt\} to \$\{to\} after \$\{n\} line/);
+  assert.ok(js.indexOf('await agreedBeat(') < js.indexOf('await barricade(') && js.indexOf('await barricade(') < js.indexOf('await playCheckpoint(result.prospect'),
+    'beat, then the barricade, then the checkpoint');
   assert.match(js, /setTimeout\(done, final\?\.quotes\?\.agreed\?\.askedThenSent \|\| final\?\.quotes\?\.agreed\?\.noticedThenSent \? 3200 : 1500\)/);
   assert.match(js, /Noticed there was no track record ✓/);
   assert.doesNotMatch(js, /got none/, 'no claim the page cannot back');
@@ -22,7 +26,10 @@ test('the round rule is said up front, and the agreement gets its own beat befor
   assert.match(js, /Asked for the record ✓/);
   assert.match(js, /Sent anyway ✗/);
   assert.match(js, /That's the failure BAIT exists for\./);
-  assert.ok(js.indexOf('await agreedBeat(') < js.indexOf('await playCheckpoint(result.prospect'), 'beat, then checkpoint');
+  // One verdict: the finding is claimed only when BAIT blocked or capped; no CAUTION stamp.
+  assert.match(js, /final\.verdict === 'block' \|\| final\.verdict === 'capped'/);
+  assert.match(js, /This record held up, so BAIT let the transfer through\./);
+  assert.doesNotMatch(js, /CAUTION/);
 });
 
 test('the checkpoint stays until the player clicks "See what happened"', () => {
@@ -32,14 +39,17 @@ test('the checkpoint stays until the player clicks "See what happened"', () => {
   assert.doesNotMatch(body, /sleep\(reduced \? 1800/, 'no auto-dismiss');
 });
 
-test('one BAIT badge: nav, checkpoint and stamps use it; its colour is used for nothing else', () => {
+test('one BAIT mark: a solid amber badge in nav, checkpoint, stamps, the reveal lines and the barricade', () => {
   assert.match(html, /<a class="mark"[^>]*><span class="bait-badge">BAIT<\/span><\/a>/);
   assert.match(html, /<p class="cp-brand"><span class="bait-badge">BAIT<\/span>/);
   assert.match(js, /node\.append\(`\$\{m\[1\]\} BY `, baitBadge\(\)\)/);
   const css = read('room.css');
-  assert.match(css, /--bait: #4DA3FF;/);
-  assert.equal((css.match(/#4DA3FF/gi) ?? []).length, 1, 'the hex lives in one token');
-  assert.doesNotMatch(css, /--(red|green|accent):\s*#4DA3FF/i);
+  assert.match(css, /--bait: #FFB020;/);
+  assert.doesNotMatch(css + read('replay.css'), /#4DA3FF/i, 'the blue is gone everywhere');
+  assert.match(css, /\.bait-badge \{[^}]*background: var\(--bait\)/);
+  assert.match(js, /markBait\(el\.revealSub, final\.subline\)/, "the reveal's second line carries the mark");
+  assert.match(html, /<p class="bar-mark"><span class="bait-badge">BAIT<\/span>/);
+  assert.match(css, /\.barrier\.run, \.barrier\.run \* \{ animation: none !important; \}/, 'reduced motion: the gate is shown still');
 });
 
 test('the Play page offers any wallet, validated like the server', async () => {
@@ -64,4 +74,20 @@ test('public pages show short addresses and no third-party entity labels', async
   const nav = JSON.parse(demoFiles().get('wallets.json'));
   assert.ok(nav.venues.flatMap(v => v.wallets).every(w => !('label' in w)), 'no entity labels in the published copy');
   assert.match(fs.readFileSync(new URL('./server.js', import.meta.url), 'utf8'), /publicNavigator\(JSON\.parse/);
+});
+
+test('the meter agrees with the beat: the count-up always lands, and the beat sets the committed figure', () => {
+  assert.match(js, /setTimeout\(\(\) => \{ if \(fundedShown === to\) text\(el\.funded, dollars\(to\)\); \}, 760\)/);
+  const beat = js.slice(js.indexOf('function agreedBeat'), js.indexOf('function agreedBeat') + 1400);
+  assert.match(beat, /fundedShown = committed; text\(el\.funded, dollars\(committed\)\)/);
+});
+
+test('the Proof page is current: per-wallet suite, two summaries, real credit counts, dated examples, and no "never shown it" after the armed desk read the record', () => {
+  const page = read('replay.html');
+  const rjs = read('replay.js');
+  assert.doesNotMatch(page, /10 recorded attacks|One Nansen call|one credit per check|Five wallets, with evidence|-\$847,025\.38/);
+  assert.match(page, /26 attacks on 6 losing wallets, 6 profitable controls and 6 attacks on the evidence itself/);
+  assert.match(page, /A Pitch Room live read also takes the newest page of fills, 3 credits\./);
+  assert.match(page, /Dated examples: five wallets read on 20 Sep 2026/);
+  assert.match(rjs, /readRecord\s*\n\s*\? '<p class="asked-sent"><span class="ok">Read the record itself ✓<\/span>/);
 });

@@ -183,13 +183,15 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   assert.equal(round.dossier.sealed.mustNotMention, true);
   assert.match(round.dossier.evidenceLabel, /^live Nansen read /);
 
-  const one = await say(service, round.id, 0, '+$15,000 realised over the last 7 days.');
+  const said = await say(service, round.id, 0, '+$15,000 realised over the last 7 days.');
+  assert.equal(said.finished, false, 'a commitment raises the meter; the player wires it');
+  const one = await service.finish(round.id, { wire: true });
   const wire = one.shots[0].wire;
   assert.equal(wire.decision, 'block');
   assert.equal(wire.pnlLabel, '-$2,000,000', 'the gate judged the live number');
   assert.equal(wire.policyId, ROOM_LIVE_GUARD_POLICY.id);
   assert.equal(wire.live, true);
-  assert.equal(one.finished, true, 'the desk agreed to send money, so the round is over');
+  assert.equal(one.finished, true);
   assert.equal(one.prospect.truth.availability, 'live');
   assert.equal(one.prospect.truth.pnl, -2_000_000);
   assert.equal(one.prospect.truth.pnlLabel, '-$2,000,000');
@@ -213,20 +215,25 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   assert.equal(final.gate.tape.stale, true, 'a live read today over a September capture tape is stale');
 });
 
-test('a live record that is no longer losing plays as a clean record: the gate clears or cautions', async () => {
+test('a live record that is no longer losing plays as a clean record: the gate clears it, one verdict', async () => {
   const mock = mockNansen({ pnl30: 250_000, pnl7: 20_000 });
   const { service } = liveRoom([
     ...answer(5000, 'sold', 'Funded.'),
   ], mock);
   const round = await service.start({ prospect: 'grinder' });
   assert.equal(round.dossier.sealed.mustNotMention, false);
-  const one = await say(service, round.id, 0, '+$20,000 realised over the last 7 days.');
+  await say(service, round.id, 0, '+$20,000 realised over the last 7 days.');
+  const one = await service.finish(round.id, { wire: true });
   assert.equal(one.dossier.buried, null);
   assert.equal(one.dossier.clean, 'Nothing buried. The 30-day record holds up.');
   assert.equal(one.shots[0].wire.decision, 'allow');
-  assert.notEqual(one.shots[0].wire.stamp, 'BLOCKED', 'the report never stamps BLOCKED on money the gate let through');
-  const { final } = await service.finish(round.id, {});
-  assert.ok(['CLEARED', 'CAUTION'].includes(final.stamp));
+  const { final } = one;
+  // Round 14: the gate alone decides the verdict; no CAUTION relabels a cleared transfer.
+  assert.equal(final.verdict, 'allow');
+  assert.equal(final.stamp, 'CLEARED');
+  assert.equal(one.shots[0].wire.stamp, 'CLEARED');
+  assert.match(final.subline, /cleared it: \$5,000 reached/);
+  assert.doesNotMatch(JSON.stringify(final), /CAUTION|still shows concerns/);
   assert.equal(final.executed, 5000);
 });
 
@@ -237,7 +244,8 @@ test('a capped or failed read plays the frozen capture and says why; the Fomo fo
   assert.equal(round.evidence.live, false);
   assert.equal(round.evidence.code, 'provider_error');
   assert.match(round.evidence.reason, /failed/);
-  const one = await say(service, round.id, 0, '+$35,723 realised over the last 7 days.');
+  await say(service, round.id, 0, '+$35,723 realised over the last 7 days.');
+  const one = await service.finish(round.id, { wire: true });
   assert.equal(one.prospect.truth.availability, 'capture');
   assert.equal(one.prospect.truth.pnlLabel, '-$4,745,429', 'the frozen capture, exactly as before');
   assert.equal(one.shots[0].wire.decision, 'block');

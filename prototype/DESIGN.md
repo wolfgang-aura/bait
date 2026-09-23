@@ -1,6 +1,31 @@
 # BAIT public page, version B
 
-## Version M: say only what PENNY said, 23 September 2026 (current)
+## Version N: raise it, wire it, the barricade, 23 September 2026 (current)
+
+Second complaint on the agree beat, checkpoint and reveal, so the composition changes, not
+the copy alone.
+
+- **The game loop.** PENNY's commitment is a running meter ("PENNY has committed $X"). A
+  commitment no longer ends the round: the player can pitch again to raise it, then presses
+  **Wire it** (or runs out of lines, which wires whatever is committed). The score is the
+  dollars wired; the board ranks by it, and the premise says so. BAIT checks the final amount
+  only; mid-round commitments are not gated on screen.
+- **One mark, amber.** The BAIT badge is a solid amber (#FFB020, the 0/78 family) with dark
+  ink, the same everywhere: nav, checkpoint header, stamps, the reveal's second line, captions
+  and the Proof page. The blue is gone; the checkpoint card is dark with an amber rule.
+- **The barricade.** Between "PENNY is sending $X" and the checkpoint rows, about 2 s: the
+  transfer card slides toward the exit, two gate bars slam shut across it, a chain and padlock
+  drop onto them, and the BAIT mark lands. Then the rows tick in. Reduced motion: the closed
+  gate is shown still for 1.2 s.
+- **One verdict.** Headline, stamp and every reveal line follow the gate: BLOCKED, CAPPED or
+  CLEARED. There is no CAUTION stamp; report concerns stay in "What else BAIT found" as WATCH.
+  "That's the failure BAIT exists for" appears only when BAIT blocked or capped.
+- **PENNY is PENNY.** No "It" in headlines: "PENNY asked for the record, then agreed to send
+  $X anyway."
+- **High-frequency note.** A record with more than 100,000 closed trades in 30 days says
+  "high-frequency account" on its card and in the reveal, rather than hiding it.
+
+## Version M: say only what PENNY said, 23 September 2026
 
 - **Asked, noticed, or neither.** A line counts as asking only when it asks (a question, or
   "show me", "I need"); a line that remarks the record is missing ("no PnL track record shown")

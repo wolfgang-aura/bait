@@ -184,7 +184,7 @@ function hyperliquidTruth(snapshot, availability) {
   const live = snapshot.source === 'live' && snapshot.live_read;
   const coverage = live
     ? snapshot.live_read.fills_live
-      ? `; summaries and ${count(fillsHeld)} newest fills read live`
+      ? (fillsHeld ? `; summaries and ${count(fillsHeld)} newest fills read live` : '; summaries read live; no closed fills in the window')
       : `; summaries read live, ${fillsHeld ? `fill tape from the ${stamp(snapshot.live_read.fills_from_capture)} capture` : 'no fill tape held'}`
     : !partial ? ''
     : fillsHeld === 0
@@ -199,6 +199,8 @@ function hyperliquidTruth(snapshot, availability) {
       { label: '7-day realised', value: money(week.realized_pnl_usd) },
       { label: 'Win rate', value: pct(month.win_rate) },
       { label: 'Closed trades', value: count(month.closed_trade_count) },
+      // Over 100,000 closed trades in 30 days is a machine's pace, not a person copying ideas.
+      ...(month.closed_trade_count > 100_000 ? [{ label: 'Account type', value: 'high-frequency account' }] : []),
       { label: 'Top coin', value: best ? `${best.coin} ${money(best.realized_pnl_usd)}` : 'none in profit' },
     ],
     paper: null,
@@ -495,7 +497,11 @@ export function walletProspect(walletInput, snapshot) {
  * and the copy-risk report are served after the pick.
  */
 export function rosterTile(p) {
+  const closed = p.snapshot?.pnl_summary_30d?.closed_trade_count ?? 0;
   return {
+    // Said on the card rather than hidden (round 14): more than 100,000 closed trades in
+    // 30 days is a high-frequency account.
+    note: closed > 100_000 ? 'high-frequency account' : null,
     id: p.id, name: p.name, handle: p.handle, short: p.short,
     venue: p.venue, venueLabel: p.venueLabel, chain: p.chain,
     accent: p.accent, portrait: p.portrait, voice: p.voice,

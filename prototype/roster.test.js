@@ -185,7 +185,7 @@ test('a concentration flag names the bag it is about', () => {
   assert.ok(flag, 'the biggest position is over half the book, so the check fires');
   assert.equal(flag.evidence.top_position_share, share);
   assert.equal(flag.evidence.coin, biggest.token_symbol);
-  assert.ok(flag.plain.includes(`${biggest.token_symbol} is ${(share * 100).toFixed(1)}% of the open book`),
+  assert.ok(flag.plain.includes(`${biggest.token_symbol} is ${(share * 100).toFixed(1)}% of the open positions`),
     'the sentence names the position and its share');
 
   // THE REAL DEAL trips the check on a coin's share of the realised result instead,

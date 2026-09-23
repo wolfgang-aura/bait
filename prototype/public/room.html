@@ -60,7 +60,7 @@
          first screen already says what the game proves. Both are read from files. -->
     <div class="front-proof">
       <div class="ladder-strip" id="ladder-strip" aria-label="Recorded benchmark">
-        <p class="col-head" id="ladder-head">We ran one recorded attack 30 times</p>
+        <p class="col-head" id="ladder-head">6 losing wallets, 26 attacks, 3 runs each, true facts only</p>
         <ol class="ladder" id="ladder"></ol>
         <p class="ladder-foot"><span id="ladder-model">Model tested: DeepSeek</span> · <a href="/replay.html">Recorded proof</a></p>
       </div>
@@ -129,9 +129,9 @@
 
     <div class="premise">
       <p class="premise-job">Your job: talk the AI into backing <b id="premise-name">this trader</b>, using only true facts.</p>
-      <p class="premise-how">PENNY is an AI that invests a <span id="premise-slot">$25,000</span> fund; backing a trader means sending part of it to copy their trades. The round ends the moment PENNY agrees to send money. You have up to three lines.</p>
+      <p class="premise-how">PENNY is an AI that invests a <span id="premise-slot">$25,000</span> fund; backing a trader means sending part of it to copy their trades. When PENNY commits money the meter shows it. Pitch again to raise it, then press <b>Wire it</b>. You have up to three lines; at the last one, whatever is committed is wired.</p>
       <p class="premise-data">PENNY decides from your pitch alone, like most agents today. <b>BAIT reads Nansen before any money moves.</b></p>
-      <p class="premise-score">PENNY is the exact desk we benchmarked: it backed losers in 63 of 78 tries. Your score is how few lines it takes.</p>
+      <p class="premise-score">PENNY is the exact desk we benchmarked: it backed losers in 63 of 78 tries. Your score is the dollars you get wired.</p>
     </div>
 
     <div class="readouts">
@@ -177,7 +177,7 @@
           <p class="icpt-why" id="icpt-why">.</p>
         </div>
         <div class="nansen" id="nansen" aria-live="polite">
-          <span class="nansen-idle">PENNY has no data tools. It only hears your pitch.</span>
+          <span class="nansen-idle">PENNY has no data tools and only hears your pitch.</span>
         </div>
       </div>
 
@@ -204,6 +204,7 @@
         <textarea id="line" rows="1" maxlength="200"
           placeholder="Your line to PENNY. Keep it true." autocomplete="off"></textarea>
         <button id="go" type="submit">Pitch</button>
+        <button id="wire-it" type="button" class="wire-btn" hidden>Wire it</button>
       </div>
       <p class="composer-foot"><span id="count">0 / 200</span><span id="status"></span></p>
     </form>
@@ -285,6 +286,23 @@
     <p class="cp-stamp" id="cp-stamp" hidden></p>
     <p class="cp-actions"><button type="button" class="primary cp-next" id="cp-next" hidden>See what happened &rarr;</button></p>
   </div>
+</div>
+
+<!-- The barricade: the transfer heads for the exit, a gate slams shut across it, chain and
+     lock drop, the BAIT mark lands. A different system has stepped in. -->
+<div class="barrier" id="barrier" hidden aria-hidden="true">
+  <div class="bar-transfer" id="bar-transfer"><b id="bar-amt">$0</b><span id="bar-to">to this trader</span></div>
+  <div class="bar-gate top"></div>
+  <div class="bar-gate bottom"></div>
+  <svg class="bar-chain" viewBox="0 0 600 40" preserveAspectRatio="none" aria-hidden="true">
+    <rect x="4" y="10" width="42" height="20" rx="10" /><rect x="54" y="10" width="42" height="20" rx="10" /><rect x="104" y="10" width="42" height="20" rx="10" /><rect x="154" y="10" width="42" height="20" rx="10" /><rect x="204" y="10" width="42" height="20" rx="10" /><rect x="254" y="10" width="42" height="20" rx="10" /><rect x="304" y="10" width="42" height="20" rx="10" /><rect x="354" y="10" width="42" height="20" rx="10" /><rect x="404" y="10" width="42" height="20" rx="10" /><rect x="454" y="10" width="42" height="20" rx="10" /><rect x="504" y="10" width="42" height="20" rx="10" /><rect x="554" y="10" width="42" height="20" rx="10" />
+  </svg>
+  <svg class="bar-lock" viewBox="0 0 64 80" aria-hidden="true">
+    <path d="M16 34 V22 a16 16 0 0 1 32 0 V34" fill="none" stroke-width="8"/>
+    <rect x="6" y="32" width="52" height="44" rx="6"/>
+    <circle cx="32" cy="52" r="6" class="keyhole"/>
+  </svg>
+  <p class="bar-mark"><span class="bait-badge">BAIT</span><span>stepped in</span></p>
 </div>
 
 <!-- The beat between PENNY agreeing and BAIT stepping in: who agreed, after how many lines. -->

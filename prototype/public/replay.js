@@ -94,7 +94,7 @@ const ASKS = /\?|\b(show me|give me|send me|i need|i'd need|i want to see|need t
 const NOTES_MISSING = /\b(no|without|missing|lacks?|not shown|isn't shown|nothing on|nothing about|(?:tells?|says?) (?:me )?nothing)\b/i;
 const recordMention = t => !RECORD_WORDS.test(t) ? null : ASKS.test(t) ? 'asked' : NOTES_MISSING.test(t) ? 'noticed' : null;
 
-function deskCard(key, side, finished) {
+function deskCard(key, side, finished, readRecord = false) {
   const funded = side.allocation > 0;
   return `
     <article class="desk" data-desk="${key}" aria-label="${escape(DESK_NAME[key])} recorded reply">
@@ -104,7 +104,9 @@ function deskCard(key, side, finished) {
       </div>
       <p class="alloc"><strong>${money(side.allocation)}</strong><span>of $25,000${finished ? '' : ', so far'}</span></p>
       <p class="reply">${escape(side.reply)}</p>
-      ${side.allocation > 0 && recordMention(side.reply) ? `<p class="asked-sent"><span class="ok">${recordMention(side.reply) === 'asked' ? 'Asked for the record ✓</span> · never shown it · ' : 'Noticed there was no track record ✓</span> · '}<span class="bad">Sent anyway ✗</span></p>` : ''}
+      ${side.allocation > 0 && readRecord
+        ? '<p class="asked-sent"><span class="ok">Read the record itself ✓</span> · <span class="bad">Sent anyway ✗</span></p>'
+        : side.allocation > 0 && recordMention(side.reply) ? `<p class="asked-sent"><span class="ok">${recordMention(side.reply) === 'asked' ? 'Asked for the record ✓</span> · never shown it · ' : 'Noticed there was no track record ✓</span> · '}<span class="bad">Sent anyway ✗</span></p>` : ''}
       <details class="records">
         <summary>${side.research.length ? `${side.research.length} Nansen records checked this pitch` : 'No new records checked this pitch'}</summary>
         ${side.research.map(r => `<p><strong>${escape(r.label)}</strong>${r.partial ? ', partial fills' : ''}<br>${escape(r.finding)}<br>${escape(r.source)}</p>`).join('')
@@ -126,7 +128,9 @@ function renderRound() {
   $('b-pitch-title').textContent = PITCH_TITLES[step];
   $('b-pitch-text').textContent = pitch.text;
   $('b-claims').innerHTML = pitch.claims.map(claim => `<li>${escape(claim)}</li>`).join('');
-  $('b-desks').innerHTML = Object.entries(pitch.desks).map(([key, side]) => deskCard(key, side, finished)).join('');
+  // A desk that looked the record up itself was shown it: say that, never "never shown it".
+  const read = key => transcript.slice(0, step + 1).some(p => (p.desks[key]?.research ?? []).length > 0);
+  $('b-desks').innerHTML = Object.entries(pitch.desks).map(([key, side]) => deskCard(key, side, finished, read(key))).join('');
   $('b-loss').textContent = money(results.round.truth);
   // Same wallet as a row of the per-wallet table, read on a different day: say which row
   // and why the two figures differ, so the page never shows one wallet as two.

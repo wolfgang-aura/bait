@@ -680,7 +680,7 @@ const server = http.createServer(async (req, res) => {
           message:
             'BAIT holds a historical risk report for a fixed set of addresses and handles. ' +
             'For another Hyperliquid address, run the narrower 30-day eligibility guard with ' +
-            'your own NANSEN_API_KEY. That spends one credit and does not predict returns.',
+            'your own NANSEN_API_KEY. That spends one or two credits and does not predict returns.',
           known: roomRoster.map(p => ({ address: p.wallet, handle: p.handle, venue: p.venueLabel })),
         });
       }

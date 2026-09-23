@@ -558,7 +558,7 @@ export async function guardAllocation({
     if (unrealized === null) {
       t.skip('paper_headline', 'Not assessed. This summary endpoint reports realised PnL only, so no unsold gain is being counted as a result.', null, policy.maxPaperShareOfHeadline);
     } else if (unrealized <= 0) {
-      t.pass('paper_headline', 0, policy.maxPaperShareOfHeadline, 'The open book is marked at or below cost, so nothing unsold is inflating the headline.');
+      t.pass('paper_headline', 0, policy.maxPaperShareOfHeadline, 'The open positions are at or below cost, so nothing unsold is inflating the headline.');
     } else {
       const share = headline && headline !== 0 ? unrealized / Math.abs(headline) : null;
       if (share !== null && share > policy.maxPaperShareOfHeadline) {
@@ -791,7 +791,7 @@ export function assessCopyRisk(evidence = {}) {
 
   if (unrealized === null) skip('paper_headline', 'no unrealised PnL in the evidence');
   else if (unrealized <= 0) {
-    skip('paper_headline', 'the open book is marked at or below cost, so no unsold gain is being counted as a result');
+    skip('paper_headline', 'the open positions are at or below cost, so no unsold gain is being counted as a result');
   } else {
     const total = Math.abs(realized ?? 0) + unrealized;
     const ofHeadline = headline && headline !== 0 ? unrealized / Math.abs(headline) : null;
@@ -833,7 +833,7 @@ export function assessCopyRisk(evidence = {}) {
     const byPosition = topPosition !== null && topPosition > t.maxTopPositionShare;
     const which = byPosition ? evidence.top_position_coin : evidence.top_coin;
     const named = byPosition
-      ? which && `${which} is ${asShare(topPosition)} of the open book.`
+      ? which && `${which} is ${asShare(topPosition)} of the open positions.`
       : which && `${which} alone carries ${asShare(topCoin)} of the realised result.`;
     add('concentration', 'medium',
       `One market carried the result.${named ? ` ${named}` : ''} The result rests on a single position rather than on anything repeatable.`,

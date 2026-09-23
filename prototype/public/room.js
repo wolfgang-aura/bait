@@ -57,7 +57,8 @@ const el = {
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
   transcript: $('transcript-body'), bootError: $('boot-error'), setupNote: $('setup-note'),
   checkpoint: $('checkpoint'), cpMove: $('cp-move'), cpRead: $('cp-read'), cpRows: $('cp-rows'), cpStamp: $('cp-stamp'),
-  agreedQuote: $('agreed-quote'), agreedMarks: $('agreed-marks'),
+  agreedQuote: $('agreed-quote'), agreedMarks: $('agreed-marks'), wire: $('wire-it'),
+  barrier: $('barrier'), barAmt: $('bar-amt'), barTo: $('bar-to'),
   cpNext: $('cp-next'), cpWhatif: $('cp-whatif'), cpTitle: $('cp-title'), hintKeys: $('hint-keys'), agreed: $('agreed'), agreedLine: $('agreed-line'),
   anyWallet: $('any-wallet'), anyWalletInput: $('any-wallet-input'), anyWalletGo: $('any-wallet-go'), anyWalletNote: $('any-wallet-note'),
 };
@@ -84,6 +85,9 @@ let wiresShown = 0;
 let liveReady = null;
 /** The gate result the report's labels follow, when one is on screen. */
 let reportGate = null;
+/** Check ids in plain words, for the footers. */
+const PLAIN_CHECK = { paper_headline: 'unsold gains', uncopyable_entries: 'launch-day entries', tail_loss: 'worst single trade',
+  max_drawdown: 'drawdown', concentration: 'one-market share', thin_sample: 'sample size', low_win_rate: 'win rate' };
 
 // ------------------------------------------------------------- transport
 
@@ -150,6 +154,8 @@ function renderRoster(tiles) {
       ? `Nansen ${p.hype.hypeDate}`
       : `${p.hype.hypeFrom} ${p.hype.hypeDate} · Nansen ${p.hype.recordDate}`;
     info.append(value, caption, name, sub, dates);
+    // Said, not hidden: a machine-pace record.
+    if (p.note) { const note = document.createElement('em'); note.className = 'tile-note'; note.textContent = p.note; info.append(note); }
 
     tile.append(art, info);
     tile.addEventListener('mouseenter', () => focus(i));
@@ -241,12 +247,38 @@ async function pasteWallet(event) {
  * stamp says so; a round where PENNY refused on its own keeps the server's NO WIRE.
  */
 function stampLabel(final) {
-  if (final.whatIfOf) return `WOULD BE ${{ block: 'BLOCKED', capped: 'CAPPED', allow: 'CLEARED', caution: 'CLEARED' }[final.verdict] ?? 'CHECKED'} BY BAIT`;
+  if (final.whatIfOf) return `WOULD BE ${{ block: 'BLOCKED', capped: 'CAPPED', allow: 'CLEARED' }[final.verdict] ?? 'CHECKED'} BY BAIT`;
   if (!final.peak && !final.checkOnly) return final.stamp;
-  return { block: 'BLOCKED BY BAIT', capped: 'CAPPED BY BAIT', allow: 'CLEARED BY BAIT', caution: 'CLEARED BY BAIT · CAUTION' }[final.verdict] ?? final.stamp;
+  return { block: 'BLOCKED BY BAIT', capped: 'CAPPED BY BAIT', allow: 'CLEARED BY BAIT' }[final.verdict] ?? final.stamp;
 }
 
-/** The one BAIT wordmark: a solid badge in the BAIT blue, used everywhere BAIT is named. */
+/** Write a sentence with every "BAIT" set as the one mark (round 14: the reveal lines too). */
+function markBait(node, sentence) {
+  node.replaceChildren();
+  const parts = String(sentence ?? '').split(/\bBAIT\b/);
+  parts.forEach((part, i) => {
+    if (i > 0) node.append(baitBadge());
+    if (part) node.append(part);
+  });
+}
+
+/**
+ * The barricade (round 14): the transfer card slides toward the exit, two gate bars slam
+ * shut across it, the chain and lock drop, the BAIT mark lands. About 2.2 s; reduced motion
+ * shows the closed gate still for 1.2 s. A different system has stepped in.
+ */
+async function barricade(final) {
+  text(el.barAmt, final.peakLabel);
+  text(el.barTo, `to ${final.prospect?.name ?? 'this trader'}`);
+  el.barrier.hidden = false;
+  el.barrier.classList.remove('run');
+  void el.barrier.offsetWidth;
+  el.barrier.classList.add('run');
+  await sleep(reduced ? 1200 : 2300);
+  el.barrier.hidden = true;
+}
+
+/** The one BAIT wordmark: a solid amber badge, the same everywhere BAIT is named. */
 function baitBadge() {
   const b = document.createElement('span');
   b.className = 'bait-badge';
@@ -254,7 +286,7 @@ function baitBadge() {
   return b;
 }
 
-/** Write a stamp as "BLOCKED BY [BAIT]": the verb, then the badge, then any caution. */
+/** Write a stamp as "BLOCKED BY [BAIT]": the verb, then the badge, then any tail. */
 function setStamp(node, final) {
   const label = stampLabel(final);
   node.replaceChildren();
@@ -273,7 +305,10 @@ function agreedBeat(shot, final) {
   const n = shot?.n ?? shots.length;
   const to = final?.prospect?.name ?? chosen?.name ?? dossier?.name ?? 'this trader';
   const amt = shot?.wire?.attemptedLabel ?? final?.peakLabel ?? '';
-  text(el.agreedLine, `PENNY agreed after ${n} line${n === 1 ? '' : 's'}: sending ${amt} to ${to}`);
+  text(el.agreedLine, `Wired: PENNY is sending ${amt} to ${to} after ${n} line${n === 1 ? '' : 's'}`);
+  // The meter shows the same figure as the beat, whatever the count-up animation had reached.
+  const committed = shot?.wire?.attempted ?? final?.peak;
+  if (committed > 0) { fundedShown = committed; text(el.funded, dollars(committed)); }
   // PENNY's own words, and what they amount to: it asked for the record and was never shown it, or noticed it missing, and
   // committed the money anyway. The amount is the allocation PENNY wrote in its reply.
   const q = final?.quotes?.agreed;
@@ -351,7 +386,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     if (!reduced) await sleep(260);
   }
   if (!reduced) await sleep(250);
-  const kind = final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
+  const kind = final.verdict === 'block' ? 'blocked' : final.verdict === 'capped' ? 'caution' : 'cleared';
   el.cpStamp.className = `cp-stamp ${kind}`;
   setStamp(el.cpStamp, final);
   el.cpStamp.hidden = false;
@@ -376,7 +411,7 @@ function showReveal(p, final) {
   el.revealStamp.className = `stamp ${kind === 'blocked' ? '' : kind}`.trim();
   setStamp(el.revealStamp, final);
   text(el.revealTitle, final.headline);
-  text(el.revealSub, final.subline);
+  markBait(el.revealSub, final.subline);
   el.revealWhy.hidden = !(final.because && ['block', 'capped'].includes(final.verdict) && (final.peak > 0 || final.checkOnly));
   text(el.revealWhy, final.because ? `Why: ${final.because}` : '');
   // PENNY's own words: where it asked for the record, then where it agreed.
@@ -401,9 +436,13 @@ function showReveal(p, final) {
     const li = document.createElement('li');
     li.className = 'finding';
     const sent = dollars(q.agreed.committed?.allocation ?? q.agreed.amount);
-    li.textContent = q.agreed.askedThenSent
-      ? `PENNY asked for the record, was never shown it, and agreed to send ${sent} anyway. That's the failure BAIT exists for.`
-      : `PENNY noticed there was no track record and sent ${sent} anyway. That's the failure BAIT exists for.`;
+    const what = q.agreed.askedThenSent
+      ? `PENNY asked for the record, was never shown it, and agreed to send ${sent} anyway.`
+      : `PENNY noticed there was no track record and agreed to send ${sent} anyway.`;
+    // Only a block or a cap is BAIT catching the failure; a cleared record is said as that.
+    li.textContent = final.verdict === 'block' || final.verdict === 'capped'
+      ? `${what} That's the failure BAIT exists for.`
+      : `${what} This record held up, so BAIT let the transfer through.`;
     el.revealQuotes.append(li);
     rows.push(['finding']);
   }
@@ -526,7 +565,7 @@ function renderReport(host, risk) {
     `${risk.source}, captured ${risk.capturedLabel}`,
     risk.basis,
     risk.coverage,
-    risk.not_assessed.length ? `Not assessed: ${risk.not_assessed.map(n => n.id.replace(/_/g, ' ')).join(', ')}.` : '',
+    risk.not_assessed.length ? `Not assessed: ${risk.not_assessed.map(n => PLAIN_CHECK[n.id] ?? n.id.replace(/_/g, ' ')).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
 }
@@ -682,9 +721,12 @@ function rollFunded(to) {
   const step = now => {
     const t = Math.min(1, (now - started) / 700);
     text(el.funded, dollars(from + (to - from) * (1 - Math.pow(1 - t, 3))));
-    if (t < 1) requestAnimationFrame(step);
+    if (t < 1 && fundedShown === to) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
+  // A throttled tab (or a screen recorder) can starve animation frames: the meter still lands
+  // on the real figure, so it never disagrees with the beat or the Wire button.
+  setTimeout(() => { if (fundedShown === to) text(el.funded, dollars(to)); }, 760);
 }
 
 function setSuspicion(value) {
@@ -719,7 +761,7 @@ function renderChecks(checks, when = 'idle') {
     const idle = document.createElement('span');
     idle.className = 'nansen-idle';
     idle.textContent = {
-      idle: 'PENNY has no data tools. It only hears your pitch.',
+      idle: 'PENNY has no data tools and only hears your pitch.',
       thinking: 'PENNY is deciding from your pitch alone.',
       answered: 'PENNY decided from your pitch alone. BAIT reads Nansen before any money moves.',
     }[when];
@@ -805,6 +847,9 @@ function renderState(state) {
   }
   el.go.textContent = state.finished ? 'See what BAIT did' : `Pitch (${state.shotsLeft} left)`;
   el.line.disabled = state.finished;
+  // Wire it: once PENNY has money committed, the player decides when to send it.
+  el.wire.hidden = state.finished || !(state.funded > 0);
+  el.wire.textContent = state.funded > 0 ? `Wire it (${dollars(state.funded)})` : 'Wire it';
 }
 
 /** The running tally beside the desk's number: the most the gate has held back. */
@@ -828,12 +873,14 @@ function showIntercept(shot) {
   el.intercept.className = 'intercept pending';
   el.intercept.hidden = false;
   const to = chosen?.name ?? dossier?.name ?? 'this trader';
-  text(el.icptN, `Line ${shot.n} · PENNY: sending ${w.attemptedLabel} to ${to}...`);
+  text(el.icptN, `Line ${shot.n} · PENNY has committed ${w.attemptedLabel} to ${to}`);
   text(el.icptTo, '');
   text(el.icptAmt, w.attemptedLabel);
   text(el.icptStamp, '');
   el.icptStamp.hidden = true;
-  text(el.icptWhy, `The transfer is leaving PENNY's ${dollars(dossier?.slot ?? 25000)} fund, decided on your pitch alone.`);
+  text(el.icptWhy, round?.shotsLeft > 0
+    ? `Committed from PENNY's ${dollars(dossier?.slot ?? 25000)} fund on your pitch alone. Pitch again to raise it, or press Wire it.`
+    : `Committed from PENNY's ${dollars(dossier?.slot ?? 25000)} fund on your pitch alone. That was your last line: it is wired.`);
   if (!reduced) { el.intercept.style.animation = 'none'; void el.intercept.offsetWidth; el.intercept.style.animation = ''; }
 }
 
@@ -912,12 +959,15 @@ let result = null;
 function finish() {
   finishing ??= (async () => {
     try {
-      result = await api(`/api/room/${round.id}/finish`, { method: 'POST', body: {} });
+      el.wire.hidden = true;
+      result = await api(`/api/room/${round.id}/finish`, { method: 'POST', body: { wire: true } });
       adopt(result);
       // PENNY agreed: BAIT takes the screen before any stamp. PENNY refused on its
       // own: no checkpoint, the reveal says so.
       if (result.final.peak > 0) {
-        await agreedBeat(shots.find(s => s.wire) ?? shots[shots.length - 1], result.final);
+        const committing = [...shots].reverse().find(s => s.wire) ?? shots[shots.length - 1];
+        await agreedBeat(committing, result.final);
+        await barricade(result.final);
         await playCheckpoint(result.prospect, result.final);
       } else if (result.final.whatIf) {
         // PENNY refused on its own. BAIT still shows its work, as a labelled what-if.
@@ -948,7 +998,7 @@ function showFinal(final, entries, mineAt = null) {
   el.stamp.className = `stamp ${final.peak === 0 ? 'none' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : final.verdict === 'allow' ? 'cleared' : ''}`;
   setStamp(el.stamp, final);
   text(el.finalHead, final.headline);
-  text(el.finalSub, final.subline);
+  markBait(el.finalSub, final.subline);
   el.finalTrail.hidden = !final.trail;
   text(el.finalTrail, final.trail);
   renderWireLog(shots);
@@ -1137,11 +1187,11 @@ async function fixture(name, prospectId) {
   const capped = frozen.gate.code === 'capped';
   const amount = 2500;
   const sent = Math.round(frozen.gate.executed);
-  const verdict = block ? 'block' : capped ? 'capped' : p.risk.verdict === 'allow' ? 'allow' : 'caution';
+  const verdict = block ? 'block' : capped ? 'capped' : 'allow';
   // Layout only: the amount is a fixture value shaped like the server's `wire` object.
   const wire = {
     attempted: amount, attemptedLabel: dollars(amount), decision: block ? 'block' : 'allow',
-    verdict, stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
+    verdict, stamp: { block: 'BLOCKED', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
     stopped: amount - sent, stoppedLabel: dollars(amount - sent), executedLabel: dollars(sent),
     reason: 'fixture',
   };
@@ -1153,12 +1203,12 @@ async function fixture(name, prospectId) {
     prospect: { id: p.id, name: p.name, handle: p.handle, venueLabel: p.venueLabel },
     // Same sentences the server's endingCopy writes; the gate table is the gate's real
     // decision on the frozen record, run by the fixture route for this $2,500.
-    headline: `It asked for the record. You didn't give it. It agreed to send ${dollars(amount)}.`,
+    headline: `PENNY asked for the record, was never shown it, and agreed to send ${dollars(amount)}.`,
     quotes: { asked: { n: 1, line: 'Fixture reply: show me the 30-day record.' }, agreed: { n: 2, line: 'Fixture reply: fine, a small probe.', amount } },
     subline: block
       ? `BAIT's Nansen read blocked it: ${dollars(amount)} held, $0 reached ${p.name}.`
       : capped ? `BAIT's Nansen read capped it: ${dollars(amount)} requested, ${dollars(sent)} allowed, ${dollars(amount - sent)} held.`
-      : `BAIT's Nansen read let it through: ${dollars(sent)} reached ${p.name}.`,
+      : `BAIT's Nansen read cleared it: ${dollars(sent)} reached ${p.name}.`,
     because: frozen.gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null,
     trail: null,
     agentLine: assessed?.agent_line ?? '',
@@ -1251,6 +1301,7 @@ async function fixture(name, prospectId) {
 async function boot() {
   el.line.addEventListener('input', updateCount);
   el.anyWallet.addEventListener('submit', pasteWallet);
+  el.wire.addEventListener('click', () => { if (!sending && round && !round.finished && round.funded > 0) finish(); });
   el.anyWalletInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') { event.preventDefault(); el.anyWallet.requestSubmit(); }
   });

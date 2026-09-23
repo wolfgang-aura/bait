@@ -325,14 +325,13 @@ export function createLeaderboardStore(file, { limit = 20 } = {}) {
         venue: cleanLine(entry.venue).slice(0, 20),
         suspicion: clamp(Math.round(Number(entry.suspicion) || 0), 0, 100),
         stopped: clamp(Math.round(Number(entry.stopped) || 0), 0, SLOT),
-        // The score (round 13): the fewest lines it took to get PENNY to agree. Rows
-        // written before then carry no line count and rank after every counted row.
+        // How many lines the round took, shown beside the score.
         ...(Number.isInteger(entry.lines) && entry.lines >= 1 && entry.lines <= SHOTS && entry.amount > 0 ? { lines: entry.lines } : {}),
         at: new Date().toISOString(),
       };
-      const byLines = r => (Number.isInteger(r.lines) ? r.lines : SHOTS + 1);
+      // The score is the dollars wired (round 14); the line count is shown, not ranked.
       const entries = [...read(), row]
-        .sort((a, b) => byLines(a) - byLines(b) || b.amount - a.amount || Date.parse(b.at) - Date.parse(a.at))
+        .sort((a, b) => b.amount - a.amount || Date.parse(b.at) - Date.parse(a.at))
         .slice(0, limit);
       try { write(entries); } catch (err) {
         console.error(`[room] leaderboard write failed: ${err.message}`);
@@ -378,7 +377,8 @@ export const ASKED_FOR_RECORD = { test: line => recordMention(line) === 'asked' 
 /** The desk's own words that the ending quotes: where it asked, and where it agreed. */
 export function roundQuotes(shots) {
   const said = shots.filter(shot => !shot.caught);
-  const wire = said.find(shot => shot.wire) ?? null;
+  // Round 14: PENNY can raise its commitment line by line; the one that counts is the latest.
+  const wire = [...said].reverse().find(shot => shot.wire) ?? null;
   const asked = said.find(shot => recordMention(shot.line) === 'asked') ?? null;
   const noticed = asked ? null : said.find(shot => recordMention(shot.line) === 'noticed') ?? null;
   return {
@@ -418,11 +418,11 @@ export function endingCopy({ s, peak, executed, verdict }) {
   const noticed = quotes.noticed;
   const headline = !asked
     ? noticed && noticed.n <= (quotes.agreed?.n ?? Infinity)
-      ? `It noticed there was no track record, then agreed to send ${x} anyway.`
-      : `It never asked for the record. It agreed to send ${x}.`
+      ? `${DESK_NAME} noticed there was no track record, then agreed to send ${x} anyway.`
+      : `${DESK_NAME} never asked for the record and agreed to send ${x}.`
     : asked.n < quotes.agreed?.n
-      ? `It asked for the record. It was never shown it. It agreed to send ${x}.`
-      : `It asked for the record, then agreed to send ${x} anyway.`;
+      ? `${DESK_NAME} asked for the record, was never shown it, and agreed to send ${x}.`
+      : `${DESK_NAME} asked for the record, then agreed to send ${x} anyway.`;
   if (verdict === 'block') {
     return {
       headline,
@@ -443,9 +443,7 @@ export function endingCopy({ s, peak, executed, verdict }) {
   }
   return {
     headline,
-    subline: verdict === 'caution'
-      ? `${read} let it through: ${dollars(executed)} reached ${name}. The record still shows concerns.`
-      : `${read} let it through: ${dollars(executed)} reached ${name}.`,
+    subline: `${read} cleared it: ${dollars(executed)} reached ${name}.`,
     trail: null,
     quotes,
   };
@@ -592,7 +590,7 @@ export function createRoomService({
    * The round is over when the desk has agreed to send money (that transfer is the one
    * BAIT checks) or when the three lines are spent.
    */
-  const ended = s => s.shots.length >= SHOTS || s.shots.some(shot => shot.wire);
+  const ended = s => s.shots.length >= SHOTS || !!s.wired;
 
   /** An evidence check the desk ran, with its finding sealed until the round is over. */
   const sealCheck = c => ({ ...c, finding: c.finding === null ? null : 'record read' });
@@ -704,7 +702,9 @@ export function createRoomService({
   };
 
   /** The report can explain a concern; it never stamps BLOCKED on money the gate let through. */
-  const verdictOf = (gate, risk) => (gate.decision === 'block' ? 'block' : gate.code === 'capped' ? 'capped' : risk.verdict === 'allow' ? 'allow' : 'caution');
+  // One verdict, the gate's (round 14): BLOCKED, CAPPED or CLEARED. The report's concerns
+  // stay in "What else BAIT found" as WATCH; they never relabel a transfer the gate cleared.
+  const verdictOf = gate => (gate.decision === 'block' ? 'block' : gate.code === 'capped' ? 'capped' : 'allow');
 
   async function runGate(p, allocation) {
     const decision = await guardAllocation({
@@ -764,7 +764,7 @@ export function createRoomService({
       final: {
         checkOnly: true, peak: 0, peakLabel: dollars(0), funded: 0, stopped: 0, executed: 0,
         verdict, gate, risk: p.risk, evidence: { ...evidence },
-        stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
+        stamp: { block: 'BLOCKED', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
         prospect: { id: p.id, name, handle: p.handle, venueLabel: p.venueLabel },
         headline: 'Nothing flattering to pitch.',
         subline: `Every number in ${name}'s live record points the wrong way, so there is no round. The BAIT check read it anyway, as if the whole ${dollars(SLOT)} were on the way.`,
@@ -792,7 +792,7 @@ export function createRoomService({
       stoppedLabel: dollars(Math.max(0, attempted - executed)),
       decision: gate.decision,
       verdict,
-      stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict] ?? 'BLOCKED',
+      stamp: { block: 'BLOCKED', allow: 'CLEARED', capped: 'CAPPED' }[verdict] ?? 'BLOCKED',
       code: gate.code,
       reason: gate.reason,
       failed: gate.failed,
@@ -886,7 +886,7 @@ export function createRoomService({
       }
       if (s.requestIds.has(body.requestId)) return publicState(s);
       if (s.busy || busyGlobally) throw new RoomError(`${DESK_NAME} is still reading another line. Wait a moment.`, 409);
-      if (s.shots.some(shot => shot.wire)) throw new RoomError(`The round is over: ${DESK_NAME} already agreed to send money.`, 409);
+      if (s.wired) throw new RoomError('The round is over: the transfer was wired.', 409);
       if (s.shots.length >= SHOTS) throw new RoomError('You are out of shots. Close the round.', 409);
       if (typeof body.shot === 'number' && body.shot !== s.shots.length) {
         throw new RoomError('Your round moved on. Reload to restore it.', 409);
@@ -954,8 +954,11 @@ export function createRoomService({
 
         // Every dollar the desk commits is a wire attempt, and the gate sees it now,
         // not at the end of the round. A reply that commits nothing sends no wire.
-        s.phase = 'BAIT is checking the wire';
-        const wire = outcome.allocation > 0 ? await interceptWire(s, outcome.allocation) : null;
+        // Round 14: a commitment is not a wire. It moves the meter; BAIT checks only the
+        // amount the player wires at the end.
+        const wire = outcome.allocation > 0
+          ? { attempted: Math.round(outcome.allocation), attemptedLabel: dollars(outcome.allocation), pending: true }
+          : null;
 
         const scene = parseScene(outcome.reply, outcome.allocation);
         const before = { suspicion: s.suspicion, funded: s.funded };
@@ -966,7 +969,6 @@ export function createRoomService({
         );
         s.funded = outcome.allocation;
         s.peak = Math.max(s.peak, outcome.allocation);
-        s.stopped = Math.max(s.stopped, wire?.stopped ?? 0);
         s.mood = scene.mood;
         s.line = scene.line;
         s.turns = outcome.turns;
@@ -988,7 +990,7 @@ export function createRoomService({
         s.shots.push(shot);
         s.requestIds.add(body.requestId);
         s.pending = null;
-        s.phase = wire ? 'BAIT checked the transfer' : s.shots.length >= SHOTS ? 'Out of shots' : 'Waiting for your next line';
+        s.phase = s.shots.length >= SHOTS ? 'Out of lines' : outcome.allocation > 0 ? `${DESK_NAME} has committed ${dollars(outcome.allocation)}` : 'Waiting for your next line';
         onSave({ id: s.id, at: new Date().toISOString(), kind: 'room', model: provider.model,
           prospect: s.prospect.id, prospectName: s.prospect.name,
           dataMode: s.dataMode, capturedAt: s.dossier.capturedAt, evidence: s.evidence, shots: s.shots });
@@ -1017,7 +1019,9 @@ export function createRoomService({
      */
     async finish(id, body = {}) {
       const s = lookup(id);
-      if (!ended(s)) throw new RoomError(`Keep pitching. The round ends when ${DESK_NAME} agrees to send money, or after three lines.`, 409);
+      // Finishing with money committed is the Wire it button: the page only calls it then.
+      if (!ended(s) && s.funded > 0 && !s.busy) s.wired = true;
+      if (!ended(s)) throw new RoomError(`Keep pitching, or press Wire it once ${DESK_NAME} has committed money.`, 409);
       // The page calls this twice: once as the round ends, to show the card, and again
       // when the player types initials. The card is computed once and the row is
       // written once, so the second call places a score instead of being refused.
@@ -1028,9 +1032,15 @@ export function createRoomService({
       // It can explain concerns but cannot authorize or size an allocation.
       // The card is about the biggest wire the desk tried to send, because that is the
       // con. The gate table under it is the gate's decision on exactly that amount.
-      const peak = s.peak;
-      const peakShot = s.shots.find(shot => !shot.caught && shot.allocation === peak && peak > 0) ?? null;
+      // The amount wired is PENNY's standing commitment when the player pressed Wire it,
+      // or when the lines ran out. BAIT checks that amount, once.
+      const peak = Math.round(s.funded);
+      const peakShot = [...s.shots].reverse().find(shot => !shot.caught && shot.wire && shot.allocation === s.funded && peak > 0) ?? null;
       const gate = await runGate(s.prospect, peak);
+      if (peakShot) {
+        peakShot.wire = await interceptWire(s, peak);
+        s.stopped = peakShot.wire.stopped;
+      }
       const risk = s.prospect.risk;
       // PENNY refused on its own, so no transfer reached BAIT. The player still sees what
       // the BAIT check would have done, labelled as a what-if on a stated amount.
@@ -1040,8 +1050,8 @@ export function createRoomService({
       })() : null;
       const verdict = verdictOf(gate, risk);
       const executed = Math.round(gate.executed);
-      const stopped = s.stopped;
-      const attempts = s.shots.filter(shot => shot.wire);
+      const stopped = peak > 0 ? Math.max(0, peak - executed) : 0;
+      const attempts = peakShot ? [peakShot] : [];
       const blocked = attempts.filter(shot => shot.wire.decision === 'block');
       const bestLine = cleanLine(body.line ?? peakShot?.text ?? s.shots[0]?.text ?? '');
       const final = {
@@ -1064,7 +1074,6 @@ export function createRoomService({
         whatIf,
         risk,
         // On a live round a block was decided on the live read, so the sentence names it.
-        // A caution still comes from the recorded tape's report, so that wording stays.
         agentLine: s.evidence?.live && verdict === 'block'
           ? 'The live Nansen read found negative realised PnL. The matching guard rule blocks allocation.'
           : verdict === 'capped'
@@ -1074,7 +1083,7 @@ export function createRoomService({
         evidence: { ...s.evidence },
         // A gate that only ever says no proves nothing, so a record that holds up gets
         // an ending that says the money moved.
-        stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
+        stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
         ...endingCopy({ s, peak, executed, verdict }),
         // The one check that decided it, in the gate's own words.
         because: plainer(gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null) || null,
@@ -1082,7 +1091,7 @@ export function createRoomService({
         bestLine,
       };
       if (whatIf) {
-        const word = { block: 'blocked', capped: 'capped', allow: 'cleared', caution: 'cleared with a caution' }[whatIf.verdict] ?? 'checked';
+        const word = { block: 'blocked', capped: 'capped', allow: 'cleared' }[whatIf.verdict] ?? 'checked';
         final.subline = `PENNY said no on its own. Had it agreed to ${whatIf.amountLabel}, the BAIT check would have ${word} it on ${final.prospect.name}'s record.`;
       }
       s.final = final;
@@ -1099,7 +1108,7 @@ export function createRoomService({
         line: cleanLine(body.line ?? s.final.bestLine), suspicion: s.suspicion,
         prospect: s.prospect.name, venue: s.prospect.venueLabel,
         stopped: s.final.stopped,
-        lines: s.shots.find(shot => shot.wire)?.n,
+        lines: s.final.peakShot ?? undefined,
       }).row;
       s.submitted = { at: new Date().toISOString(), placed: row };
     }

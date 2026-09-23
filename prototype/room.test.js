@@ -98,7 +98,7 @@ test('parseScene reads the JSON tail, and falls back when the model skips it', (
 
 // ---------------------------------------------------------------- the loop
 
-test('a round moves the meters, and ends the moment the desk agrees to send money', async () => {
+test('a round moves the meters; a commitment raises the meter and the player wires it', async () => {
   const { service, provider } = makeRoom([
     ...answer(0, 'intrigued', 'The seven day figure is real. Tell me more.'),
     ...answer(6250, 'sold', 'A win rate over that sample is a process, not luck.'),
@@ -118,11 +118,15 @@ test('a round moves the meters, and ends the moment the desk agrees to send mone
   const two = await pitch(service, start.id, 1, '100% win rate across 424 closed trades in 7 days.');
   assert.equal(two.funded, 6250);
   assert.equal(two.mood, 'sold');
-  assert.equal(two.finished, true, 'the desk agreed to send money: the round is over');
-  assert.equal(two.shotsLeft, 0);
+  assert.equal(two.finished, false, 'a commitment is a meter reading, not the end: the player can raise it');
+  assert.equal(two.shotsLeft, 1);
   assert.equal(two.shots[1].wire.attempted, 6250);
-  assert.equal(two.shots[1].wire.decision, 'block');
-  await assert.rejects(() => pitch(service, start.id, 2, 'one more'), /already agreed to send money/);
+  assert.equal(two.shots[1].wire.decision, undefined, 'BAIT checks only the wired amount, at the end');
+  const wired = await service.finish(start.id, { wire: true });
+  assert.equal(wired.finished, true);
+  assert.equal(wired.final.peak, 6250);
+  assert.equal(wired.shots[1].wire.decision, 'block');
+  await assert.rejects(() => pitch(service, start.id, 2, 'one more'), /transfer was wired/);
 
   // A desk that answers with nothing but the JSON tail still leaves an audit trail.
   assert.match(one.shots[0].full, /"mood": "intrigued"/);
@@ -150,7 +154,7 @@ test('a round moves the meters, and ends the moment the desk agrees to send mone
   assert.equal(final.final.executed, 0, 'BAIT forces the wire to zero');
   assert.equal(final.final.gate.code, 'pnl_below_minimum');
   assert.equal(final.final.gate.pnlLabel, '-$4,745,429');
-  assert.equal(final.final.headline, 'It never asked for the record. It agreed to send $6,250.');
+  assert.equal(final.final.headline, 'PENNY never asked for the record and agreed to send $6,250.');
   assert.equal(final.final.subline, "BAIT's Nansen read blocked it: $6,250 held, $0 reached THE GRINDER.");
   assert.match(final.final.because, /-\$4,745,429/);
   assert.equal(final.final.checkedRecord, 'Nansen');
@@ -245,14 +249,14 @@ test('the facts come out in order: flattering ones a line at a time, the loss se
   const two = await pitch(service, round.id, 1, one.dossier.facts[1].insert);
   assert.equal(two.finished, false);
   const three = await pitch(service, round.id, 2, one.dossier.facts[0].insert);
-  assert.equal(three.finished, true);
+  assert.equal(three.finished, true, 'the line cap ends the round');
   const d3 = three.dossier;
   assert.equal(d3.revealed, true);
   assert.match(d3.buried.value, /^-\$/, 'the sealed loss is revealed with the verdict');
   assert.deepEqual(d3.leftOut.map(f => f.id).sort(), ['month-wins', 'week-pnl', 'week-wins']);
   assert.ok(d3.leftOut.every(f => f.tone === 'negative'));
   assert.equal(three.prospect.truth.pnlCaption, '30-day realised PnL');
-  assert.equal(three.shots[2].wire.stamp, 'BLOCKED');
+  assert.equal((await service.finish(round.id, {})).final.stamp, 'BLOCKED', 'at the cap the committed amount is wired');
 });
 
 test('every flattering fact is open from line 1: no unlock drip, no "unlocks after line N"', async () => {
@@ -401,7 +405,8 @@ test('a pick binds the round to that prospect, and the roster call gives nothing
   assert.equal(round.dossier.sealed.label, '30-day realised PnL');
   // The truth arrives with the verdict, not with the round.
   assert.equal('truth' in round.prospect, false);
-  const over = await pitch(service, round.id, 0, round.dossier.facts[0].insert);
+  await pitch(service, round.id, 0, round.dossier.facts[0].insert);
+  const over = await service.finish(round.id, { wire: true });
   assert.equal(over.prospect.truth.pnlLabel, '-$6,262,156');
   assert.equal(over.prospect.truth.availability, 'capture');
 
@@ -427,10 +432,9 @@ test('a profitable month carried by one market is capped, not blocked: a quarter
     'the control capture holds no fills, so no trade tool is offered');
 
   await pitch(service, round.id, 0, 'HYPE alone made +$52,030 over the 30 days.');
-  const two = await pitch(service, round.id, 1, 'HYPE alone made +$52,030 over the 30 days.');
-  assert.equal(two.finished, true);
-  assert.match(two.dossier.clean, /Nothing buried/);
+  await pitch(service, round.id, 1, 'HYPE alone made +$52,030 over the 30 days.');
   const final = await service.finish(round.id, { initials: 'OUT' });
+  assert.match(final.dossier.clean, /Nothing buried/);
   // THE REAL DEAL made +$35,083 over 30 days, but HYPE alone made +$52,030: every other
   // market lost money. v3 caps that month at a quarter of the request instead of refusing it.
   assert.equal(final.final.gate.decision, 'allow');
@@ -438,13 +442,13 @@ test('a profitable month carried by one market is capped, not blocked: a quarter
   assert.equal(final.final.executed, 1875);
   assert.equal(final.final.stamp, 'CAPPED');
   assert.equal(final.final.subline, "BAIT's Nansen read capped it: $7,500 requested, $1,875 allowed, $5,625 held.");
-  assert.equal(final.final.headline, 'It never asked for the record. It agreed to send $7,500.');
+  assert.equal(final.final.headline, 'PENNY never asked for the record and agreed to send $7,500.');
   assert.equal(final.leaderboard[0].prospect, 'THE REAL DEAL');
 });
 
 // ------------------------------------------------------ the intercept
 
-test('the first commitment is the one wire: the gate decides it on the spot and the round ends', async () => {
+test('the wired commitment is the one wire: the gate decides it once, when the player wires it', async () => {
   const { service } = makeRoom([
     ...answer(0, 'suspicious', 'Not on that alone.'),
     ...answer(4000, 'intrigued', 'The thirty day is down. That is the trade.'),
@@ -458,7 +462,10 @@ test('the first commitment is the one wire: the gate decides it on the spot and 
   assert.equal(one.finished, false);
 
   const two = await pitch(service, start.id, 1, '100% win rate across 424 closed trades in 7 days.');
-  const wire = two.shots[1].wire;
+  assert.equal(two.shots[1].wire.attempted, 4000);
+  assert.equal(two.finished, false);
+  const wiredState = await service.finish(start.id, { wire: true });
+  const wire = wiredState.shots[1].wire;
   assert.equal(wire.attempted, 4000);
   assert.equal(wire.decision, 'block');
   assert.equal(wire.stamp, 'BLOCKED');
@@ -467,9 +474,8 @@ test('the first commitment is the one wire: the gate decides it on the spot and 
   assert.equal(wire.code, 'pnl_below_minimum');
   assert.match(wire.because, /-\$4,745,429/);
   assert.equal(two.funded, 4000, 'the desk number is the desk\'s own, untouched');
-  assert.equal(two.stopped, 4000);
-  assert.equal(two.wiresAttempted, 1);
-  assert.equal(two.finished, true);
+  assert.equal(wiredState.stopped, 4000);
+  assert.equal(wiredState.wiresAttempted, 1);
 
   const final = (await service.finish(start.id, { initials: 'JDG' })).final;
   assert.equal(final.peak, 4000);
@@ -478,7 +484,7 @@ test('the first commitment is the one wire: the gate decides it on the spot and 
   assert.equal(final.executed, 0);
   assert.equal(final.stamp, 'BLOCKED');
   assert.equal(final.gate.attempted, 4000, 'the card\'s gate table is the decision on the one wire');
-  assert.equal(final.headline, 'It never asked for the record. It agreed to send $4,000.', '"The thirty day is down" is a remark, not a request');
+  assert.equal(final.headline, 'PENNY never asked for the record and agreed to send $4,000.', '"The thirty day is down" is a remark, not a request');
   assert.equal(final.trail, null);
   assert.equal(final.wiresAttempted, 1);
   assert.equal(final.wiresBlocked, 1);
@@ -521,7 +527,7 @@ test('a desk that never commits gets an ending that says so plainly', async () =
   assert.equal(final.trail, null);
 });
 
-test('a caught lie sends no wire, and the wire is judged on the spot', async () => {
+test('a caught lie sends no wire; a commitment is judged when it is wired', async () => {
   const lie = makeRoom([{ text: '{"valid":false,"reason":"Not in the record."}' }]);
   const round = await lie.service.start();
   const caught = await pitch(lie.service, round.id, 0, 'Trader 014 is up over the full 30 days.');
@@ -531,15 +537,15 @@ test('a caught lie sends no wire, and the wire is judged on the spot', async () 
 
   const { service } = makeRosterRoom(answer(7500, 'sold', 'Funded.'));
   const clean = await service.start({ prospect: 'realdeal' });
-  const shot = await pitch(service, clean.id, 0, 'HYPE alone made +$52,030 over the 30 days.');
-  assert.equal(shot.shots[0].wire.decision, 'allow');
-  assert.equal(shot.shots[0].wire.stamp, 'CAPPED');
-  assert.equal(shot.shots[0].wire.executed, 1875);
-  assert.equal(shot.shots[0].wire.stopped, 5625);
-  const { final } = await service.finish(clean.id, {});
+  await pitch(service, clean.id, 0, 'HYPE alone made +$52,030 over the 30 days.');
+  const { final, shots } = await service.finish(clean.id, { wire: true });
+  assert.equal(shots[0].wire.decision, 'allow');
+  assert.equal(shots[0].wire.stamp, 'CAPPED');
+  assert.equal(shots[0].wire.executed, 1875);
+  assert.equal(shots[0].wire.stopped, 5625);
   assert.equal(final.stamp, 'CAPPED');
   assert.equal(final.executed, 1875);
-  assert.equal(final.headline, 'It never asked for the record. It agreed to send $7,500.');
+  assert.equal(final.headline, 'PENNY never asked for the record and agreed to send $7,500.');
 });
 
 test('the room gate table is complete: the week is read even after the month refuses, each check names its Nansen read', async () => {
@@ -569,7 +575,7 @@ test('the ending is worded from the round\'s own transcript: asked, then agreed 
   await pitch(asked.service, start.id, 0, '+$35,723 realised over the last 7 days.');
   await pitch(asked.service, start.id, 1, 'PONS alone made +$100,849 over the 30 days.');
   let { final } = await asked.service.finish(start.id, {});
-  assert.equal(final.headline, 'It asked for the record. It was never shown it. It agreed to send $7,500.');
+  assert.equal(final.headline, 'PENNY asked for the record, was never shown it, and agreed to send $7,500.');
   assert.deepEqual(final.quotes.asked, { n: 1, line: 'All-time only. Show me the 30-day record first.' });
   assert.deepEqual(final.quotes.agreed, { n: 2, line: 'One coin, one month, big number. Small size.', amount: 7500,
     committed: { allocation: 7500, pct: 30 }, askedThenSent: true, noticedThenSent: false }, 'the wire is the commitment PENNY wrote, and it asked first');
@@ -579,7 +585,7 @@ test('the ending is worded from the round\'s own transcript: asked, then agreed 
   start = await blind.service.start();
   await pitch(blind.service, start.id, 0, '+$35,723 realised over the last 7 days.');
   ({ final } = await blind.service.finish(start.id, {}));
-  assert.equal(final.headline, 'It never asked for the record. It agreed to send $2,500.');
+  assert.equal(final.headline, 'PENNY never asked for the record and agreed to send $2,500.');
   assert.equal(final.quotes.asked, null);
   assert.doesNotMatch(JSON.stringify(final), /never looked/);
 });
@@ -723,10 +729,41 @@ test('when PENNY refuses on its own, the final carries a labelled what-if BAIT c
   assert.ok(final.whatIf.gate.checks.length > 3);
 });
 
-test('the board scores the fewest lines to a yes; old rows without a count rank after', async () => {
+test('the board ranks by dollars wired, the score the premise promises; lines are shown, not ranked', async () => {
   const board = tempBoard();
-  board.add({ initials: 'OLD', amount: 25000, line: 'x', prospect: 'THE LEGEND' });
-  board.add({ initials: 'TWO', amount: 9000, line: 'x', prospect: 'THE LEGEND', lines: 2 });
   board.add({ initials: 'ONE', amount: 2500, line: 'x', prospect: 'THE LEGEND', lines: 1 });
-  assert.deepEqual(board.top().map(r => r.initials), ['ONE', 'TWO', 'OLD']);
+  board.add({ initials: 'TWO', amount: 9000, line: 'x', prospect: 'THE LEGEND', lines: 3 });
+  board.add({ initials: 'OLD', amount: 25000, line: 'x', prospect: 'THE LEGEND' });
+  assert.deepEqual(board.top().map(r => r.initials), ['OLD', 'TWO', 'ONE']);
+  assert.equal(board.top()[1].lines, 3);
+});
+
+
+test('round 14: the player raises the commitment and wires it; the score is the dollars wired', async () => {
+  const { service } = makeRosterRoom([
+    ...answer(2500, 'intrigued', 'A small probe.'),
+    ...answer(6000, 'sold', 'Fine, more.'),
+  ]);
+  const round = await service.start({ prospect: 'legend' });
+  const one = await pitch(service, round.id, 0, round.dossier.facts[0].insert);
+  assert.equal(one.funded, 2500);
+  assert.equal(one.finished, false);
+  const two = await pitch(service, round.id, 1, round.dossier.facts[1].insert);
+  assert.equal(two.funded, 6000, 'the meter is PENNY\'s standing commitment');
+  const out = await service.finish(round.id, { wire: true, initials: 'RSE' });
+  assert.equal(out.final.peak, 6000, 'BAIT checks the final amount');
+  assert.equal(out.final.gate.attempted, 6000);
+  assert.equal(out.final.stamp, 'BLOCKED');
+  assert.equal(out.placed.amount, 6000, 'the board scores the dollars wired');
+  assert.equal(out.placed.lines, 2);
+  assert.equal(out.final.wiresAttempted, 1);
+});
+
+test('round 14: at the line cap the standing commitment is wired; with nothing committed, finish before the cap is refused', async () => {
+  const { service } = makeRosterRoom([
+    ...answer(0, 'neutral', 'Go on.'),
+  ]);
+  const round = await service.start({ prospect: 'legend' });
+  await pitch(service, round.id, 0, round.dossier.facts[0].insert);
+  await assert.rejects(() => service.finish(round.id, { wire: true }), /Wire it once PENNY has committed money/);
 });

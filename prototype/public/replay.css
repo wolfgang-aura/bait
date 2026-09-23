@@ -737,9 +737,9 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
 }
 .how-steps { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .how-steps li { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
-.how-steps li.bait { border-color: #4DA3FF; box-shadow: 0 0 0 3px rgba(77, 163, 255, .12); }
+.how-steps li.bait { border-color: #FFB020; box-shadow: 0 0 0 3px rgba(255, 176, 32, .14); }
 .how-steps span { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
-.how-steps li.bait span { color: #8FBFF0; }
+.how-steps li.bait span { color: #E9C98A; }
 .how-steps strong { font: 700 19px/1.2 var(--sans); }
 .how-steps small { font: 400 13.5px/1.45 var(--sans); color: var(--ink-dim); }
 .how-note { margin-top: 14px; max-width: 900px; color: var(--ink-dim); font-size: 14px; line-height: 1.55; }
@@ -749,7 +749,7 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
 /* ---------- round 10: the one BAIT badge (same as the room) ---------- */
 .bait-badge {
   display: inline-block; font: 800 .92em/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
-  color: #051120; background: #4DA3FF; border-radius: 3px; padding: .18em .34em .16em .48em;
+  color: #1A1204; background: #FFB020; border-radius: 3px; padding: .18em .34em .16em .48em;
 }
 .mark .bait-badge { font-size: 16px; }
 .how-steps span .bait-badge { font-size: 10px; letter-spacing: .12em; }

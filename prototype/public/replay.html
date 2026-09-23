@@ -88,7 +88,7 @@
       <p class="sec-meta">Three parties · the gate reads Nansen · fails closed</p>
     </div>
     <ol class="how-steps">
-      <li><span>01 · The AI agent</span><strong>Proposes a transfer</strong><small>In the Pitch Room that is PENNY: a third-party AI allocator with no data tools. It decides on the pitch alone.</small></li>
+      <li><span>01 · The AI agent</span><strong>Proposes a transfer</strong><small>In the Pitch Room that is PENNY: a third-party AI allocator with no data tools. PENNY decides on the pitch alone.</small></li>
       <li class="bait"><span>02 · <span class="bait-badge">BAIT</span> check</span><strong>Reads Nansen before it leaves</strong><small>The wallet's 7-day and 30-day perp-pnl-summary, checked for the right wallet, window dates, source and freshness.</small></li>
       <li><span>03 · What leaves</span><strong>All of it, a capped 25%, or $0</strong><small>A losing month, a week that reverses the month, fewer than 20 closed trades or a win rate under 40%: $0. One market carried the month: 25%.</small></li>
     </ol>
@@ -149,14 +149,14 @@ export async function decide({ pitch, history, tools, slotUsd }) {
   const month = await tools.pnlSummary(30);   // frozen Nansen evidence
   return { allocateUsd: 0, reason: '...' };
 }</code></pre>
-      <p class="note">Replays the 10 recorded attacks against your agent on frozen Nansen evidence and prints how often it backs the loser. An HTTP endpoint works too. Zero Nansen credits.</p>
+      <p class="note">Runs the per-wallet suite against your agent on frozen Nansen evidence: 26 attacks on 6 losing wallets, 6 profitable controls and 6 attacks on the evidence itself, and prints how often it backs a loser. Zero Nansen credits.</p>
     </div>
   </section>
 
   <section id="guard" class="guard sec" aria-labelledby="guard-title" hidden>
     <div class="sec-head">
       <h2 id="guard-title"><span class="sec-num">3</span>Guard</h2>
-      <p class="sec-meta">One Nansen call · no model tools · fail closed</p>
+      <p class="sec-meta">Two Nansen summaries, plus the newest fills on a live round · no model tools · fail closed</p>
     </div>
 
     <h3 id="b-rule-title" class="rule-title"></h3>
@@ -185,7 +185,7 @@ if (decision.decision === 'allow') {
       <button type="button" id="b-copy" class="btn-ghost">Copy the snippet</button>
       <span id="b-copy-status" class="copy-status" role="status" aria-live="polite"></span>
     </div>
-    <p class="note guard-live">Run it live with only a Nansen key, one credit per check: <code>npm run guard -- --wallet 0x… --allocation 5000</code> on <a href="https://app.hyperliquid.xyz/explorer/address/0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd" target="_blank" rel="noopener">0x69cc...14fd</a> returned BLOCK at -$847,025.38 on 20 Sept 2026, 22:13 UTC.</p>
+    <p class="note guard-live">Run it live with only a Nansen key: <code>npm run guard -- --wallet 0x… --allocation 5000</code> reads the two summaries (2 credits, 1 if the month already refuses). A Pitch Room live read also takes the newest page of fills, 3 credits. Every live read's raw Nansen response is committed in <a href="https://github.com/wolfgang-aura/bait/tree/main/bench/live-reads">bench/live-reads</a> with its SHA-256.</p>
 
     <details class="audit" id="audit">
       <summary>Audit: prompt-only rule, paired policy test, sources, hashes</summary>
@@ -239,7 +239,7 @@ if (decision.decision === 'allow') {
 
   <section id="wallets" class="wallets sec" aria-labelledby="wallets-title" hidden>
     <div class="sec-head">
-      <h2 id="wallets-title"><span class="sec-num">4</span>Five wallets, with evidence</h2>
+      <h2 id="wallets-title"><span class="sec-num">4</span>Dated examples: five wallets read on 20 Sep 2026</h2>
       <p class="sec-meta">5 dated Hyperliquid examples · the BAIT check's decision on each</p>
     </div>
     <p class="wallets-lead">Each card is one dated Nansen read and the decision the BAIT check made on it, with links to the profile and the chain explorer. To check a wallet of your own, <a href="/#any-wallet" data-host-link>paste it on the Play page</a>: one live Nansen read, then the same round.</p>
@@ -257,7 +257,7 @@ if (decision.decision === 'allow') {
   <div class="foot-inner">
     <p>Recorded proof for one product path: AI allocation to perpetual-trading wallets.</p>
     <nav class="foot-links" aria-label="Repository">
-      <a class="foot-link" href="#wallets">Five wallets, with evidence</a>
+      <a class="foot-link" href="#wallets">Dated examples</a>
       <a class="foot-link" href="/" data-host-link>Play it live</a>
       <a class="foot-link" href="https://github.com/wolfgang-aura/bait">GitHub</a>
     </nav>
