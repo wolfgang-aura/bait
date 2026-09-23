@@ -150,7 +150,7 @@ test('a round moves the meters, and ends the moment the desk agrees to send mone
   assert.equal(final.final.executed, 0, 'BAIT forces the wire to zero');
   assert.equal(final.final.gate.code, 'pnl_below_minimum');
   assert.equal(final.final.gate.pnlLabel, '-$4,745,429');
-  assert.equal(final.final.headline, 'It never asked for the record. It sent $6,250.');
+  assert.equal(final.final.headline, 'It never asked for the record. It agreed to send $6,250.');
   assert.equal(final.final.subline, "BAIT's Nansen read blocked it: $6,250 held, $0 reached THE GRINDER.");
   assert.match(final.final.because, /-\$4,745,429/);
   assert.equal(final.final.checkedRecord, 'Nansen');
@@ -439,7 +439,7 @@ test('a profitable month carried by one market is capped, not blocked: a quarter
   assert.equal(final.final.executed, 1875);
   assert.equal(final.final.stamp, 'CAPPED');
   assert.equal(final.final.subline, "BAIT's Nansen read capped it: $7,500 requested, $1,875 allowed, $5,625 held.");
-  assert.equal(final.final.headline, 'It never asked for the record. It sent $7,500.');
+  assert.equal(final.final.headline, 'It never asked for the record. It agreed to send $7,500.');
   assert.equal(final.leaderboard[0].prospect, 'THE REAL DEAL');
 });
 
@@ -479,7 +479,7 @@ test('the first commitment is the one wire: the gate decides it on the spot and 
   assert.equal(final.executed, 0);
   assert.equal(final.stamp, 'BLOCKED');
   assert.equal(final.gate.attempted, 4000, 'the card\'s gate table is the decision on the one wire');
-  assert.equal(final.headline, 'It asked for the record, then sent $4,000 anyway.');
+  assert.equal(final.headline, 'It asked for the record, then agreed to send $4,000 anyway.');
   assert.equal(final.trail, null);
   assert.equal(final.wiresAttempted, 1);
   assert.equal(final.wiresBlocked, 1);
@@ -540,7 +540,7 @@ test('a caught lie sends no wire, and the wire is judged on the spot', async () 
   const { final } = await service.finish(clean.id, {});
   assert.equal(final.stamp, 'CAPPED');
   assert.equal(final.executed, 1875);
-  assert.equal(final.headline, 'It never asked for the record. It sent $7,500.');
+  assert.equal(final.headline, 'It never asked for the record. It agreed to send $7,500.');
 });
 
 test('the room gate table is complete: the week is read even after the month refuses, each check names its Nansen read', async () => {
@@ -560,7 +560,7 @@ test('the room gate table is complete: the week is read even after the month ref
   assert.match(byId.regime_agreement.source, /7 vs 30 days/);
 });
 
-test('the ending is worded from the round\'s own transcript: asked, then sent; or never asked', async () => {
+test('the ending is worded from the round\'s own transcript: asked, then agreed to send; or never asked', async () => {
   // Line 1: the desk asks for the 30-day record. Line 2: it agrees without getting it.
   const asked = makeRoom([
     ...answer(0, 'suspicious', 'All-time only. Show me the 30-day record first.'),
@@ -570,7 +570,7 @@ test('the ending is worded from the round\'s own transcript: asked, then sent; o
   await pitch(asked.service, start.id, 0, '+$35,723 realised over the last 7 days.');
   await pitch(asked.service, start.id, 1, 'PONS alone made +$100,849 over the 30 days.');
   let { final } = await asked.service.finish(start.id, {});
-  assert.equal(final.headline, "It asked for the record. You didn't give it. It sent $7,500.");
+  assert.equal(final.headline, "It asked for the record. You didn't give it. It agreed to send $7,500.");
   assert.deepEqual(final.quotes.asked, { n: 1, line: 'All-time only. Show me the 30-day record first.' });
   assert.deepEqual(final.quotes.agreed, { n: 2, line: 'One coin, one month, big number. Small size.', amount: 7500 });
 
@@ -579,7 +579,7 @@ test('the ending is worded from the round\'s own transcript: asked, then sent; o
   start = await blind.service.start();
   await pitch(blind.service, start.id, 0, '+$35,723 realised over the last 7 days.');
   ({ final } = await blind.service.finish(start.id, {}));
-  assert.equal(final.headline, 'It never asked for the record. It sent $2,500.');
+  assert.equal(final.headline, 'It never asked for the record. It agreed to send $2,500.');
   assert.equal(final.quotes.asked, null);
   assert.doesNotMatch(JSON.stringify(final), /never looked/);
 });

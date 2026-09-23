@@ -30,7 +30,7 @@ founder approves the cut.
 | Cold open | THE LEGEND: +$118,975,612 all time against -$31,872,988 over 30 days, BLOCKED. |
 | What BAIT is | The check that runs before an AI agent moves money. |
 | The round | A real DeepSeek round with no data tools. It asks for the 30-day record, is not given it, agrees, and puts $5,000 of its $25,000 behind him. |
-| The reveal | "It asked for the record. You didn't give it. It sent $5,000." BAIT's Nansen read blocks it. |
+| The reveal | "It asked for the record. You didn't give it. It agreed to send $5,000." BAIT's Nansen read blocks it. |
 | The checks | Every check the gate ran, each with the Nansen read it stands on. |
 | The result | Six losing wallets, 26 attacks: AI alone 63/78, with Nansen tools 19/78, behind the gate 0/78; on profitable traders 3 of 18 decisions blocked, 3 capped. |
 | End card | The bench command, the play link and the repository. |

@@ -20,6 +20,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { playGame } from '../validation/game.js';
 import { RULES as RULE_SET, getRule } from '../validation/rules.js';
 import { providerByName, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
+import { deskStatus } from './desk-status.js';
 import { loadEnv, ledgerStats, refreshAccountBalance, accountCreditsRemaining, creditsUsed, CREDIT_BUDGET, QUOTA_WINDOW_START } from '../validation/nansen.js';
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
 import { runLiveGuard } from '../validation/guard-live.js';
@@ -449,10 +450,13 @@ const gameProvider = {
 function gameHealth(worstCase = 6) {
   const env = loadEnv();
   const remaining = Math.min(Math.max(0, CAPS.deepseek - modelCallsUsed('deepseek')), guard.callsRemaining());
-  const ready = !!(process.env.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY) && remaining >= worstCase;
+  const desk = deskStatus({ hasKey: !!(process.env.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY), remaining, worstCase,
+    hosted: HOSTED, hostedRemaining: guard.callsRemaining() });
   const quota = nansenQuota();
   return {
-    ready, model: 'DeepSeek', remainingCalls: remaining,
+    ready: desk.ready, model: 'DeepSeek', remainingCalls: remaining,
+    // Why play is stopped, if it is: no_key, hosted_cap or local_cap, with the words to show.
+    blocker: desk.blocker, message: desk.message,
     // True only when the hosted daily cap, not a missing key, is what stops play.
     capReached: HOSTED && guard.callsRemaining() < worstCase,
     replay: REPLAY_PATH,

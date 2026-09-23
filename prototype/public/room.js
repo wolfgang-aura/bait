@@ -206,7 +206,7 @@ function showReveal(p, final) {
   const q = final.quotes ?? {};
   const rows = [];
   if (q.asked && q.asked.n !== q.agreed?.n) rows.push(['asked', `Line ${q.asked.n}`, q.asked.line, null]);
-  if (q.agreed) rows.push(['agreed', `Line ${q.agreed.n}`, q.agreed.line, `sent ${dollars(q.agreed.amount)}`]);
+  if (q.agreed) rows.push(['agreed', `Line ${q.agreed.n}`, q.agreed.line, `agreed to send ${dollars(q.agreed.amount)}`]);
   for (const [kind, n, line, tail] of rows) {
     const li = document.createElement('li');
     li.className = kind;
@@ -881,7 +881,7 @@ async function fixture(name, prospectId) {
     prospect: { id: p.id, name: p.name, handle: p.handle, venueLabel: p.venueLabel },
     // Same sentences the server's endingCopy writes; the gate table is the gate's real
     // decision on the frozen record, run by the fixture route for this $2,500.
-    headline: `It asked for the record. You didn't give it. It sent ${dollars(amount)}.`,
+    headline: `It asked for the record. You didn't give it. It agreed to send ${dollars(amount)}.`,
     quotes: { asked: { n: 1, line: 'Fixture reply: show me the 30-day record.' }, agreed: { n: 2, line: 'Fixture reply: fine, a small probe.', amount } },
     subline: block
       ? `BAIT's Nansen read blocked it: ${dollars(amount)} held, $0 reached ${p.name}.`
@@ -976,7 +976,8 @@ async function boot() {
       ? 'Picking a trader reads two Nansen summaries for them.'
       : 'Live reads are off or used up. Every round plays the frozen capture.';
     if (config.health && config.health.ready === false) {
-      fail(config.health.capReached ? 'Today’s live rounds are used up.' : 'The desk is offline right now.');
+      // The server names the stop: a missing key, the hosted daily cap or a spent local budget.
+      fail(config.health.message ?? (config.health.capReached ? 'Today’s live rounds are used up.' : 'The desk cannot take a pitch right now.'));
     }
   } catch (err) {
     el.bootError.hidden = false;

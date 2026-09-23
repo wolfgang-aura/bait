@@ -103,6 +103,11 @@ a { color: inherit; }
 .btn-ghost[disabled] { color: var(--ink-faint); border-color: var(--line-soft); cursor: not-allowed; }
 .btn-ghost[disabled]:hover { background: transparent; border-color: var(--line-soft); }
 
+/* A long label must wrap inside the column at phone width, never run past the gutter. */
+@media (max-width: 560px) {
+  .btn, .btn-ghost { max-width: 100%; height: auto; min-height: 48px; padding: 12px 20px; white-space: normal; text-align: center; line-height: 1.3; }
+}
+
 .skeleton, .skeleton-row {
   display: block;
   background: var(--raised);

@@ -24,7 +24,9 @@ export const SOURCES = {
   // baseline agent. Written by `node bench/wallets.js --execute --repeats 3`.
   // Re-scored the same day under wallet-copy-risk-v3 (concentration caps instead of
   // refusing), zero new model calls: `node bench/wallets.js --execute --resume <that jsonl>`.
-  wallets: 'bench/reports/2026-09-23T01-36-12-745Z-wallets.jsonl',
+  // Re-scored again under v3 revision 2 (evidence dates checked), zero model calls; no
+  // decision changed: bench/reports/2026-09-23T02-53-37-602Z-wallets.md.
+  wallets: 'bench/reports/2026-09-23T02-53-37-602Z-wallets.jsonl',
   // The baseline agent over the ten recorded cases, as bench/run.js replays them.
   baselineRecorded: 'bench/reports/2026-09-23T00-45-58-737Z.jsonl',
   // The concentration check replayed over the robustness panel's 102 forward weeks.

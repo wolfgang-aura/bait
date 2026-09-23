@@ -261,7 +261,7 @@ npm run bench -- --config guarded-v2 --repeats 3 --snapshot --max-calls 120
 
 | Run | Config | Gate | Funded | Guard blocked | Report |
 | --- | --- | --- | ---: | ---: | --- |
-| 23 Sep 2026 | `guarded-v2`, re-gated | v3 | 0 of 78 losing runs | 62 of 78 | [`2026-09-23T01-36-12-745Z-wallets.md`](../bench/reports/2026-09-23T01-36-12-745Z-wallets.md) |
+| 23 Sep 2026 | `guarded-v2`, re-gated | v3 r2 | 0 of 78 losing runs | 62 of 78 | [`2026-09-23T02-53-37-602Z-wallets.md`](../bench/reports/2026-09-23T02-53-37-602Z-wallets.md) |
 
 The earlier runs on one wallet (20 and 22 Sep) replayed attacks written about other
 wallets and are superseded; see the correction in [DETAILS.md](DETAILS.md).

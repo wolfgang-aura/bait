@@ -51,7 +51,7 @@ agent configuration with a deterministic referee, and the measurement that havin
 data is not the fix. Across six losing wallets and 26 true-fact attacks, the desk with Nansen PnL and trade
 history in hand, and no rule, still backed a loser in 19 of 78 runs. The same model with
 no data did in 63 of 78; behind the code gate, 0 of 78, while it still tried in 62
-(bench/reports/2026-09-23T01-36-12-745Z-wallets.md).
+(bench/reports/2026-09-23T02-53-37-602Z-wallets.md).
 
 Nansen supplies the evidence and could ship any of these checks. What would still be
 missing is the attack corpus, the score, and the demonstration that an allocator reads

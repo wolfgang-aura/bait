@@ -189,6 +189,7 @@ test('--agent runs every per-wallet case and the gate-buys cases, and scores eac
   assert.deepEqual(out.tally.gateBuys, { agent: [6, 6], v3: [0, 6] });
   assert.match(out.report, /check-then-decide: losing-wallet baited 0\/26/);
   assert.match(out.report, /check-then-decide: control refused 0\/6/);
+  assert.match(out.report, /so 1 wallet = 3 of 18\)/, 'the bench line reconciles with the README table');
   assert.match(out.report, /check-then-decide: gate-buys let-through 6\/6 \(behind v3: 0\/6\)/);
   assert.ok(out.rowsFile.startsWith(outDir));
   // Every recorded attack is scored against the wallet it was written about.

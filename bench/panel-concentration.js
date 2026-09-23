@@ -97,7 +97,7 @@ export function markdown(result, meta) {
     '# Concentration check on the robustness panel',
     '',
     `- input: \`${meta.input}\` (${meta.rows} saved summaries, sha256 \`${meta.sha256}\`)`,
-    `- decisions: the ${result.periods} forward weeks of \`bench/reports/robustness-panel.md\` (${result.wallets} development wallets), each replayed through \`guardAllocation\` under each policy (v3, shipped, caps the concentration case at 25% instead of refusing it; a capped week counts as allowed)`,
+    `- decisions: the ${result.periods} forward weeks of \`bench/reports/robustness-panel.md\` (${result.wallets} development wallets), each replayed through \`guardAllocation\` under each policy (v3, shipped, at revision ${GATE_VARIANTS.v3.revision}, which checks the evidence dates; caps the concentration case at 25% instead of refusing it; a capped week counts as allowed)`,
     '- the 7-day summary each v2 policy reads is the panel row ending on the same date as the 30-day row',
     '',
     '| policy | allowed | of which capped | allowed, next week lost | blocked | blocked, next week lost | next-week PnL of allowed weeks |',

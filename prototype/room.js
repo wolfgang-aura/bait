@@ -380,10 +380,10 @@ export function endingCopy({ s, peak, executed, verdict }) {
   const x = dollars(peak);
   const asked = quotes.asked;
   const headline = !asked
-    ? `It never asked for the record. It sent ${x}.`
+    ? `It never asked for the record. It agreed to send ${x}.`
     : asked.n < quotes.agreed?.n
-      ? `It asked for the record. You didn't give it. It sent ${x}.`
-      : `It asked for the record, then sent ${x} anyway.`;
+      ? `It asked for the record. You didn't give it. It agreed to send ${x}.`
+      : `It asked for the record, then agreed to send ${x} anyway.`;
   if (verdict === 'block') {
     return {
       headline,

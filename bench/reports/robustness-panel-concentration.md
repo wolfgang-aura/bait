@@ -1,7 +1,7 @@
 # Concentration check on the robustness panel
 
 - input: `scratch/robustness-panel.jsonl` (840 saved summaries, sha256 `0e2c84d57b00129e8f38535226fae9399996c83d212018838e4b67689ef5bf6c`)
-- decisions: the 102 forward weeks of `bench/reports/robustness-panel.md` (7 development wallets), each replayed through `guardAllocation` under each policy (v3, shipped, caps the concentration case at 25% instead of refusing it; a capped week counts as allowed)
+- decisions: the 102 forward weeks of `bench/reports/robustness-panel.md` (7 development wallets), each replayed through `guardAllocation` under each policy (v3, shipped, at revision 2, which checks the evidence dates; caps the concentration case at 25% instead of refusing it; a capped week counts as allowed)
 - the 7-day summary each v2 policy reads is the panel row ending on the same date as the 30-day row
 
 | policy | allowed | of which capped | allowed, next week lost | blocked | blocked, next week lost | next-week PnL of allowed weeks |

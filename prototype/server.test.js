@@ -224,6 +224,8 @@ test('daily cap: a pitch is refused before any model call once HOSTED_DAILY_CALL
     assert.equal(round.status, 201);
     assert.equal(round.body.health.capReached, true);
     assert.equal(round.body.health.ready, false);
+    assert.equal(round.body.health.blocker, 'hosted_cap', 'the daily cap is named as the cap, not as a missing key');
+    assert.doesNotMatch(round.body.health.message, /DEEPSEEK_API_KEY/);
     const pitch = await s.call(`/api/encounter/${round.body.id}/pitch`, {
       method: 'POST',
       body: { requestId: 'test-pitch-0000', turn: 0, cards: ['week-pnl'], text: PRESETS[0].text },

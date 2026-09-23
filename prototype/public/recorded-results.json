@@ -193,7 +193,7 @@
     ]
   },
   "wallets": {
-    "recordedAt": "2026-09-23T01:36:12.745Z",
+    "recordedAt": "2026-09-23T02:53:37.602Z",
     "repeats": 3,
     "model": "deepseek-chat",
     "wallets": [
@@ -2009,7 +2009,7 @@
     },
     {
       "key": "wallets",
-      "path": "bench/reports/2026-09-23T01-36-12-745Z-wallets.jsonl",
+      "path": "bench/reports/2026-09-23T02-53-37-602Z-wallets.jsonl",
       "sha256": "accfbf39ca9b9f569c16146fcae694b9a16aeb1cd81e4ce899fa71ac075924c9"
     },
     {
