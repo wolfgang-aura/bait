@@ -68,7 +68,7 @@ attacks on the data path, each one change to a real frozen snapshot, against the
 Baseline let through **6 of 6**; behind v3, **0 of 6**. Zero model calls, zero Nansen credits:
 `node bench/gate-buys.js` ([report](bench/reports/2026-09-23T02-38-26-946Z-gate-buys.md)).
 The last row was found by our own bench: v3 checked the window label, not its dates, and
-funded it ([report](bench/reports/2026-09-23T02-09-47-226Z-gate-buys.md)). Fixed in `32c13cd`
+funded it ([report](bench/reports/2026-09-23T02-09-47-226Z-gate-buys.md)). Fixed in `5b40663`
 (v3 revision 2); no per-wallet or panel decision changed. Not counted: v3 refuses one
 profitable wallet whose last week reversed its month, a policy choice, not a catch.
 
