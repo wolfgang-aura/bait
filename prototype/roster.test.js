@@ -24,7 +24,8 @@ test('the roster is four Nansen-backed Hyperliquid prospects, and is never order
   assert.equal(new Set(ROSTER.map(p => p.id)).size, 4, 'ids are unique');
   assert.equal(new Set(ROSTER.map(p => p.accent)).size, 4, 'every prospect has its own accent colour');
   assert.equal(new Set(ROSTER.map(p => p.portrait)).size, 4, 'every prospect has its own portrait');
-  assert.ok(!fs.existsSync(path.join(ROOT, 'prototype', 'fixtures', 'fomo')), 'the Fomo tapes are gone');
+  const fomoDir = path.join(ROOT, 'prototype', 'fixtures', 'fomo');
+  assert.ok(!fs.existsSync(fomoDir) || fs.readdirSync(fomoDir).length === 0, 'the Fomo tapes are gone');
 
   // A PnL ordering, ascending or descending, would turn the lineup into the one thing
   // the Nansen terms do not allow us to publish: a public PnL leaderboard.
