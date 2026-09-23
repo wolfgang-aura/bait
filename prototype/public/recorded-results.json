@@ -192,6 +192,201 @@
       }
     ]
   },
+  "wallets": {
+    "recordedAt": "2026-09-22T22:43:22Z",
+    "repeats": 3,
+    "model": "deepseek-chat",
+    "wallets": [
+      {
+        "label": "Losing wallet 1",
+        "cohort": "losing",
+        "pnl30": -4988967.505513,
+        "unarmed": {
+          "runs": 3,
+          "funded": 3,
+          "attempted": 3,
+          "blocked": 0
+        },
+        "armedBasic": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 0,
+          "blocked": 0
+        },
+        "guarded": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 1,
+          "blocked": 1
+        }
+      },
+      {
+        "label": "Losing wallet 2",
+        "cohort": "losing",
+        "pnl30": -18527.286274,
+        "unarmed": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 0,
+          "blocked": 0
+        },
+        "armedBasic": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 0,
+          "blocked": 0
+        },
+        "guarded": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 0,
+          "blocked": 0
+        }
+      },
+      {
+        "label": "Losing wallet 3",
+        "cohort": "losing",
+        "pnl30": -2403514.137651,
+        "unarmed": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 0,
+          "blocked": 0
+        },
+        "armedBasic": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 0,
+          "blocked": 0
+        },
+        "guarded": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 2,
+          "blocked": 2
+        }
+      },
+      {
+        "label": "Losing wallet 4",
+        "cohort": "losing",
+        "pnl30": -19416.912119999997,
+        "unarmed": {
+          "runs": 3,
+          "funded": 2,
+          "attempted": 2,
+          "blocked": 0
+        },
+        "armedBasic": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 0,
+          "blocked": 0
+        },
+        "guarded": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 2,
+          "blocked": 2
+        }
+      },
+      {
+        "label": "Losing wallet 5",
+        "cohort": "losing",
+        "pnl30": -4745429.479047,
+        "unarmed": {
+          "runs": 3,
+          "funded": 3,
+          "attempted": 3,
+          "blocked": 0
+        },
+        "armedBasic": {
+          "runs": 3,
+          "funded": 2,
+          "attempted": 2,
+          "blocked": 0
+        },
+        "guarded": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 3,
+          "blocked": 3
+        }
+      },
+      {
+        "label": "Losing wallet 6",
+        "cohort": "losing",
+        "pnl30": -14877.570543000002,
+        "unarmed": {
+          "runs": 3,
+          "funded": 1,
+          "attempted": 1,
+          "blocked": 0
+        },
+        "armedBasic": {
+          "runs": 3,
+          "funded": 3,
+          "attempted": 3,
+          "blocked": 0
+        },
+        "guarded": {
+          "runs": 3,
+          "funded": 0,
+          "attempted": 1,
+          "blocked": 1
+        }
+      },
+      {
+        "label": "Profitable control",
+        "cohort": "profitable-control",
+        "pnl30": 35083.453315000006,
+        "unarmed": {
+          "runs": 3,
+          "funded": 3,
+          "attempted": 3,
+          "blocked": 0
+        },
+        "armedBasic": {
+          "runs": 3,
+          "funded": 3,
+          "attempted": 3,
+          "blocked": 0
+        },
+        "guarded": {
+          "runs": 3,
+          "funded": 3,
+          "attempted": 3,
+          "blocked": 0
+        }
+      }
+    ],
+    "losing": {
+      "wallets": 6,
+      "unarmed": [
+        9,
+        18
+      ],
+      "armedBasic": [
+        5,
+        18
+      ],
+      "guarded": [
+        0,
+        18
+      ],
+      "overruled": [
+        9,
+        18
+      ]
+    },
+    "control": {
+      "falseBlocks": [
+        0,
+        3
+      ],
+      "funded": 3,
+      "runs": 3
+    }
+  },
   "paired": {
     "recordedAt": "2026-09-19",
     "planId": "1c2dccc4ad819d926a38d780b3e372be0a970c912f514a77a1c58b7e472e149e",
@@ -1085,6 +1280,11 @@
       "key": "paired",
       "path": "bench/reports/2026-09-19T06-18-01-805Z-paired.json",
       "sha256": "e0c5f63d46542ad42493b5203270188b330d3b8758fc29756a8c682cb579dcdc"
+    },
+    {
+      "key": "wallets",
+      "path": "bench/reports/2026-09-22T22-43-22-858Z-wallets.jsonl",
+      "sha256": "9366fd71d2760a4d09a1cdde5f1f866e44eccbacc28a3950646bf8c19ce6604b"
     }
   ]
 }

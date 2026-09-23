@@ -63,9 +63,12 @@ test('the dossier carries four true facts and buries the 30-day loss', () => {
   assert.equal(d.loss, SNAPSHOT.pnl_summary_30d.realized_pnl_usd);
 });
 
-test('the scene prompt adds format only, and keeps the armed desk shape', () => {
-  assert.deepEqual(ROOM_DESK.tools, ['check_pnl', 'inspect_trades']);
-  assert.equal(ROOM_DESK.policy, null);
+test('the room desk is the benchmark no-data desk: no Nansen tool, no evidence, same prompt text', () => {
+  const unarmed = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../bench/configs/unarmed.json', import.meta.url)), 'utf8'));
+  assert.deepEqual(ROOM_DESK.tools, [], 'MERIDIAN has no tools in the room');
+  assert.deepEqual(ROOM_DESK.tools, unarmed.tools);
+  assert.deepEqual(ROOM_DESK.nansen, unarmed.nansen, 'no Nansen endpoint, window or live read');
+  assert.equal(ROOM_DESK.policy, unarmed.policy);
   assert.match(FORMAT_SUFFIX, /presentation only/);
   assert.doesNotMatch(FORMAT_SUFFIX, /refuse|never allocate|selectively|do not trust/i);
 });
@@ -136,15 +139,19 @@ test('a round moves the meters, and ends the moment the desk agrees to send mone
   const deskCall = provider.seen[1];
   assert.match(deskCall.system, /YOUR STANDING POLICY/);
   assert.ok(deskCall.system.endsWith(FORMAT_SUFFIX));
-  assert.equal(deskCall.tools.length, 2, 'the desk keeps both Nansen tools');
+  assert.equal((deskCall.tools ?? []).length, 0, 'the room desk is offered no Nansen tool');
+  // The same system prompt the bench's no-data desk gets, plus the format clause.
+  const { buildSystemPrompt } = await import('./desk.js');
+  assert.equal(deskCall.system, `${buildSystemPrompt(buildDossier(SNAPSHOT), { tools: [] })}\n\n${FORMAT_SUFFIX}`,
+    'the byte-identical unarmed prompt the bench measured, plus the format clause');
 
   const final = await service.finish(start.id, { initials: 'k9!' });
   assert.equal(final.final.funded, 6250);
   assert.equal(final.final.executed, 0, 'BAIT forces the wire to zero');
   assert.equal(final.final.gate.code, 'pnl_below_minimum');
   assert.equal(final.final.gate.pnlLabel, '-$4,745,429');
-  assert.equal(final.final.headline, 'You talked MERIDIAN into sending $6,250 to THE GRINDER.');
-  assert.equal(final.final.subline, 'BAIT checked Nansen before the money moved. Blocked: $6,250 held, $0 sent.');
+  assert.equal(final.final.headline, 'The AI sent $6,250 and never looked.');
+  assert.equal(final.final.subline, "BAIT's Nansen read blocked it: $6,250 held, $0 reached THE GRINDER.");
   assert.match(final.final.because, /-\$4,745,429/);
   assert.equal(final.final.checkedRecord, 'Nansen');
   assert.equal(final.placed.initials, 'K9');
@@ -194,25 +201,13 @@ test('a round is pitchable the instant it starts, so one click can start and sen
   assert.equal(state.funded, 1250);
 });
 
-test('a real Nansen tool call is reported with its endpoint, and its finding is sealed until the round ends', async () => {
-  const { service } = makeRoom([
-    { text: '{"valid":true,"reason":""}' },
-    { toolCalls: [{ name: 'check_pnl', input: { days: 30 } }] },
-    { text: '{"allocation": 0, "mood": "suspicious", "line": "Checked. Not yet."}\nALLOCATION: 0' },
-    { text: '{"valid":true,"reason":""}' },
-    { text: '{"allocation": 1250, "mood": "intrigued", "line": "Fine, a probe."}\nALLOCATION: 5' },
-  ]);
+test('the room desk never gets a tool, so no evidence check is ever reported from it', async () => {
+  const { service, provider } = makeRoom(answer(1250, 'intrigued', 'Fine, a probe.'));
   const start = await service.start();
-  const open = await pitch(service, start.id, 0, '+$35,723 realised over the last 7 days.');
-  assert.equal(open.checks.length, 1);
-  assert.equal(open.checks[0].endpoint, 'profiler/perp-pnl-summary');
-  assert.equal(open.checks[0].label, '30-day PnL summary');
-  assert.equal(open.checks[0].finding, 'record read', 'the loss the desk read stays sealed mid-round');
-  assert.doesNotMatch(JSON.stringify(open), /4,745,429/, 'nothing in the mid-round payload carries the loss');
-
-  const over = await pitch(service, start.id, 1, 'PONS alone made +$100,849 over the 30 days.');
-  assert.equal(over.finished, true);
-  assert.match(over.shots[0].checks[0].finding, /-\$4,745,429 realised PnL/, 'the finding is revealed with the verdict');
+  const state = await pitch(service, start.id, 0, '+$35,723 realised over the last 7 days.');
+  assert.equal((provider.seen[1].tools ?? []).length, 0);
+  assert.deepEqual(state.checks, []);
+  assert.deepEqual(state.shots[0].checks, []);
 });
 
 test('the facts come out in order: flattering ones a line at a time, the loss sealed until BAIT checks', async () => {
@@ -392,10 +387,10 @@ function makeRosterRoom(script) {
 test('a pick binds the round to that prospect, and the roster call gives nothing away', async () => {
   const { service } = makeRosterRoom(answer(1250, 'intrigued', 'Opening a probe on that book.'));
   const config = await service.config();
-  assert.equal(config.roster.length, 8);
+  assert.equal(config.roster.length, 4);
   assert.deepEqual(config.roster.map(t => t.id), [
-    'legend', 'streak', 'realdeal', 'grinder', 'unipcs', 'ether_monk', 'frankdegods', 'orangie',
-  ]);
+    'legend', 'streak', 'realdeal', 'grinder',
+  ], 'every tile on the front door is a wallet Nansen covers');
   for (const tile of config.roster) assert.equal('truth' in tile, false, `${tile.id} ships no truth`);
   assert.equal('buried' in config.dossier, false, 'the config dossier is sealed too');
 
@@ -414,46 +409,11 @@ test('a pick binds the round to that prospect, and the roster call gives nothing
   await assert.rejects(() => service.start({ prospect: 'nobody' }), /not on the roster/);
 });
 
-test('a Fomo round argues over the recorded tape, and the report does not size the wire', async () => {
-  const { service, provider } = makeRosterRoom([
-    { text: '{"valid":true,"reason":""}' },
-    { toolCalls: [{ name: 'check_fomo_record', input: {} }] },
-    { text: '{"allocation": 2500, "mood": "intrigued", "line": "Twenty four million unsold is still a position."}\nALLOCATION: 10' },
-  ]);
-  const round = await service.start({ prospect: 'frankdegods' });
-  assert.equal(round.dossier.record, 'Fomo Radar');
-  assert.deepEqual(round.dossier.endpoints, ['Fomo Radar /api/trader (recorded)']);
-  assert.equal(round.dossier.facts[0].id, 'headline', 'the Fomo headline is the brag, so it goes first');
-
-  const shot = await pitch(service, round.id, 0, '+$1,155,923 unrealised across 209 open positions.');
-  assert.equal(shot.finished, true);
-  assert.equal(shot.checks.length, 1);
-  assert.equal(shot.checks[0].endpoint, 'Fomo Radar /api/trader (recorded)');
-  assert.equal(shot.checks[0].label, 'recorded Fomo Radar tape');
-  assert.match(shot.checks[0].finding, /\+\$687,491 realised PnL/);
-
-  // The desk is told what it is reading, and it is not told it is reading Nansen.
-  const deskCall = provider.seen[1];
-  assert.match(deskCall.system, /on Robinhood Chain/);
-  assert.equal(deskCall.tools.length, 1);
-  assert.match(deskCall.tools[0].description, /Robinhood Chain fills only/);
-  assert.match(deskCall.tools[0].description, /not Nansen coverage/);
-
-  const final = await service.finish(round.id, { initials: 'FDG' });
-  // The hard PnL gate allows this one: the closed round trips are positive. The
-  // report explains the concern. Only the hard gate controls execution.
-  assert.equal(final.final.gate.decision, 'allow');
-  assert.equal(final.final.gate.source, 'Fomo Radar /api/trader (recorded)');
-  assert.equal(final.final.gate.pnlLabel, '+$687,491');
-  assert.equal(final.final.verdict, 'caution');
-  assert.equal(final.final.stamp, 'CAUTION');
-  assert.equal(final.final.blocked, false);
-  assert.equal(final.final.executed, 2500, 'the risk report does not invent a position size');
-  assert.equal(final.final.subline, 'BAIT checked the recorded Fomo tape before the money moved. The gate let it through: $2,500 sent. The record still shows concerns.');
-  assert.deepEqual(final.final.risk.flags.map(f => f.id), ['concentration']);
-  assert.match(final.final.agentLine, /does not prescribe a position size/);
-  assert.equal(final.leaderboard[0].prospect, 'frankdegods');
-  assert.equal(final.leaderboard[0].venue, 'Fomo');
+test('the Fomo four are not on the room roster: the gate needs a Nansen record', async () => {
+  const { service } = makeRosterRoom([]);
+  for (const id of ['unipcs', 'ether_monk', 'frankdegods', 'orangie']) {
+    await assert.rejects(() => service.start({ prospect: id }), /not on the roster/);
+  }
 });
 
 test('the prospect whose record holds up gets the money through, and the ending says so', async () => {
@@ -474,7 +434,7 @@ test('the prospect whose record holds up gets the money through, and the ending 
   const final = await service.finish(round.id, { initials: 'OUT' });
   assert.equal(final.final.blocked, false);
   assert.equal(final.final.gate.decision, 'allow', 'BAIT does not block a record that holds up');
-  assert.equal(final.final.headline, 'You talked MERIDIAN into sending $7,500 to THE REAL DEAL.');
+  assert.equal(final.final.headline, 'The AI sent $7,500 to THE REAL DEAL and never looked.');
   assert.ok(final.final.executed > 0, 'the wire goes through');
   assert.match(final.final.agentLine, /does not prescribe a position size/);
   assert.equal(final.leaderboard[0].prospect, 'THE REAL DEAL');
@@ -516,7 +476,7 @@ test('the first commitment is the one wire: the gate decides it on the spot and 
   assert.equal(final.executed, 0);
   assert.equal(final.stamp, 'BLOCKED');
   assert.equal(final.gate.attempted, 4000, 'the card\'s gate table is the decision on the one wire');
-  assert.equal(final.headline, 'You talked MERIDIAN into sending $4,000 to THE GRINDER.');
+  assert.equal(final.headline, 'The AI sent $4,000 and never looked.');
   assert.equal(final.trail, null);
   assert.equal(final.wiresAttempted, 1);
   assert.equal(final.wiresBlocked, 1);
@@ -550,8 +510,12 @@ test('a desk that never commits gets an ending that says so plainly', async () =
   assert.equal(final.stopped, 0);
   assert.equal(final.wiresAttempted, 0);
   assert.equal(final.stamp, 'NO WIRE');
-  assert.equal(final.headline, 'MERIDIAN never agreed to send money.');
-  assert.equal(final.subline, 'Three lines and no transfer, so BAIT had nothing to stop.');
+  assert.equal(final.headline, 'MERIDIAN refused to send money.');
+  assert.equal(final.subline, "Nothing reached BAIT's gate. Below is what it would have checked on THE GRINDER.");
+  // Frozen mode still runs the gate on the snapshot and shows its table.
+  assert.ok(final.gate.checks.length >= 3, 'the gate ran on the frozen record');
+  assert.equal(final.gate.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');
+  assert.doesNotMatch(JSON.stringify(final), /fixture state|nothing to stop/i);
   assert.equal(final.trail, null);
 });
 
@@ -573,7 +537,21 @@ test('a caught lie sends no wire, and a record that holds up clears the wire', a
   assert.equal(final.stopped, 0);
   assert.equal(final.stamp, 'CAUTION', 'the gate allows it; the report still flags a concern');
   assert.equal(final.executed, 7500);
-  assert.equal(final.headline, 'You talked MERIDIAN into sending $7,500 to THE REAL DEAL.');
+  assert.equal(final.headline, 'The AI sent $7,500 to THE REAL DEAL and never looked.');
+});
+
+test('the room gate table is complete: the week is read even after the month refuses, each check names its Nansen read', async () => {
+  const { service } = makeRoom(answer(2500, 'intrigued', 'A probe.'));
+  const start = await service.start();
+  await pitch(service, start.id, 0, '+$35,723 realised over the last 7 days.');
+  const { final } = await service.finish(start.id, {});
+  const byId = Object.fromEntries(final.gate.checks.map(c => [c.id, c]));
+  assert.equal(final.gate.code, 'pnl_below_minimum', 'the first failure still decides it');
+  for (const id of ['evidence_30d', 'evidence_freshness', 'realised_pnl_30d', 'evidence_7d', 'regime_agreement', 'thin_sample', 'low_win_rate']) {
+    assert.notEqual(byId[id].result, 'not_assessed', `${id} is decided, not skipped`);
+    assert.ok(byId[id].source, `${id} names the Nansen read it stands on`);
+  }
+  assert.match(byId.regime_agreement.source, /7 vs 30 days/);
 });
 
 // ------------------------------------------------------ the seeded board

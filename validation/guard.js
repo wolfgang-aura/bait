@@ -384,10 +384,10 @@ export async function guardAllocation({
       t.skip('thin_sample', 'Not assessed. The summary carried no closed trade count.', null, policy.minClosedTrades);
     } else if (closed < policy.minClosedTrades) {
       t.fail('thin_sample', closed, policy.minClosedTrades,
-        `Only ${closed} closed trades in ${policy.windowDays} days. A handful of round trips is luck or skill and the record cannot tell you which.`);
+        `Only ${closed.toLocaleString('en-US')} closed trades in ${policy.windowDays} days. A handful of round trips is luck or skill and the record cannot tell you which.`);
     } else {
       t.pass('thin_sample', closed, policy.minClosedTrades,
-        `${closed} closed trades in ${policy.windowDays} days, enough of a record to judge.`);
+        `${closed.toLocaleString('en-US')} closed trades in ${policy.windowDays} days, enough of a record to judge.`);
     }
 
     const winRate = evidence.win_rate_30d;
@@ -424,13 +424,16 @@ export async function guardAllocation({
   if (!twoWindow) {
     t.skip('evidence_7d', `Not assessed. Policy ${policy.id} reads the ${policy.windowDays}-day window only.`);
     t.skip('regime_agreement', `Not assessed. Policy ${policy.id} reads one window, so there is no second window to compare.`);
-  } else if (already) {
+  } else if (already && policy.readAllWindows !== true) {
     // Refused already. Buying the second window would spend a credit to decorate a
     // decision that is made, so the table says plainly that it was not bought.
     const note = `Not assessed. The ${policy.windowDays}-day evidence already refused this request at "${already.id}", so the second window was not fetched.`;
     t.skip('evidence_7d', note);
     t.skip('regime_agreement', note);
   } else {
+    // `readAllWindows` (the Pitch Room, whose round already holds both summaries, so the
+    // week costs nothing) reads the second window even after a refusal. The decision is
+    // unchanged, the first failure still decides it; the table is just complete.
     const shortBar = `${policy.shortWindowDays}-day summary from ${policy.source}`;
     const short = await fetchSummary(policy.shortWindowDays);
     if (short.failure) {

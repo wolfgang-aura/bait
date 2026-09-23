@@ -214,6 +214,53 @@ const capEnv = (name, fallback) => {
   const n = Number(process.env[name]);
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
 };
+const REPO_BLOB = 'https://github.com/wolfgang-aura/bait/blob/main/';
+const RESULTS_FILE = path.join(HERE, 'public', 'recorded-results.json');
+function loadRecordedResults() { return JSON.parse(fs.readFileSync(RESULTS_FILE, 'utf8')); }
+
+/**
+ * The public proof document. Counts come from the audited bundle
+ * (prototype/public/recorded-results.json), which `npm run results:export` rebuilds from
+ * the raw run files named in `sources`; the Nansen counters are the room's own.
+ */
+export function buildProof({ results, live, stats }) {
+  const raw = key => (results.sources ?? []).find(s => s.key === key);
+  const link = s => (s ? { path: s.path, sha256: s.sha256, url: REPO_BLOB + s.path } : null);
+  const w = results.wallets;
+  return {
+    product: 'BAIT: the check that runs before an AI agent moves money',
+    model: w?.model ?? results.comparison.model ?? null,
+    perWallet: w && {
+      recordedAt: w.recordedAt, repeatsPerCell: w.repeats,
+      losingWallets: w.losing.wallets,
+      backedLoser: { aiAlone: w.losing.unarmed, aiWithNansenTools: w.losing.armedBasic, behindBaitGate: w.losing.guarded },
+      gateOverruledModel: w.losing.overruled,
+      profitableControl: w.control,
+      wallets: w.wallets.map(x => ({
+        label: x.label, realisedPnl30dUsd: Math.round(x.pnl30),
+        aiAlone: [x.unarmed.funded, x.unarmed.runs], aiWithNansenTools: [x.armedBasic.funded, x.armedBasic.runs],
+        behindBaitGate: [x.guarded.funded, x.guarded.runs], gateBlocked: x.guarded.blocked,
+      })),
+      note: "Behind the gate a losing wallet gets $0 by rule; the non-circular numbers are how often the gate overruled the model and how often it blocked the profitable control.",
+      source: link(raw('wallets')),
+    },
+    singleWalletSuite: {
+      recordedAt: results.comparison.recordedAt, cases: results.comparison.caseCount, repeats: results.comparison.repeats,
+      evidence: results.comparison.evidence, realisedPnl30dUsd: Math.round(results.comparison.pnl),
+      rows: results.comparison.rows.map(r => ({ config: r.config, backedLoser: [r.funded, r.runs], meanUsd: Math.round(r.mean), gateBlocked: r.blocked ?? null })),
+      source: link(raw('comparison')),
+    },
+    sources: (results.sources ?? []).map(link),
+    nansen: {
+      liveReadsEnabled: live.enabled, creditsPerRead: live.credits_per_read,
+      creditsToday: live.credits_today, creditsTotal: live.credits_total,
+      dailyCap: live.daily_cap, totalCap: live.total_cap,
+      lastLiveSuccessAt: live.last_live_success_at, counterPersistence: live.counter_persistence,
+    },
+    room: { roundsToday: stats.roundsToday, serverStartedAt: stats.startedAt },
+  };
+}
+
 const liveEvidence = createLiveEvidence({
   enabled: LIVE_ENABLED,
   keyPresent: ROOM_STUB ? true : NANSEN_KEY.present,
@@ -490,6 +537,12 @@ const server = http.createServer(async (req, res) => {
   };
 
   try {
+    // The proof, as data: every benchmark count the pages show, where each came from,
+    // and what the room has spent on Nansen. Read-only, no key, no address, no IP.
+    if (url.pathname === '/api/proof' && req.method === 'GET') {
+      return send(200, buildProof({ results: loadRecordedResults(), live: liveEvidence.status(), stats: guard.stats() }));
+    }
+
     if (url.pathname === '/healthz') {
       const s = guard.stats();
       const live = liveEvidence.status();
@@ -532,7 +585,7 @@ const server = http.createServer(async (req, res) => {
       // It spends nothing and is closed when hosted, so the reveal is not a URL away.
       if (url.pathname === '/api/room/fixture' && req.method === 'GET') {
         if (HOSTED) return send(404, { error: 'Unknown room route.' });
-        return send(200, roomService.fixture(url.searchParams.get('prospect')));
+        return send(200, await roomService.fixture(url.searchParams.get('prospect')));
       }
       if (url.pathname === '/api/room/leaderboard' && req.method === 'GET') {
         return send(200, { entries: roomService.leaderboard() });

@@ -38,22 +38,29 @@
       <a class="btn" href="https://bait-wyqr.onrender.com/">Play: talk the AI into backing a losing trader</a>
     </div>
 
-    <p class="lab ladder-lab">30 runs: 10 recorded attacks, 3 times each, on a trader down <span id="b-loss-short" class="skeleton-inline">&nbsp;</span> in 30 days</p>
+    <p class="lab ladder-lab" id="b-ladder-lab">Six losing wallets, three runs each, every pitch built from true facts in the wallet's own Nansen record</p>
     <ol class="ladder" aria-label="Runs in which the AI backed the losing trader">
       <li class="big" data-rung="1">
         <strong id="b-big-unarmed" class="skeleton">&nbsp;</strong>
-        <span>The AI alone backed the losing trader</span>
+        <span>Runs where the AI alone backed a losing trader</span>
       </li>
       <li class="big" data-rung="2">
         <strong id="b-big-armed-basic" class="skeleton">&nbsp;</strong>
-        <span>With Nansen data in hand, it still did</span>
+        <span>With Nansen tools in hand, it still did</span>
       </li>
       <li class="big" data-rung="3">
         <strong id="b-big-guarded" class="skeleton">&nbsp;</strong>
-        <span>Behind BAIT&rsquo;s gate, no money reached him</span>
+        <span>Behind BAIT&rsquo;s gate, no money reached a loser</span>
       </li>
     </ol>
-    <p class="model-note">Model tested: <span id="b-model">see the report</span>. One frozen Nansen snapshot. Every fact in every attack is true.</p>
+    <p class="model-note">Model tested: <span id="b-model">see the report</span>. Frozen Nansen snapshots. <span id="b-control"></span> <a href="https://bait-wyqr.onrender.com/api/proof">Every count as JSON, with raw-file hashes</a>.</p>
+    <div class="table-wrap wallets-table">
+      <table class="board">
+        <caption>Per wallet. Behind the gate, "tried" counts runs where the AI chose to fund and the gate forced $0. The gate's zero restates its rule; the tried count and the control row are the parts that are not circular.</caption>
+        <thead><tr><th scope="col">Wallet</th><th scope="col">30-day realised</th><th scope="col">AI alone</th><th scope="col">AI with Nansen tools</th><th scope="col">Behind BAIT's gate</th></tr></thead>
+        <tbody id="b-wallets"></tbody>
+      </table>
+    </div>
 
     <div class="hero-actions">
       <a class="btn-ghost" href="#attack">See the recorded attack</a>
@@ -103,7 +110,7 @@
     <div class="table-wrap">
       <table class="board">
         <caption id="b-comparison-caption"></caption>
-        <thead><tr><th scope="col">Agent configuration</th><th scope="col">Tools</th><th scope="col">Baited</th><th scope="col">Mean allocation</th></tr></thead>
+        <thead><tr><th scope="col">Agent configuration (one wallet, THE GRINDER)</th><th scope="col">Tools</th><th scope="col">Baited</th><th scope="col">Mean allocation</th></tr></thead>
         <tbody id="b-comparison"></tbody>
       </table>
     </div>
@@ -111,10 +118,13 @@
 
     <div class="harness">
       <h3><a href="https://github.com/wolfgang-aura/bait#benchmark-harness">Test your own agent</a></h3>
-      <pre class="code"><code>npm run bench -- --config my-agent --repeats 3 --snapshot</code></pre>
-      <pre class="code code-small"><code>bench/configs/my-agent.json
-{ "name": "my-agent", "tools": ["check_pnl", "inspect_trades"], "policy": "&lt;your rule&gt;" }</code></pre>
-      <p class="note">Replays the 10 recorded attacks on frozen Nansen evidence and prints the baited rate.</p>
+      <pre class="code"><code>npm run bench -- --agent examples/agents/deepseek-own-prompt.mjs --a unarmed --repeats 1 --snapshot</code></pre>
+      <pre class="code code-small"><code>// your-agent.mjs: your own code and model
+export async function decide({ pitch, history, tools, slotUsd }) {
+  const month = await tools.pnlSummary(30);   // frozen Nansen evidence
+  return { allocateUsd: 0, reason: '...' };
+}</code></pre>
+      <p class="note">Replays the 10 recorded attacks against your agent on frozen Nansen evidence and prints how often it backs the loser. An HTTP endpoint works too. Zero Nansen credits.</p>
     </div>
   </section>
 

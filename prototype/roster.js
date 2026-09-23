@@ -510,6 +510,11 @@ export function copyRiskEvidence(p) {
   const fills = [...(s.trades_30d ?? [])].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
   const best = bestCoin(month);
   const complete = s.trades_pagination?.is_complete === true;
+  // A newest-first first page of a wallet that trades every minute can cover an hour of a
+  // 30-day window. Drawdown and the worst trade measured over that are not the window's,
+  // so under a week of coverage they are not measured at all rather than footnoted.
+  const covered = fills.length > 1 ? Date.parse(fills[fills.length - 1].timestamp) - Date.parse(fills[0].timestamp) : 0;
+  const shortTape = !complete && fills.length > 0 && covered < 7 * 86_400_000;
   // A Hyperliquid capture holds the open perp book as an object of asset positions.
   const open = (s.open_positions?.asset_positions ?? []).map(row => row.position ?? {});
   const unrealised = open.reduce((a, o) => a + (Number(o.unrealized_pnl_usd) || 0), 0);
@@ -523,7 +528,8 @@ export function copyRiskEvidence(p) {
     headline_pnl_usd: null,
     closed_trade_count: month.closed_trade_count,
     win_rate: month.win_rate,
-    realised_series: fills.map(f => Number(f.closed_pnl) || 0),
+    realised_series: shortTape ? [] : fills.map(f => Number(f.closed_pnl) || 0),
+    series_short: shortTape,
     series_complete: complete,
     series_fills: fills.length,
     // The stretch the held fills actually cover. A first page of 1,000 newest-first
@@ -535,7 +541,7 @@ export function copyRiskEvidence(p) {
     top_position_coin: book > 0 ? (open[notional.indexOf(Math.max(...notional))]?.token_symbol ?? null) : null,
     top_coin_pnl_share: month.realized_pnl_usd > 0 && best ? best.realized_pnl_usd / month.realized_pnl_usd : null,
     top_coin: best?.coin ?? null,
-    worst_trade_usd: fills.length ? Math.min(...fills.map(f => Number(f.closed_pnl) || 0)) : null,
+    worst_trade_usd: fills.length && !shortTape ? Math.min(...fills.map(f => Number(f.closed_pnl) || 0)) : null,
     volume_usd: p.hypeRow?.month_volume_usd ?? null,
     account_value_usd: p.hypeRow?.account_value_usd ?? null,
     early_entry_share: null,
@@ -550,19 +556,24 @@ export function copyRiskEvidence(p) {
 export function copyRiskReport(p) {
   const evidence = copyRiskEvidence(p);
   const report = assessCopyRisk(evidence);
-  const partial = evidence.series_complete === false && evidence.series_fills > 0;
+  const short = evidence.series_short === true;
+  const partial = !short && evidence.series_complete === false && evidence.series_fills > 0;
   const held = partial && evidence.series_from && evidence.series_to
     ? `the ${count(evidence.series_fills)} fills held in this capture, `
       + `${span(evidence.series_from, evidence.series_to)} of the ${count(evidence.window_days)}-day window `
       + `(${minute(evidence.series_from)} to ${minute(evidence.series_to)} UTC)`
     : `the ${count(evidence.series_fills)} fills held in this capture`;
-  const coverage = partial
+  const tooFew = `this capture holds only the newest ${count(evidence.series_fills)} of ${count(evidence.closed_trade_count)} closed trades, too few to measure them over ${count(evidence.window_days)} days`;
+  const coverage = short
+    ? `Drawdown and worst single trade are not assessed: ${tooFew}.`
+    : partial
     ? `Drawdown and worst single trade are measured over ${held}, not over the whole window.`
     : evidence.realised_series?.length ? null
       : 'Drawdown is not available: the frozen capture holds no fills for this wallet.';
 
   return {
     ...report,
+    not_assessed: report.not_assessed.map(n => (short && ['max_drawdown', 'tail_loss'].includes(n.id) ? { ...n, reason: tooFew } : n)),
     flags: report.flags.map(f => {
       if (!partial) return f;
       if (f.id === 'max_drawdown') {

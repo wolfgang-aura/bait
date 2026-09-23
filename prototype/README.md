@@ -47,7 +47,7 @@ Keys go in the ignored root `.env` (see `.env.example`):
 | --- | --- | --- |
 | `DEEPSEEK_API_KEY` | both desks and the claim check | the page loads and says the AI is unavailable |
 | `NANSEN_API_KEY` | the live data refresh | falls back to the captured snapshot, labelled |
-| `ANTHROPIC_API_KEY` | `/lab.html` only | the player flow does not use it |
+| `ANTHROPIC_API_KEY` | `npm run bench -- --model claude-sonnet-5` only | the player flow does not use it |
 
 No frontend secrets or remote CSS. Pico v2.1.1 is vendored under `public/vendor/`
 with its licence. The startup banner prints the data mode, the keys it found, the

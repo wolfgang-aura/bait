@@ -1,6 +1,27 @@
 # BAIT public page, version B
 
-## Version G: positives first, the loss last, 23 September 2026 (current)
+## Version H: the AI never looks, BAIT does, 23 September 2026 (current)
+
+Changes on top of Version G, same tokens, fonts and viewports.
+
+- **Room.** MERIDIAN is the bench's no-data desk. One green line in the premise banner:
+  "MERIDIAN decides from your pitch alone, like most agents today. BAIT reads Nansen before
+  any money moves." The evidence strip says the desk has no data tools.
+- **Reveal.** Leads "The AI sent $X and never looked." then "BAIT's Nansen read blocked it:
+  $X held, $0 reached NAME." A refusal reads "MERIDIAN refused to send money" and still
+  shows the gate's table on the record.
+- **Gate table.** Every check decided (the week is read even after the month refuses) and
+  each row names its Nansen read under the sentence, in 10.5 px mono faint.
+- **Front door.** Four Hyperliquid tiles, max 200 px each, two per row on a phone; no
+  figure or name is cut at 375 px (checked in the DOM and in `scratch/shots/r2/phone-roster.png`).
+  The ladder is the six-wallet result; the model and the control's false blocks sit in its
+  small print. The Fomo side proof is a footer link.
+- **Proof page.** Hero ladder is the six-wallet result, then a per-wallet table, then a
+  link to `/api/proof`. The single-wallet table is labelled as one wallet.
+
+Seen, 23 September: `scratch/shots/r2/` roster, phone-roster, shot2, final-full, replay, fomo.
+
+## Version G: positives first, the loss last, 23 September 2026
 
 Scope: `prototype/public/room.html`, `room.css`, `room.js`, `prototype/room.js`, the hero of
 `replay.html` and the amount field on `guard.html`. Tokens, fonts and golden viewports

@@ -406,7 +406,7 @@ test('the control wallet has no fills, so drawdown is declared missing and never
   assert.equal(p.risk.execution_authorized, false, 'the report does not decide the wire');
 });
 
-test('a partial capture says how much of the window its fills actually cover', () => {
+test('a capture holding under a week of fills does not measure drawdown or the worst trade at all', () => {
   // Two dates are not enough here. THE LEGEND's first page of 1,000 fills lands inside
   // 74 minutes of a 30-day window, and "2026-08-22 to 2026-08-22" reads like a day of
   // trading, so the line carries the covered stretch and both timestamps.
@@ -417,22 +417,17 @@ test('a partial capture says how much of the window its fills actually cover', (
     const fills = [...raw.trades_30d].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
 
     assert.equal(p.snapshot.trades_pagination.is_complete, false);
-    assert.match(p.risk.coverage, /Drawdown and worst single trade are measured over the [\d,]+ fills held in this capture/);
-    assert.match(p.risk.coverage, /of the 30-day window \(\d{4}-\d{2}-\d{2} \d{2}:\d{2} to \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC\), not over the whole window\./);
-    // The timestamps in the sentence are the first and last fill in the file.
-    assert.ok(p.risk.coverage.includes(fills[0].timestamp.slice(0, 16).replace('T', ' ')),
-      `${id} names the first fill it holds`);
-    assert.ok(p.risk.coverage.includes(fills[fills.length - 1].timestamp.slice(0, 16).replace('T', ' ')),
-      `${id} names the last fill it holds`);
     assert.ok(
-      Date.parse(fills[fills.length - 1].timestamp) - Date.parse(fills[0].timestamp) < 30 * 86_400_000 / 10,
-      `${id} really does hold a small slice, which is the reason for this sentence`,
+      Date.parse(fills[fills.length - 1].timestamp) - Date.parse(fills[0].timestamp) < 7 * 86_400_000,
+      `${id} really does hold under a week of its 30-day window`,
     );
-
-    // Anything measured off that slice repeats the caveat in its own sentence.
+    // No drawdown or tail figure measured over an hour of a 30-day window: not assessed,
+    // and the sentence says why in counts, not in a self-undermining time span.
+    assert.match(p.risk.coverage, /^Drawdown and worst single trade are not assessed: this capture holds only the newest [\d,]+ of [\d,]+ closed trades, too few to measure them over 30 days\.$/);
+    assert.doesNotMatch(p.risk.coverage, /hour|minute/);
     for (const id2 of ['max_drawdown', 'tail_loss']) {
-      const flag = p.risk.flags.find(f => f.id === id2);
-      if (flag) assert.match(flag.plain, /fills held in this capture/, `${id}/${id2} names its coverage`);
+      assert.equal(p.risk.flags.find(f => f.id === id2), undefined, `${id}/${id2} is not flagged off a slice`);
+      assert.ok(p.risk.not_assessed.find(n => n.id === id2), `${id}/${id2} is listed as not assessed`);
     }
     // The loader declares the partial coverage, so the desk's own tools carry the warning.
     assert.equal(p.snapshot.fills_coverage.complete, false);

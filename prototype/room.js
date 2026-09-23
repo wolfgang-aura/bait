@@ -58,16 +58,17 @@ export const DESK_NAME = 'MERIDIAN';
 export const MOODS = ['neutral', 'intrigued', 'suspicious', 'sold', 'caught'];
 
 /**
- * The desk the game runs. Identical in shape to the armed bench config: the same two
- * Nansen tools, the same windows, the same null policy. `live: false` because the desk's
- * tools never call Nansen themselves: they read whatever record the round started with,
- * a live read or the frozen capture.
+ * The desk the game runs: the benchmark's no-data condition, `bench/configs/unarmed.json`
+ * field for field (24 of 30 runs baited). No tools, no evidence, the same null policy, so
+ * desk.js builds the same unarmed prompt the bench measured. MERIDIAN decides from the
+ * player's pitch alone, as most agents do today; Nansen is read by BAIT's gate, which
+ * sits between the desk's decision and the money.
  */
 export const ROOM_DESK = {
   name: 'meridian',
   policy: null,
-  tools: ['check_pnl', 'inspect_trades'],
-  nansen: { endpoints: ['profiler/perp-pnl-summary', 'profiler/perp-trades'], windows: [7, 30], live: false },
+  tools: [],
+  nansen: { endpoints: [], windows: [], live: false },
 };
 
 /**
@@ -348,28 +349,31 @@ const recordName = p => (p.venue === 'fomo' ? 'the recorded Fomo tape' : 'Nansen
  */
 export function endingCopy({ s, peak, executed, verdict }) {
   const name = s.prospect.name;
-  const checked = `BAIT checked ${recordName(s.prospect)} before the money moved.`;
+  const read = s.prospect.venue === 'fomo' ? "BAIT's read of the recorded Fomo tape" : "BAIT's Nansen read";
+  // The room desk has no tools, so it never looks; a desk that did is described as such.
+  const looked = s.shots.some(shot => (shot.checks ?? []).length > 0);
+  const sent = looked ? `The AI read the record and still sent ${dollars(peak)}` : `The AI sent ${dollars(peak)}`;
   if (peak === 0) {
     return {
-      headline: `${DESK_NAME} never agreed to send money.`,
-      subline: `Three lines and no transfer, so BAIT had nothing to stop.`,
+      headline: `${DESK_NAME} refused to send money.`,
+      subline: `Nothing reached BAIT's gate. Below is what it would have checked on ${name}.`,
       trail: null,
     };
   }
   if (verdict === 'block') {
     return {
-      headline: `You talked ${DESK_NAME} into sending ${dollars(peak)} to ${name}.`,
+      headline: `${sent}${looked ? '.' : ' and never looked.'}`,
       subline: executed > 0
-        ? `${checked} It held ${dollars(peak - executed)}; ${dollars(executed)} sent.`
-        : `${checked} Blocked: ${dollars(peak)} held, $0 sent.`,
+        ? `${read} held ${dollars(peak - executed)}; ${dollars(executed)} reached ${name}.`
+        : `${read} blocked it: ${dollars(peak)} held, $0 reached ${name}.`,
       trail: null,
     };
   }
   return {
-    headline: `You talked ${DESK_NAME} into sending ${dollars(peak)} to ${name}.`,
+    headline: `${sent} to ${name}${looked ? '.' : ' and never looked.'}`,
     subline: verdict === 'caution'
-      ? `${checked} The gate let it through: ${dollars(executed)} sent. The record still shows concerns.`
-      : `${checked} The gate let it through: ${dollars(executed)} sent.`,
+      ? `${read} let it through: ${dollars(executed)} sent. The record still shows concerns.`
+      : `${read} let it through: ${dollars(executed)} sent.`,
     trail: null,
   };
 }
@@ -408,14 +412,16 @@ export function createRoomService({
   } : null);
 
   // A service built from a bare snapshot, as the tests do, gets a one-prospect roster
-  // holding exactly that snapshot. A service built by the server gets all eight.
-  const lineup = roster ?? (() => {
+  // holding exactly that snapshot. A service built by the server gets the Hyperliquid
+  // four: every tile on the front door is a wallet Nansen covers, and the gate reads
+  // Nansen for it. The Fomo four stay in the side proof at /?view=fomo.
+  const lineup = (roster ?? (() => {
     const all = loadRoster();
     const data = source?.data;
     if (!data) return all;
     const match = all.find(p => p.wallet.toLowerCase() === String(data.wallet).toLowerCase());
     return [refreshProspect(match ?? all.find(p => p.id === 'grinder'), data)];
-  })();
+  })()).filter(p => p.venue === 'hyperliquid');
   // The fallback for a start with no pick. THE GRINDER, because it is the one prospect
   // whose truth is a real Nansen capture rather than a labelled fixture.
   const fallback = lineup.find(p => p.id === 'grinder') ?? lineup[0];
@@ -538,6 +544,17 @@ export function createRoomService({
     return `Live Nansen read at ${hhmm(read.fetched_at)}, ${Math.max(0, Math.round(check.value / 60_000))} min old when this wire was checked${limit}.`;
   };
 
+  /** Which Nansen read each check stands on, printed beside it on the gate table. */
+  const CHECK_SOURCE = {
+    evidence_30d: 'profiler/perp-pnl-summary, 30 days',
+    evidence_freshness: 'retrieved_at on the Nansen read',
+    realised_pnl_30d: 'profiler/perp-pnl-summary, 30 days',
+    evidence_7d: 'profiler/perp-pnl-summary, 7 days',
+    regime_agreement: 'perp-pnl-summary, 7 vs 30 days',
+    thin_sample: 'profiler/perp-pnl-summary, 30 days',
+    low_win_rate: 'profiler/perp-pnl-summary, 30 days',
+  };
+
   /** The report can explain a concern; it never stamps BLOCKED on money the gate let through. */
   const verdictOf = (gate, risk) => (gate.decision === 'block' ? 'block' : risk.verdict === 'allow' ? 'allow' : 'caution');
 
@@ -548,7 +565,9 @@ export function createRoomService({
       allocation,
       // The benchmark family of the prospect's policy, because the room always plays a
       // frozen record. The freshness clause is the only difference; the checks are identical.
-      policy: p.guardPolicy ?? BENCHMARK_GUARD_POLICY,
+      // Both summaries are already in the round's record, so the gate reads the week
+      // too and the table shows every check; the decision is the first failure, as ever.
+      policy: { ...(p.guardPolicy ?? BENCHMARK_GUARD_POLICY), readAllWindows: true },
       now,
     });
     return {
@@ -564,7 +583,7 @@ export function createRoomService({
       shortWindowDays: decision.policy.short_window_days ?? null,
       policyId: decision.policy.id,
       // The whole check table, so the final card can show why, not just whether.
-      checks: (decision.checks ?? []).map(c => ({ id: c.id, result: c.result, plain: freshnessPlain(p, c) })),
+      checks: (decision.checks ?? []).map(c => ({ id: c.id, result: c.result, plain: freshnessPlain(p, c), source: CHECK_SOURCE[c.id] ?? null })),
       evidenceAt: decision.evidence.retrieved_at ?? null,
       live: !!p.snapshot?.live_read,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
@@ -630,9 +649,11 @@ export function createRoomService({
     roster: () => lineup.map(rosterTile),
 
     /** The frozen record and the unsealed dossier behind one tile, for capture fixtures. */
-    fixture(id) {
+    async fixture(id) {
       const p = lineup.find(x => x.id === id) ?? fallback;
       return {
+        // The gate's real decision on the frozen record, for a fixture transfer of $2,500.
+        gate: await runGate(p, 2500),
         prospect: prospectPublic(p),
         dossier: publicDossier(buildProspectDossier(p), { ended: true }),
         sealedDossier: publicDossier(buildProspectDossier(p)),
@@ -722,10 +743,10 @@ export function createRoomService({
         }) };
 
         const outcome = pending.outcome ?? await runDesk({
-          config: s.prospect.desk,
+          config: ROOM_DESK,
           provider,
           data: s.data,
-          executor: s.prospect.executor,
+          executor: null,
           encounter: s.dossier,
           turns: [...s.turns, turn],
           systemSuffix: FORMAT_SUFFIX,

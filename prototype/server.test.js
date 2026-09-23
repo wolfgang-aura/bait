@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import crypto from 'node:crypto';
 /**
  * Boots prototype/server.js as a child in hosted mode on a free port and drives it over
  * HTTP. Round starts make no model call, and the daily-cap case runs with a cap of 0,
@@ -76,7 +78,7 @@ test('the default route is the Pitch Room, with the guard console still reachabl
     assert.match(guardPage.body, /Amount the AI agent wants to send/);
     assert.match(guardPage.body, /held\. \$0 sent\./);
     assert.match(guardPage.body, /ELIGIBLE/);
-    for (const path of ['/replay.html', '/index.html', '/room.css', '/room.js', '/portraits.js']) {
+    for (const path of ['/replay.html', '/room.css', '/room.js', '/portraits.js']) {
       assert.equal((await s.fetchText(path)).status, 200, `${path} stays reachable`);
     }
   } finally { await s.stop(); }
@@ -142,6 +144,33 @@ test('room: finishing before three shots is refused, and unknown rounds are a 40
     assert.equal(missing.status, 404);
     const unknown = await s.call('/api/room/nope');
     assert.equal(unknown.status, 404);
+  } finally { await s.stop(); }
+});
+
+test('/api/proof serves every benchmark count with its raw source, and nothing private', async () => {
+  const s = await startServer({ HOSTED_NANSEN_CREDITS_PER_DAY: '12' });
+  try {
+    const { status, body } = await s.call('/api/proof');
+    assert.equal(status, 200);
+    assert.equal(body.model, 'deepseek-chat');
+    assert.equal(body.perWallet.losingWallets, 6);
+    assert.deepEqual(body.perWallet.backedLoser.behindBaitGate[1], 18);
+    assert.equal(body.perWallet.wallets.length, 7);
+    assert.match(body.perWallet.source.url, /^https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/bench\/reports\/.+-wallets\.jsonl$/);
+    assert.match(body.perWallet.source.sha256, /^[a-f0-9]{64}$/);
+    assert.ok(body.singleWalletSuite.rows.find(r => r.config === 'unarmed').backedLoser[0] > 0);
+    assert.equal(body.nansen.dailyCap, 12);
+    assert.ok('lastLiveSuccessAt' in body.nansen);
+    const text = JSON.stringify(body);
+    assert.doesNotMatch(text, /0x[a-fA-F0-9]{40}/, 'no wallet address');
+    assert.doesNotMatch(text, /\b\d{1,3}(\.\d{1,3}){3}\b/, 'no IP address');
+    const key = process.env.NANSEN_API_KEY || loadEnv().NANSEN_API_KEY;
+    if (key) assert.ok(!text.includes(key.slice(-6)), 'no key');
+    // Every number on it traces to a file in the repository with that hash.
+    for (const src of body.sources) {
+      const raw = fs.readFileSync(fileURLToPath(new URL(`../${src.path}`, import.meta.url)), 'utf8').replace(/\r\n/g, '\n');
+      assert.equal(crypto.createHash('sha256').update(raw).digest('hex'), src.sha256, src.path);
+    }
   } finally { await s.stop(); }
 });
 
@@ -281,20 +310,22 @@ test('the roster route ships hype only, and the truth arrives with the round', a
   try {
     const { status, body } = await s.call('/api/room/roster');
     assert.equal(status, 200);
-    assert.equal(body.roster.length, 8);
+    assert.equal(body.roster.length, 4);
+    assert.ok(body.roster.every(tile => tile.venue === 'hyperliquid'), 'every front-door tile is Nansen-backed');
     for (const tile of body.roster) {
       assert.ok(tile.hype.value, `${tile.id} brags about something`);
       assert.equal('truth' in tile, false, `${tile.id} ships no truth before the pick`);
       assert.equal('risk' in tile, false, `${tile.id} ships no verdict before the pick`);
     }
 
-    const round = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'frankdegods' } });
+    const round = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'legend' } });
     assert.equal(round.status, 201);
-    assert.equal(round.body.prospect.id, 'frankdegods');
+    assert.equal(round.body.prospect.id, 'legend');
     assert.equal('truth' in round.body.prospect, false, 'the record is the reveal, so it arrives with the verdict');
     assert.equal('risk' in round.body.prospect, false);
     assert.equal(round.body.dossier.sealed.mustNotMention, true);
-    assert.deepEqual(round.body.dossier.endpoints, ['Fomo Radar /api/trader (recorded)']);
+    const fomo = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'frankdegods' } });
+    assert.equal(fomo.status, 404, 'the Fomo four are off the room roster');
 
     const health = await s.call('/healthz');
     assert.equal(health.body.callsToday, 0, 'picking a trader makes no model call');
@@ -416,8 +447,7 @@ test('hosted with NANSEN_LIVE=1: a Hyperliquid pick is live with its fetch time,
     assert.equal(capped.body.evidence.code, 'daily_cap');
 
     const fomo = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'orangie' } });
-    assert.equal(fomo.body.evidence.live, false);
-    assert.equal(fomo.body.evidence.mode, 'recorded');
+    assert.equal(fomo.status, 404, 'no Fomo pick, so no unlabelled evidence source in the room');
 
     const guard = await s.call('/api/guard', { method: 'POST', body: { wallet: LOSING_WALLET, allocation: 5000 } });
     assert.equal(guard.status, 403, 'the public guard route stays closed hosted; only the room spends');

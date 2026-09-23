@@ -40,24 +40,30 @@ let step = 0;
 /* ---------- hero: the quoted attack line, the 24/6/0 ladder, evidence line ---------- */
 
 function renderHero() {
-  const cmp = results.comparison;
-  const row = id => cmp.rows.find(r => r.config === id);
-  // The three rungs of the ladder: no data, Nansen data with no rule, behind the gate.
-  const rungs = [['unarmed', row('unarmed')], ['armed-basic', row('armed-basic')], ['guarded', row('guarded')]];
-  if (rungs.some(([, r]) => !r)) throw new Error('Comparison rows for unarmed, armed-basic and guarded are missing');
-
-  const loss = $('b-loss-short');
-  loss.classList.remove('skeleton-inline');
-  loss.textContent = money(Math.abs(cmp.pnl)).replace(/^[+-]/, '');
-  // The headline says "AI"; the one model this was measured on is named here, from the bundle.
-  if (cmp.model) $('b-model').textContent = cmp.model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : cmp.model;
-
-  for (const [id, r] of rungs) {
+  // The headline is the multi-wallet result: six losing wallets and a profitable control.
+  // The single-wallet 24/30 ladder stays in the score table below, labelled as one wallet.
+  const w = results.wallets;
+  if (!w) throw new Error('The per-wallet table is missing from the bundle');
+  const rungs = [['unarmed', w.losing.unarmed], ['armed-basic', w.losing.armedBasic], ['guarded', w.losing.guarded]];
+  for (const [id, [funded, runs]] of rungs) {
     const cell = $(`b-big-${id}`);
     cell.classList.remove('skeleton');
-    cell.innerHTML = `${r.funded}<small>/${r.runs}</small>`;
-    cell.setAttribute('aria-label', `${r.funded} of ${r.runs}`);
+    cell.innerHTML = `${funded}<small>/${runs}</small>`;
+    cell.setAttribute('aria-label', `${funded} of ${runs}`);
   }
+  const model = w.model ?? results.comparison.model;
+  if (model) $('b-model').textContent = model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : model;
+  if (w.control) {
+    $('b-control').textContent = `Profitable control: the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} funding decisions. The AI tried to fund a loser under the gate in ${w.losing.overruled[0]} of ${w.losing.overruled[1]} runs.`;
+  }
+  const frac = c => `${c.funded}/${c.runs}`;
+  $('b-wallets').innerHTML = w.wallets.map(x => `<tr>
+      <th scope="row">${escape(x.label)}</th>
+      <td>${money(x.pnl30)}</td>
+      <td>${x.cohort === 'losing' ? `backed ${frac(x.unarmed)}` : `funded ${frac(x.unarmed)}`}</td>
+      <td>${x.cohort === 'losing' ? `backed ${frac(x.armedBasic)}` : `funded ${frac(x.armedBasic)}`}</td>
+      <td>${x.cohort === 'losing' ? `backed ${frac(x.guarded)}, tried ${x.guarded.blocked}` : `funded ${frac(x.guarded)}, false blocks ${x.guarded.blocked}/${x.guarded.attempted}`}</td>
+    </tr>`).join('');
 }
 
 function renderEndpoints() {

@@ -236,6 +236,8 @@ h1 {
 .hero .big strong { font-size: clamp(48px, 6.4vw, 84px); }
 .model-note { margin: -18px 0 24px; font: 400 12.5px/1.5 var(--mono); color: var(--ink-faint); }
 .model-note span { color: var(--ink-dim); }
+.wallets-table { margin: 0 0 28px; }
+.wallets-table caption { text-align: left; }
 
 .endpoints {
   font: 400 13px/1.5 var(--mono);

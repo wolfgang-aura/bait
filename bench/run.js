@@ -10,6 +10,11 @@
  *   npm run bench -- --a armed-basic --b armed-plus --cases bench/cases --max-calls 40
  *   npm run bench -- --a unarmed --b armed-basic --config armed-plus --repeats 3
  *   npm run bench -- --a unarmed --b armed-basic --resume bench/reports/<stamp>.jsonl
+ *   npm run bench -- --agent examples/agents/check-then-decide.mjs --snapshot
+ *   npm run bench -- --agent examples/agents/deepseek-own-prompt.mjs --a unarmed --snapshot
+ *
+ * `--agent <module.mjs | http://...>` adds your own allocator as one more row, scored
+ * by the same referee. See bench/agent.js for the decide() contract.
  *
  * `--repeats N` replays each (case, config) N times, repeat-major, so an early stop
  * leaves every case with the same number of repeats instead of the first few cases
@@ -31,6 +36,7 @@ import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, guardAllocation, GUA
 import { makeToolExecutor } from '../validation/tools.js';
 import { deepseekProvider, anthropicProvider, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
+import { agentConfig, loadAgent, makeMeter, replayAgentCase } from './agent.js';
 import { creditsUsed, CREDIT_BUDGET, accountCreditsRemaining, refreshAccountBalance, ledgerStats, QUOTA_WINDOW_START } from '../validation/nansen.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -49,6 +55,7 @@ export const BENCH_GUARD_POLICIES = { v1: BENCHMARK_GUARD_POLICY, v2: BENCHMARK_
 
 export const DEFAULTS = {
   configs: [],
+  agent: null,
   casesDir: 'bench/cases',
   model: 'deepseek-chat',
   maxCalls: 60,
@@ -86,10 +93,14 @@ export function parseArgs(argv = []) {
       case '--resume': opts.resume = value(arg, argv[++i]); break;
       case '--headline-only': opts.headlineOnly = true; break;
       case '--snapshot': opts.live = false; break;
+      case '--agent':
+        if (opts.agent) throw new Error('Give one --agent per run');
+        opts.agent = value(arg, argv[++i]);
+        break;
       default: throw new Error(`Unknown argument ${JSON.stringify(arg)}. See the header of bench/run.js.`);
     }
   }
-  if (!opts.configs.length) throw new Error('Give a config: --config <name>, or compare with --a <name> --b <name>');
+  if (!opts.configs.length && !opts.agent) throw new Error('Give a config: --config <name>, compare with --a <name> --b <name>, or bring --agent <file.mjs>');
   if (new Set(opts.configs).size !== opts.configs.length) throw new Error('Configs must be distinct');
   return opts;
 }
@@ -307,6 +318,7 @@ export function formatReport({ results, configs, meta }) {
       `- windows: ${c.nansen.windows.length ? c.nansen.windows.join(', ') : '_none_'}`,
       `- policy: ${c.policy ? `custom — ${c.policy}` : 'default R1 allocator policy'}`,
       c.guard === true ? `- guard: code-enforced \`${BENCH_GUARD_POLICIES[c.guardPolicy ?? 'v1'].id}\` gate via \`${GUARD_ENDPOINT}\`, reading ${(BENCH_GUARD_POLICIES[c.guardPolicy ?? 'v1'].shortWindowDays ? [BENCH_GUARD_POLICIES[c.guardPolicy ?? 'v1'].shortWindowDays, GUARD_WINDOW_DAYS] : [GUARD_WINDOW_DAYS]).join(' and ')} days; ${formatGuardLines(results, [c])[0].replace(/^.*?: /, '')}` : null,
+      c.agent ? `- agent: \`${c.agent.spec}\` via the decide() adapter (${c.agent.kind}); its evidence calls are served from the same snapshot executor as the desk tools` : null,
       c.description ? `- ${c.description}` : null,
       '',
     ].filter(l => l !== null)),
@@ -422,7 +434,7 @@ export function loadResume(file) {
 
 export async function runBench(opts = {}) {
   const {
-    configs: configNames = [], casesDir = DEFAULTS.casesDir, model = DEFAULTS.model,
+    configs: configNames = [], agent: agentSpec = null, casesDir = DEFAULTS.casesDir, model = DEFAULTS.model,
     maxCalls = DEFAULTS.maxCalls, timeoutMs = DEFAULTS.timeoutMs, headlineOnly = false,
     repeats = DEFAULTS.repeats, resume = null,
     live = true, outDir = DEFAULTS.outDir, repo = REPO,
@@ -431,6 +443,13 @@ export async function runBench(opts = {}) {
 
   const startedAt = now().toISOString();
   const configs = configNames.map(n => loadConfig(n, { repo }));
+  // Your agent is one more row, scored exactly like a config.
+  const agent = agentSpec ? await loadAgent(agentSpec, { repo, timeoutMs }) : null;
+  if (agent) {
+    const cfg = agentConfig(agentSpec, { repo });
+    if (configs.some(c => c.name === cfg.name)) throw new Error(`Agent name ${cfg.name} clashes with a config`);
+    configs.push(cfg);
+  }
   const cases = loadCases(casesDir, { repo, headlineOnly });
   const resumeFile = resume ? path.resolve(repo, resume) : null;
   const done = loadResume(resumeFile);
@@ -458,9 +477,13 @@ export async function runBench(opts = {}) {
   // Count this run's own calls rather than reading the shared ledger. The ledger also
   // moves when the game server is running, and a provider that does not charge it (a
   // test double) would otherwise never trip the budget.
-  const inner = providerFor(model);
+  // Built only when a desk config needs it, so an agent-only run needs no desk key.
+  let inner = null;
   let calls = 0;
-  const provider = { ...inner, chat: input => { calls += 1; return inner.chat(input); } };
+  const provider = { chat: input => { calls += 1; inner ??= providerFor(model); return inner.chat(input); } };
+  // An agent's own model calls are charged through this meter: same ledger, same cap,
+  // same --max-calls budget as the desk's.
+  const meter = makeMeter({ onCharge: () => { calls += 1; } });
 
   // Rows land on disk the moment a replay finishes, so a crash or a cap stop loses
   // nothing and --resume can pick the run back up.
@@ -500,7 +523,9 @@ export async function runBench(opts = {}) {
         if (calls >= maxCalls) { stopped = `--max-calls ${maxCalls}`; break outer; }
         log(`    ${config.name} repeat ${repeat}`);
         try {
-          const outcome = await replayCase({ testCase, config, provider, data, timeoutMs, log });
+          const outcome = config.agent
+            ? await replayAgentCase({ testCase, agent, data, meter, timeoutMs, log })
+            : await replayCase({ testCase, config, provider, data, timeoutMs, log });
           const row = {
             caseId: testCase.id, config: config.name, repeat, at: new Date().toISOString(),
             finalAllocation: outcome.finalAllocation, verdict: outcome.verdict, toolCalls: outcome.toolCalls,
@@ -509,6 +534,9 @@ export async function runBench(opts = {}) {
             // Guarded rows add what the model attempted and whether the gate overruled it.
             // Unguarded rows keep their exact prior shape.
             ...(config.guard === true ? { guard: true, attempted: outcome.attempted, guardBlocked: outcome.guardBlocked } : {}),
+            // Agent rows keep the agent's stated reason and its evidence calls for audit.
+            ...(config.agent ? { agent: config.agent.spec, reasons: outcome.pitches.map(p => p.reply),
+              research: outcome.pitches.map(p => p.research.map(r => `${r.label}: ${r.finding}`)) } : {}),
           };
           cell.runs.push(row);
           appendRow(row);

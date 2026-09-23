@@ -1,0 +1,23 @@
+# Keeps the free Render instance warm so a judge does not wait through a cold start
+# (22.7 s measured on 22 Sep 2026). Render free allows 750 instance hours a month, which
+# covers one always-on service. Never fails the repository: a miss is logged, not red.
+name: keep-warm
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Ping /healthz
+        continue-on-error: true
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code} %{time_total}s' --max-time 60 https://bait-wyqr.onrender.com/healthz || echo "no-response")
+          echo "healthz: $code"

@@ -241,10 +241,8 @@ test('a capped or failed read plays the frozen capture and says why; the Fomo fo
 
   const fomoMock = mockNansen();
   const fomo = liveRoom([], fomoMock);
-  const tape = await fomo.service.start({ prospect: 'unipcs' });
-  assert.equal(tape.evidence.live, false);
-  assert.equal(tape.evidence.mode, 'recorded');
-  assert.match(tape.evidence.reason, /recorded Fomo Radar tape/);
+  // The Fomo four have no Nansen record, so they are not on the room roster at all.
+  await assert.rejects(() => fomo.service.start({ prospect: 'unipcs' }), /not on the roster/);
   assert.equal(fomoMock.seen.length, 0);
 
   const capped = liveRoom([], mockNansen(), { dailyCap: 0 });

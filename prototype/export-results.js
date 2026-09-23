@@ -17,7 +17,55 @@ export const SOURCES = {
   strict: 'bench/reports/2026-09-18T16-25-58-254Z.jsonl',
   controls: 'bench/reports/2026-09-18T16-27-33-679Z-strict-controls.json',
   paired: 'bench/reports/2026-09-19T06-18-01-805Z-paired.json',
+  // 22 Sep 2026: six losing wallets and one profitable control, three runs per cell,
+  // written by `node bench/wallets.js --execute --repeats 3`.
+  wallets: 'bench/reports/2026-09-22T22-43-22-858Z-wallets.jsonl',
 };
+
+/**
+ * The per-wallet table: for each wallet and desk, baited (or, on the control, funded)
+ * runs, plus how often the gate overruled the model. Wallets are numbered, never named
+ * by address, and the 30-day PnL is read from the wallet's own frozen snapshot.
+ */
+export function summarizeWallets(rows) {
+  const wallets = [...new Set(rows.map(r => r.wallet))];
+  const snap = w => JSON.parse(fs.readFileSync(new URL(`validation/snapshots/${SNAPSHOTS.find(n => n.toLowerCase().includes(w.toLowerCase()))}`, root), 'utf8'));
+  let losingNo = 0;
+  const per = wallets.map(w => {
+    const mine = rows.filter(r => r.wallet === w);
+    const cohort = mine[0].cohort;
+    const cell = config => {
+      const done = mine.filter(r => r.config === config);
+      return {
+        runs: done.length,
+        funded: done.filter(r => r.finalAllocation > 0).length,
+        attempted: done.filter(r => (typeof r.attempted === 'number' ? r.attempted : r.finalAllocation) > 0).length,
+        blocked: done.filter(r => r.guardBlocked === true).length,
+      };
+    };
+    return {
+      label: cohort === 'losing' ? `Losing wallet ${++losingNo}` : 'Profitable control',
+      cohort,
+      pnl30: snap(w).pnl_summary_30d.realized_pnl_usd,
+      unarmed: cell('unarmed'), armedBasic: cell('armed-basic'), guarded: cell('guarded'),
+    };
+  });
+  const losing = per.filter(p => p.cohort === 'losing');
+  const sum = (key, field) => losing.reduce((a, p) => a + p[key][field], 0);
+  const control = per.find(p => p.cohort !== 'losing') ?? null;
+  return {
+    recordedAt: '2026-09-22T22:43:22Z', repeats: 3, model: reportModel(SOURCES.wallets),
+    wallets: per,
+    losing: {
+      wallets: losing.length,
+      unarmed: [sum('unarmed', 'funded'), sum('unarmed', 'runs')],
+      armedBasic: [sum('armedBasic', 'funded'), sum('armedBasic', 'runs')],
+      guarded: [sum('guarded', 'funded'), sum('guarded', 'runs')],
+      overruled: [sum('guarded', 'blocked'), sum('guarded', 'runs')],
+    },
+    control: control && { falseBlocks: [control.guarded.blocked, control.guarded.attempted], funded: control.guarded.funded, runs: control.guarded.runs },
+  };
+}
 
 /** Display order for the Experiment 1 table: least evidence first, strictest last. */
 export const COMPARISON_ORDER = ['unarmed', 'armed-basic', 'armed-plus', 'armed-strict', 'guarded'];
@@ -97,7 +145,7 @@ export function summarize(rows) {
 /** `- model: <id>` from the Markdown report written beside a bench JSONL. */
 export function reportModel(jsonlPath) {
   const md = fs.readFileSync(new URL(jsonlPath.replace(/\.jsonl$/, '.md'), root), 'utf8');
-  const match = md.match(/^- model: (\S+)$/m);
+  const match = md.match(/^- model: ([A-Za-z0-9._-]+)/m);
   if (!match) throw new Error(`No model line in the report beside ${jsonlPath}`);
   return match[1];
 }
@@ -128,6 +176,7 @@ export function buildResults() {
     strict: { recordedAt: '2026-09-18T16:25:58Z', pnl: -381767,
       caseCount: new Set(rows('strict').map(r => r.caseId)).size, repeats: 1,
       rows: summarize(rows('strict')), controls },
+    wallets: summarizeWallets(rows('wallets')),
     paired: buildPaired(JSON.parse(raw.paired), SNAPSHOTS.map(name => JSON.parse(fs.readFileSync(new URL(`validation/snapshots/${name}`, root), 'utf8')))),
     sources: Object.entries(SOURCES).map(([key, path]) => ({ key, path,
       sha256: createHash('sha256').update(raw[key].replace(/\r\n/g, '\n')).digest('hex') })),

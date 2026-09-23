@@ -512,6 +512,14 @@ function renderGate(host, gate) {
     b.textContent = `${label[check.result] ?? check.result} · ${check.id.replace(/_/g, ' ')}`;
     const span = document.createElement('span');
     span.textContent = check.plain;
+    // The Nansen read this check stands on, so the table reads as a set of checks on
+    // named evidence, not one sign test.
+    if (check.source) {
+      const src = document.createElement('em');
+      src.className = 'check-src';
+      src.textContent = check.source;
+      span.append(src);
+    }
     row.append(b, span);
     host.append(row);
   }
@@ -646,9 +654,9 @@ function renderChecks(checks, when = 'idle') {
     const idle = document.createElement('span');
     idle.className = 'nansen-idle';
     idle.textContent = {
-      idle: 'Evidence checks appear here when the desk goes looking.',
-      thinking: 'Waiting to see whether MERIDIAN checks the record.',
-      answered: 'MERIDIAN answered without checking the record.',
+      idle: 'MERIDIAN has no data tools. It only hears your pitch.',
+      thinking: 'MERIDIAN is deciding from your pitch alone.',
+      answered: 'MERIDIAN decided from your pitch alone. BAIT reads Nansen before any money moves.',
     }[when];
     el.nansen.append(idle);
     return;
@@ -930,30 +938,28 @@ function renderWireLog(list) {
 async function renderLadder() {
   try {
     const results = await api('/recorded-results.json');
-    const rows = results.comparison.rows;
-    // Plain words: the headline says "AI"; the model is named once, in the small print.
+    // The multi-wallet result: six losing wallets and a profitable control.
+    const w = results.wallets;
     const label = {
-      unarmed: 'The AI alone backed the losing trader',
-      'armed-basic': 'With Nansen data in hand, it still did',
-      guarded: "Behind BAIT's gate, no money reached him",
+      unarmed: 'The AI alone backed a losing trader',
+      armedBasic: 'With Nansen tools in hand, it still did',
+      guarded: "Behind BAIT's gate, no money reached a loser",
     };
     el.ladder.replaceChildren();
-    for (const config of ['unarmed', 'armed-basic', 'guarded']) {
-      const r = rows.find(x => x.config === config);
-      if (!r) continue;
+    for (const key of ['unarmed', 'armedBasic', 'guarded']) {
+      const [funded, runs] = w.losing[key];
       const li = document.createElement('li');
-      li.className = config === 'guarded' ? 'held' : 'baited';
+      li.className = key === 'guarded' ? 'held' : 'baited';
       const n = document.createElement('b');
-      n.textContent = `${r.funded}/${r.runs}`;
-      const s = document.createElement('span');
-      s.textContent = label[config];
-      li.append(n, s);
+      n.textContent = `${funded}/${runs}`;
+      const sp = document.createElement('span');
+      sp.textContent = label[key];
+      li.append(n, sp);
       el.ladder.append(li);
     }
-    const loss = Math.abs(Math.round(results.comparison.pnl));
-    const runs = rows.find(x => x.config === 'unarmed')?.runs ?? 30;
-    text(el.ladderHead, `${runs} runs: ${results.comparison.caseCount} recorded attacks against an AI allocator, on a trader down ${loss.toLocaleString('en-US')} in 30 days`);
-    text(el.ladderModel, `Model tested: ${results.comparison.model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : results.comparison.model ?? 'not recorded'} · recorded ${String(results.comparison.recordedAt).slice(0, 10)}`);
+    text(el.ladderHead, `${w.losing.wallets} losing wallets, 3 runs each, true facts from each wallet's own Nansen record`);
+    const model = w.model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : w.model;
+    text(el.ladderModel, `Model tested: ${model} · profitable control: ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} funding decisions blocked`);
   } catch { el.ladder.closest('.ladder-strip').hidden = true; }
 }
 
@@ -1043,14 +1049,16 @@ async function fixture(name, prospectId) {
     executed: block ? 0 : amount, executedLabel: wire.executedLabel,
     verdict: p.risk.verdict, blocked: block, stamp: wire.stamp,
     prospect: { id: p.id, name: p.name, handle: p.handle, venueLabel: p.venueLabel },
-    headline: `You talked MERIDIAN into sending ${dollars(amount)} to ${p.name}.`,
+    // Same sentences the server's endingCopy writes; the gate table is the gate's real
+    // decision on the frozen record, run by the fixture route for this $2,500.
+    headline: block ? `The AI sent ${dollars(amount)} and never looked.` : `The AI sent ${dollars(amount)} to ${p.name} and never looked.`,
     subline: block
-      ? `BAIT checked ${p.venue === 'fomo' ? 'the recorded Fomo tape' : 'Nansen'} before the money moved. Blocked: ${dollars(amount)} held, $0 sent.`
-      : `BAIT checked ${p.venue === 'fomo' ? 'the recorded Fomo tape' : 'Nansen'} before the money moved. The gate let it through: ${dollars(amount)} sent.`,
-    because: block ? p.risk.flags.find(f => f.id === 'realised_negative')?.plain ?? null : null,
+      ? `BAIT's Nansen read blocked it: ${dollars(amount)} held, $0 reached ${p.name}.`
+      : `BAIT's Nansen read let it through: ${dollars(amount)} sent.`,
+    because: frozen.gate.checks.find(c => c.result === 'fail')?.plain ?? null,
     trail: null,
     agentLine: assessed?.agent_line ?? '',
-    gate: { checks: [], policyId: 'fixture', windowDays: 30, source: 'fixture', reason: 'fixture state, no gate run' },
+    gate: frozen.gate,
     risk: p.risk,
   };
   const fixtureShots = [
@@ -1067,7 +1075,7 @@ async function fixture(name, prospectId) {
       ...state, dossier: frozen.sealedDossier,
       shotsUsed: 1, shotsLeft: 2, funded: 0, suspicion: 28, mood: 'intrigued', peak: 0, stopped: 0,
       shots: fixtureShots.slice(0, 1), line: 'Fixture reply: tell me more about that record.',
-      checks: state.dossier.endpoints.slice(0, 1).map(endpoint => ({ endpoint, label: 'evidence read', finding: 'record read' })),
+      checks: [],
     });
     renderFacts({ ...frozen.sealedDossier, facts: frozen.dossier.facts.slice(0, Math.min(frozen.dossier.facts.length, state.dossier.facts.length + 1)),
       upcoming: Math.max(0, frozen.dossier.facts.length - state.dossier.facts.length - 1), nextUnlock: 2 });
@@ -1098,6 +1106,8 @@ async function fixture(name, prospectId) {
 }
 
 // ------------------------------------------------------------------- boot
+
+let openerReadyPromise = Promise.resolve();
 
 async function boot() {
   el.line.addEventListener('input', updateCount);
@@ -1130,8 +1140,10 @@ async function boot() {
     // The cold open is read-only and costs nothing, so it is fetched alongside the room
     // config rather than behind it. A failure here is fatal: the screen it draws is the
     // first thing a stranger sees and a blank one is worse than an error.
-    const [config, openerData] = await Promise.all([api('/api/room'), api('/api/opener')]);
-    renderOpener(openerData);
+    // The roster is the only fetch the front door waits on. The Fomo side proof loads on
+    // its own, after, and only matters at /?view=fomo; the ladder and board fill in behind.
+    const config = await api('/api/room');
+    openerReadyPromise = api('/api/opener').then(renderOpener).catch(() => {});
     renderRoster(config.roster);
     boardEntries = config.leaderboard ?? [];
     renderBoard(boardEntries);
@@ -1154,9 +1166,9 @@ async function boot() {
 
   const params = new URLSearchParams(window.location.search);
   const state = params.get('state');
-  if (state) { await fixture(state, params.get('prospect')); return; }
+  if (state) { if (state.startsWith('opener')) await openerReadyPromise; await fixture(state, params.get('prospect')); return; }
   // One front door: the roster. The Fomo cold open is a side proof behind a link.
-  if (params.get('view') === 'fomo') { show('opener'); el.openerGrid.focus(); return; }
+  if (params.get('view') === 'fomo') { await openerReadyPromise; show('opener'); el.openerGrid.focus(); return; }
   show('roster');
   focus(focused);
 }

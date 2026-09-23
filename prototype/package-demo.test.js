@@ -35,9 +35,11 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   assert.match(html, /BAIT is the check that runs before the money moves/);
   assert.match(html, /for teams that let AI agents allocate capital/);
   assert.ok(html.indexOf('BAIT is the check') < html.indexOf('class="ladder"'), 'the product line comes before the ladder');
-  assert.match(html, /The AI alone backed the losing trader/);
-  assert.match(html, /With Nansen data in hand, it still did/);
-  assert.match(html, /Behind BAIT&rsquo;s gate, no money reached him/);
+  assert.match(html, /Runs where the AI alone backed a losing trader/);
+  assert.match(html, /With Nansen tools in hand, it still did/);
+  assert.match(html, /Behind BAIT&rsquo;s gate, no money reached a loser/);
+  assert.match(html, /id="b-wallets"/, 'the per-wallet table is on the proof page');
+  assert.match(js, /results\.wallets/);
   assert.match(html, /Model tested: <span id="b-model">/);
   assert.doesNotMatch(html, /process, not luck/);
   assert.match(html, /Checks wallet, 30-day window, source, freshness and realised PnL/);
@@ -46,7 +48,7 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   assert.match(html, /href="https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/docs\/WALLET_ALLOCATION_GUARD\.md"[^>]*>Integration contract</);
   assert.match(html, /Copy the snippet/);
   assert.doesNotMatch(html, /Copy the rule|3<\/span>Fix|BAIT rule|Red-team kit for AI trading agents/);
-  assert.match(js, /row\('guarded'\)/);
+  assert.match(js, /rows\.find\(r => r\.config === 'guarded'\)/);
   assert.match(js, /The guard that held: \$\{guarded\.funded\} of \$\{guarded\.runs\}\. Blocked \$\{guarded\.blocked\} attempts\./);
   assert.match(js, /guarded: 'BAIT guard · code, no model tools'/);
   assert.match(js, /typeof r\.blocked === 'number'/);

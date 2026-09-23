@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BAIT · The Pitch Room</title>
-<meta name="description" content="Con an AI allocator with true facts, and watch BAIT's code gate stop every wire it commits. Records from Nansen.">
+<meta name="description" content="AI agents can be talked into bad bets. BAIT is the check that runs before the money moves: it reads Nansen and blocks the transfer when the record is losing.">
 <meta name="theme-color" content="#0A0B0D">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -61,7 +61,7 @@
     </p>
     <div class="roster-head">
       <h1 class="screen-title" id="roster-title">Your turn: pick a trader, then talk the AI into backing them.</h1>
-      <p class="truth-credit" id="truth-credit"><span>Truth source</span> <b>Nansen</b> profiler for the four Hyperliquid traders · recorded Fomo Radar tape for the four on Robinhood Chain</p>
+      <p class="truth-credit" id="truth-credit"><span>Truth source</span> <b>Nansen</b> profiler for every trader here · Hyperliquid perpetuals</p>
     </div>
     <div class="grid" id="roster-grid" role="listbox" aria-label="Eight traders" tabindex="0"></div>
     <div class="caller" id="caller">
@@ -76,7 +76,7 @@
       <div class="ladder-strip" id="ladder-strip" aria-label="Recorded benchmark">
         <p class="col-head" id="ladder-head">We ran one recorded attack 30 times</p>
         <ol class="ladder" id="ladder"></ol>
-        <p class="ladder-foot"><span id="ladder-model">Model tested: DeepSeek</span> · <a href="/replay.html">Recorded proof</a> · <a href="/?view=fomo">Side proof: Fomo's most-followed, ranked by what they sold</a></p>
+        <p class="ladder-foot"><span id="ladder-model">Model tested: DeepSeek</span> · <a href="/replay.html">Recorded proof</a></p>
       </div>
       <div class="front-cons">
         <p class="col-head">Best cons so far · every one stopped by the gate</p>
@@ -142,7 +142,8 @@
 
     <div class="premise">
       <p class="premise-job">Your job: talk the AI into backing <b id="premise-name">this trader</b>, using only true facts.</p>
-      <p class="premise-how">MERIDIAN is an AI that invests a <span id="premise-slot">$25,000</span> fund. Backing a trader means sending part of it to copy their trades. The round ends when it agrees to send money.</p>
+      <p class="premise-how">MERIDIAN is an AI that invests a <span id="premise-slot">$25,000</span> fund; backing a trader means sending part of it to copy their trades. The round ends when it agrees to send money.</p>
+      <p class="premise-data">MERIDIAN decides from your pitch alone, like most agents today. <b>BAIT reads Nansen before any money moves.</b></p>
     </div>
 
     <div class="readouts">
@@ -188,7 +189,7 @@
           <p class="icpt-why" id="icpt-why">.</p>
         </div>
         <div class="nansen" id="nansen" aria-live="polite">
-          <span class="nansen-idle">Evidence checks appear here when the desk goes looking.</span>
+          <span class="nansen-idle">MERIDIAN has no data tools. It only hears your pitch.</span>
         </div>
       </div>
 
@@ -275,13 +276,11 @@
   </section>
 
   <p class="foot">
-    Fictional funds, real records. Hyperliquid truth from Nansen
-    <code>profiler/perp-pnl-summary</code> and <code>profiler/perp-trades</code>;
-    Fomo truth from a recorded <code>Fomo Radar /api/trader</code> response: the realised
-    side is Robinhood Chain round trips, the open book Fomo marks also spans other
-    chains, and each screen says which. Hype from the free public Hyperliquid
-    leaderboard and Fomo profiles. Every figure on screen carries its source and its
-    capture date.
+    Fictional funds, real records. Every trader's record comes from Nansen
+    <code>profiler/perp-pnl-summary</code> and <code>profiler/perp-trades</code>, live when this host
+    has a key, otherwise the dated frozen capture, and every figure carries its source and
+    date. Hype from the free public Hyperliquid leaderboard. MERIDIAN runs the benchmark's
+    no-data setup: no tools, your pitch only. <a href="/?view=fomo">Side note: Fomo's most-followed traders, ranked by what they actually sold.</a>
   </p>
 </div>
 
