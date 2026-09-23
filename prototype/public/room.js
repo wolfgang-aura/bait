@@ -353,9 +353,11 @@ const CHECK_NAME = {
   evidence_30d: '30-day record is this wallet\u2019s', evidence_freshness: 'Read is fresh', evidence_7d: '7-day record is this wallet\u2019s',
   realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
   low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month', open_book: 'Open positions not deep underwater',
+  smart_money_side: 'Smart money not against the open book', independent_record: 'Leaderboard record agrees',
   tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
   fills_drawdown: 'Drawdown in the newest fills', fills_worst_trade: 'Worst trade in the newest fills',
 };
+const V4_ROWS = ['smart_money_side', 'independent_record'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
@@ -377,7 +379,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     : `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
   const at = String(gate.evidenceAt ?? '');
   text(el.cpRead, gate.live
-    ? `Reading Nansen perp-pnl-summary${[gate.tape?.live && 'perp-trades', gate.positionsLive && 'perp-positions'].filter(Boolean).map((e, i, a) => (i === a.length - 1 ? ' and ' : ', ') + e).join('')} for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
+    ? `Reading Nansen perp-pnl-summary${[gate.tape?.live && 'perp-trades', gate.positionsLive && 'perp-positions', gate.smartMoneyLive && 'perp-screener', gate.recordLive && 'perp-leaderboard'].filter(Boolean).map((e, i, a) => (i === a.length - 1 ? ' and ' : ', ') + e).join('')} for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
     : `Reading Nansen perp-pnl-summary for ${who}: the ${at.slice(0, 10)} capture`);
   const raw = final.evidence?.raw;
   if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
@@ -387,7 +389,8 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   el.cpStamp.hidden = true;
   el.checkpoint.className = 'checkpoint';
   el.checkpoint.hidden = false;
-  const rows = (gate.checks ?? []).filter(c => c.result !== 'not_assessed' || c.id === 'evidence_freshness' || c.id.startsWith('fills_'));
+  // Gate v4's two rows always show, N/A included: the card says what each extra Nansen read decided or why it was not read.
+  const rows = (gate.checks ?? []).filter(c => c.result !== 'not_assessed' || c.id === 'evidence_freshness' || c.id.startsWith('fills_') || V4_ROWS.includes(c.id));
   if (!reduced) await sleep(450);
   for (const c of rows) {
     const v = checkRowView(c, final.verdict);
@@ -428,7 +431,7 @@ function renderCalls(calls) {
   for (const c of calls) {
     const li = document.createElement('li');
     const at = c.at ? `${String(c.at).slice(11, 16)} UTC` : '';
-    const cost = c.frozen ? `no call this round, captured ${String(c.at ?? '').slice(0, 10)}` : c.cached ? `0 credits (cached read, ${at})` : `${c.credits} credit${c.credits === 1 ? '' : 's'} · ${at}`;
+    const cost = c.frozen ? `no call this round, captured ${String(c.at ?? '').slice(0, 10)}` : c.skipped ? 'not bought: the record already refused, 0 credits' : c.cached ? `0 credits (cached read, ${at})` : `${c.credits} credit${c.credits === 1 ? '' : 's'} · ${at}`;
     const name = document.createElement('b');
     name.textContent = c.endpoint;
     const verdict = document.createElement('span');

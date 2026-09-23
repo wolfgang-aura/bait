@@ -41,6 +41,7 @@ footage, so v24 shows the stamp whole on the checkpoint and frames both reveals 
 it. Built by `scratch/hf/make-gen12.cjs` (from v23's `make-gen11.cjs`) with COLD=3.0
 LADDER=6.2 CLI_CARD=2.8; the held-out figures on the card are read from `bench/HELDOUT.md`.
 v23 (SHA-256 `2ea33b7f5c0ff2d60a556bc49c56d7b2c9a6b31a28307e4f5744d806809735bb`) is superseded.
+v24 predates gate v4 (23 Sep, `bench/V4.md`): its card says 36 of 54 faked-evidence paths through the PnL rule; the README now counts 49 of 67 with the doctored-number attack v4 added, and its checkpoint shows four Nansen calls, not six.
 
 Both rounds' figures come from live Nansen reads whose raw responses (two perp-pnl-summary
 calls, one page of perp-trades and one perp-positions call each, 4 credits a fresh read; the
@@ -78,18 +79,23 @@ BAIT is the check that runs before an AI agent moves money, for teams whose agen
 allocate capital to traders. In the Pitch Room you talk PENNY, an AI with no data tools
 and a $25,000 fund, into backing a trader using only true facts; the facts unlock one at a
 time and the loss stays sealed. The moment it agrees to send money, the BAIT check reads the
-trader's Nansen record: the 7-day and 30-day `profiler/perp-pnl-summary`, with named checks
-for a losing month, a week that reverses the month, too few trades, a low win rate, and
-stale or mismatched evidence. A profitable month carried by one market is capped at 25%
-of the request rather than refused.
+trader's Nansen record live: the 7-day and 30-day `profiler/perp-pnl-summary`, with named
+checks for a losing month, a week that reverses the month, too few trades, a low win rate, and
+stale or mismatched evidence; `profiler/perp-positions` for the open book; `perp-screener` for
+which side smart money holds in the trader's largest position; and `perp-leaderboard` as a
+second record of the same month, which refuses a summary that claims more than it. A
+profitable month carried by one market, an open book deep underwater, or smart money two to
+one on the other side is capped at 25% of the request rather than refused.
 
 Across six losing wallets and 26 attacks written from each wallet's own true facts, the
 AI alone backed a loser in 63 of 78 runs and with Nansen tools in 19 of 78. Behind the
 gate, 0 of 78, while the AI still tried in 62. On six profitable wallets the gate blocked
 3 of 18 funding decisions and capped 3. When the evidence itself is faked (another wallet's
-record, the wrong window, relabelled dates, a stale capture), a 19-line PnL rule sends money in
-36 of 54 attacked paths and BAIT in 0; on honest evidence that rule also scores 0, and it is
-published as the baseline to beat. `npm run bench -- --agent your-agent.mjs` runs any agent
+record, the wrong window, relabelled dates, a stale capture, a doctored number), a 19-line PnL
+rule sends money in 49 of 67 attacked paths and BAIT in 0; on honest evidence that rule also
+scores 0, and it is published as the baseline to beat. Gate v4, pre-registered before its run
+(`bench/V4.md`), decides every honest benchmark row as v3 did and closes the one gap v3 had: a
+summary with only its PnL doctored got 5 of 18 losing wallets through v3 and 0 through v4. `npm run bench -- --agent your-agent.mjs` runs any agent
 against the same attacks with zero Nansen credits.
 
 Held-out set, pre-registered before any wallet was picked, gate and prompt frozen by hash
@@ -99,7 +105,7 @@ wallets: 0/78 behind BAIT. Unseen 12 losing wallets: 0/36 behind BAIT, against 1
 AI alone and 3/36 with Nansen tools (the recipe attack only). Unseen 12 good traders: 3 of 35
 funding decisions blocked, 6 capped. The 0/36 is partly by construction (a wallet counts as
 losing by its 30-day Nansen record, which the gate's first rule refuses); the meaningful
-held-out result is faked evidence on unseen wallets: PnL rule 30/48 through, BAIT 0/48.
+held-out result is faked evidence on unseen wallets: PnL rule 42/60 through, BAIT 0/60.
 
 BAIT does not select wallets, predict returns or execute trades.
 

@@ -1020,3 +1020,18 @@ the exact rule instead of promising to identify the "wrong wallet." A successful
 machine result still returns `allow`, but the screen prints `ELIGIBLE`. The viewer
 should notice that this is a 30-day realised-PnL eligibility check before seeing the
 amount. The footer states that eligibility is not a recommendation.
+
+## Gate v4 rows on the checkpoint, 23 September 2026
+
+No new component and no new token: two more rows in the existing checkpoint list and two more
+lines in the Nansen calls list under it. Verified in screenshots at 1440 x 900 and 390 x 844
+on live reads (a BLOCK round and a CAP round).
+
+- Rows, after "Open positions not deep underwater": "Smart money not against the open book"
+  (perp-screener) and "Leaderboard record agrees" (perp-leaderboard). Unlike other rows, these
+  two show even when N/A, so the card always says what each extra Nansen read decided or why it
+  was not read ("Not read: the 30-day record already refused this request, so a second record
+  (5 credits) could not change it.").
+- Calls list: "perp-screener, smart money · 1 credit" and "perp-leaderboard, 30 days · 5
+  credits", or "not bought: the record already refused, 0 credits" when the gate did not need it.
+- The read line names every endpoint the round read live.

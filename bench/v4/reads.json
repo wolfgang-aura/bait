@@ -1,0 +1,324 @@
+{
+  "collectedAt": "2026-09-23T15:35:06.683Z",
+  "leaderboard": [
+    {
+      "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+      "evidence_retrieved_at": "2026-09-15T13:20:33Z",
+      "file": "bench/v4/reads/leaderboard-0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7-20260915T132033.json",
+      "sha256": "20fda82723cefa20f94b59193c553dc58f4296863ee8d2d5243d37392ad03982",
+      "error": null
+    },
+    {
+      "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+      "evidence_retrieved_at": "2026-09-15T13:20:20Z",
+      "file": "bench/v4/reads/leaderboard-0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a-20260915T132020.json",
+      "sha256": "226bf2fa6c41ec02038fc6d59ddb57187fcbb98ac78b0bb258e9eeba78b0facf",
+      "error": null
+    },
+    {
+      "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+      "evidence_retrieved_at": "2026-09-15T13:22:31Z",
+      "file": "bench/v4/reads/leaderboard-0x6daec5ff434924e0839358e710e6ae5f158590de-20260915T132231.json",
+      "sha256": "3f3e5c728fbc26c2b2007b4ed31457adbd4742a59d9119e570a80eff21fc6ae1",
+      "error": null
+    },
+    {
+      "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+      "evidence_retrieved_at": "2026-09-15T13:20:18Z",
+      "file": "bench/v4/reads/leaderboard-0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48-20260915T132018.json",
+      "sha256": "e70004e9a65e17b4efaa640fec1755b35d99d1c7223143fba37e62f8673824a9",
+      "error": null
+    },
+    {
+      "wallet": "0xc26cbb6483229e0d0f9a1cab675271eda535b8f4",
+      "evidence_retrieved_at": "2026-09-15T10:40:31Z",
+      "file": "bench/v4/reads/leaderboard-0xc26cbb6483229e0d0f9a1cab675271eda535b8f4-20260915T104031.json",
+      "sha256": "f0fdbbdcc688be2e3badb227fe571b7123fe13408f56ac96bba1977e4226a2a2",
+      "error": null
+    },
+    {
+      "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+      "evidence_retrieved_at": "2026-09-15T13:20:15Z",
+      "file": "bench/v4/reads/leaderboard-0xd894caa342a0d30365e7362280af09a5a7afc558-20260915T132015.json",
+      "sha256": "5b8ede60190fc91b2c08e52c26b7ac9104e93c6ecf2fe2a333914a0aa9c6937e",
+      "error": null
+    },
+    {
+      "wallet": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
+      "evidence_retrieved_at": "2026-09-15T11:10:52Z",
+      "file": "bench/v4/reads/leaderboard-0xfe47c8f29f65830d7990e85852cc2c5cee1c0085-20260915T111052.json",
+      "sha256": "e9d2c0a2cc816a3703bf368f6c141238b7456b7fb7dcac119d0f8e8dab37424c",
+      "error": null
+    },
+    {
+      "wallet": "0x2385aae82b8ff5ec9e72f122f3462b9a1b9db98a",
+      "evidence_retrieved_at": "2026-09-23T00:36:44Z",
+      "file": "bench/v4/reads/leaderboard-0x2385aae82b8ff5ec9e72f122f3462b9a1b9db98a-20260923T003644.json",
+      "sha256": "a3365bd3795e490f8bdef6a339ebb6e70031ebd7d08a9987573fc967a80f92a6",
+      "error": null
+    },
+    {
+      "wallet": "0x490c7ed1b96059df56296f44dcd24124e9353227",
+      "evidence_retrieved_at": "2026-09-23T00:36:56Z",
+      "file": "bench/v4/reads/leaderboard-0x490c7ed1b96059df56296f44dcd24124e9353227-20260923T003656.json",
+      "sha256": "f75daaf5ae34df0c20659ff8d16f4831b38fc03206278193f9f4981d6d905378",
+      "error": null
+    },
+    {
+      "wallet": "0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508",
+      "evidence_retrieved_at": "2026-09-23T00:36:30Z",
+      "file": "bench/v4/reads/leaderboard-0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508-20260923T003630.json",
+      "sha256": "af05e403a631bd3ac23e8b4b3fa221e284e6441ca291073147ca65b4226d7869",
+      "error": null
+    },
+    {
+      "wallet": "0xaad557511c0a41331b4cf9df12a33e15b7edd785",
+      "evidence_retrieved_at": "2026-09-23T00:36:33Z",
+      "file": "bench/v4/reads/leaderboard-0xaad557511c0a41331b4cf9df12a33e15b7edd785-20260923T003633.json",
+      "sha256": "8903350550e7b82644cc3b7f827503fde193408ff92a5ed64db706b593ab9b3a",
+      "error": null
+    },
+    {
+      "wallet": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
+      "evidence_retrieved_at": "2026-09-23T00:36:29Z",
+      "file": "bench/v4/reads/leaderboard-0xbd1c84113c6deb5044be0c2221f9e9403811ff0e-20260923T003629.json",
+      "sha256": "50434e1bf2cb66b76af17f7b005fd3a1cf9f08d67b5aaf9b4a0148a2a4800552",
+      "error": null
+    },
+    {
+      "wallet": "0x0c46eb73fae2816f219fcf11f50d6d3c59b5819e",
+      "evidence_retrieved_at": "2026-09-21T22:23:42Z",
+      "file": "bench/v4/reads/leaderboard-0x0c46eb73fae2816f219fcf11f50d6d3c59b5819e-20260921T222342.json",
+      "sha256": "1673d9febe4d2f4083b2dec3c8ee4ff94c1933130ab68be86a42d4ce0e727c56",
+      "error": null
+    },
+    {
+      "wallet": "0xfc98b6ec7f59ea13354bae6171a9120692fb8777",
+      "evidence_retrieved_at": "2026-09-23T14:24:14Z",
+      "file": "bench/v4/reads/leaderboard-0xfc98b6ec7f59ea13354bae6171a9120692fb8777-20260923T142414.json",
+      "sha256": "6bdd0e9e536c556f3ea601f8fdd2c7010ed8251d3caf9676d398a72f7b0750c7",
+      "error": null
+    },
+    {
+      "wallet": "0x98265c164a55b7b348bc3c4ab0bf109e047fed8a",
+      "evidence_retrieved_at": "2026-09-23T14:24:18Z",
+      "file": "bench/v4/reads/leaderboard-0x98265c164a55b7b348bc3c4ab0bf109e047fed8a-20260923T142418.json",
+      "sha256": "be93126154b1c1e92c784f709c210741854a0e46c2bbbbf3dd19acacac668a22",
+      "error": null
+    },
+    {
+      "wallet": "0x95995f302ad58138d791ce49f9f3b1274e80c60a",
+      "evidence_retrieved_at": "2026-09-23T14:24:22Z",
+      "file": "bench/v4/reads/leaderboard-0x95995f302ad58138d791ce49f9f3b1274e80c60a-20260923T142422.json",
+      "sha256": "8f984bda7ec245c51b125a456120aa6db3abdf7288b215b40be44869065c2a23",
+      "error": null
+    },
+    {
+      "wallet": "0x4fe260d11bf48ba3a94459771259c910a398ac59",
+      "evidence_retrieved_at": "2026-09-23T14:24:25Z",
+      "file": "bench/v4/reads/leaderboard-0x4fe260d11bf48ba3a94459771259c910a398ac59-20260923T142425.json",
+      "sha256": "e9e21880e035f7208b5939408bbeb649b8f9a24e2ef05a1802334e7f12d53998",
+      "error": null
+    },
+    {
+      "wallet": "0xf3af852aadeb893c5feb0c75e28d2ee4c04c3e1f",
+      "evidence_retrieved_at": "2026-09-23T14:24:28Z",
+      "file": "bench/v4/reads/leaderboard-0xf3af852aadeb893c5feb0c75e28d2ee4c04c3e1f-20260923T142428.json",
+      "sha256": "9e0c10b35d463f6429f57fee2ccea37a31b23b728ccd39ec0986ed36575128e6",
+      "error": null
+    },
+    {
+      "wallet": "0x66799bc69d7a7daaf50b6aa03cd5c6a2df1a9454",
+      "evidence_retrieved_at": "2026-09-23T14:24:31Z",
+      "file": "bench/v4/reads/leaderboard-0x66799bc69d7a7daaf50b6aa03cd5c6a2df1a9454-20260923T142431.json",
+      "sha256": "6982180026529984eeef915ef9b8fea829d9b8df67eba81812f491c15070c72c",
+      "error": null
+    },
+    {
+      "wallet": "0xdd53c5297309130ab5fe5623dc905752e3342b13",
+      "evidence_retrieved_at": "2026-09-23T14:25:22Z",
+      "file": "bench/v4/reads/leaderboard-0xdd53c5297309130ab5fe5623dc905752e3342b13-20260923T142522.json",
+      "sha256": "f66d8b01be2d527261307ff8e4105baf74f003b802d00016330d516443e617cb",
+      "error": null
+    },
+    {
+      "wallet": "0x3e3108f48d54af9156a2c8400bb7c8d2e652ba98",
+      "evidence_retrieved_at": "2026-09-23T14:25:25Z",
+      "file": "bench/v4/reads/leaderboard-0x3e3108f48d54af9156a2c8400bb7c8d2e652ba98-20260923T142525.json",
+      "sha256": "d62f9f56c36d76eb90b9251e9b81959d0987a548704d0d1a8751d9457d206d7b",
+      "error": null
+    },
+    {
+      "wallet": "0xccf135ab352d561a15eb7be2a243cc4fcb7f0ab1",
+      "evidence_retrieved_at": "2026-09-23T14:25:28Z",
+      "file": "bench/v4/reads/leaderboard-0xccf135ab352d561a15eb7be2a243cc4fcb7f0ab1-20260923T142528.json",
+      "sha256": "49bab461187e63c54e44e528779077f1c1a1d51d9ef2b1270be45f721e58e35a",
+      "error": null
+    },
+    {
+      "wallet": "0xc0a7ab57bcf0884413c7e8630f62908308453362",
+      "evidence_retrieved_at": "2026-09-23T14:25:31Z",
+      "file": "bench/v4/reads/leaderboard-0xc0a7ab57bcf0884413c7e8630f62908308453362-20260923T142531.json",
+      "sha256": "53f06a9f205d99670a556482cd3d3ac00acda985fe37761c05c696a19db645eb",
+      "error": null
+    },
+    {
+      "wallet": "0x48d826da83e69844f2f84b2db50703a933d137a2",
+      "evidence_retrieved_at": "2026-09-23T14:25:35Z",
+      "file": "bench/v4/reads/leaderboard-0x48d826da83e69844f2f84b2db50703a933d137a2-20260923T142535.json",
+      "sha256": "0fdd130394e75648edca8240842c01908d08db412dc000e6818090385c019286",
+      "error": null
+    },
+    {
+      "wallet": "0xb33b01c9821a99d3d4ec14b1c9a2197524b9af97",
+      "evidence_retrieved_at": "2026-09-23T14:26:18Z",
+      "file": "bench/v4/reads/leaderboard-0xb33b01c9821a99d3d4ec14b1c9a2197524b9af97-20260923T142618.json",
+      "sha256": "c7384698c3a8362d509e22533c374bcdfef55196f271ca19edca1b4b642bc12b",
+      "error": null
+    },
+    {
+      "wallet": "0xd5d29dbf880eea93d4ed2ccb79c642bde0a48480",
+      "evidence_retrieved_at": "2026-09-23T14:26:27Z",
+      "file": "bench/v4/reads/leaderboard-0xd5d29dbf880eea93d4ed2ccb79c642bde0a48480-20260923T142627.json",
+      "sha256": "70a80c4b7ed0fd0aac7a77b9f373e7afdcae9f4cec98449f78af37b2210e3c08",
+      "error": null
+    },
+    {
+      "wallet": "0xbd334a55db91617545e8d1b09941e036ad8e4200",
+      "evidence_retrieved_at": "2026-09-23T14:26:29Z",
+      "file": "bench/v4/reads/leaderboard-0xbd334a55db91617545e8d1b09941e036ad8e4200-20260923T142629.json",
+      "sha256": "51c58ad363f45952132fb2e3c654ef539217999e3faff6675d7cc75426421ba6",
+      "error": null
+    },
+    {
+      "wallet": "0x17f0361771a9042d816cd007c731be15f05b094f",
+      "evidence_retrieved_at": "2026-09-23T14:26:33Z",
+      "file": "bench/v4/reads/leaderboard-0x17f0361771a9042d816cd007c731be15f05b094f-20260923T142633.json",
+      "sha256": "59c7f7230858f1f7fb4432eab8f1ef7dbd81c19cdc196424a3d0bd0879d9c769",
+      "error": null
+    },
+    {
+      "wallet": "0x3e470a0bf8460c3a8320327cf5db7deed3a3aaf6",
+      "evidence_retrieved_at": "2026-09-23T14:26:37Z",
+      "file": "bench/v4/reads/leaderboard-0x3e470a0bf8460c3a8320327cf5db7deed3a3aaf6-20260923T142637.json",
+      "sha256": "5eaad22165d71dd8af7ab38d620402729040bc9a38ceab9a741ea031dd68b6f0",
+      "error": null
+    },
+    {
+      "wallet": "0xc619b01f1a4f894c5e83338c42f98dcb82b710f5",
+      "evidence_retrieved_at": "2026-09-23T14:27:18Z",
+      "file": "bench/v4/reads/leaderboard-0xc619b01f1a4f894c5e83338c42f98dcb82b710f5-20260923T142718.json",
+      "sha256": "c77e699665c8cdca2a1d95f406aa6a660fa1affa63c6b11110fca656df0940b3",
+      "error": null
+    },
+    {
+      "wallet": "0x007d76eec0ba411ce873a8819df50dd443d967a0",
+      "evidence_retrieved_at": "2026-09-23T14:27:26Z",
+      "file": "bench/v4/reads/leaderboard-0x007d76eec0ba411ce873a8819df50dd443d967a0-20260923T142726.json",
+      "sha256": "bddc96d7c94487e25dff172e2358045f3eaae7736096a28f33306fbd98c0201c",
+      "error": null
+    },
+    {
+      "wallet": "0xbac48231e71d5e24735d3cb6a26e597b13062979",
+      "evidence_retrieved_at": "2026-09-23T14:27:30Z",
+      "file": "bench/v4/reads/leaderboard-0xbac48231e71d5e24735d3cb6a26e597b13062979-20260923T142730.json",
+      "sha256": "2a1f9fe2ec893ef2a2cd75a2f6edd8c5e4a0fd859f508b7cacce9196c79ef61b",
+      "error": null
+    },
+    {
+      "wallet": "0x4bafc8eca50fc3208fb2520a2a49980768ec60f6",
+      "evidence_retrieved_at": "2026-09-23T14:27:33Z",
+      "file": "bench/v4/reads/leaderboard-0x4bafc8eca50fc3208fb2520a2a49980768ec60f6-20260923T142733.json",
+      "sha256": "945acdd6c1d4ac830e744c478e6d4bafeac52035c913892f00d71d0886c1e322",
+      "error": null
+    },
+    {
+      "wallet": "0x610b8dd6b392d010c2b6ad8d121dfc09524cb613",
+      "evidence_retrieved_at": "2026-09-23T14:27:36Z",
+      "file": "bench/v4/reads/leaderboard-0x610b8dd6b392d010c2b6ad8d121dfc09524cb613-20260923T142736.json",
+      "sha256": "7baec166b4b2a6ce04743a7d651ed1edf3d9b770acc8920e5e822c682320d9f6",
+      "error": null
+    },
+    {
+      "wallet": "0x2888be6982957103ea88ac10f4179df0a294e877",
+      "evidence_retrieved_at": "2026-09-23T14:28:18Z",
+      "file": "bench/v4/reads/leaderboard-0x2888be6982957103ea88ac10f4179df0a294e877-20260923T142818.json",
+      "sha256": "e5b2a6af156603c2bcb2aa0c7a9c1c4136e20d65829fc5afa326b51b9c004e49",
+      "error": null
+    },
+    {
+      "wallet": "0x7178cc2d79160d524858c843e350ed8207de0854",
+      "evidence_retrieved_at": "2026-09-23T14:28:26Z",
+      "file": "bench/v4/reads/leaderboard-0x7178cc2d79160d524858c843e350ed8207de0854-20260923T142826.json",
+      "sha256": "ca5e9aa74bbcbd9ffa3e355a266f82cc7419e268911074b0521f82e68204c62f",
+      "error": null
+    },
+    {
+      "wallet": "0x52c40cde0b235fe140b89c3441a767ea36bc32fa",
+      "evidence_retrieved_at": "2026-09-23T14:28:30Z",
+      "file": "bench/v4/reads/leaderboard-0x52c40cde0b235fe140b89c3441a767ea36bc32fa-20260923T142830.json",
+      "sha256": "b325f0b6dd73bdae4a9f5e105c6a6af8d0dd2f332d57bc10d9bbfdcdfffc438c",
+      "error": null
+    }
+  ],
+  "screener": [
+    {
+      "token_symbol": "BTC",
+      "file": "bench/v4/reads/screener-BTC.json",
+      "sha256": "6edf456b46fb38c09e137da2a1b060c2f7fa58406b10d009864cd9341e3540f3",
+      "error": null
+    },
+    {
+      "token_symbol": "DOGE",
+      "file": "bench/v4/reads/screener-DOGE.json",
+      "sha256": "1cb196ef284b4a0a2a0b1e65bf05b1f3b18f28006052ab8ff5ca2482592688b1",
+      "error": null
+    },
+    {
+      "token_symbol": "ETH",
+      "file": "bench/v4/reads/screener-ETH.json",
+      "sha256": "ac806a5ee0d5fc53412a81c82e0abf1ee791ec738c07026aabd2ea042c0b888a",
+      "error": null
+    },
+    {
+      "token_symbol": "HYPE",
+      "file": "bench/v4/reads/screener-HYPE.json",
+      "sha256": "0293e045715413944ff4d7b6a51ff828d449ffb97f7ffe92f9a723bd3c13f77d",
+      "error": null
+    },
+    {
+      "token_symbol": "XYZ:CL",
+      "file": "bench/v4/reads/screener-XYZ_CL.json",
+      "sha256": "336a01f8b7f09869dda555058629f67ea70047a8de06291ae21d2035a71c7b9d",
+      "error": null
+    },
+    {
+      "token_symbol": "XYZ:CRCL",
+      "file": "bench/v4/reads/screener-XYZ_CRCL.json",
+      "sha256": "04aeb34804a7a361569b88d1d1b2ccf013f7e7e6b606c69133cd384c907bfe2b",
+      "error": null
+    },
+    {
+      "token_symbol": "XYZ:GOOGL",
+      "file": "bench/v4/reads/screener-XYZ_GOOGL.json",
+      "sha256": "4d547230f201f551bcf3a7cd0ea8ed02f729db99e2d43560b9952d10899c37f5",
+      "error": null
+    },
+    {
+      "token_symbol": "XYZ:XYZ100",
+      "file": "bench/v4/reads/screener-XYZ_XYZ100.json",
+      "sha256": "73ed7749635f98f1a6546f8c09aff4ed9221d8f039757f43f1687a5dfddda08f",
+      "error": null
+    },
+    {
+      "token_symbol": "ZEC",
+      "file": "bench/v4/reads/screener-ZEC.json",
+      "sha256": "f83cf99cff5e050081a52e7443f289ddb5c66afe532afbc46a2dd4cb2b03790f",
+      "error": null
+    }
+  ],
+  "credits": {
+    "before": 1281,
+    "after": 1475
+  }
+}

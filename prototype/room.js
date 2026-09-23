@@ -44,6 +44,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guardAllocation, BENCHMARK_GUARD_POLICY, agentVerdictLine } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
+import { withV4Reads } from '../validation/v4-evidence.js';
 import { CapExceeded } from '../validation/providers.js';
 import { buildCase, checkPitchClaims, EncounterError } from './encounter.js';
 import { runDesk, SLOT } from './desk.js';
@@ -400,12 +401,24 @@ export const pitchShowedWindow = shots => shots.some(shot => CITES_WINDOW.test(S
 /** Kept for callers that only need yes or no: the line asked for the record. */
 export const ASKED_FOR_RECORD = { test: line => recordMention(line) === 'asked' };
 
+/** Gate v4's reads on a live snapshot, as withV4Reads takes them. */
+export const v4ReadsOf = snap => ({ record: snap?.v4_reads?.record ?? undefined, smartMoney: snap?.v4_reads?.smartMoney ?? {} });
+/** A frozen round has no v4 read: both rows say so instead of "could not be read". */
+export const FROZEN_V4_READS = Object.freeze({
+  record: { error: 'not_read', message: 'Not read: this round plays a frozen capture; perp-leaderboard is read live only.' },
+  smartMoney: {},
+  smartMoneyNote: 'Not read: this round plays a frozen capture; perp-screener is read live only.',
+});
+
 /** Round 18: which gate rows each Nansen call stands on. */
 const CALL_ROWS = {
   summary30: ['evidence_30d', 'realised_pnl_30d', 'thin_sample', 'low_win_rate', 'concentration'],
   summary7: ['evidence_7d', 'regime_agreement'],
   trades: ['fills_drawdown', 'fills_worst_trade'],
   positions: ['open_book'],
+  // Gate v4: one row each.
+  smartMoney: ['smart_money_side'],
+  record: ['independent_record'],
 };
 /**
  * Round 18: the Nansen calls behind a verdict, for the card under the checkpoint: endpoint,
@@ -420,7 +433,7 @@ export function nansenCalls(snapshot, checks) {
   const lr = snapshot?.live_read;
   if (!lr) {
     return [{ endpoint: 'frozen Nansen capture', credits: 0, at: snapshot?.retrieved_at ?? null, cached: false, frozen: true,
-      decided: word([...CALL_ROWS.summary30, ...CALL_ROWS.summary7, ...CALL_ROWS.trades, ...CALL_ROWS.positions]) }];
+      decided: word([...CALL_ROWS.summary30, ...CALL_ROWS.summary7, ...CALL_ROWS.trades, ...CALL_ROWS.positions, ...CALL_ROWS.smartMoney, ...CALL_ROWS.record]) }];
   }
   const cached = !!lr.cached;
   const cost = n => (cached ? 0 : n);
@@ -431,6 +444,12 @@ export function nansenCalls(snapshot, checks) {
   ];
   if (lr.fills_live) calls.push({ endpoint: 'profiler/perp-trades', credits: cost(snapshot.trades_pagination?.pages_fetched ?? 1), at, cached, decided: word(CALL_ROWS.trades) });
   if (snapshot.open_positions?.live) calls.push({ endpoint: 'profiler/perp-positions', credits: cost(1), at, cached, decided: word(CALL_ROWS.positions) });
+  // Gate v4: the smart-money read and the second record. A leaderboard the gate did not need is
+  // listed as not bought, so the card says why that row reads N/A.
+  const v4 = snapshot.v4_reads;
+  if (v4?.smartMoneyRead) calls.push({ endpoint: 'perp-screener, smart money', credits: cost(1), at, cached, decided: word(CALL_ROWS.smartMoney) });
+  if (v4?.recordRead) calls.push({ endpoint: 'perp-leaderboard, 30 days', credits: cost(5), at, cached, decided: word(CALL_ROWS.record) });
+  else if (v4?.record?.skipped) calls.push({ endpoint: 'perp-leaderboard, 30 days', credits: 0, at, cached, skipped: true, decided: 'N/A' });
   return calls;
 }
 
@@ -596,9 +615,9 @@ export function createRoomService({
     // answering from the capture, with the capture's own windows and date on it.
     const liveTools = makeToolExecutor(snap, { mode: 'armed' });
     const tapeTools = makeToolExecutor(chosen.snapshot, { mode: 'armed' });
-    const executor = {
+    const executor = withV4Reads({
       execute: (name, input) => (name === 'get_closed_trades' ? tapeTools : liveTools).execute(name, input),
-    };
+    }, v4ReadsOf(snap));
     return {
       p: { ...refreshed, executor, guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
       evidence: {
@@ -639,7 +658,7 @@ export function createRoomService({
     const snap = liveSnapshot(stub, read);
     const p = walletProspect(wallet, snap);
     return {
-      p: { ...p, executor: makeToolExecutor(p.snapshot, { mode: 'armed' }), guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
+      p: { ...p, executor: withV4Reads(makeToolExecutor(p.snapshot, { mode: 'armed' }), v4ReadsOf(snap)), guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
       evidence: {
         mode: 'live', live: true, code: null, reason: null, pasted: true,
         fetchedAt: read.fetchedAt, fetchedLabel: hhmm(read.fetchedAt), cached: !!read.cached,
@@ -716,7 +735,7 @@ export function createRoomService({
    * (see `prospectFor`), so every wire is judged on the same two summaries, bought once
    * at round start, with their real fetch time. A frozen round reads its capture.
    */
-  const evidenceFor = p => p.executor ?? makeToolExecutor(p.snapshot, { mode: 'armed' });
+  const evidenceFor = p => p.executor ?? withV4Reads(makeToolExecutor(p.snapshot, { mode: 'armed' }), FROZEN_V4_READS);
 
   /** The freshness row, in words, when the evidence is a live read: its real age. */
   const freshnessPlain = (p, check) => {
@@ -805,6 +824,9 @@ export function createRoomService({
     concentration: 'perp-pnl-summary top5_coins, 30 days',
     // Round 17: the third Nansen read.
     open_book: 'profiler/perp-positions, current positions and account value',
+    // Gate v4 (bench/V4.md).
+    smart_money_side: 'perp-screener, smart money in the largest open position\u2019s market',
+    independent_record: 'perp-leaderboard, the same 30 days',
   };
 
   /** The report can explain a concern; it never stamps BLOCKED on money the gate let through. */
@@ -850,6 +872,9 @@ export function createRoomService({
       live: !!p.snapshot?.live_read,
       // Round 17: the open positions were read live with the summaries (profiler/perp-positions).
       positionsLive: !!p.snapshot?.open_positions?.live,
+      // Gate v4: which of its two reads this round bought live.
+      smartMoneyLive: !!p.snapshot?.v4_reads?.smartMoneyRead,
+      recordLive: !!p.snapshot?.v4_reads?.recordRead,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
       // The fill tape's age against the summaries the gate read. The gate never reads the
       // tape; the table says how old it is and that nothing on it decided this wire.

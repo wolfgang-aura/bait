@@ -27,7 +27,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { call as nansenCall, creditCostFor } from '../validation/nansen.js';
-import { PRODUCTION_GUARD_POLICY_V3 } from '../validation/guard.js';
+import { PRODUCTION_GUARD_POLICY_V3, PRODUCTION_GUARD_POLICY_V4, guardAllocation, largestOpenPosition } from '../validation/guard.js';
+import { makeToolExecutor } from '../validation/tools.js';
+import { leaderboardRequest, screenerRequest, recordFromLeaderboard, smartMoneyFromScreener,
+  LEADERBOARD_ENDPOINT, SCREENER_ENDPOINT } from '../validation/v4-evidence.js';
 
 export const LIVE_ENDPOINT = 'profiler/perp-pnl-summary';
 export const LIVE_EVIDENCE_TTL_MS = 30 * 60_000;
@@ -53,10 +56,19 @@ export const DEFAULT_READ_TIMEOUT_MS = 15_000;
  * closed, not a pass.
  */
 export const ROOM_LIVE_GUARD_POLICY = Object.freeze({
-  ...PRODUCTION_GUARD_POLICY_V3,
-  id: 'wallet-copy-risk-room-live-v2',
+  ...PRODUCTION_GUARD_POLICY_V4,
+  id: 'wallet-copy-risk-room-live-v4',
   maxEvidenceAgeMs: 60 * 60_000,
 });
+
+/**
+ * Gate v4 (bench/V4.md): two more endpoints. perp-screener for the market of the largest open
+ * position (1 credit), and perp-leaderboard for the same 30 days (5 credits), bought only when
+ * v3's rules on this read would not already refuse: a refusal is never charged 5 credits.
+ */
+export const SMART_MONEY_ENDPOINT = SCREENER_ENDPOINT;
+export const RECORD_ENDPOINT = LEADERBOARD_ENDPOINT;
+const PRECHECK_POLICY = Object.freeze({ ...PRODUCTION_GUARD_POLICY_V3, id: 'room-v4-precheck', maxEvidenceAgeMs: 60 * 60_000 });
 
 const iso = d => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 const finite = v => typeof v === 'number' && Number.isFinite(v);
@@ -75,7 +87,8 @@ export function saveRawRead(dir, { wallet, fetchedAt, windows, responses }) {
     kind: 'nansen-live-read', endpoint: LIVE_ENDPOINT,
     // Every endpoint this file holds a response from (round 12). Files saved before then
     // carry `endpoint` only, though some also hold perp-trades fills: bench/live-reads/README.md.
-    endpoints: [LIVE_ENDPOINT, ...(responses.fills ? ['profiler/perp-trades'] : []), ...(responses.positions ? [POSITIONS_ENDPOINT] : [])],
+    endpoints: [LIVE_ENDPOINT, ...(responses.fills ? ['profiler/perp-trades'] : []), ...(responses.positions ? [POSITIONS_ENDPOINT] : []),
+      ...(responses.smart_money ? [SCREENER_ENDPOINT] : []), ...(responses.leaderboard ? [LEADERBOARD_ENDPOINT] : [])],
     wallet, fetched_at: fetchedAt, windows,
     // As Nansen sent them: status, the credit header and the whole JSON body, per window.
     responses,
@@ -122,7 +135,7 @@ export function createLiveEvidence({
   ttlMs = LIVE_EVIDENCE_TTL_MS, dailyCap = DEFAULT_DAILY_CAP, totalCap = DEFAULT_TOTAL_CAP,
   timeoutMs = DEFAULT_READ_TIMEOUT_MS, stateFile = null, log = () => {}, rawDir = null,
   fillPages = DEFAULT_FILL_PAGES, fillsTimeoutMs = 15_000, positions = true,
-  embargoMs = LIVE_EVIDENCE_TTL_MS,
+  embargoMs = LIVE_EVIDENCE_TTL_MS, v4Reads = positions,
 } = {}) {
   // Round 17: a fresh read's raw file holds the numbers the round keeps sealed, so it is
   // hidden from /api/live-reads until a gate has run on it (release), or embargoMs passes
@@ -130,7 +143,9 @@ export function createLiveEvidence({
   const sealedRaw = new Map();
   const pages = Math.max(0, Math.min(3, Math.round(fillPages)));
   // What one read can cost: two summaries and up to `pages` pages of fills.
-  const READ_CREDITS = LIVE_READ_CREDITS + pages * creditCostFor(FILLS_ENDPOINT) + (positions ? creditCostFor(POSITIONS_ENDPOINT) : 0);
+  // v4 adds at most one screener and one leaderboard read; the cap reserves the most a read can cost.
+  const V4_CREDITS = v4Reads ? creditCostFor(SMART_MONEY_ENDPOINT) + creditCostFor(RECORD_ENDPOINT) : 0;
+  const READ_CREDITS = LIVE_READ_CREDITS + pages * creditCostFor(FILLS_ENDPOINT) + (positions ? creditCostFor(POSITIONS_ENDPOINT) : 0) + V4_CREDITS;
   const cache = new Map();
   const inFlight = new Map();
   // Round 20: creditsToday/Total count only reads that succeeded and were used. Credits a failed or
@@ -265,6 +280,58 @@ export function createLiveEvidence({
           log(`live positions failed wallet=${wallet.slice(0, 10)}: ${book.error}`);
         }
       }
+      // Gate v4: smart money in the market of the largest open position, then the second record.
+      // Each failure is kept as an error the gate reads as not assessed; neither can raise an amount.
+      let smartMoney = null;
+      let record = null;
+      const paid = async (endpoint, request, note) => {
+        let res;
+        try {
+          res = await within(call(endpoint, request, { note, timeoutMs: fillsTimeoutMs, creditCost: creditCostFor(endpoint) }), fillsTimeoutMs);
+        } catch (err) { if (err?.status) charged += creditCostFor(endpoint); throw err; }
+        const hdr = res?.headers?.['x-nansen-credits-cost'];
+        const n = hdr === undefined || hdr === null || hdr === '' ? NaN : Number(hdr);
+        charged += Number.isFinite(n) ? n : creditCostFor(endpoint);
+        return { res, hdr };
+      };
+      if (v4Reads && !(noTrades(summary30) && noTrades(summary7))) {
+        const probe = { wallet, retrieved_at: iso(at), windows, pnl_summary_30d: { ...summary30, top5_coins: summary30?.top5_coins ?? [] },
+          pnl_summary_7d: { ...summary7, top5_coins: summary7?.top5_coins ?? [] }, open_positions: book && !book.error ? book : null, trades_30d: [] };
+        const tools = makeToolExecutor(probe, { mode: 'armed' });
+        const top = book && !book.error ? largestOpenPosition(await tools.execute('get_open_positions', { wallet })) : null;
+        if (top) {
+          const request = screenerRequest(top.symbol, at, PRODUCTION_GUARD_POLICY_V4.smartMoneyWindowDays);
+          try {
+            const { res, hdr } = await paid(SMART_MONEY_ENDPOINT, request, 'room live v4 smart money');
+            responses.smart_money = { request, status: res?.status ?? null, credits_cost_header: hdr ?? null, body: res?.data ?? null };
+            smartMoney = { [top.symbol.toUpperCase()]: smartMoneyFromScreener(res?.data, { tokenSymbol: top.symbol, request, retrievedAt: iso(at) }) };
+          } catch (err) {
+            smartMoney = { [top.symbol.toUpperCase()]: { error: 'read_failed', message: String(err?.message ?? err).slice(0, 160) } };
+            log(`live smart money failed wallet=${wallet.slice(0, 10)}: ${smartMoney[top.symbol.toUpperCase()].message}`);
+          }
+        }
+        // The leaderboard is bought only when v3's rules on this same read would not refuse.
+        let pre = null;
+        try {
+          if (usableSummary(summary30) && usableSummary(summary7)) {
+            pre = await guardAllocation({ executor: tools, wallet, allocation: 1, policy: PRECHECK_POLICY, now: () => at });
+          }
+        } catch { pre = null; }
+        if (pre && pre.decision !== 'block') {
+          const request = leaderboardRequest(wallet, windows['30d']);
+          try {
+            const { res, hdr } = await paid(RECORD_ENDPOINT, request, 'room live v4 leaderboard record');
+            responses.leaderboard = { request, status: res?.status ?? null, credits_cost_header: hdr ?? null, body: res?.data ?? null };
+            record = recordFromLeaderboard(res?.data, { wallet, request, retrievedAt: iso(at) });
+          } catch (err) {
+            record = { error: 'read_failed', message: String(err?.message ?? err).slice(0, 160) };
+            log(`live leaderboard failed wallet=${wallet.slice(0, 10)}: ${record.message}`);
+          }
+        } else {
+          const why = pre ? `the ${pre.checks.find(c => c.result === 'fail')?.id === 'realised_pnl_30d' ? '30-day record' : `"${pre.checks.find(c => c.result === 'fail')?.id}" check`} already refuses this wallet` : 'the summaries were not usable';
+          record = { error: 'not_read', skipped: true, message: `Not read: ${why}, so a second record (5 credits) could not change the decision.` };
+        }
+      }
       // Every response that reached us and was paid for is kept, whatever it says.
       let raw = null;
       try { raw = saveRawRead(rawDir, { wallet, fetchedAt: iso(at), windows, responses }); } catch (err) { log(`raw read save failed: ${err.message}`); }
@@ -282,6 +349,9 @@ export function createLiveEvidence({
         endpoint: LIVE_ENDPOINT,
         fills,
         positions: book,
+        // Gate v4's two reads, as the gate's tools answer them; null when v4 reads are off.
+        v4: v4Reads ? { smartMoney: smartMoney ?? {}, record, smartMoneyRead: !!responses.smart_money, recordRead: !!responses.leaderboard } : null,
+        credits: charged,
         raw,
       };
       ok = true;
@@ -425,12 +495,14 @@ export function liveSnapshot(frozen, read) {
         from_capture: read.fetchedAt,
       },
       live_read: {
-        fetched_at: read.fetchedAt, endpoint: read.endpoint, endpoints: [read.endpoint, FILLS_ENDPOINT, ...(read.positions ? [POSITIONS_ENDPOINT] : [])],
-        credits: read.cached ? 0 : LIVE_READ_CREDITS + read.fills.pages + (read.positions ? 1 : 0), cached: !!read.cached,
+        fetched_at: read.fetchedAt, endpoint: read.endpoint, endpoints: [read.endpoint, FILLS_ENDPOINT, ...(read.positions ? [POSITIONS_ENDPOINT] : []),
+          ...(read.v4?.smartMoneyRead ? [SMART_MONEY_ENDPOINT] : []), ...(read.v4?.recordRead ? [RECORD_ENDPOINT] : [])],
+        credits: read.cached ? 0 : LIVE_READ_CREDITS + read.fills.pages + (read.positions ? 1 : 0) + (read.v4?.smartMoneyRead ? 1 : 0) + (read.v4?.recordRead ? 5 : 0), cached: !!read.cached,
         fills_live: true, fills_from_capture: null,
       },
       reconciliation: { skipped: 'live fills are the newest pages only; not reconciled against the summary' },
       ...openPositionsOf(read),
+      ...(read.v4 ? { v4_reads: read.v4 } : {}),
     };
   }
   return {
@@ -456,12 +528,13 @@ export function liveSnapshot(frozen, read) {
     live_read: {
       fetched_at: read.fetchedAt,
       endpoint: read.endpoint,
-      credits: read.cached ? 0 : LIVE_READ_CREDITS,
+      credits: read.cached ? 0 : LIVE_READ_CREDITS + (read.positions ? 1 : 0) + (read.v4?.smartMoneyRead ? 1 : 0) + (read.v4?.recordRead ? 5 : 0),
       cached: !!read.cached,
       fills_from_capture: frozen.retrieved_at,
     },
     reconciliation: { skipped: 'live summaries over a frozen fill tape are not reconciled' },
     ...openPositionsOf(read),
+    ...(read.v4 ? { v4_reads: read.v4 } : {}),
   };
 }
 

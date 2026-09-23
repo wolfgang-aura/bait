@@ -498,7 +498,7 @@ test('round 17: a live read also reads the open positions (one credit), and a fa
     }
     return base.call(pathName, body);
   };
-  const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], { call }, { fillPages: 1, positions: true });
+  const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], { call }, { fillPages: 1, positions: true, v4Reads: false });
   const round = await service.start({ prospect: 'grinder' });
   assert.equal(live.status().credits_today, 4, 'two summaries, one page of fills, the open positions');
   await say(service, round.id, 0, round.dossier.facts[0].insert);
@@ -568,4 +568,87 @@ test('round 20: a read that times out once and then succeeds is live, counted on
   assert.equal(live.status().credits_today, LIVE_READ_CREDITS, 'the read that was used');
   assert.equal(live.status().credits_unused_today, LIVE_READ_CREDITS, 'the attempt that timed out');
   assert.equal(live.status().retries_this_process, 1);
+});
+
+// ------------------------------------------------------------ gate v4 (bench/V4.md)
+
+/** Summaries from fillsMock, plus an open book, perp-screener and perp-leaderboard. */
+function v4Mock({ pnl30 = 12_000, side = 'short', smLong = 7_000_000, smShort = -3_000_000, record = pnl30 } = {}) {
+  const base = fillsMock({ fills: 6 });
+  const seen = [];
+  const ok = (data, cost = '1') => ({ status: 200, headers: { 'x-nansen-credits-cost': cost }, data });
+  const call = async (pathName, body, opts) => {
+    seen.push({ pathName, body, opts });
+    if (pathName === 'profiler/perp-positions') {
+      return ok({ data: { asset_positions: [{ position: { token_symbol: 'HYPE', size: side === 'short' ? '-100' : '100', position_value_usd: side === 'short' ? '-900000' : '900000', unrealized_pnl_usd: '-1000' } }],
+        margin_summary_account_value_usd: '1000000' } });
+    }
+    if (pathName === 'perp-screener') return ok({ data: [{ token_symbol: body.filters.token_symbol, current_smart_money_position_longs_usd: smLong, current_smart_money_position_shorts_usd: smShort }] });
+    if (pathName === 'perp-leaderboard') return ok({ data: [{ trader_address: body.filters.trader_address, realized_pnl_usd: record, total_trades: 40 }] }, '5');
+    const res = await base.call(pathName, body);
+    if (pathName === 'profiler/perp-pnl-summary' && Math.round((Date.parse(body.date.to) - Date.parse(body.date.from)) / 86_400_000) === 30) res.data.data.realized_pnl_usd = pnl30;
+    return res;
+  };
+  return { call, seen };
+}
+
+test('v4 live round: smart money against the book caps, the leaderboard record is bought and agrees, both rows and calls are on the card', async () => {
+  const mock = v4Mock();
+  const rawDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-v4-'));
+  const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], mock, { fillPages: 1, positions: true, rawDir });
+  const round = await service.start({ prospect: 'grinder' });
+  assert.equal(live.status().credits_today, 10, 'two summaries, fills, positions, perp-screener (1) and perp-leaderboard (5)');
+  assert.equal(live.status().credits_per_read, 10);
+  const screener = mock.seen.find(c => c.pathName === 'perp-screener');
+  assert.deepEqual(screener.body.filters, { trader_type: 'sm', token_symbol: 'HYPE' }, 'the market of the largest open position');
+  const board = mock.seen.find(c => c.pathName === 'perp-leaderboard');
+  assert.equal(board.body.filters.trader_address, GRINDER);
+  assert.match(board.body.date.from, /^\d{4}-\d{2}-\d{2}$/, 'calendar days, as the summary counts them');
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  const row = id => final.gate.checks.find(c => c.id === id);
+  assert.equal(row('smart_money_side').result, 'cap');
+  assert.match(row('smart_money_side').plain, /largest open position is short HYPE\. Nansen's smart money holds 70% of its \$10\.0M there on the other side/);
+  assert.equal(row('smart_money_side').source, 'perp-screener, smart money in the largest open position’s market');
+  assert.equal(row('independent_record').result, 'pass');
+  assert.equal(final.verdict, 'capped');
+  assert.equal(final.gate.policyId, 'wallet-copy-risk-room-live-v4');
+  assert.equal(final.gate.smartMoneyLive, true);
+  assert.equal(final.gate.recordLive, true);
+  const calls = final.gate.calls.map(c => [c.endpoint, c.credits, c.decided]);
+  assert.deepEqual(calls.slice(-2), [['perp-screener, smart money', 1, 'CAP'], ['perp-leaderboard, 30 days', 5, 'PASS']]);
+  const { listRawReads } = await import('./live-evidence.js');
+  const body = JSON.parse(fs.readFileSync(path.join(rawDir, listRawReads(rawDir)[0].file), 'utf8'));
+  assert.ok(body.endpoints.includes('perp-screener') && body.endpoints.includes('perp-leaderboard'), 'both raw responses are kept');
+  assert.equal(body.responses.leaderboard.body.data[0].realized_pnl_usd, 12_000);
+});
+
+test('v4 live round: a record the summaries already refuse never buys the leaderboard, and the card says why', async () => {
+  const mock = v4Mock({ pnl30: -2_000_000, side: 'long' });
+  const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], mock, { fillPages: 1, positions: true });
+  const round = await service.start({ prospect: 'grinder' });
+  assert.equal(mock.seen.filter(c => c.pathName === 'perp-leaderboard').length, 0);
+  assert.equal(live.status().credits_today, 5, 'two summaries, fills, positions and the screener; no leaderboard');
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  assert.equal(final.verdict, 'block');
+  const record = final.gate.checks.find(c => c.id === 'independent_record');
+  assert.equal(record.result, 'not_assessed');
+  assert.match(record.plain, /^Not read: the 30-day record already refused this request/);
+  const lb = final.gate.calls.find(c => c.endpoint === 'perp-leaderboard, 30 days');
+  assert.equal(lb.skipped, true);
+  assert.equal(lb.credits, 0);
+  // Smart money agrees with this long book: the row passes, shown beside the block.
+  assert.equal(final.gate.checks.find(c => c.id === 'smart_money_side').result, 'pass');
+});
+
+test('v4 live round: a leaderboard record below the summary blocks the wire as record_disagreement', async () => {
+  const mock = v4Mock({ side: 'long', record: -50_000 });
+  const { service } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], mock, { fillPages: 1, positions: true });
+  const round = await service.start({ prospect: 'grinder' });
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  assert.equal(final.verdict, 'block');
+  assert.equal(final.gate.checks.find(c => c.id === 'independent_record').result, 'fail');
+  assert.match(final.gate.reason, /perp-leaderboard/);
 });

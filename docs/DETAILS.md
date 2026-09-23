@@ -21,6 +21,19 @@ are measured on those fills only when they cover a week or more; a page that cov
 busy wallet's 1,000 fills can be minutes) shows those rows as N/A, too short to judge. A frozen
 round uses the capture's fills and says how old they are.
 
+Since 23 September the default gate is v4 (`wallet-copy-risk-v4`, pre-registered in
+[bench/V4.md](../bench/V4.md)): every v3 rule unchanged, plus two reads outside the profiler
+family. `perp-screener` (smart-money cohort, 1 credit) gives smart money's current longs and
+shorts in the market of the wallet's largest open position; when at least two thirds of at
+least $1M sits on the other side, the gate caps at 25%. `perp-leaderboard` (5 credits) records
+the wallet's realised PnL over the same 30 calendar days; when the summary the gate read claims
+more than that record by over 25% of it and $1,000, the gate refuses (`record_disagreement`).
+It is bought only when nothing earlier refused, so a live round costs 4 or 5 credits when the
+30-day record already refuses and 10 when the gate has to clear or cap. Either read failing is
+not assessed and changes nothing. In the Pitch Room both rows are always on the card; a
+leaderboard the gate did not need reads "not bought: the record already refused, 0 credits".
+The guard CLI (`npm run guard`) and `POST /api/guard` run v4 too; `--policy v3` reruns v3.
+
 ### What the gate claims, and what it does not
 
 It claims: no money reaches a trader whose verified Nansen record shows a loss, or whose
@@ -46,6 +59,16 @@ held-out set. Every live round keeps Nansen's raw responses in `bench/live-reads
 - The held-out rerun of the faked-evidence set uses the four attacks that apply mechanically to
   any wallet (`other-wallet`, `short-window`, `relabelled-window`, `replayed-capture`), 48 paths.
   With the original six, the 19-line rule let 36 of 54 through; BAIT 0 of 54.
+- Gate v4 (23 Sep, [bench/V4.md](../bench/V4.md)): pre-registered in `21e99f1` before any v4
+  read, results in `7701c5a`. Re-gating every recorded answer with zero model calls, v4 decided
+  all honest rows exactly as v3 (0/78, 3 blocked and 3 capped of 18, 0/36, 3 and 6 of 35, 0/54
+  faked). The one attack v3 missed, a summary with only its PnL doctored (listed under "What v3
+  does not catch" since revision 2), got 5 of 18 losing wallets through v3 and 0 through v4.
+  That attack was written for v4's record rule. The published v3 numbers and reports stay as
+  they were; `npm run guard -- --policy v3` and `BENCHMARK_GUARD_POLICY_V3` still run v3.
+  After the result, only the default and display text changed in `validation/guard.js`: the
+  frozen copy dropped the "$" on three dollar figures in the new rows' sentences (a
+  `String.replace` pattern), fixed without touching a decision.
 
 ### The earlier single-wallet suite
 
@@ -186,10 +209,12 @@ allocator with the data in hand still funds the loser. The
 - The gate makes its own Nansen call. Live mode refuses a wallet whose record no
   longer supports the story rather than reshaping the game around it.
 - Picking one of the four Hyperliquid traders buys one live read: the 30-day and 7-day
-  `profiler/perp-pnl-summary`, 2 credits, cached per wallet for 30 minutes and reused by
+  `profiler/perp-pnl-summary`, the newest fills, the open positions, `perp-screener` for the
+  largest position's market and, when nothing has refused, `perp-leaderboard` (4 to 10
+  credits), cached per wallet for 30 minutes and reused by
   the gate for the whole round. The header then reads LIVE NANSEN · fetched
   HH:MM UTC and the gate's freshness row shows the evidence age. Hard caps:
-  `HOSTED_NANSEN_CREDITS_PER_DAY` (20) and `HOSTED_NANSEN_CREDITS_TOTAL` (300). No key,
+  `HOSTED_NANSEN_CREDITS_PER_DAY` (2,000) and `HOSTED_NANSEN_CREDITS_TOTAL` (18,000). No key,
   a cap, a timeout or an error plays the frozen capture and says why. A live record that is no longer losing is played as
   it is: the gate clears or cautions the wire instead of blocking it.
 - An 840-observation [robustness panel](../bench/reports/robustness-panel.md) across

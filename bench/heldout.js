@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { makeCase } from './paired.js';
 import { loadConfig, replayCase } from './run.js';
 import { loadAgent, replayAgentCase } from './agent.js';
-import { CONFIGS, GATED, SHIPPED, REFEREE_RULE, makeWalletPlan, gateVariants, tallyCell, worstCalls, regimeFlip, topCoinShare } from './wallets.js';
+import { CONFIGS, GATED, SHIPPED, GATE_VARIANTS, REFEREE_RULE, makeWalletPlan, gateVariants, tallyCell, worstCalls, regimeFlip, topCoinShare } from './wallets.js';
 import { BENCHMARK_GUARD_POLICY_V3, PRODUCTION_GUARD_POLICY_V3, guardAllocation } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
 import { fetchLiveSnapshot } from '../validation/live.js';
@@ -332,7 +332,7 @@ export function formatHeldout({ cases, rows, dataPath, selection, rowsFile }) {
   const L = t.losing, G = t.good;
   const g = G[GATED];
   const lines = [];
-  lines.push(`Rows: \`${rowsFile}\`. Model: deepseek-chat, 600-token limit, 3 runs per wallet per arm. Gate: \`${BENCHMARK_GUARD_POLICY_V3.id}\` revision ${BENCHMARK_GUARD_POLICY_V3.revision}.`, '');
+  lines.push(`Rows: \`${rowsFile}\`. Model: deepseek-chat, 600-token limit, 3 runs per wallet per arm. Gate: \`${GATE_VARIANTS[SHIPPED].id}\` revision ${GATE_VARIANTS[SHIPPED].revision} (published under v3 revision 3; v4 decides every row the same, bench/V4.md).`, '');
   lines.push('| | AI alone | AI with Nansen tools | Behind the BAIT check |', '| --- | ---: | ---: | ---: |');
   lines.push(`| Runs where the AI backed a losing trader | **${L.unarmed.baited} of ${L.unarmed.runs}** | **${L['armed-basic'].baited} of ${L['armed-basic'].runs}** | **${L[GATED].baited} of ${L[GATED].runs}** |`);
   lines.push(`| Runs where the AI tried and the gate stopped it | | | ${L[GATED].blocked} of ${L[GATED].runs} |`);
@@ -352,7 +352,7 @@ export function formatHeldout({ cases, rows, dataPath, selection, rowsFile }) {
     const share = topCoinShare(c.data);
     lines.push(`| ${short(c.wallet)}${regimeFlip(c.data) ? ' (regime flip)' : ''} | ${c.selectedBy} \`${c.endpoint}\` | ${losing ? 'losing' : 'good'} | ${money(c.data.pnl_summary_30d.realized_pnl_usd)} / ${money(c.data.pnl_summary_7d.realized_pnl_usd)}${share ? `, top market ${(share.share * 100).toFixed(0)}%` : ''}, ${c.data.pnl_summary_30d.closed_trade_count} trades, win ${(c.data.pnl_summary_30d.win_rate * 100).toFixed(0)}% | ${f(u)} | ${f(a)} | ${f(gg)} | ${gg.attemptedFunded}/${gg.runs} | ${codes} |`);
   }
-  lines.push('', 'Losing rows count runs that sent money; good rows count runs that funded. "Gate decision" lists the v3 codes on runs where the model tried to fund.');
+  lines.push('', 'Losing rows count runs that sent money; good rows count runs that funded. "Gate decision" lists the shipped gate codes on runs where the model tried to fund.');
   if (dataPath) {
     const by = id => dataPath.filter(r => r.attack === id);
     lines.push('', '### Faked evidence on the held-out wallets (zero model calls)', '', '| attack (bench/gate-buys.js transform) | wallets | 19-line PnL rule sends money | BAIT sends money | BAIT codes |', '| --- | ---: | ---: | ---: | --- |');

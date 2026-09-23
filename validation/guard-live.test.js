@@ -176,7 +176,7 @@ test('the live executor refuses any tool other than get_pnl_summary and get_open
 
   await assert.rejects(
     () => executor.execute('get_closed_trades', { wallet: WALLET, days: 30 }),
-    /serves get_pnl_summary and get_open_positions only/,
+    /serves get_pnl_summary, get_open_positions, get_independent_record and get_smart_money_market only/,
   );
   assert.equal(call.calls.length, 0, 'an unknown tool must not spend a credit');
 });

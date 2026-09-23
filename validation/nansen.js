@@ -55,6 +55,8 @@ const CREDIT_COSTS = {
   'tgm/token-information': 1,
   'tgm/holders': 5,
   'perp-leaderboard': 5,
+  // Gate v4 (bench/V4.md): smart money's positions in one market. Verified 1 credit, 23 Sep 2026.
+  'perp-screener': 1,
 };
 
 /** Endpoints with a stricter cap than the global 300/min. */

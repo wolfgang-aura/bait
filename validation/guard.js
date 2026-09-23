@@ -31,6 +31,11 @@
  *
  * v1 and v2 never emit a size of their own: the caller's amount or $0. v3 adds exactly
  * one: `concentrationCapShare` of the caller's amount when the concentration check caps.
+ *
+ * `wallet-copy-risk-v4` (default since 23 Sep 2026, pre-registered in bench/V4.md) keeps
+ * every v3 rule and adds two reads outside the profiler family: perp-screener (smart money on
+ * the other side of the largest open position caps) and perp-leaderboard (a summary that
+ * claims more than Nansen's leaderboard records for the same days is refused).
  */
 
 export const GUARD_WINDOW_DAYS = 30;
@@ -130,8 +135,42 @@ export const PRODUCTION_GUARD_POLICY_V3 = Object.freeze({
   concentrationCapShare: 0.25,
 });
 
-/** The default gate. v1 and v2 stay reachable by name. */
-export const PRODUCTION_GUARD_POLICY = PRODUCTION_GUARD_POLICY_V3;
+/**
+ * v4 (pre-registered in bench/V4.md before any v4 benchmark run): every v3 rule and bar unchanged,
+ * plus two rules that read Nansen endpoints outside the profiler family.
+ *
+ * - smart_money_side (cap): the wallet's largest open position is the book a copier inherits.
+ *   perp-screener (smart-money cohort, that market) gives Nansen smart money's current open
+ *   longs and shorts there. When at least two thirds of at least $1M of smart-money positions
+ *   sit on the other side, the gate sends 25% of the request, the same cap v3 uses.
+ * - independent_record (block): perp-leaderboard, filtered to this wallet over the same 30
+ *   calendar days, is a second Nansen record of the month. When the summary the gate read claims
+ *   more realised PnL than that record by more than 25% of it (and more than $1,000), the
+ *   evidence path is overstating the trader and the gate refuses. Read only when nothing earlier
+ *   refused, so a refusal is never charged 5 credits for confirmation.
+ *
+ * A failed or empty read of either endpoint is not assessed and never raises an amount.
+ */
+export const PRODUCTION_GUARD_POLICY_V4 = Object.freeze({
+  ...PRODUCTION_GUARD_POLICY_V3,
+  id: 'wallet-copy-risk-v4',
+  version: 'v4',
+  revision: 1,
+  revisionNotes: '2026-09-23 r1: v3 r3 plus smart_money_side (perp-screener, cap) and independent_record (perp-leaderboard, block). Pre-registered in bench/V4.md.',
+  smartMoneyCheck: true,
+  smartMoneyWindowDays: 7,
+  smartMoneyMinOppositeShare: 2 / 3,
+  smartMoneyMinTotalUsd: 1_000_000,
+  independentRecordCheck: true,
+  recordMaxOverstatementShare: 0.25,
+  recordMinOverstatementUsd: 1_000,
+});
+
+/**
+ * The default gate since 23 Sep 2026: v4, after its pre-registered benchmark (bench/V4.md) met the
+ * ship rule. v1, v2 and v3 stay reachable by name, and v3's published numbers are unchanged.
+ */
+export const PRODUCTION_GUARD_POLICY = PRODUCTION_GUARD_POLICY_V4;
 
 export const BENCHMARK_GUARD_POLICY = Object.freeze({
   ...PRODUCTION_GUARD_POLICY_V1,
@@ -151,7 +190,15 @@ export const BENCHMARK_GUARD_POLICY_V3 = Object.freeze({
   maxEvidenceAgeMs: null,
 });
 
-const POLICY_BASES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3 };
+export const BENCHMARK_GUARD_POLICY_V4 = Object.freeze({
+  ...PRODUCTION_GUARD_POLICY_V4,
+  id: 'wallet-copy-risk-benchmark-v4',
+  maxEvidenceAgeMs: null,
+});
+
+const POLICY_BASES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3, v4: PRODUCTION_GUARD_POLICY_V4 };
+const CAPPING = v => v === 'v3' || v === 'v4';
+const TWO_WINDOW = v => v === 'v2' || v === 'v3' || v === 'v4';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const walletPattern = /^0x[a-fA-F0-9]{40}$/;
@@ -192,10 +239,10 @@ function normalizePolicy(policy) {
   if (!finite(merged.maxFutureSkewMs) || merged.maxFutureSkewMs < 0 || typeof merged.source !== 'string') {
     throw new TypeError('Guard policy source and maxFutureSkewMs are invalid');
   }
-  if (merged.version === 'v3' && (!finite(merged.concentrationCapShare) || merged.concentrationCapShare <= 0 || merged.concentrationCapShare >= 1)) {
+  if (CAPPING(merged.version) && (!finite(merged.concentrationCapShare) || merged.concentrationCapShare <= 0 || merged.concentrationCapShare >= 1)) {
     throw new TypeError('Guard policy concentrationCapShare must be between 0 and 1');
   }
-  if (merged.version === 'v2' || merged.version === 'v3') {
+  if (TWO_WINDOW(merged.version)) {
     if (!Number.isInteger(merged.shortWindowDays) || merged.shortWindowDays < 1 || merged.shortWindowDays >= merged.windowDays) {
       throw new TypeError('Guard policy shortWindowDays must be a positive integer shorter than windowDays');
     }
@@ -204,6 +251,11 @@ function normalizePolicy(policy) {
     }
     if (merged.maxTopCoinPnlShare !== null && (!finite(merged.maxTopCoinPnlShare) || merged.maxTopCoinPnlShare <= 0)) {
       throw new TypeError('Guard policy maxTopCoinPnlShare must be null or a positive number');
+    }
+  }
+  if (merged.version === 'v4') {
+    for (const key of ['smartMoneyWindowDays', 'smartMoneyMinOppositeShare', 'smartMoneyMinTotalUsd', 'recordMaxOverstatementShare', 'recordMinOverstatementUsd']) {
+      if (!finite(merged[key]) || merged[key] < 0) throw new TypeError(`Guard policy ${key} must be a non-negative number`);
     }
   }
   return merged;
@@ -230,6 +282,14 @@ export const V2_CHECK_IDS = Object.freeze([
   'max_drawdown',
 ]);
 
+/** v4's rows, after open_book. Each reads one Nansen endpoint outside the profiler family. */
+export const V4_CHECK_IDS = Object.freeze(['smart_money_side', 'independent_record']);
+const ALL_CHECK_IDS = V2_CHECK_IDS.flatMap(id => (id === 'concentration' ? [id, 'open_book', ...V4_CHECK_IDS] : [id]));
+
+/** Where each v4 row's evidence comes from, as the gate names it in the table and the reason. */
+export const SMART_MONEY_SOURCE = 'Nansen /api/v1/perp-screener';
+export const RECORD_SOURCE = 'Nansen /api/v1/perp-leaderboard';
+
 /** Checks the guard's own evidence path cannot reach: they need per-fill history. */
 const FILL_ONLY_CHECKS = {
   tail_loss: 'Not assessed. The worst single closed trade needs the individual trade fills, which this gate does not fetch. The copy-risk report covers it.',
@@ -248,12 +308,14 @@ function checkTable() {
     skip(id, plain, value = null, threshold = null) { this.set(id, 'not_assessed', value, threshold, plain); },
     /** The first failing row, which is the one the public reason is allowed to name. */
     firstFailure() {
-      for (const id of V2_CHECK_IDS) if (rows.get(id)?.result === 'fail') return rows.get(id);
+      for (const id of ALL_CHECK_IDS) if (rows.get(id)?.result === 'fail') return rows.get(id);
       return null;
     },
     finish(fallback = 'Not assessed. An earlier check already decided this request.') {
       // Round 17: v3 r3's open-book row sits after concentration, only when the policy ran it.
-      const ids = rows.has('open_book') ? V2_CHECK_IDS.flatMap(id => (id === 'concentration' ? [id, 'open_book'] : [id])) : V2_CHECK_IDS;
+      // v4's two rows follow it, again only when the policy ran them, so a v3 table is unchanged.
+      const extra = ['open_book', ...V4_CHECK_IDS].filter(id => rows.has(id));
+      const ids = V2_CHECK_IDS.flatMap(id => (id === 'concentration' ? [id, ...extra] : [id]));
       return ids.map(id => rows.get(id) ?? { id, result: 'not_assessed', value: null, threshold: null, plain: fallback });
     },
   };
@@ -407,7 +469,7 @@ export async function guardAllocation({
   now = () => new Date(),
 } = {}) {
   const policy = normalizePolicy(policyInput);
-  const twoWindow = policy.version === 'v2' || policy.version === 'v3';
+  const twoWindow = TWO_WINDOW(policy.version);
   const attempted = finite(allocation) && allocation > 0 ? allocation : 0;
   const blank = emptyEvidence(policy);
   const t = checkTable();
@@ -651,7 +713,21 @@ export async function guardAllocation({
 
   for (const [id, plain] of Object.entries(FILL_ONLY_CHECKS)) t.skip(id, plain);
 
-  if (policy.openBookCheck && !t.firstFailure()) await openBook(t, executor, wallet, policy, evidence);
+  // v4 in the Pitch Room (readAllWindows) shows its later rows even after a refusal: the round's
+  // read already holds what they need, and the decision is still the first failure. Elsewhere a
+  // refused request buys nothing more.
+  const showAll = policy.version === 'v4' && policy.readAllWindows === true;
+  let book = null;
+  if (policy.openBookCheck && (showAll || !t.firstFailure())) book = await openBook(t, executor, wallet, policy, evidence);
+  if (policy.smartMoneyCheck && (showAll || !t.firstFailure())) await smartMoneySide(t, executor, wallet, policy, book, evidence);
+  if (policy.independentRecordCheck) {
+    const before = t.firstFailure();
+    if (!before) await independentRecord(t, executor, wallet, policy, raw, evidence);
+    else if (showAll) {
+      const what = before.id === 'realised_pnl_30d' ? `the ${policy.windowDays}-day record` : `the "${before.id}" check`;
+      t.skip('independent_record', `Not read: ${what} already refused this request, so a second record (5 credits) could not change it.`);
+    }
+  }
 
   const failure = t.firstFailure();
   if (failure) {
@@ -662,6 +738,7 @@ export async function guardAllocation({
       low_win_rate: 'low_win_rate',
       paper_headline: 'paper_headline',
       concentration: 'top_coin_concentration',
+      independent_record: 'record_disagreement',
     }[failure.id];
     const reason = {
       realised_pnl_30d: policy.minimumRealizedPnlUsd === 0
@@ -672,16 +749,19 @@ export async function guardAllocation({
       low_win_rate: `blocked: ${policy.windowDays}-day win rate is below the policy minimum`,
       paper_headline: 'blocked: most of the headline PnL is unsold paper',
       concentration: `blocked: one market carries more than ${Math.round(policy.maxTopCoinPnlShare * 100)}% of the ${policy.windowDays}-day realised PnL`,
+      independent_record: `blocked: the ${policy.windowDays}-day summary claims more realised PnL than Nansen's perp-leaderboard records for the same days`,
     }[failure.id];
     return result({ attempted, policy, evidence, code, reason, checks: t.finish() });
   }
 
-  const caps = t.finish().filter(c => ['concentration', 'open_book'].includes(c.id) && c.result === 'cap');
+  const caps = t.finish().filter(c => ['concentration', 'open_book', 'smart_money_side'].includes(c.id) && c.result === 'cap');
   if (caps.length) {
     const cappedTo = Math.floor(attempted * policy.concentrationCapShare);
     const why = caps.map(c => (c.id === 'concentration'
       ? `one market carries more than ${Math.round(policy.maxTopCoinPnlShare * 100)}% of the ${policy.windowDays}-day realised PnL`
-      : `the open positions are down more than ${Math.round(policy.maxOpenLossShareOfAccount * 100)}% of the account value`)).join(', and ');
+      : c.id === 'open_book'
+        ? `the open positions are down more than ${Math.round(policy.maxOpenLossShareOfAccount * 100)}% of the account value`
+        : 'Nansen smart money holds the other side of the largest open position')).join(', and ');
     return result({ attempted, policy, evidence, code: 'capped', cappedTo, checks: t.finish(),
       reason: `capped: ${why}, so ${Math.round(policy.concentrationCapShare * 100)}% of the request is allowed` });
   }
@@ -706,7 +786,7 @@ async function openBook(t, executor, wallet, policy, evidence) {
   const open = finite(book?.total_unrealized_pnl_usd) ? book.total_unrealized_pnl_usd : null;
   if (!book || book.error || account === null || open === null || String(book.wallet ?? '').toLowerCase() !== wallet.toLowerCase()) {
     t.skip('open_book', 'Not assessed: the current positions could not be read, so the open book is unknown. This check can only cap; a missing read changes nothing.');
-    return;
+    return null;
   }
   evidence.account_value_usd = account;
   evidence.open_unrealized_pnl_usd = open;
@@ -715,7 +795,7 @@ async function openBook(t, executor, wallet, policy, evidence) {
   const acct = `$${Math.round(account).toLocaleString('en-US')}`;
   if (!(account > 0)) {
     t.skip('open_book', `Not assessed: the account value is ${acct}, so there is no base to measure the open book against.`);
-    return;
+    return book;
   }
   const share = open < 0 ? -open / account : 0;
   const pctOf = `${(share * 100).toFixed(1)}%`;
@@ -729,7 +809,93 @@ async function openBook(t, executor, wallet, policy, evidence) {
       ? `The open positions are down ${usd(-open).slice(1)}, ${pctOf} of the ${acct} account value, under the ${limit} limit.`
       : `The open positions are ${usd(open)} on a ${acct} account: nothing underwater to inherit.`);
   }
+  return book;
 }
+
+/** The largest open position by absolute value, from a get_open_positions result, or null. */
+export function largestOpenPosition(book) {
+  const rows = Array.isArray(book?.positions) ? book.positions : [];
+  const usable = rows.filter(p => p && typeof p.symbol === 'string' && finite(p.position_value_usd) && Math.abs(p.position_value_usd) > 0
+    && (p.direction === 'long' || p.direction === 'short'));
+  if (!usable.length) return null;
+  return usable.reduce((a, p) => (Math.abs(p.position_value_usd) > Math.abs(a.position_value_usd) ? p : a));
+}
+
+/**
+ * v4: smart money on the other side of the book a copier inherits. One perp-screener read
+ * (smart-money cohort, the market of the wallet's largest open position). Can only cap.
+ */
+async function smartMoneySide(t, executor, wallet, policy, book, evidence) {
+  const share = Math.round(policy.smartMoneyMinOppositeShare * 1000) / 10;
+  const floor = `$${Math.round(policy.smartMoneyMinTotalUsd).toLocaleString('en-US')}`;
+  const bar = `under ${share}% of at least ${floor} of smart-money positions on the other side of the largest open position`;
+  const skip = (why, value = null) => t.skip('smart_money_side', `Not assessed: ${why} This check can only cap; a missing read changes nothing.`, value, bar);
+  if (!book || book.error) return skip('the open positions could not be read, so there is no book to compare.');
+  const top = largestOpenPosition(book);
+  if (!top) return skip('the wallet holds no open position, so a copier inherits nothing to compare.');
+  let sm;
+  try { sm = await executor.execute('get_smart_money_market', { token_symbol: top.symbol, days: policy.smartMoneyWindowDays }); } catch (err) { sm = { error: String(err?.message ?? err) }; }
+  const longs = finite(sm?.smart_money_longs_usd) ? Math.abs(sm.smart_money_longs_usd) : null;
+  const shorts = finite(sm?.smart_money_shorts_usd) ? Math.abs(sm.smart_money_shorts_usd) : null;
+  if (!sm || sm.error || longs === null || shorts === null || String(sm.token_symbol ?? '').toUpperCase() !== top.symbol.toUpperCase()) {
+    if (sm?.error === 'not_read' && sm.message) return t.skip('smart_money_side', sm.message, null, bar);
+    return skip(`Nansen's smart-money read for ${top.symbol} could not be made or came back empty.`);
+  }
+  const m = n => `$${(n / 1e6).toFixed(1)}M`;
+  const total = longs + shorts;
+  const side = top.direction;
+  const opposite = side === 'long' ? shorts : longs;
+  const oppShare = total > 0 ? opposite / total : 0;
+  evidence.smart_money = { token_symbol: top.symbol, wallet_side: side, longs_usd: longs, shorts_usd: shorts, opposite_share: oppShare };
+  const value = `${top.symbol} ${side}; smart money ${m(longs)} long / ${m(shorts)} short`;
+  if (total < policy.smartMoneyMinTotalUsd) {
+    return skip(`smart money holds only $${Math.round(total).toLocaleString('en-US')} in ${top.symbol}, under the ${floor} it takes to count as a side.`, value);
+  }
+  const pctOpp = `${(oppShare * 100).toFixed(0)}%`;
+  if (oppShare >= policy.smartMoneyMinOppositeShare) {
+    t.set('smart_money_side', 'cap', value, bar,
+      `The largest open position is ${side} ${top.symbol}. Nansen's smart money holds ${pctOpp} of its ${m(total)} there on the other side. Copying now takes the side they are against, so the gate sends ${Math.round(policy.concentrationCapShare * 100)}% of the request and holds the rest.`);
+  } else {
+    t.pass('smart_money_side', value, bar,
+      `The largest open position is ${side} ${top.symbol}; ${pctOpp} of smart money's ${m(total)} there is on the other side, under the ${share}% bar.`);
+  }
+  return undefined;
+}
+
+/**
+ * v4: a second Nansen record of the same month. perp-leaderboard, filtered to this wallet over
+ * the same 30 calendar days. Blocks when the summary the gate read claims more than it.
+ */
+async function independentRecord(t, executor, wallet, policy, raw, evidence) {
+  const pct = Math.round(policy.recordMaxOverstatementShare * 100);
+  const floor = `$${Math.round(policy.recordMinOverstatementUsd).toLocaleString('en-US')}`;
+  const bar = `the summary claims no more than the leaderboard's record plus ${pct}% of it (at least ${floor})`;
+  const range = raw?.window ?? raw?.date ?? null;
+  const skip = why => t.skip('independent_record', `Not assessed: ${why} This check can refuse only on a record it read; a missing read changes nothing.`, null, bar);
+  let rec;
+  try { rec = await executor.execute('get_independent_record', { wallet, days: policy.windowDays, window: range }); } catch (err) { rec = { error: String(err?.message ?? err) }; }
+  if (rec?.error === 'not_read' && rec.message) return t.skip('independent_record', rec.message, null, bar);
+  if (!rec || rec.error || !finite(rec.realized_pnl_usd)) {
+    return skip(rec?.error === 'not_listed' ? `perp-leaderboard has no row for this wallet over these ${policy.windowDays} days.`
+      : rec?.error === 'not_read' ? (rec.message ?? 'the perp-leaderboard record was not read.') : 'the perp-leaderboard record could not be read.');
+  }
+  if (String(rec.wallet ?? '').toLowerCase() !== wallet.toLowerCase()) return skip('the leaderboard row that came back is for a different wallet.');
+  const summary = evidence.realized_pnl_30d_usd;
+  const record = rec.realized_pnl_usd;
+  evidence.leaderboard_realized_pnl_30d_usd = record;
+  const allowed = Math.max(policy.recordMinOverstatementUsd, policy.recordMaxOverstatementShare * Math.abs(record));
+  const over = summary - record;
+  const value = `summary ${money(summary)} vs leaderboard ${money(record)}`;
+  if (over > allowed) {
+    t.fail('independent_record', value, bar,
+      `The ${policy.windowDays}-day summary says ${money(summary)}; Nansen's perp-leaderboard records ${money(record)} for this wallet over the same days. The evidence claims ${money(over).slice(1)} more than the record, so it cannot be trusted.`);
+  } else {
+    t.pass('independent_record', value, bar,
+      `Nansen's perp-leaderboard records ${money(record)} for this wallet over the same ${policy.windowDays} days, in line with the summary.`);
+  }
+  return undefined;
+}
+
 
 // ---------------------------------------------------------- copy-risk report
 

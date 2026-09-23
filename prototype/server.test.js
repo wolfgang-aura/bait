@@ -165,7 +165,8 @@ test('/api/proof serves every benchmark count with its raw source, and nothing p
     assert.deepEqual(body.perWallet.backedLoser.behindBaitGate[1], 78);
     assert.equal(body.perWallet.wallets.length, 12);
     assert.equal(body.baseline.name, 'check-then-decide', 'the baseline to beat is published');
-    assert.deepEqual(body.gateBuys.letThrough, { agent: [6, 6], behindV3: [0, 6] }, 'what the gate buys is served');
+    assert.deepEqual(body.gateBuys.letThrough, { agent: [7, 7], behindGate: [0, 7] }, 'what the gate buys is served, with the doctored-number attack v4 added');
+    assert.equal(body.gateBuys.fixedMissV4.case, 'doctored-pnl');
     assert.equal(body.gateBuys.knownMiss.rows.length, 0, 'the one miss the bench found is fixed');
     assert.equal(body.gateBuys.fixedMiss.case, 'relabelled-window', 'and the fix is served with the report that found it');
     assert.match(body.gateBuys.source.path, /^bench\/reports\/.+-gate-buys\.json$/);
@@ -258,7 +259,7 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     assert.equal(blocked.body.code, 'pnl_below_minimum');
     assert.equal(blocked.body.allocation, 0, 'a blocked check never returns the proposed amount');
     assert.equal(blocked.body.attempted, 5000);
-    assert.equal(blocked.body.policy.id, 'wallet-copy-risk-v3');
+    assert.equal(blocked.body.policy.id, 'wallet-copy-risk-v4');
     assert.equal(blocked.body.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');
     assert.equal(blocked.body.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
     assert.equal(blocked.body.creditsCharged, 1, 'a wallet the 30-day evidence refuses never buys the 7-day window');
@@ -275,7 +276,8 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     assert.equal(allowed.body.decision, 'allow');
     assert.equal(allowed.body.allocation, 5000);
     assert.equal(allowed.body.evidence.realized_pnl_usd, 2450809.47);
-    assert.equal(allowed.body.creditsCharged, 3, 'an allow read both windows and the open positions');
+    assert.equal(allowed.body.creditsCharged, 8, 'an allow read both windows, the open positions and the v4 leaderboard record (no open position, so no screener)');
+    assert.ok(allowed.body.checks.some(c => c.id === 'independent_record'), 'the v4 row is on the table');
     assert.equal(allowed.body.checks.find(c => c.id === 'regime_agreement').result, 'pass');
   } finally { await profitable.stop(); }
 });
@@ -394,8 +396,9 @@ test('/healthz reports the live-read caps and counters, and the key never reache
     assert.equal(body.nansen.blocked_by, 'disabled');
     assert.equal(body.nansen.daily_cap, 12);
     assert.equal(body.nansen.total_cap, 99);
-    // Two summaries and the open positions (round 17); fill pages are off in this test.
-    assert.equal(body.nansen.credits_per_read, 3);
+    // The most one read can cost: two summaries, the open positions (round 17), and gate v4's
+    // perp-screener (1) and perp-leaderboard (5); fill pages are off in this test.
+    assert.equal(body.nansen.credits_per_read, 9);
     assert.equal(body.nansen.cache_ttl_minutes, 30);
     assert.ok(Number.isInteger(body.nansen.credits_today));
     assert.ok(Number.isInteger(body.nansen.credits_total));

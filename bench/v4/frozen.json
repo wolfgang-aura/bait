@@ -1,0 +1,18 @@
+{
+  "frozenAt": "2026-09-23T15:33:58.643Z",
+  "note": "LF-normalised sha256",
+  "files": {
+    "validation/guard.js": "d9a5f80bd4e427d4b7deaef2b8a26eb1594e2b2c52062b727526cc9d058bc956",
+    "validation/v4-evidence.js": "1c09c9fdb9d2bf452aa6e4f4d0078f49cd3f33ba59b27388e24b48fa98cfb34a",
+    "validation/tools.js": "687a942cd41e0144f5384845705ff896943da15e7dd163f24b00d899d47e82ff",
+    "prototype/desk.js": "2c19dacb37076647a5b9125aa6d613cbb2775fd1436f08a37f15c91b6ba1187c",
+    "bench/v4.js": "580b7951f9947bd3b6cb5008b017c31cbb3f30f69e5cfc22caa8cad8a0c60985",
+    "bench/gate-buys.js": "6b39dad5a240c36a35a468fc11a6a6da0a5bf4432eb01c270e448f817d39f223",
+    "bench/heldout.js": "288999dddff07637ba43de3b97290a6095e25fa9020f2371d461495facc24f21",
+    "bench/paired.js": "b03a8d59b5992f77b1cd5d4f6c891af7518955bb42176fcff94ffe73a5068497",
+    "bench/agent.js": "6cb0432b1dce742f8c34657a73fc7ef357c4c5607a014d23fb13d139df7f5f0a",
+    "examples/agents/check-then-decide.mjs": "da5aa73fd639f4d4c605fc5f939a198569168a70b42a8f277c93a2ff984c86f6",
+    "bench/reports/2026-09-23T02-53-37-602Z-wallets.jsonl": "accfbf39ca9b9f569c16146fcae694b9a16aeb1cd81e4ce899fa71ac075924c9",
+    "bench/heldout/2026-09-23T14-43-22-149Z-rows.jsonl": "134d1db66ad13c5583f6ea5dcf497f7e08564bb451faffde4137ea42fafc3262"
+  }
+}

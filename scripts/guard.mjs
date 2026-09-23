@@ -4,10 +4,12 @@
  *   npm run guard -- --wallet 0xc26cbb6483229e0d0f9a1cab675271eda535b8f4 --allocation 5000
  *   npm run guard -- --wallet 0x9546b9d4103be41ce13483a8f299d0df0eeb181c --allocation 5000 --json
  *
- * The default policy is `wallet-copy-risk-v3`: it reads the 7-day AND the 30-day
- * `profiler/perp-pnl-summary` and costs two credits, one per window, plus one for the open
- * positions (`profiler/perp-positions`) when the summaries pass; it buys the
- * second window only after the first one passes. `--policy v1` is the older one-window
+ * The default policy is `wallet-copy-risk-v4` (bench/V4.md): it reads the 7-day AND the
+ * 30-day `profiler/perp-pnl-summary`, one credit per window, then when nothing has refused:
+ * the open positions (`profiler/perp-positions`, 1), smart money in the largest position's
+ * market (`perp-screener`, 1) and a second record of the month (`perp-leaderboard`, 5). It buys
+ * the second window only after the first one passes; a refusal costs one credit. `--policy v3`
+ * is the previous default. `--policy v1` is the older one-window
  * rule the recorded benchmark row is tied to, at one credit.
  *
  * The guard, not this script, decides. Exit codes: 0 allow, 2 block or bad usage, 3 no
@@ -22,13 +24,14 @@ import {
   PRODUCTION_GUARD_POLICY_V1,
   PRODUCTION_GUARD_POLICY_V2,
   PRODUCTION_GUARD_POLICY_V3,
+  PRODUCTION_GUARD_POLICY_V4,
 } from '../validation/guard.js';
 
 export const USAGE =
-  'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2|v3] [--json] [--timeout <ms>]';
+  'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2|v3|v4] [--json] [--timeout <ms>]';
 
-/** v2 is the default gate. v1 stays selectable so a recorded result can be rerun. */
-export const POLICIES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3 };
+/** v4 is the default gate. v1-v3 stay selectable so a recorded result can be rerun. */
+export const POLICIES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3, v4: PRODUCTION_GUARD_POLICY_V4 };
 
 const FLAGS_WITH_VALUES = new Set(['--wallet', '--allocation', '--timeout', '--policy']);
 
@@ -37,7 +40,7 @@ const FLAGS_WITH_VALUES = new Set(['--wallet', '--allocation', '--timeout', '--p
  * never silent defaults: a guard that guesses its own input is not a guard.
  */
 export function parseArgs(argv = []) {
-  const out = { wallet: null, allocation: null, json: false, timeoutMs: DEFAULT_GUARD_TIMEOUT_MS, policy: 'v3' };
+  const out = { wallet: null, allocation: null, json: false, timeoutMs: DEFAULT_GUARD_TIMEOUT_MS, policy: 'v4' };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     if (flag === '--json') {
@@ -59,7 +62,7 @@ export function parseArgs(argv = []) {
       out.timeoutMs = n;
     }
     if (flag === '--policy') {
-      if (!(value in POLICIES)) return { error: `--policy must be v1, v2 or v3, got "${value}".` };
+      if (!(value in POLICIES)) return { error: `--policy must be v1, v2, v3 or v4, got "${value}".` };
       out.policy = value;
     }
   }
@@ -146,9 +149,11 @@ export async function main({
   }
 
   // Round 17: v3 revision 3 also reads the open positions (one credit) when the summaries pass.
+  // v4 adds perp-screener (1) and perp-leaderboard (5), both only when nothing has refused.
   const positions = policy.openBookCheck ? 1 : 0;
-  const most = windows.length + positions;
-  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary${positions ? ' and open positions' : ''}, at most ${most} credit${most === 1 ? '' : 's'}...\n`);
+  const v4 = (policy.smartMoneyCheck ? 1 : 0) + (policy.independentRecordCheck ? 5 : 0);
+  const most = windows.length + positions + v4;
+  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary${positions ? ' and open positions' : ''}${v4 ? ', then smart money (perp-screener) and a second record (perp-leaderboard)' : ''}, at most ${most} credit${most === 1 ? '' : 's'}...\n`);
 
   let decision;
   try {

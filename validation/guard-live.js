@@ -31,6 +31,7 @@ import {
   accountCreditsRemaining,
   creditCostFor,
 } from './nansen.js';
+import { leaderboardRequest, screenerRequest, recordFromLeaderboard, smartMoneyFromScreener, LEADERBOARD_ENDPOINT, SCREENER_ENDPOINT } from './v4-evidence.js';
 
 /** The only endpoint a live guard check is permitted to touch. */
 export const GUARD_ENDPOINT = 'profiler/perp-pnl-summary';
@@ -57,8 +58,10 @@ export function createLiveGuardExecutor({
 
   async function execute(name, args = {}) {
     if (name === 'get_open_positions') return openPositions(args);
+    if (name === 'get_independent_record') return independentRecord(args);
+    if (name === 'get_smart_money_market') return smartMoneyMarket(args);
     if (name !== 'get_pnl_summary') {
-      throw new Error(`Live guard executor serves get_pnl_summary and get_open_positions only, not "${name}".`);
+      throw new Error(`Live guard executor serves get_pnl_summary, get_open_positions, get_independent_record and get_smart_money_market only, not "${name}".`);
     }
 
     const wallet = String(args.wallet ?? '').toLowerCase();
@@ -124,9 +127,34 @@ export function createLiveGuardExecutor({
       open_position_count: rows.length,
       total_unrealized_pnl_usd: round2(rows.reduce((s, r) => s + (Number(r.position?.unrealized_pnl_usd) || 0), 0)),
       account_value_usd: round2(account),
+      // Gate v4 reads the largest position's market and side from these.
+      positions: rows.map(r => r.position ?? {}).map(p => ({ symbol: p.token_symbol, direction: Number(p.size) < 0 ? 'short' : 'long',
+        position_value_usd: round2(Number(p.position_value_usd)), unrealized_pnl_usd: round2(Number(p.unrealized_pnl_usd)) })),
       source: 'Nansen /api/v1/profiler/perp-positions',
       retrieved_at: at.toISOString(),
     };
+  }
+
+  // Gate v4: a second record of the month, perp-leaderboard over the same calendar days (5 credits).
+  async function independentRecord(args = {}) {
+    const wallet = String(args.wallet ?? '').toLowerCase();
+    const at = now();
+    const window = args.window?.from && args.window?.to ? args.window : { from: iso(new Date(at.getTime() - (args.days ?? GUARD_WINDOW_DAYS) * 86_400_000)), to: iso(at) };
+    const body = leaderboardRequest(wallet, window);
+    calls.push({ path: LEADERBOARD_ENDPOINT, body, at: at.toISOString() });
+    const response = await call(LEADERBOARD_ENDPOINT, body, { note: 'guard live v4 independent record', timeoutMs });
+    charged += creditCostFor(LEADERBOARD_ENDPOINT);
+    return recordFromLeaderboard(response?.data, { wallet, request: body, retrievedAt: at.toISOString() });
+  }
+
+  // Gate v4: smart money's current positions in one market, perp-screener (1 credit).
+  async function smartMoneyMarket(args = {}) {
+    const at = now();
+    const body = screenerRequest(args.token_symbol, at, args.days ?? 7);
+    calls.push({ path: SCREENER_ENDPOINT, body, at: at.toISOString() });
+    const response = await call(SCREENER_ENDPOINT, body, { note: 'guard live v4 smart money', timeoutMs });
+    charged += creditCostFor(SCREENER_ENDPOINT);
+    return smartMoneyFromScreener(response?.data, { tokenSymbol: args.token_symbol, request: body, retrievedAt: at.toISOString() });
   }
 
   return {

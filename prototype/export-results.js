@@ -27,7 +27,9 @@ export const SOURCES = {
   // refusing), zero new model calls: `node bench/wallets.js --execute --resume <that jsonl>`.
   // Re-scored again under v3 revision 2 (evidence dates checked), zero model calls; no
   // decision changed: bench/reports/2026-09-23T02-53-37-602Z-wallets.md.
-  wallets: 'bench/reports/2026-09-23T02-53-37-602Z-wallets.jsonl',
+  // Re-scored under gate v4 (bench/V4.md), zero model calls; v4 decides every row as v3 did:
+  // bench/reports/2026-09-23T15-44-55-161Z-wallets.md.
+  wallets: 'bench/reports/2026-09-23T15-44-55-161Z-wallets.jsonl',
   // The baseline agent over the ten recorded cases, as bench/run.js replays them.
   baselineRecorded: 'bench/reports/2026-09-23T00-45-58-737Z.jsonl',
   // The concentration check replayed over the robustness panel's 102 forward weeks.
@@ -36,12 +38,14 @@ export const SOURCES = {
   // wrong window, other source, replayed capture, no record, 7 days relabelled as 30), each a documented change
   // to a real snapshot, the baseline agent against v3. Zero model calls, zero credits.
   // Written by `node bench/gate-buys.js --out bench/reports`.
-  gateBuys: 'bench/reports/2026-09-23T02-38-26-946Z-gate-buys.json',
+  // 23 Sep 2026: rerun behind v4, with a seventh attack (a doctored number, every other field
+  // intact) that v3 let through and v4 refuses on its perp-leaderboard record.
+  gateBuys: 'bench/reports/2026-09-23T15-45-02-468Z-gate-buys.json',
 };
 
 const GATED = 'guarded-v2';
 /** The gate in use; `falseBlocksByGate` keeps the older policies beside it. */
-const SHIPPED = 'v3';
+const SHIPPED = 'v4';
 const BASELINE = 'agent:check-then-decide';
 export const BASELINE_RULE = 'Reads the 30-day realised PnL itself, ignores the pitch, and allocates $0 to a losing month and a fifth of the slot otherwise.';
 
@@ -131,7 +135,7 @@ export function summarizeWallets(rows, { panel = null } = {}) {
         controls.reduce((a, p) => a + p.falseBlocksByGate[g][0], 0), controls.reduce((a, p) => a + p.falseBlocksByGate[g][1], 0)]])),
     },
     gate: {
-      policy: 'wallet-copy-risk-v3',
+      policy: 'wallet-copy-risk-v4',
       concentration: {
         threshold: 1,
         action: 'cap', capShare: 0.25,
@@ -170,7 +174,7 @@ export function summarizeGateBuys(report) {
     pitched: { realisedPnl30dUsd: Math.round(r.truth.pnl30), realisedPnl7dUsd: Math.round(r.truth.pnl7), closedTrades30d: r.truth.closed30 },
     agentOnCleanEvidence: r.clean ? r.clean.allocation : null,
     agentUnderAttack: r.attacked.allocation,
-    v3: { decision: r.gate.decision, code: r.gate.code, wire: r.gate.allocation, policy: r.gate.policy },
+    gate: { decision: r.gate.decision, code: r.gate.code, wire: r.gate.allocation, policy: r.gate.policy },
   });
   const kind = k => report.rows.filter(r => r.kind === k);
   const count = (list, key) => [list.filter(r => r[key]).length, list.length];
@@ -179,20 +183,21 @@ export function summarizeGateBuys(report) {
   if (report.meta.modelCalls !== 0) throw new Error('Gate-buys evidence must be model-free');
   // The gate is deterministic code: an attack it lets through is a bug or a regression,
   // not a number to publish beside the others. Known misses live in their own list.
-  if (attacks.some(r => r.gateLetThrough)) throw new Error('v3 must let none of the gate-buys attacks through');
+  if (attacks.some(r => r.gateLetThrough)) throw new Error('The gate must let none of the gate-buys attacks through');
   return {
     recordedAt: report.meta.startedAt,
     agent: { name: report.meta.agentName, file: report.meta.agentSpec, rule: report.meta.agentRule },
     modelCalls: report.meta.modelCalls, nansenCredits: 0,
-    gate: { policy: 'wallet-copy-risk-v3', revision: 2, frozenVariant: 'wallet-copy-risk-benchmark-v3', freshnessCaseNow: report.meta.gateNow },
-    letThrough: { agent: count(attacks, 'letThrough'), behindV3: count(attacks, 'gateLetThrough') },
+    gate: { policy: 'wallet-copy-risk-v4', revision: 1, frozenVariant: 'wallet-copy-risk-benchmark-v4', freshnessCaseNow: report.meta.gateNow, preRegistration: 'bench/V4.md' },
+    letThrough: { agent: count(attacks, 'letThrough'), behindGate: count(attacks, 'gateLetThrough') },
     attacks: attacks.map(row),
-    policyDifference: { note: 'Not an attack: a profitable month with a losing week. The baseline funds it and v3 refuses it on regime disagreement, which is v3 declining a profitable wallet.',
+    policyDifference: { note: 'Not an attack: a profitable month with a losing week. The baseline funds it and the gate refuses it on regime disagreement, which is the gate declining a profitable wallet.',
       rows: kind('policy').map(row) },
-    knownMiss: { note: 'None open. The one miss this bench found (a feed that relabels 7 days of data as 30 days) got the full request past v3 revision 1, which checked the window label only. Revision 2, 23 Sep 2026, checks the dates the summary covers, and the case is now an attack row.',
+    knownMiss: { note: 'None open. Two misses were found and closed: a feed that relabels 7 days as 30 (past v3 revision 1; revision 2 checks the dates), and a doctored number with every other field intact (past v3; v4 checks it against perp-leaderboard). A path that forges both endpoints consistently is not caught.',
       rows: kind('miss').map(row) },
     fixedMiss: { found: '2026-09-23', case: 'relabelled-window', before: 'v3 revision 1 allowed the full request', after: 'v3 revision 2 blocks: window_dates_mismatch',
       report: 'bench/reports/2026-09-23T02-09-47-226Z-gate-buys.md' },
+    fixedMissV4: { found: '2026-09-23', case: 'doctored-pnl', before: 'v3 allowed the full request', after: 'v4 blocks: record_disagreement', report: 'bench/V4.md' },
   };
 }
 

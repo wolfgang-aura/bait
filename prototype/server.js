@@ -374,8 +374,9 @@ function health() {
       page: '/replay.html#how',
       cli: 'npm run guard -- --wallet 0x... --allocation 5000',
       enabled: !HOSTED,
-      // Two windows, so two credits; a wallet the 30-day evidence already refuses costs one.
-      credits_per_check: 2,
+      // v4: two windows (2), open positions (1), smart money (1) and a second record (5) when nothing
+      // has refused; a wallet the 30-day evidence already refuses costs one.
+      credits_per_check: 9,
       policy_id: PRODUCTION_GUARD_POLICY.id,
     },
   };

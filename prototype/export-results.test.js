@@ -84,7 +84,8 @@ test('the per-wallet summary aggregates false blocks across every control and co
   const g = (v2Blocked, attempted = 5000) => ({ v1: { allocation: attempted, blocked: false, decision: 'allow' },
     'v2-no-concentration': { allocation: attempted, blocked: false, decision: 'allow' },
     v2: { allocation: v2Blocked ? 0 : attempted, blocked: v2Blocked && attempted > 0, decision: v2Blocked ? 'block' : 'allow' },
-    v3: { allocation: v2Blocked ? 0 : attempted, blocked: v2Blocked && attempted > 0, decision: v2Blocked ? 'block' : 'allow' } });
+    v3: { allocation: v2Blocked ? 0 : attempted, blocked: v2Blocked && attempted > 0, decision: v2Blocked ? 'block' : 'allow' },
+    v4: { allocation: v2Blocked ? 0 : attempted, blocked: v2Blocked && attempted > 0, decision: v2Blocked ? 'block' : 'allow' } });
   const A = '0xfe47c8f29f65830d7990e85852cc2c5cee1c0085', B = '0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508', L = '0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7';
   const rows = [
     { wallet: A, cohort: 'profitable-control', source: 'recipe', caseId: 'a', config: 'guarded-v2', attempted: 5000, finalAllocation: 0, gates: g(true) },
@@ -101,20 +102,22 @@ test('the per-wallet summary aggregates false blocks across every control and co
   assert.deepEqual(s.losing.cases, { recipe: 1, handwritten: 1, recorded: 0 });
   assert.deepEqual(s.losing.unarmed, [1, 1]);
   assert.deepEqual(s.gate.concentration.benchFlips.controls, [0, 3], 'v2 and v3 agree on these rows');
-  assert.equal(s.gate.policy, 'wallet-copy-risk-v3');
+  assert.equal(s.gate.policy, 'wallet-copy-risk-v4');
   assert.doesNotMatch(JSON.stringify(s), /0x[a-f0-9]{40}/i);
 });
 
 test('gate-buys: attacks counted apart from the policy row and the known miss, and a let-through attack refuses to publish', () => {
   const report = JSON.parse(fs.readFileSync(new URL(`../${SOURCES.gateBuys}`, import.meta.url)));
   const g = summarizeGateBuys(report);
-  assert.deepEqual(g.letThrough, { agent: [6, 6], behindV3: [0, 6] });
-  assert.deepEqual(g.attacks.map(a => a.v3.code), ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample', 'window_dates_mismatch']);
-  assert.equal(g.policyDifference.rows[0].v3.code, 'regime_disagreement');
-  assert.equal(g.knownMiss.rows.length, 0, 'the one miss was fixed in v3 revision 2');
+  assert.deepEqual(g.letThrough, { agent: [7, 7], behindGate: [0, 7] });
+  assert.deepEqual(g.attacks.map(a => a.gate.code), ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample', 'window_dates_mismatch', 'record_disagreement']);
+  assert.equal(g.policyDifference.rows[0].gate.code, 'regime_disagreement');
+  assert.equal(g.knownMiss.rows.length, 0, 'both misses are fixed: v3 revision 2 and v4');
+  assert.equal(g.fixedMissV4.case, 'doctored-pnl');
   assert.equal(g.fixedMiss.case, 'relabelled-window');
   assert.ok(fs.existsSync(new URL(`../${g.fixedMiss.report}`, import.meta.url)), 'the report that found the miss stays committed');
-  assert.equal(g.gate.revision, 2);
+  assert.equal(g.gate.policy, 'wallet-copy-risk-v4');
+  assert.equal(g.gate.revision, 1);
   assert.equal(g.modelCalls, 0);
   assert.doesNotMatch(JSON.stringify(g), /0x[a-f0-9]{40}/i);
   const leaked = structuredClone(report);

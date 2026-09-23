@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { guardAllocation, BENCHMARK_GUARD_POLICY_V2, BENCHMARK_GUARD_POLICY_V3, PRODUCTION_GUARD_POLICY } from './guard.js';
+import { guardAllocation, BENCHMARK_GUARD_POLICY_V2, BENCHMARK_GUARD_POLICY_V3, PRODUCTION_GUARD_POLICY, PRODUCTION_GUARD_POLICY_V3 } from './guard.js';
 import { makeToolExecutor } from './tools.js';
 
 const snap = name => JSON.parse(fs.readFileSync(new URL(`./snapshots/${name}`, import.meta.url), 'utf8'));
@@ -43,9 +43,9 @@ test('v3 still refuses a losing month and a reversed week, and passes a clean mo
   assert.equal(clean.held, 0);
 });
 
-test('v3 is the default and rejects a cap share outside (0, 1)', async () => {
-  assert.equal(PRODUCTION_GUARD_POLICY.id, 'wallet-copy-risk-v3');
-  assert.equal(PRODUCTION_GUARD_POLICY.concentrationCapShare, 0.25);
+test('v4 is the default since 23 Sep (bench/V4.md); v3 keeps its cap share and rejects one outside (0, 1)', async () => {
+  assert.equal(PRODUCTION_GUARD_POLICY.id, 'wallet-copy-risk-v4');
+  assert.equal(PRODUCTION_GUARD_POLICY_V3.concentrationCapShare, 0.25);
   const s = snap('control_0xfe47c8f29f65830d7990e85852cc2c5cee1c0085.json');
   await assert.rejects(() => run(s, { ...BENCHMARK_GUARD_POLICY_V3, concentrationCapShare: 1 }), /concentrationCapShare/);
 });
@@ -74,8 +74,8 @@ test('v3 r2 refuses a 30-day label whose dates span 7 days, a missing range, and
   const clean = await gate(relabel(s, o => o));
   assert.equal(clean.decision, 'allow');
   assert.equal(clean.policy.revision, 3);
-  assert.equal(PRODUCTION_GUARD_POLICY.revision, 3);
-  assert.match(PRODUCTION_GUARD_POLICY.revisionNotes, /^2026-09-23 r2: .* r3: open positions read/);
+  assert.equal(PRODUCTION_GUARD_POLICY_V3.revision, 3);
+  assert.match(PRODUCTION_GUARD_POLICY_V3.revisionNotes, /^2026-09-23 r2: .* r3: open positions read/);
 });
 
 test('v3 r3: the open book caps the request when open positions are down over 25% of the account value', async () => {

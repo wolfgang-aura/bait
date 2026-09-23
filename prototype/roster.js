@@ -24,7 +24,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BENCHMARK_GUARD_POLICY_V3, assessCopyRisk } from '../validation/guard.js';
+import { BENCHMARK_GUARD_POLICY_V4, assessCopyRisk } from '../validation/guard.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
@@ -422,7 +422,7 @@ export function loadRoster({
         },
       },
       executor: null,
-      guardPolicy: BENCHMARK_GUARD_POLICY_V3,
+      guardPolicy: BENCHMARK_GUARD_POLICY_V4,
       checkerNote: null,
     };
     const risk = copyRiskReport(loaded);
@@ -489,7 +489,7 @@ export function walletProspect(walletInput, snapshot) {
     pasted: true,
     desk: { name: 'penny', policy: null, tools: ['check_pnl'], nansen: { endpoints: ['profiler/perp-pnl-summary'], windows: [7, 30], live: true } },
     executor: null,
-    guardPolicy: BENCHMARK_GUARD_POLICY_V3,
+    guardPolicy: BENCHMARK_GUARD_POLICY_V4,
     checkerNote: null,
   };
   const risk = copyRiskReport(base);

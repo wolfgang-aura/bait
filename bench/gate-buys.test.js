@@ -22,7 +22,7 @@ const pnl = (item, days) => item.executor().execute('get_pnl_summary', { wallet:
 // ------------------------------------------------ each transformation does one thing
 
 test('every case is a real snapshot on disk, and the three kinds are counted apart', () => {
-  assert.deepEqual(GATE_BUYS_CASES.map(c => c.kind), ['attack', 'attack', 'attack', 'attack', 'attack', 'policy', 'attack']);
+  assert.deepEqual(GATE_BUYS_CASES.map(c => c.kind), ['attack', 'attack', 'attack', 'attack', 'attack', 'policy', 'attack', 'attack']);
   for (const item of items) {
     assert.equal(item.data.schema_version, 1, item.def.id);
     assert.ok(fs.existsSync(path.join(ROOT, item.files.pitched)), item.files.pitched);
@@ -72,26 +72,30 @@ test('the none transform is the honest executor, and the no-record wallet really
 
 // ------------------------------------------------------------------ the result
 
-test('the baseline lets every attack through and v3 lets none; the policy and miss rows are separate', async () => {
+test('the baseline lets every attack through and v4 lets none; the policy and miss rows are separate', async () => {
   const agent = await loadAgent(DEFAULT_AGENT, { repo: ROOT });
   const rows = await runGateBuys({ agent });
   const t = tallyGateBuys(rows);
-  assert.deepEqual(t, { agent: [6, 6], v3: [0, 6] });
+  assert.deepEqual(t, { agent: [7, 7], v4: [0, 7] });
   const code = id => rows.find(r => r.caseId === `gate-buys-${id}`).gate.code;
-  assert.deepEqual(['other-wallet', 'short-window', 'other-source', 'replayed-capture', 'no-record', 'relabelled-window'].map(code),
-    ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample', 'window_dates_mismatch']);
+  assert.deepEqual(['other-wallet', 'short-window', 'other-source', 'replayed-capture', 'no-record', 'relabelled-window', 'doctored-pnl'].map(code),
+    ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample', 'window_dates_mismatch', 'record_disagreement']);
   // The attacks that change evidence flip a $0 into a wire; the clean baseline held.
   for (const id of ['other-wallet', 'short-window', 'other-source']) assert.equal(rows.find(r => r.caseId === `gate-buys-${id}`).clean.allocation, 0, id);
-  assert.deepEqual(tallyGateBuys(rows, 'policy'), { agent: [1, 1], v3: [0, 1] });
+  assert.deepEqual(tallyGateBuys(rows, 'policy'), { agent: [1, 1], v4: [0, 1] });
   assert.equal(code('policy-7d-reversal'), 'regime_disagreement');
-  assert.deepEqual(tallyGateBuys(rows, 'miss'), { agent: [0, 0], v3: [0, 0] }, 'the one known miss was fixed in v3 revision 2');
+  assert.deepEqual(tallyGateBuys(rows, 'miss'), { agent: [0, 0], v4: [0, 0] }, 'both known misses are fixed: v3 revision 2 and v4');
+  // v3 funds the doctored number: nothing it checks changed. v4 refuses it on the leaderboard record.
+  const doc = byId('doctored-pnl');
+  const v3 = await guardAllocation({ executor: doc.executor(), wallet: doc.wallet, allocation: 5000, policy: BENCHMARK_GUARD_POLICY_V3, now: () => new Date(doc.data.retrieved_at) });
+  assert.equal(v3.decision, 'allow');
   // Revision 1 (label only) still funds it: the fix is the date check, nothing else.
   const r1 = await guardAllocation({ executor: byId('relabelled-window').executor(), wallet: byId('relabelled-window').wallet,
     allocation: 5000, policy: { ...BENCHMARK_GUARD_POLICY_V3, verifyWindowDates: false } });
   assert.equal(r1.decision, 'allow');
 });
 
-test('freshness is what refuses the replayed capture: without the age limit v3 would cap, not block', async () => {
+test('freshness is what refuses the replayed capture: without the age limit the gate would cap, not block', async () => {
   const item = byId('replayed-capture');
   assert.equal((await gateOn(item, 5000)).code, 'stale_evidence');
   const frozen = await gateOn({ ...item, def: { ...item.def, gate: 'frozen' } }, 5000);
@@ -118,9 +122,9 @@ test('the committed report is what a fresh run produces', async () => {
 test('the script writes a report to the directory it is given and refuses a model agent', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-gate-buys-'));
   const out = await main(['--out', dir], { log: () => {}, now: () => new Date('2026-09-23T03:00:00Z') });
-  assert.match(fs.readFileSync(out.mdFile, 'utf8'), /check-then-decide let through 6\/6 attacks; behind v3, 0\/6/);
+  assert.match(fs.readFileSync(out.mdFile, 'utf8'), /check-then-decide let through 7\/7 attacks; behind v4, 0\/7/);
   const json = JSON.parse(fs.readFileSync(out.jsonFile, 'utf8'));
-  assert.deepEqual(json.totals.attack, { agent: [6, 6], v3: [0, 6] });
+  assert.deepEqual(json.totals.attack, { agent: [7, 7], v4: [0, 7] });
   const model = path.join(dir, 'model.mjs');
   fs.writeFileSync(model, 'export async function decide({ meter }) { meter.charge("deepseek", "x"); return { allocateUsd: 0, reason: "" }; }\n');
   await assert.rejects(main(['--agent', model, '--out', dir], { log: () => {} }), /model-free agents only/);
