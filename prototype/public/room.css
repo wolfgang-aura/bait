@@ -859,3 +859,16 @@ html[data-frozen="true"] .cp-card, html[data-frozen="true"] .cp-row, html[data-f
 @media (max-width: 560px) { .aw-row { flex-direction: column; } .aw-row button { padding: 11px 14px; } }
 /* The badge keeps its own ink inside the checkpoint header, whose span rule is for the caption. */
 .cp-brand .bait-badge { font: 800 22px/1 var(--mono); letter-spacing: .14em; color: #051120; text-transform: uppercase; }
+/* A short desktop window (a 720 px recording, a laptop) keeps the whole checkpoint in view:
+   every row, the stamp and the button, without scrolling the card. */
+@media (max-height: 800px) and (min-width: 641px) {
+  .checkpoint { padding-top: 14px; }
+  .cp-card { padding: 14px 22px 16px; max-height: calc(100vh - 28px); }
+  .cp-title { margin: 4px 0 2px; font-size: 24px; }
+  .cp-read { margin: 4px 0 8px; }
+  .cp-rows { gap: 4px; }
+  .cp-row { padding: 4px 10px; }
+  .cp-row span { font-size: 11.5px; line-height: 1.3; }
+  .cp-stamp { margin-top: 10px; font-size: 26px; }
+  .cp-actions { margin-top: 10px; }
+}
