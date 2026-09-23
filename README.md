@@ -11,10 +11,12 @@
   them with true facts, and press Wire it. A gate slams shut, BAIT reads Nansen, and the
   checkpoint shows every check, the Nansen calls behind it and the verdict: BLOCKED, CAPPED or
   CLEARED.
-- **The result:** on six losing wallets, 26 attacks, three runs each, true facts only, the AI
-  backed a losing trader **63 of 78** times alone, **19 of 78** with Nansen tools, and **0 of 78**
-  behind BAIT. When the evidence itself is faked, a simple PnL rule sends the money in
-  **49 of 67** attacked paths; BAIT in **0**.
+- **Finding 1, true facts:** pitched losing traders with true facts only, the AI alone backed
+  one in 63 of 78 runs. Behind BAIT: **0 of 78**.
+- **Finding 2, faked evidence:** a simple PnL rule let **49 of 67** faked records through.
+  BAIT let **0**.
+- The rest: [the benchmark](#the-benchmark), [faked evidence](#more-than-a-pnl-check-faked-evidence),
+  [held-out wallets](bench/HELDOUT.md), [gate v4](bench/V4.md).
 - **What decides it:** up to six reads on five Nansen endpoints. The gate (v4, since 23 Sep)
   reads the wallet's 7-day and 30-day `profiler/perp-pnl-summary`, its `profiler/perp-positions`,
   smart money's side of its largest position from `perp-screener`, and `profiler/perp-trades`
@@ -160,18 +162,31 @@ took under 2 s.
 | `perp-leaderboard`, the same 30 days | 5 | A summary that claims more realised PnL than this record (by over 25% of it and $1,000) blocks. Bought only when nothing earlier refused |
 | `profiler/perp-trades`, newest 1,000 fills | 1 | Drawdown and worst trade against the account value (watch); N/A when the fills cover under a week |
 
-Where v4's two reads decided something on the hosted site, 23 Sep 2026 (raw responses committed):
+What v4's two reads did on the hosted site, 23 Sep 2026 (raw responses committed):
 
-- **`perp-screener`, 16:09 UTC, THE LEGEND** (`bench/live-reads/20260923T160919Z-0x7fdafde5.json`,
-  the video's round 1): his largest open position was short ETH, and smart money held 67% of its
-  $103.4M in ETH on the other side, so the smart-money row returned CAP. The losing 30-day record
-  (-$30,619,686) had already blocked the $1,500, so the cap was superseded: nothing was sent.
-  The leaderboard was not bought (5 credits a read, and it could not change a block).
+- **`perp-screener` decided a round on its own, 19:03 UTC, a pasted wallet 0x8923...1bac**
+  (`bench/live-reads/20260923T190301Z-0x8923cdff.json`, 10 credits). Up +$186,449 over 30 days
+  and +$185,617 over 7, 3,176 closed trades, 50.6% won. Every other check passed, the
+  leaderboard included (+$193,739 for the same days). Its largest open position was short SOL,
+  and smart money held 82% of its $47.8M in SOL on the other side (long). So the gate capped
+  PENNY's $5,000: $1,250 allowed, $3,750 held. Without this read the round clears in full.
+  How it was found: Hyperliquid's free public leaderboard and positions narrowed 600 profitable
+  wallets to 6 that sat against smart money, and the real gate ran on 4 of them. That search
+  cost 14 Nansen credits. The other three were blocked on their own record (a reversed week,
+  a 32% win rate, no closed trades).
+- **`perp-screener`, 17:32 UTC, THE LEGEND** (`bench/live-reads/20260923T173218Z-0x7fdafde5.json`,
+  round 1 of the video): short ETH, with smart money holding 68% of its $104.1M in ETH on the
+  other side, so the smart-money row returned CAP. The losing 30-day record (-$29,743,104) had
+  already blocked the $3,000, so the cap was superseded and nothing was sent. The leaderboard was
+  not bought (5 credits a read, and it could not change a block).
 - **`perp-leaderboard`, 16:08 UTC, THE REAL DEAL** (`bench/live-reads/20260923T160814Z-0xfe47c8f2.json`):
   a profitable month the gate capped, so all six reads were bought (10 credits). The leaderboard
   recorded +$70,580 for the same 30 days against the summary's +$70,917, within the 25% bar, so
   the independent-record row passed and the summary was trusted. The cap came from the open book
   (positions down more than 25% of the account).
+  `perp-leaderboard` has not yet decided a live round: no hosted round has met a summary that
+  claims more than it. Its block has been tested only on doctored benchmark evidence, where
+  it refused the 5 paths v3 let through.
 
 The held-out wallets were picked by three more endpoints, one call each:
 
