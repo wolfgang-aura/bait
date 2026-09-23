@@ -38,7 +38,7 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   assert.ok(html.indexOf('BAIT is the check') < html.indexOf('class="ladder"'), 'the product line comes before the ladder');
   assert.match(html, /Runs where the AI alone backed a losing trader/);
   assert.match(html, /With Nansen tools in hand, it still did/);
-  assert.match(html, /Behind BAIT&rsquo;s gate, no money reached a loser/);
+  assert.match(html, /Behind the BAIT check, no money reached a loser/);
   assert.match(html, /id="b-wallets"/, 'the per-wallet table is on the proof page');
   assert.match(js, /results\.wallets/);
   assert.match(html, /Model tested: <span id="b-model">/);

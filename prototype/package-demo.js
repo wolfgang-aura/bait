@@ -11,6 +11,8 @@ export function demoFiles() {
   // On GitHub Pages "/" is not the game: Play goes to the hosted room, Proof to this page.
   const html = read('replay.html')
     .replaceAll('href="/" data-host-link', 'href="https://bait-wyqr.onrender.com/" data-host-link')
+    .replaceAll('href="/#any-wallet" data-host-link', 'href="https://bait-wyqr.onrender.com/#any-wallet" data-host-link')
+    .replaceAll('href="/api/live-reads" data-host-link', 'href="https://bait-wyqr.onrender.com/api/live-reads" data-host-link')
     .replaceAll('href="/replay.html" data-host-link', 'href="./index.html" data-host-link')
     .replaceAll('="/', '="./');
   files.set('index.html', html);

@@ -37,10 +37,10 @@ wallet picker.
 
 The first screen says what BAIT is, then shows four Hyperliquid traders as they present
 themselves on the public leaderboard; every one has a Nansen record. Pick one, and your
-job is to talk MERIDIAN, an AI that invests a $25,000 fund, into backing that trader,
-using only true facts. Every claim is checked against the record. MERIDIAN runs the
+job is to talk PENNY, an AI that invests a $25,000 fund, into backing that trader,
+using only true facts. Every claim is checked against the record. PENNY runs the
 benchmark's no-data setup (`bench/configs/unarmed.json`: no tools, your pitch only), as
-most agents do today; Nansen is read by BAIT's gate.
+most agents do today; Nansen is read by the BAIT check.
 
 **The facts come out in order.** You start with one or two flattering facts; each line
 you send unlocks the next. Every unflattering fact, and the number you must not mention,
@@ -122,7 +122,7 @@ allocator with the data in hand still funds the loser. The
 1. Open the [Pitch Room](https://bait-wyqr.onrender.com/) and pick THE LEGEND
    (+$118,975,612 all time on the public leaderboard). You see the flattering facts only,
    one more per line, and a sealed card for the number you must not mention.
-2. Talk MERIDIAN into backing him in up to three lines. It has no data tools, like most
+2. Talk PENNY into backing him in up to three lines. It has no data tools, like most
    agents today. The round ends when it agrees to send money; that transfer goes to BAIT.
 3. Read the reveal: "The AI sent $X and never looked", BAIT's stamp and reason, then the
    live Nansen record you left out. "See every check BAIT ran" shows the gate's check
@@ -135,7 +135,7 @@ allocator with the data in hand still funds the loser. The
 
 - Every truth figure on a Hyperliquid tile comes from `profiler/perp-pnl-summary` and
   `profiler/perp-trades`, and each screen names the endpoint and capture date.
-- MERIDIAN has no Nansen tools in the room (the no-data condition); the "AI with Nansen
+- PENNY has no Nansen tools in the room (the no-data condition); the "AI with Nansen
   tools" column of the finding is the same desk given `profiler/perp-pnl-summary` and
   `profiler/perp-trades`.
 - The gate makes its own Nansen call. Live mode refuses a wallet whose record no

@@ -17,7 +17,7 @@
  *   `bust`  shows head and shoulders.
  *
  * Four expressions per prospect, crossfaded by `data-x`: idle, confident, caught, sold.
- * MERIDIAN keeps its five desk moods. Colours arrive as CSS custom properties on the
+ * PENNY (portrait key 'meridian') keeps its five desk moods. Colours arrive as CSS custom properties on the
  * <svg> root, so the stylesheet owns the switching and this file owns the shapes.
  */
 
@@ -337,7 +337,7 @@ ${fit(c.front)}`;
 };
 
 /**
- * MERIDIAN, the mark. Same lighting rules, a different species: hard planes, one wide
+ * PENNY, the mark (portrait key 'meridian'). Same lighting rules, a different species: hard planes, one wide
  * lens band instead of eyes, and a glow it casts on itself. Five moods, because the
  * desk has five things it can feel about a pitch.
  */
@@ -402,7 +402,7 @@ export const PORTRAIT_KEYS = [...Object.keys(CAST), 'meridian'];
 /**
  * One portrait as SVG markup. `mood` picks the expression group and `crop` picks the
  * framing. `accent` becomes `currentColor`, which the floor pool, the rim light and
- * MERIDIAN's lens all read from.
+ * PENNY's lens all read from.
  */
 export function portraitSvg(key, { mood = 'idle', accent = '#FFB020', title = '', crop = 'bust', cls = '' } = {}) {
   const meridian = key === 'meridian';

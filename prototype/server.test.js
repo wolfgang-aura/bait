@@ -98,7 +98,7 @@ test('the room serves its dossier from the frozen snapshot and spends nothing to
     const { status, body } = await s.call('/api/room');
     assert.equal(status, 200);
     assert.equal(body.evidence.live, false);
-    assert.equal(body.dossier.desk, 'MERIDIAN');
+    assert.equal(body.dossier.desk, 'PENNY');
     assert.equal(body.dossier.slot, 25_000);
     assert.equal(body.dossier.facts.length, 4, 'every flattering fact is open before the first line');
     assert.equal(body.dossier.upcoming, 0);

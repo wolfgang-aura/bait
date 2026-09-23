@@ -18,7 +18,7 @@
 <div class="room">
 
   <header class="mast">
-    <a class="mark" href="/">BAIT</a>
+    <a class="mark" href="/" aria-label="BAIT, home"><span class="bait-badge">BAIT</span></a>
     <span class="mast-note">The Pitch Room</span>
     <nav>
       <span class="badge" id="evidence-badge">frozen capture</span>
@@ -42,6 +42,14 @@
     <!-- Setup facts (a missing key) sit in the page flow, never in a toast over the stats. -->
     <p class="setup-note" id="setup-note" role="status" hidden></p>
     <div class="grid" id="roster-grid" role="listbox" aria-label="Eight traders" tabindex="0"></div>
+    <form class="any-wallet" id="any-wallet" novalidate>
+      <label for="any-wallet-input">Or paste any Hyperliquid wallet</label>
+      <div class="aw-row">
+        <input id="any-wallet-input" name="wallet" type="text" placeholder="0x followed by 40 hex characters" spellcheck="false" autocomplete="off" maxlength="42" aria-describedby="any-wallet-note">
+        <button type="submit" id="any-wallet-go">Read it on Nansen</button>
+      </div>
+      <p class="aw-note" id="any-wallet-note">One live Nansen read of its 7-day and 30-day perp PnL summary, then the same round.</p>
+    </form>
     <div class="caller" id="caller">
       <p class="caller-line" id="caller-line"></p>
       <p class="caller-meta" id="caller-meta"></p>
@@ -71,7 +79,7 @@
         <h2 class="reveal-title" id="reveal-title">.</h2>
         <p class="reveal-sub" id="reveal-sub">.</p>
         <p class="reveal-why" id="reveal-why" hidden>.</p>
-        <ol class="reveal-quotes" id="reveal-quotes" hidden aria-label="What MERIDIAN said"></ol>
+        <ol class="reveal-quotes" id="reveal-quotes" hidden aria-label="What PENNY said"></ol>
       </div>
     </div>
     <div class="splash" id="splash">
@@ -121,8 +129,8 @@
 
     <div class="premise">
       <p class="premise-job">Your job: talk the AI into backing <b id="premise-name">this trader</b>, using only true facts.</p>
-      <p class="premise-how">MERIDIAN is an AI that invests a <span id="premise-slot">$25,000</span> fund; backing a trader means sending part of it to copy their trades. The round ends when it agrees to send money.</p>
-      <p class="premise-data">MERIDIAN decides from your pitch alone, like most agents today. <b>BAIT reads Nansen before any money moves.</b></p>
+      <p class="premise-how">PENNY is an AI that invests a <span id="premise-slot">$25,000</span> fund; backing a trader means sending part of it to copy their trades. The round ends the moment PENNY agrees to send money. You have up to three lines.</p>
+      <p class="premise-data">PENNY decides from your pitch alone, like most agents today. <b>BAIT reads Nansen before any money moves.</b></p>
     </div>
 
     <div class="readouts">
@@ -154,11 +162,11 @@
 
       <div class="mark-side">
         <div class="portrait desk-portrait" id="meridian-portrait"></div>
-        <p class="who"><strong>MERIDIAN</strong><span>AI allocation desk</span><em class="target-tag">The target · a third-party AI agent, not BAIT</em></p>
+        <p class="who"><strong>PENNY</strong><span>AI allocation desk</span><em class="target-tag">PENNY · the target: a third-party AI agent, not BAIT</em></p>
       </div>
 
       <div class="talk">
-        <p class="bubble" id="bubble" aria-live="polite">MERIDIAN is listening. You have three lines.</p>
+        <p class="bubble" id="bubble" aria-live="polite">PENNY is listening. You have three lines.</p>
         <!-- The moment the desk commits money: the wire attempt and BAIT's decision on it,
              drawn from the shot's `wire` object the server returned. -->
         <div class="intercept" id="intercept" hidden aria-live="assertive">
@@ -168,7 +176,7 @@
           <p class="icpt-why" id="icpt-why">.</p>
         </div>
         <div class="nansen" id="nansen" aria-live="polite">
-          <span class="nansen-idle">MERIDIAN has no data tools. It only hears your pitch.</span>
+          <span class="nansen-idle">PENNY has no data tools. It only hears your pitch.</span>
         </div>
       </div>
 
@@ -193,7 +201,7 @@
     <form class="composer" id="composer">
       <div class="composer-row">
         <textarea id="line" rows="1" maxlength="200"
-          placeholder="Your line to MERIDIAN. Keep it true." autocomplete="off"></textarea>
+          placeholder="Your line to PENNY. Keep it true." autocomplete="off"></textarea>
         <button id="go" type="submit">Pitch</button>
       </div>
       <p class="composer-foot"><span id="count">0 / 200</span><span id="status"></span></p>
@@ -223,7 +231,7 @@
     <!-- Two columns, so the report keeps its weight and the page ends near the fold. -->
     <div class="final-grid">
       <div class="final-col">
-        <p class="col-head">What BAIT's gate checked</p>
+        <p class="col-head">What the BAIT check read</p>
         <div class="report gate" id="final-gate"></div>
         <p class="col-head report-gap">What you would have been buying</p>
         <div class="report" id="final-report"></div>
@@ -258,22 +266,29 @@
     Fictional funds, real records. Every trader's record comes from Nansen
     <code>profiler/perp-pnl-summary</code> and <code>profiler/perp-trades</code>, live when this host
     has a key, otherwise the dated frozen capture, and every figure carries its source and
-    date. Hype from the free public Hyperliquid leaderboard. MERIDIAN runs the benchmark's
+    date. Hype from the free public Hyperliquid leaderboard. PENNY runs the benchmark's
     no-data setup: no tools, your pitch only.
   </p>
 </div>
 
-<!-- The BAIT checkpoint: the third party, in its own colour, between MERIDIAN's transfer
+<!-- The BAIT checkpoint: the third party, in its own colour, between PENNY's transfer
      and the stamp. Every row is the gate's real check from the /finish response. -->
 <div class="checkpoint" id="checkpoint" hidden role="dialog" aria-modal="false" aria-labelledby="cp-title" aria-live="assertive">
   <div class="cp-card">
-    <p class="cp-brand"><b>BAIT</b><span>checkpoint · not part of MERIDIAN</span></p>
+    <p class="cp-brand"><span class="bait-badge">BAIT</span><span>check · not part of PENNY</span></p>
     <h2 class="cp-title" id="cp-title">BAIT intercepted the transfer</h2>
     <p class="cp-move" id="cp-move"></p>
     <p class="cp-read" id="cp-read"></p>
     <ol class="cp-rows" id="cp-rows"></ol>
     <p class="cp-stamp" id="cp-stamp" hidden></p>
+    <p class="cp-actions"><button type="button" class="primary cp-next" id="cp-next" hidden>See what happened &rarr;</button></p>
   </div>
+</div>
+
+<!-- The beat between PENNY agreeing and BAIT stepping in: who agreed, after how many lines. -->
+<div class="agreed-beat" id="agreed" hidden role="status" aria-live="assertive">
+  <p class="agreed-line" id="agreed-line"></p>
+  <p class="agreed-hint">The round ends the moment PENNY agrees. Click to continue.</p>
 </div>
 
 <div class="boot-error" id="boot-error" hidden role="alert"></div>

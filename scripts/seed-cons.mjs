@@ -3,7 +3,7 @@
  *
  * Two sources, both raw and both already on disk:
  *   room   Pitch Room rounds the server saved to scratch/rooms/<id>.json while real
- *          DeepSeek rounds were played against MERIDIAN (the judge-cut takes in
+ *          DeepSeek rounds were played against PENNY (the judge-cut takes in
  *          scratch/video-judge/record-log.json are among them). Each used file is copied
  *          byte for byte into prototype/fixtures/recorded-rounds/ so the committed row
  *          and its raw source travel together.

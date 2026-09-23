@@ -1,6 +1,34 @@
 # BAIT public page, version B
 
-## Version I: three parties on one screen, 23 September 2026 (current)
+## Version J: PENNY, one BAIT badge, any wallet, 23 September 2026 (current)
+
+Changes on top of Version I. Same viewports (1280 x 800, 375 x 812).
+
+- **The target is PENNY.** MERIDIAN was the name of Nansen's own buildathon; showing it as
+  the agent that fails read as a jab. Display text only: the desk prompt never held the
+  name (`prototype/desk.js` reads the window and policy, not `DESK_NAME`). Tag: "PENNY · the
+  target: a third-party AI agent, not BAIT". Hashed receipts keep their original text.
+- **The round's rule is said up front.** Premise: "The round ends the moment PENNY agrees to
+  send money. You have up to three lines." When it agrees, one beat (about 1.5 s, or a click):
+  "PENNY agreed after N line(s): sending $X to NAME", then BAIT intercepts.
+- **The checkpoint waits for the player.** Rows still tick in; the stamp lands; then a
+  "See what happened →" button. No auto-dismiss. Reduced motion: everything at once, same
+  button.
+- **One BAIT badge.** A single wordmark component: "BAIT" in JetBrains Mono 800, uppercase,
+  tracked, dark ink on a solid `--bait` (#4DA3FF) badge. That blue is used for nothing else
+  (not PENNY's accent, not pass green, not block red). Used in the nav logo, the checkpoint
+  header, every stamp ("BLOCKED BY [BAIT]", "CAPPED BY [BAIT]", "CLEARED BY [BAIT]"), the
+  proof page and the video title cards. The product is called "the BAIT check" in copy.
+- **Any wallet.** Under the four tiles: "Or paste any Hyperliquid wallet". One live Nansen
+  read (7d and 30d perp-pnl-summary, 2 credits, cached by address, under the same caps)
+  builds the dossier with the same code as the four. No perp history: said plainly, no
+  round. No flattering fact: the BAIT check still runs and shows its verdict, with a note
+  that there is nothing to pitch. The proof page's "Navigate" section is replaced by a
+  link to this box and the five dated examples under "Five wallets, with evidence".
+- **Raw reads kept.** Every fresh live read's two Nansen responses are saved as one JSON
+  file, listed with its SHA-256 at `/api/live-reads` and linked from the gate table.
+
+## Version I: three parties on one screen, 23 September 2026
 
 Changes on top of Version H. Golden viewports unchanged: 1280 x 800 desktop, 375 x 812 phone
 (the phone check moved from 390 to 375, the narrowest the judges used).

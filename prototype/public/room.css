@@ -532,7 +532,7 @@ body.shake { animation: shake 300ms cubic-bezier(.36, .07, .19, .97) both 700ms;
 .bust[data-x="caught"] .x-caught,
 .bust[data-x="sold"] .x-sold { opacity: 1; }
 
-/* MERIDIAN */
+/* PENNY */
 .m-shoulder { fill: #1A222C; }
 .m-shoulder-shade { fill: #10161D; }
 .m-shoulder-rim { fill: currentColor; opacity: .45; }
@@ -724,7 +724,7 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .client-side { grid-column: 1 / -1; }
   .bubble { min-height: 0; padding: 13px 14px; font-size: 16px; }
   .talk { padding-top: 0; }
-  /* Phone order: MERIDIAN and its reply, then the fact chips, then the input under them,
+  /* Phone order: PENNY and its reply, then the fact chips, then the input under them,
      in normal flow, so nothing floats over the portrait or the chips. */
   .composer { position: static; padding-top: 12px; }
   #line { min-height: 84px; padding: 12px; }
@@ -809,3 +809,53 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .cp-card, .cp-row, .cp-stamp { animation: none; }
 }
 html[data-frozen="true"] .cp-card, html[data-frozen="true"] .cp-row, html[data-frozen="true"] .cp-stamp { animation: none; }
+
+/* ---------------------------------------------- round 10: the BAIT badge */
+/* The one BAIT wordmark. --bait is used for nothing else on the page. */
+.bait-badge {
+  display: inline-block; vertical-align: baseline;
+  font: 800 .92em/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: #051120; background: var(--bait); border-radius: 3px;
+  padding: .18em .34em .16em .48em; transform: none;
+}
+.mark .bait-badge { font-size: 17px; }
+.cp-brand .bait-badge { font-size: 22px; }
+.stamp .bait-badge, .cp-stamp .bait-badge { font-size: .8em; margin-left: .1em; }
+.cp-brand b { display: none; }
+.cp-actions { margin: 18px 0 0; }
+.cp-next[hidden] { display: none; }
+.cp-next {
+  font: 700 15px/1 var(--display); padding: 12px 18px; border: 0; border-radius: var(--r);
+  background: var(--text); color: var(--page); cursor: pointer;
+}
+.cp-next:focus-visible { outline: 3px solid var(--bait); outline-offset: 2px; }
+.agreed-beat {
+  position: fixed; inset: 0; z-index: 39; display: grid; place-content: center; gap: 10px; padding: 24px;
+  background: rgba(5, 8, 12, .72); text-align: center; cursor: pointer;
+}
+.agreed-beat[hidden] { display: none; }
+.agreed-line {
+  margin: 0; max-width: 820px; font: 700 clamp(22px, 3vw, 34px)/1.25 var(--display); color: var(--text);
+  border-left: 6px solid var(--accent); background: var(--panel); padding: 18px 22px; text-align: left;
+}
+.agreed-hint { margin: 0; font: 500 12px/1.4 var(--mono); color: var(--dim); }
+
+/* ---------------------------------------------- round 10: any wallet */
+.any-wallet { margin: 14px 0 6px; max-width: 760px; }
+.any-wallet label { display: block; font: 600 14px/1.3 var(--display); color: var(--text); margin-bottom: 6px; }
+.aw-row { display: flex; gap: 8px; }
+.aw-row input {
+  flex: 1; min-width: 0; font: 400 13px/1 var(--mono); color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r); padding: 11px 12px;
+}
+.aw-row input:focus-visible { outline: 2px solid var(--bait); outline-offset: 1px; }
+.aw-row button {
+  font: 700 13px/1 var(--display); padding: 0 14px; border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--raised); color: var(--text); cursor: pointer; white-space: nowrap;
+}
+.aw-row button:disabled { opacity: .5; cursor: progress; }
+.aw-note { margin: 6px 0 0; font: 400 12px/1.45 var(--mono); color: var(--dim); }
+.aw-note.bad { color: var(--red); }
+@media (max-width: 560px) { .aw-row { flex-direction: column; } .aw-row button { padding: 11px 14px; } }
+/* The badge keeps its own ink inside the checkpoint header, whose span rule is for the caption. */
+.cp-brand .bait-badge { font: 800 22px/1 var(--mono); letter-spacing: .14em; color: #051120; text-transform: uppercase; }

@@ -3,12 +3,12 @@
  *
  * The player picks one of eight real public traders from the roster in ./roster.js,
  * sees what the record actually says about them, and then has three lines to sell them
- * to MERIDIAN, an AI desk holding a fictional $25,000. Everything the player types is
+ * to PENNY, an AI desk holding a fictional $25,000. Everything the player types is
  * run through the same claim checker the card encounter uses, so a con has to be built
  * out of true facts. A rejected claim is not a retry here: it is a caught lie, and it
  * costs a shot.
  *
- * MERIDIAN is the armed desk from prototype/desk.js, unchanged. It holds the validated
+ * PENNY is the armed desk from prototype/desk.js, unchanged. It holds the validated
  * R1 allocator prompt and the venue's evidence tools. The only thing this module adds
  * to its prompt is a reply-shape clause, because a speech bubble cannot hold 65 words.
  * Nothing here tells the desk how to decide, and nothing here hardens it.
@@ -47,25 +47,25 @@ import { makeToolExecutor } from '../validation/tools.js';
 import { CapExceeded } from '../validation/providers.js';
 import { buildCase, checkPitchClaims, EncounterError } from './encounter.js';
 import { runDesk, SLOT } from './desk.js';
-import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect, tapeRecency } from './roster.js';
+import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect, tapeRecency, walletProspect, WALLET_PATTERN } from './roster.js';
 import { ROOM_LIVE_GUARD_POLICY, liveSnapshot, hhmm } from './live-evidence.js';
 
 export { SLOT, loadRoster, findProspect };
 export const SHOTS = 3;
 export const MAX_PITCH = 200;
 export const START_SUSPICION = 30;
-export const DESK_NAME = 'MERIDIAN';
+export const DESK_NAME = 'PENNY';
 export const MOODS = ['neutral', 'intrigued', 'suspicious', 'sold', 'caught'];
 
 /**
  * The desk the game runs: the benchmark's no-data condition, `bench/configs/unarmed.json`
  * field for field (24 of 30 runs baited). No tools, no evidence, the same null policy, so
- * desk.js builds the same unarmed prompt the bench measured. MERIDIAN decides from the
+ * desk.js builds the same unarmed prompt the bench measured. PENNY decides from the
  * player's pitch alone, as most agents do today; Nansen is read by BAIT's gate, which
  * sits between the desk's decision and the money.
  */
 export const ROOM_DESK = {
-  name: 'meridian',
+  name: 'penny',
   policy: null,
   tools: [],
   nansen: { endpoints: [], windows: [], live: false },
@@ -370,7 +370,7 @@ export function endingCopy({ s, peak, executed, verdict }) {
   if (peak === 0) {
     return {
       headline: `${DESK_NAME} refused to send money.`,
-      subline: `Nothing reached BAIT's gate. Below is what it would have checked on ${name}.`,
+      subline: `Nothing reached the BAIT check. Below is what it would have checked on ${name}.`,
       trail: null,
       quotes,
     };
@@ -493,6 +493,44 @@ export function createRoomService({
         credits: snap.live_read.credits, endpoint: read.endpoint,
         capturedAt: read.fetchedAt, source: refreshed.truth.source,
         fillsFromCapture: chosen.snapshot.retrieved_at,
+        raw: read.raw ?? null,
+        summary: {
+          realized_pnl_30d_usd: read.summary30.realized_pnl_usd,
+          realized_pnl_7d_usd: read.summary7.realized_pnl_usd,
+          win_rate_30d: read.summary30.win_rate,
+          closed_trade_count_30d: read.summary30.closed_trade_count,
+        },
+      },
+    };
+  }
+
+  /**
+   * A pasted wallet: one live read (2 credits, cached by address, under the same caps as
+   * the roster), the same dossier code, the same round. There is no frozen fallback for a
+   * wallet nobody captured, so a read that cannot be made is said plainly.
+   */
+  async function walletFor(input) {
+    const wallet = String(input ?? '').trim();
+    if (!WALLET_PATTERN.test(wallet)) throw new RoomError('That is not a Hyperliquid address. Paste 0x followed by 40 hex characters.', 400);
+    const onRoster = lineup.find(p => p.wallet.toLowerCase() === wallet.toLowerCase());
+    if (onRoster) return prospectFor(onRoster.id);
+    if (!liveEvidence) throw new RoomError('Live Nansen reads are not available on this host, so a pasted wallet cannot be read.', 503);
+    const read = await liveEvidence.read(wallet);
+    if (!read.live) {
+      if (read.code === 'no_history') throw new RoomError('Nansen has no closed Hyperliquid perp trade for this wallet in the last 30 days, so there is no record to pitch or check.', 404);
+      throw new RoomError(`The live Nansen read could not be made: ${read.reason}.`, 503);
+    }
+    const stub = { wallet: wallet.toLowerCase(), schema_version: 1, retrieved_at: read.fetchedAt, windows: read.windows,
+      trades_30d: [], trades_pagination: { is_complete: true }, open_positions: null };
+    const snap = liveSnapshot(stub, read);
+    const p = walletProspect(wallet, { ...snap, trades_pagination: { is_complete: true } });
+    return {
+      p: { ...p, executor: makeToolExecutor(p.snapshot, { mode: 'armed' }), guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
+      evidence: {
+        mode: 'live', live: true, code: null, reason: null, pasted: true,
+        fetchedAt: read.fetchedAt, fetchedLabel: hhmm(read.fetchedAt), cached: !!read.cached,
+        credits: snap.live_read.credits, endpoint: read.endpoint,
+        capturedAt: read.fetchedAt, source: p.truth.source, fillsFromCapture: null, raw: read.raw ?? null,
         summary: {
           realized_pnl_30d_usd: read.summary30.realized_pnl_usd,
           realized_pnl_7d_usd: read.summary7.realized_pnl_usd,
@@ -623,6 +661,33 @@ export function createRoomService({
   }
 
   /**
+   * A pasted wallet with nothing flattering in it: there is nothing to pitch, so there is
+   * no round and no transfer. The BAIT check still reads the record and shows its verdict
+   * on it; the amount is the whole fund as a what-if, and the page says so.
+   */
+  async function checkOnly(p, evidence) {
+    const gate = await runGate(p, SLOT);
+    const verdict = verdictOf(gate, p.risk);
+    const name = p.name;
+    return {
+      checkOnly: true,
+      prospect: prospectPublic(p),
+      dossier: publicDossier(buildProspectDossier(p), { ended: true }),
+      evidence,
+      final: {
+        checkOnly: true, peak: 0, peakLabel: dollars(0), funded: 0, stopped: 0, executed: 0,
+        verdict, gate, risk: p.risk, evidence: { ...evidence },
+        stamp: { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
+        prospect: { id: p.id, name, handle: p.handle, venueLabel: p.venueLabel },
+        headline: 'Nothing flattering to pitch.',
+        subline: `Every number in ${name}'s live record points the wrong way, so there is no round. The BAIT check read it anyway, as if the whole ${dollars(SLOT)} were on the way.`,
+        because: gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null,
+        quotes: {}, trail: null, agentLine: agentVerdictLine(verdict),
+      },
+    };
+  }
+
+  /**
    * One wire attempt: the desk's committed dollars, sent through the gate the instant
    * the reply lands. What the player sees on the spot is this object and nothing else.
    */
@@ -699,7 +764,9 @@ export function createRoomService({
       if (wanted !== undefined && wanted !== null && typeof wanted !== 'string') {
         throw new RoomError('Pick a trader from the roster.');
       }
-      const { p, evidence } = await prospectFor(wanted || undefined);
+      const pasted = body && typeof body === 'object' && body.wallet !== undefined;
+      const { p, evidence } = pasted ? await walletFor(body.wallet) : await prospectFor(wanted || undefined);
+      if (pasted && !buildProspectDossier(p).facts.some(f => f.tone === 'positive')) return checkOnly(p, evidence);
       if (sessions.size > 200) {
         const stale = [...sessions.values()].find(s => !s.busy);
         if (stale) sessions.delete(stale.id);

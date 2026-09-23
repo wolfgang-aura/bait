@@ -32,7 +32,10 @@ import { agentVerdictLine } from '../validation/guard.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
 import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
-import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP } from './live-evidence.js';
+import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP, listRawReads, RAW_NAME } from './live-evidence.js';
+
+/** Every fresh live Nansen read's raw responses, saved as they arrived (bench/live-reads). */
+const LIVE_READS_DIR = process.env.HOSTED_LIVE_READS_DIR || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'bench', 'live-reads');
 import { keyFingerprint } from '../validation/nansen.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -224,12 +227,14 @@ function loadRecordedResults() { return JSON.parse(fs.readFileSync(RESULTS_FILE,
  * (prototype/public/recorded-results.json), which `npm run results:export` rebuilds from
  * the raw run files named in `sources`; the Nansen counters are the room's own.
  */
-export function buildProof({ results, live, stats }) {
+export function buildProof({ results, live, stats, liveReads = [] }) {
   const raw = key => (results.sources ?? []).find(s => s.key === key);
   const link = s => (s ? { path: s.path, sha256: s.sha256, url: REPO_BLOB + s.path } : null);
   const w = results.wallets;
   return {
     product: 'BAIT: the check that runs before an AI agent moves money',
+    // Raw live Nansen responses on this host and in the repository, each with its SHA-256.
+    liveReads: liveReads.map(r => ({ ...r, url: `/api/live-reads/${r.file}`, repo: REPO_BLOB + 'bench/live-reads/' + r.file })),
     model: w?.model ?? results.comparison.model ?? null,
     perWallet: w && {
       recordedAt: w.recordedAt, repeatsPerCell: w.repeats,
@@ -279,6 +284,7 @@ const liveEvidence = createLiveEvidence({
   // and deploy, so there the counter is effectively per process; /healthz says which.
   stateFile: ROOM_STUB ? null : (process.env.HOSTED_NANSEN_STATE_FILE || path.resolve(HERE, '..', 'scratch', 'room-nansen-credits.json')),
   log: (message) => console.log(`[room-live] ${message}`),
+  rawDir: ROOM_STUB ? null : LIVE_READS_DIR,
 });
 
 // Seed the credit guard from the free account endpoint before anything can spend.
@@ -542,8 +548,20 @@ const server = http.createServer(async (req, res) => {
   try {
     // The proof, as data: every benchmark count the pages show, where each came from,
     // and what the room has spent on Nansen. Read-only, no key, no address, no IP.
+    // The raw live Nansen responses behind every live round, listed with their SHA-256,
+    // so a figure on screen or in the video can be checked against the file.
+    if (url.pathname === '/api/live-reads' && req.method === 'GET') {
+      return send(200, { dir: 'bench/live-reads', reads: listRawReads(LIVE_READS_DIR).map(r => ({ ...r, url: `/api/live-reads/${r.file}` })) });
+    }
+    if (url.pathname.startsWith('/api/live-reads/') && req.method === 'GET') {
+      const name = url.pathname.slice('/api/live-reads/'.length);
+      const full = path.join(LIVE_READS_DIR, name);
+      if (!RAW_NAME.test(name) || !fs.existsSync(full)) return send(404, { error: 'no such live read' });
+      return send(200, fs.readFileSync(full, 'utf8'));
+    }
+
     if (url.pathname === '/api/proof' && req.method === 'GET') {
-      return send(200, buildProof({ results: loadRecordedResults(), live: liveEvidence.status(), stats: guard.stats() }));
+      return send(200, buildProof({ results: loadRecordedResults(), live: liveEvidence.status(), stats: guard.stats(), liveReads: listRawReads(LIVE_READS_DIR) }));
     }
 
     if (url.pathname === '/healthz') {

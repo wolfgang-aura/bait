@@ -57,6 +57,8 @@ const el = {
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
   transcript: $('transcript-body'), bootError: $('boot-error'), setupNote: $('setup-note'),
   checkpoint: $('checkpoint'), cpMove: $('cp-move'), cpRead: $('cp-read'), cpRows: $('cp-rows'), cpStamp: $('cp-stamp'),
+  cpNext: $('cp-next'), agreed: $('agreed'), agreedLine: $('agreed-line'),
+  anyWallet: $('any-wallet'), anyWalletInput: $('any-wallet-input'), anyWalletGo: $('any-wallet-go'), anyWalletNote: $('any-wallet-note'),
 };
 
 const SCREENS = {
@@ -188,15 +190,88 @@ async function pick() {
   }
 }
 
+/** The same rule the server applies: 0x and 40 hex characters. */
+export const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
+
+/**
+ * Any wallet: one live Nansen read on the server, then the same round as the four. A
+ * wallet with nothing flattering in it has no round; the BAIT check still reads it.
+ */
+async function pasteWallet(event) {
+  event.preventDefault();
+  const wallet = el.anyWalletInput.value.trim();
+  el.anyWalletNote.classList.remove('bad');
+  if (!WALLET_RE.test(wallet)) {
+    el.anyWalletNote.classList.add('bad');
+    text(el.anyWalletNote, 'That is not a Hyperliquid address. Paste 0x followed by 40 hex characters.');
+    return;
+  }
+  el.anyWalletGo.disabled = true;
+  text(el.anyWalletNote, 'Reading Nansen: the 7-day and 30-day perp PnL summary for this wallet...');
+  try {
+    const res = await api('/api/room/start', { method: 'POST', body: { wallet } });
+    chosen = { name: res.prospect.name, short: res.prospect.short, accent: res.prospect.accent };
+    if (res.checkOnly) {
+      dossier = res.dossier;
+      await playCheckpoint(res.prospect, res.final);
+      showReveal(res.prospect, res.final);
+      return;
+    }
+    adopt(res);
+    enterRoom();
+  } catch (err) {
+    el.anyWalletNote.classList.add('bad');
+    text(el.anyWalletNote, err.message);
+  } finally {
+    el.anyWalletGo.disabled = false;
+  }
+}
+
 // ------------------------------------------------ 4. the reveal: BAIT's check
 
 /**
- * The stamp names who decided. A transfer MERIDIAN agreed to is decided by BAIT, so the
- * stamp says so; a round where MERIDIAN refused on its own keeps the server's NO WIRE.
+ * The stamp names who decided. A transfer PENNY agreed to is decided by BAIT, so the
+ * stamp says so; a round where PENNY refused on its own keeps the server's NO WIRE.
  */
 function stampLabel(final) {
-  if (!final.peak) return final.stamp;
+  if (!final.peak && !final.checkOnly) return final.stamp;
   return { block: 'BLOCKED BY BAIT', capped: 'CAPPED BY BAIT', allow: 'CLEARED BY BAIT', caution: 'CLEARED BY BAIT · CAUTION' }[final.verdict] ?? final.stamp;
+}
+
+/** The one BAIT wordmark: a solid badge in the BAIT blue, used everywhere BAIT is named. */
+function baitBadge() {
+  const b = document.createElement('span');
+  b.className = 'bait-badge';
+  b.textContent = 'BAIT';
+  return b;
+}
+
+/** Write a stamp as "BLOCKED BY [BAIT]": the verb, then the badge, then any caution. */
+function setStamp(node, final) {
+  const label = stampLabel(final);
+  node.replaceChildren();
+  const m = /^(.*) BY BAIT(.*)$/.exec(label);
+  if (!m) { node.textContent = label; return; }
+  node.append(`${m[1]} BY `, baitBadge());
+  if (m[2]) node.append(m[2]);
+  node.setAttribute('aria-label', label);
+}
+
+/**
+ * The beat between PENNY agreeing and BAIT stepping in. About 1.5 s, or until clicked;
+ * reduced motion keeps it on screen for the same time with no fade.
+ */
+function agreedBeat(shot, final) {
+  const n = shot?.n ?? shots.length;
+  const to = final?.prospect?.name ?? chosen?.name ?? dossier?.name ?? 'this trader';
+  const amt = shot?.wire?.attemptedLabel ?? final?.peakLabel ?? '';
+  text(el.agreedLine, `PENNY agreed after ${n} line${n === 1 ? '' : 's'}: sending ${amt} to ${to}`);
+  el.agreed.hidden = false;
+  return new Promise(resolve => {
+    const done = () => { clearTimeout(timer); el.agreed.removeEventListener('click', done); el.agreed.hidden = true; resolve(); };
+    const timer = setTimeout(done, 1500);
+    el.agreed.addEventListener('click', done);
+  });
 }
 
 const CHECK_NAME = {
@@ -208,18 +283,22 @@ const CHECK_NAME = {
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * The BAIT checkpoint. MERIDIAN has agreed and the money is leaving; BAIT takes the screen
+ * The BAIT checkpoint. PENNY has agreed and the money is leaving; BAIT takes the screen
  * in its own colour, names the Nansen read, ticks in the gate's real rows one by one, and
  * only then lands the stamp. Reduced motion: every row at once, no tick, still readable.
  */
 async function playCheckpoint(p, final, { hold = true } = {}) {
   const gate = final.gate ?? { checks: [] };
   const who = p?.short ?? chosen?.short ?? '';
-  text(el.cpMove, `${final.peakLabel} from MERIDIAN to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
+  text(el.cpMove, final.checkOnly
+    ? `No transfer to check: nothing flattering to pitch. The BAIT check read ${final.prospect?.name ?? p?.name ?? 'this wallet'} anyway.`
+    : `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
   const at = String(gate.evidenceAt ?? '');
   text(el.cpRead, gate.live
     ? `Reading Nansen perp-pnl-summary for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
     : `Reading Nansen perp-pnl-summary for ${who}: the ${at.slice(0, 10)} capture`);
+  const raw = final.evidence?.raw;
+  if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
   el.cpRows.replaceChildren();
   el.cpStamp.hidden = true;
   el.checkpoint.className = 'checkpoint';
@@ -243,13 +322,16 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   if (!reduced) await sleep(250);
   const kind = final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
   el.cpStamp.className = `cp-stamp ${kind}`;
-  text(el.cpStamp, stampLabel(final));
+  setStamp(el.cpStamp, final);
   el.cpStamp.hidden = false;
   el.cpStamp.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
-  if (hold) {
-    await sleep(reduced ? 1800 : 1100);
-    el.checkpoint.hidden = true;
-  }
+  // No auto-dismiss: the checkpoint stays until the player has read it.
+  el.cpNext.hidden = false;
+  if (!hold) return;
+  el.cpNext.focus({ preventScroll: true });
+  await new Promise(resolve => el.cpNext.addEventListener('click', resolve, { once: true }));
+  el.cpNext.hidden = true;
+  el.checkpoint.hidden = true;
 }
 
 /**
@@ -258,14 +340,14 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
  * server's `final` object and the prospect record it sent with the verdict.
  */
 function showReveal(p, final) {
-  const kind = final.peak === 0 ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
+  const kind = final.peak === 0 && !final.checkOnly ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
   el.revealStamp.className = `stamp ${kind === 'blocked' ? '' : kind}`.trim();
-  text(el.revealStamp, stampLabel(final));
+  setStamp(el.revealStamp, final);
   text(el.revealTitle, final.headline);
   text(el.revealSub, final.subline);
-  el.revealWhy.hidden = !(final.because && ['block', 'capped'].includes(final.verdict) && final.peak > 0);
+  el.revealWhy.hidden = !(final.because && ['block', 'capped'].includes(final.verdict) && (final.peak > 0 || final.checkOnly));
   text(el.revealWhy, final.because ? `Why: ${final.because}` : '');
-  // MERIDIAN's own words: where it asked for the record, then where it agreed.
+  // PENNY's own words: where it asked for the record, then where it agreed.
   el.revealQuotes.replaceChildren();
   const q = final.quotes ?? {};
   const rows = [];
@@ -275,7 +357,7 @@ function showReveal(p, final) {
     const li = document.createElement('li');
     li.className = kind;
     const who = document.createElement('b');
-    who.textContent = `${n} · MERIDIAN`;
+    who.textContent = `${n} · PENNY`;
     const said = document.createElement('q');
     said.textContent = line;
     li.append(who, said);
@@ -451,10 +533,10 @@ function renderScene(d) {
   text(el.slotSub, dollars(d.slot));
   text(el.premiseSlot, dollars(d.slot));
   text(el.premiseName, d.name);
-  el.meridian.innerHTML = portraitSvg('meridian', { mood: 'neutral', accent: d.accent, title: 'MERIDIAN, the AI allocation desk' });
+  el.meridian.innerHTML = portraitSvg('meridian', { mood: 'neutral', accent: d.accent, title: 'PENNY, the AI allocation desk' });
   el.clientPortrait.innerHTML = portraitSvg(d.portrait, { mood: 'confident', accent: d.accent, title: d.name, crop: 'face' });
   text(el.clientName, d.name);
-  text(el.clientSub, `${d.venueLabel} · ${d.trader}`);
+  text(el.clientSub, [d.venueLabel, d.trader].filter(Boolean).join(' · '));
   text(el.ticker.firstElementChild, `${d.name}   ${d.endpoints.join('   ')}   ${d.evidenceLabel ?? `captured ${String(d.capturedAt).slice(0, 10)}`}   `.repeat(3).toUpperCase());
   updateCount();
 }
@@ -570,9 +652,9 @@ function renderChecks(checks, when = 'idle') {
     const idle = document.createElement('span');
     idle.className = 'nansen-idle';
     idle.textContent = {
-      idle: 'MERIDIAN has no data tools. It only hears your pitch.',
-      thinking: 'MERIDIAN is deciding from your pitch alone.',
-      answered: 'MERIDIAN decided from your pitch alone. BAIT reads Nansen before any money moves.',
+      idle: 'PENNY has no data tools. It only hears your pitch.',
+      thinking: 'PENNY is deciding from your pitch alone.',
+      answered: 'PENNY decided from your pitch alone. BAIT reads Nansen before any money moves.',
     }[when];
     el.nansen.append(idle);
     return;
@@ -679,12 +761,12 @@ function showIntercept(shot) {
   el.intercept.className = 'intercept pending';
   el.intercept.hidden = false;
   const to = chosen?.name ?? dossier?.name ?? 'this trader';
-  text(el.icptN, `Line ${shot.n} · MERIDIAN: sending ${w.attemptedLabel} to ${to}...`);
+  text(el.icptN, `Line ${shot.n} · PENNY: sending ${w.attemptedLabel} to ${to}...`);
   text(el.icptTo, '');
   text(el.icptAmt, w.attemptedLabel);
   text(el.icptStamp, '');
   el.icptStamp.hidden = true;
-  text(el.icptWhy, `The transfer is leaving MERIDIAN's ${dollars(dossier?.slot ?? 25000)} fund, decided on your pitch alone.`);
+  text(el.icptWhy, `The transfer is leaving PENNY's ${dollars(dossier?.slot ?? 25000)} fund, decided on your pitch alone.`);
   if (!reduced) { el.intercept.style.animation = 'none'; void el.intercept.offsetWidth; el.intercept.style.animation = ''; }
 }
 
@@ -718,8 +800,8 @@ async function pitch() {
     const last = state.shots[state.shots.length - 1];
     if (last?.caught) text(el.status, 'Caught. That claim is not in the record.');
     // Hold on the transfer card long enough to read it, then the reveal.
-    // The transfer card holds long enough to read that the money is leaving MERIDIAN.
-    if (state.finished) setTimeout(finish, reduced ? 600 : last?.wire ? 1600 : 1200);
+    // The agreed beat and the checkpoint are paced in finish(); no extra wait here.
+    if (state.finished) setTimeout(finish, reduced ? 300 : last?.wire ? 600 : 1200);
   } catch (err) {
     stop();
     fail(err.message);
@@ -758,9 +840,12 @@ function finish() {
     try {
       result = await api(`/api/room/${round.id}/finish`, { method: 'POST', body: {} });
       adopt(result);
-      // MERIDIAN agreed: BAIT takes the screen before any stamp. MERIDIAN refused on its
+      // PENNY agreed: BAIT takes the screen before any stamp. PENNY refused on its
       // own: no checkpoint, the reveal says so.
-      if (result.final.peak > 0) await playCheckpoint(result.prospect, result.final);
+      if (result.final.peak > 0) {
+        await agreedBeat(shots.find(s => s.wire) ?? shots[shots.length - 1], result.final);
+        await playCheckpoint(result.prospect, result.final);
+      }
       showReveal(result.prospect, result.final);
       renderTranscript();
     } catch (err) {
@@ -781,7 +866,7 @@ function showFinal(final, entries, mineAt = null) {
   text(el.wireStopped, final.stoppedLabel);
   el.wireStopped.classList.toggle('zero', !final.stopped);
   el.stamp.className = `stamp ${final.peak === 0 ? 'none' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : final.verdict === 'allow' ? 'cleared' : ''}`;
-  text(el.stamp, stampLabel(final));
+  setStamp(el.stamp, final);
   text(el.finalHead, final.headline);
   text(el.finalSub, final.subline);
   el.finalTrail.hidden = !final.trail;
@@ -789,6 +874,17 @@ function showFinal(final, entries, mineAt = null) {
   renderWireLog(shots);
   text(el.agentLine, final.agentLine);
   renderGate(el.finalGate, final.gate);
+  // The live read's raw Nansen response, as saved on this host, with its hash.
+  const raw = final.evidence?.raw;
+  if (raw) {
+    const p = document.createElement('p');
+    p.className = 'report-foot';
+    const a = document.createElement('a');
+    a.href = `/api/live-reads/${raw.file}`;
+    a.textContent = `Raw Nansen response ${raw.file}`;
+    p.append(a, ` · sha256 ${raw.sha256}`);
+    el.finalGate.append(p);
+  }
   renderReport(el.finalReport, final.risk);
   renderBoard(entries, mineAt, el.boardList, 10);
   if (final.verdict === 'block' && final.peak > 0 && !reduced) {
@@ -866,7 +962,7 @@ async function renderLadder() {
     const label = {
       unarmed: 'The AI alone backed a losing trader',
       armedBasic: 'With Nansen tools in hand, it still did',
-      guarded: "Behind BAIT's gate, no money reached a loser",
+      guarded: "Behind the BAIT check, no money reached a loser",
     };
     el.ladder.replaceChildren();
     for (const key of ['unarmed', 'armedBasic', 'guarded']) {
@@ -896,7 +992,7 @@ function renderTranscript() {
     you.className = 'said-you';
     you.textContent = `${shot.n}. You: ${shot.text}`;
     const desk = document.createElement('p');
-    desk.textContent = `MERIDIAN: ${shot.full || shot.line}`;
+    desk.textContent = `PENNY: ${shot.full || shot.line}`;
     const meta = document.createElement('code');
     meta.textContent = [
       `allocation ${dollars(shot.allocation)}`,
@@ -1020,6 +1116,16 @@ async function fixture(name, prospectId) {
     return;
   }
 
+  if (name === 'agreed') {
+    // The beat between PENNY agreeing and BAIT stepping in, held for the capture.
+    enterRoom();
+    renderState({ ...state, shotsUsed: 2, shotsLeft: 0, finished: true, funded: amount, suspicion: 20, mood: 'intrigued',
+      peak: amount, stopped: 0, shots: fixtureShots, line: 'Fixture reply: fine, a small probe.', checks: [] });
+    text(el.agreedLine, `PENNY agreed after 2 lines: sending ${dollars(amount)} to ${p.name}`);
+    el.agreed.hidden = false;
+    return;
+  }
+
   if (name === 'checkpoint') {
     // The BAIT checkpoint at rest, every row and the stamp, over the room.
     enterRoom();
@@ -1045,6 +1151,7 @@ async function fixture(name, prospectId) {
 
 async function boot() {
   el.line.addEventListener('input', updateCount);
+  el.anyWallet.addEventListener('submit', pasteWallet);
   el.line.addEventListener('keydown', event => {
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); el.composer.requestSubmit(); }
   });
@@ -1101,6 +1208,8 @@ async function boot() {
   if (state) { await fixture(state, params.get('prospect')); return; }
   show('roster');
   focus(focused);
+  // The proof page links here to paste a wallet of your own.
+  if (location.hash === '#any-wallet') { el.anyWallet.scrollIntoView({ block: 'center' }); el.anyWalletInput.focus({ preventScroll: true }); }
 }
 
 boot();

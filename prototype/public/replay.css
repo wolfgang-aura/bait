@@ -745,3 +745,11 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
 .how-note { margin-top: 14px; max-width: 900px; color: var(--ink-dim); font-size: 14px; line-height: 1.55; }
 .how-note code { font: 400 12.5px/1 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
 @media (max-width: 760px) { .how-steps { grid-template-columns: 1fr; } }
+
+/* ---------- round 10: the one BAIT badge (same as the room) ---------- */
+.bait-badge {
+  display: inline-block; font: 800 .92em/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+  color: #051120; background: #4DA3FF; border-radius: 3px; padding: .18em .34em .16em .48em;
+}
+.mark .bait-badge { font-size: 16px; }
+.how-steps span .bait-badge { font-size: 10px; letter-spacing: .12em; }

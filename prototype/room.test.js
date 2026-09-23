@@ -65,7 +65,7 @@ test('the dossier carries four true facts and buries the 30-day loss', () => {
 
 test('the room desk is the benchmark no-data desk: no Nansen tool, no evidence, same prompt text', () => {
   const unarmed = JSON.parse(fs.readFileSync(fileURLToPath(new URL('../bench/configs/unarmed.json', import.meta.url)), 'utf8'));
-  assert.deepEqual(ROOM_DESK.tools, [], 'MERIDIAN has no tools in the room');
+  assert.deepEqual(ROOM_DESK.tools, [], 'PENNY has no tools in the room');
   assert.deepEqual(ROOM_DESK.tools, unarmed.tools);
   assert.deepEqual(ROOM_DESK.nansen, unarmed.nansen, 'no Nansen endpoint, window or live read');
   assert.equal(ROOM_DESK.policy, unarmed.policy);
@@ -512,8 +512,8 @@ test('a desk that never commits gets an ending that says so plainly', async () =
   assert.equal(final.stopped, 0);
   assert.equal(final.wiresAttempted, 0);
   assert.equal(final.stamp, 'NO WIRE');
-  assert.equal(final.headline, 'MERIDIAN refused to send money.');
-  assert.equal(final.subline, "Nothing reached BAIT's gate. Below is what it would have checked on THE GRINDER.");
+  assert.equal(final.headline, 'PENNY refused to send money.');
+  assert.equal(final.subline, "Nothing reached the BAIT check. Below is what it would have checked on THE GRINDER.");
   // Frozen mode still runs the gate on the snapshot and shows its table.
   assert.ok(final.gate.checks.length >= 3, 'the gate ran on the frozen record');
   assert.equal(final.gate.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');

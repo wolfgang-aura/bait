@@ -25,6 +25,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { call as nansenCall, creditCostFor } from '../validation/nansen.js';
 import { PRODUCTION_GUARD_POLICY_V3 } from '../validation/guard.js';
 
@@ -55,6 +56,34 @@ const utcDay = d => d.toISOString().slice(0, 10);
 export const hhmm = value => `${new Date(value).toISOString().slice(11, 16)} UTC`;
 
 /** A summary the dossier, the truth screen and the gate can all read without guessing. */
+/** A summary with no closed perp trade in the window: the wallet has no record to read. */
+const noTrades = s => !s || s.closed_trade_count === 0 || s.closed_trade_count === null || s.closed_trade_count === undefined;
+
+/** Every fresh read's two raw Nansen responses, one JSON file each, named by time and wallet. */
+export const RAW_NAME = /^\d{8}T\d{6}Z-0x[0-9a-f]{8}\.json$/;
+export function saveRawRead(dir, { wallet, fetchedAt, windows, responses }) {
+  if (!dir) return null;
+  const body = JSON.stringify({
+    kind: 'nansen-live-read', endpoint: LIVE_ENDPOINT, wallet, fetched_at: fetchedAt, windows,
+    // As Nansen sent them: status, the credit header and the whole JSON body, per window.
+    responses,
+  }, null, 2) + '\n';
+  const name = `${fetchedAt.replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z')}-${wallet.slice(0, 10)}.json`;
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, name), body);
+  return { file: name, sha256: createHash('sha256').update(body).digest('hex'), bytes: Buffer.byteLength(body) };
+}
+
+/** The saved reads in a directory, newest first, each with its SHA-256. */
+export function listRawReads(dir) {
+  if (!dir || !fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir).filter(f => RAW_NAME.test(f)).sort().reverse().map(file => {
+    const body = fs.readFileSync(path.join(dir, file));
+    const j = JSON.parse(body.toString('utf8'));
+    return { file, sha256: createHash('sha256').update(body).digest('hex'), bytes: body.length, wallet: j.wallet, fetched_at: j.fetched_at };
+  });
+}
+
 function usableSummary(s) {
   return !!s && finite(s.realized_pnl_usd) && finite(s.win_rate) && Number.isInteger(s.closed_trade_count);
 }
@@ -79,7 +108,7 @@ async function within(promise, ms) {
 export function createLiveEvidence({
   enabled, keyPresent, call = nansenCall, now = () => new Date(),
   ttlMs = LIVE_EVIDENCE_TTL_MS, dailyCap = DEFAULT_DAILY_CAP, totalCap = DEFAULT_TOTAL_CAP,
-  timeoutMs = DEFAULT_READ_TIMEOUT_MS, stateFile = null, log = () => {},
+  timeoutMs = DEFAULT_READ_TIMEOUT_MS, stateFile = null, log = () => {}, rawDir = null,
 } = {}) {
   const cache = new Map();
   const inFlight = new Map();
@@ -136,12 +165,15 @@ export function createLiveEvidence({
     // once cannot both squeeze under the cap. What did not reach Nansen is refunded.
     charge(LIVE_READ_CREDITS);
     let charged = 0;
+    const responses = {};
     const one = async days => {
       try {
-        const res = await call(LIVE_ENDPOINT, { address: wallet, date: windows[`${days}d`] }, { note: `room live ${days}d summary`, timeoutMs });
+        const request = { address: wallet, date: windows[`${days}d`] };
+        const res = await call(LIVE_ENDPOINT, request, { note: `room live ${days}d summary`, timeoutMs });
         const raw = res?.headers?.['x-nansen-credits-cost'];
         const header = raw === undefined || raw === null || raw === '' ? NaN : Number(raw);
         charged += Number.isFinite(header) ? header : creditCostFor(LIVE_ENDPOINT);
+        responses[`${days}d`] = { request, status: res?.status ?? null, credits_cost_header: raw ?? null, body: res?.data ?? null };
         return res?.data?.data ?? null;
       } catch (err) {
         // The ledger charges a request that got an HTTP answer and nothing else. Match it.
@@ -157,6 +189,12 @@ export function createLiveEvidence({
       const failed = settled.find(r => r.status === 'rejected');
       if (failed) throw failed.reason;
       const [summary30, summary7] = settled.map(r => r.value);
+      // Both responses reached us and were paid for: keep them, whatever they say.
+      let raw = null;
+      try { raw = saveRawRead(rawDir, { wallet, fetchedAt: iso(at), windows, responses }); } catch (err) { log(`raw read save failed: ${err.message}`); }
+      if (noTrades(summary30) && noTrades(summary7)) {
+        throw Object.assign(new Error('No closed Hyperliquid perp trade in the last 30 days'), { code: 'no_history', raw });
+      }
       if (!usableSummary(summary30) || !usableSummary(summary7)) {
         throw Object.assign(new Error('Nansen returned a summary without realised PnL, win rate or closed trade count'), { code: 'unusable' });
       }
@@ -165,6 +203,7 @@ export function createLiveEvidence({
         summary30: { ...summary30, top5_coins: Array.isArray(summary30.top5_coins) ? summary30.top5_coins : [] },
         summary7: { ...summary7, top5_coins: Array.isArray(summary7.top5_coins) ? summary7.top5_coins : [] },
         endpoint: LIVE_ENDPOINT,
+        raw,
       };
     } finally {
       // A timed-out read can still be billed after we stop waiting, so its reservation is
@@ -205,13 +244,14 @@ export function createLiveEvidence({
           return { ...read, cached: false };
         } catch (err) {
           const code = err?.code === 'timeout' || /timeout|timed out|aborted/i.test(String(err?.message)) ? 'timeout'
-            : err?.code === 'unusable' ? 'unusable' : 'provider_error';
+            : err?.code === 'unusable' ? 'unusable' : err?.code === 'no_history' ? 'no_history' : 'provider_error';
           const reason = code === 'timeout' ? 'the live Nansen read timed out'
             : code === 'unusable' ? 'the live Nansen summary was incomplete'
-              : 'the live Nansen read failed';
+              : code === 'no_history' ? 'Nansen has no closed Hyperliquid perp trade for this wallet in the last 30 days'
+                : 'the live Nansen read failed';
           counter.lastFailure = { at: new Date().toISOString(), code, message: String(err?.message ?? err).slice(0, 200) };
           log(`live read failed wallet=${wallet.slice(0, 10)} code=${code} message=${counter.lastFailure.message}`);
-          return { live: false, code, reason };
+          return { live: false, code, reason, raw: err?.raw ?? null };
         } finally {
           persist();
           inFlight.delete(wallet);

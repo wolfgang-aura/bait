@@ -54,7 +54,7 @@ function renderHero() {
   if (model) $('b-model').textContent = model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : model;
   if (w.control) {
     const b = results.baseline;
-    $('b-control').textContent = `On ${w.wallets.filter(x => x.cohort !== 'losing').length} profitable traders the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions to fund them (all on one month whose last week reversed) and capped ${w.control.capped[0]} at 25% (a month one market carried). Under the gate the AI still tried to fund a loser in ${w.losing.overruled[0]} of ${w.losing.overruled[1]} runs.${results.gateBuys ? ` Attacks on the evidence itself (wrong wallet, window or source, stale, no trades, 7 days relabelled as 30): the baseline let money through ${results.gateBuys.letThrough.agent[0]} of ${results.gateBuys.letThrough.agent[1]}, BAIT's gate ${results.gateBuys.letThrough.behindV3[0]} of ${results.gateBuys.letThrough.behindV3[1]}${results.gateBuys.fixedMiss ? ' (the relabel got past the gate until our own bench found it; fixed 23 Sep)' : ''}.` : ''}${b ? ` Baseline to beat: a ${b.name} rule with no model backed ${b.baited[0]} of ${b.baited[1]} losing cases and refused ${b.controlRefused[0]} of ${b.controlRefused[1]} profitable ones.` : ''}`;
+    $('b-control').textContent = `On ${w.wallets.filter(x => x.cohort !== 'losing').length} profitable traders the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions to fund them (all on one month whose last week reversed) and capped ${w.control.capped[0]} at 25% (a month one market carried). Under the gate the AI still tried to fund a loser in ${w.losing.overruled[0]} of ${w.losing.overruled[1]} runs.${results.gateBuys ? ` Attacks on the evidence itself (wrong wallet, window or source, stale, no trades, 7 days relabelled as 30): the baseline let money through ${results.gateBuys.letThrough.agent[0]} of ${results.gateBuys.letThrough.agent[1]}, the BAIT check ${results.gateBuys.letThrough.behindV3[0]} of ${results.gateBuys.letThrough.behindV3[1]}${results.gateBuys.fixedMiss ? ' (the relabel got past the gate until our own bench found it; fixed 23 Sep)' : ''}.` : ''}${b ? ` Baseline to beat: a ${b.name} rule with no model backed ${b.baited[0]} of ${b.baited[1]} losing cases and refused ${b.controlRefused[0]} of ${b.controlRefused[1]} profitable ones.` : ''}`;
   }
   const frac = c => `${c.funded}/${c.runs}`;
   $('b-wallets').innerHTML = w.wallets.map(x => `<tr>
@@ -153,7 +153,7 @@ function renderScore() {
   const rowsHtml = [
     ['unarmed', 'No tools, pitch only', w.losing.unarmed, '—'],
     ['armed-basic', 'Nansen PnL + trades tools', w.losing.armedBasic, '—'],
-    [`${w.gate.policy}`, 'BAIT gate, no model tools', w.losing.guarded, `blocked ${c.falseBlocks[0]}/${c.falseBlocks[1]}, capped ${c.capped[0]}/${c.capped[1]}`],
+    [`${w.gate.policy}`, 'The BAIT check, no model tools', w.losing.guarded, `blocked ${c.falseBlocks[0]}/${c.falseBlocks[1]}, capped ${c.capped[0]}/${c.capped[1]}`],
     [b.name, 'Rule, no model', b.baited, `refused ${b.controlRefused[0]}/${b.controlRefused[1]}`],
   ];
   $('b-comparison-caption').textContent = `${w.losing.wallets} losing wallets, ${Object.values(w.losing.cases).reduce((x, y) => x + y, 0)} attacks, ${w.repeats} runs each (the rule runs once per attack), recorded ${day(w.recordedAt)}, ${w.model}, frozen Nansen snapshots; ${c.wallets} profitable controls.`;

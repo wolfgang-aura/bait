@@ -275,3 +275,74 @@ test('a fill tape more than a day behind the live summaries is shown but not use
   assert.match(r.coverage, /fill tape is the .* capture, 2\.0 days older than the summaries/);
   assert.ok(r.not_assessed.filter(n => ['max_drawdown', 'tail_loss'].includes(n.id)).every(n => /nothing measured on it is used/.test(n.reason)));
 });
+
+// ------------------------------------------------------------ any wallet (round 10)
+
+const PASTED = '0x1111111111111111111111111111111111111111';
+const PASTED2 = '0x2222222222222222222222222222222222222222';
+/** A wallet whose two summaries say whatever the test needs. */
+function walletMock(summary) {
+  const seen = [];
+  const call = async (pathName, body) => {
+    seen.push({ pathName, body });
+    const days = Math.round((Date.parse(body.date.to) - Date.parse(body.date.from)) / 86_400_000);
+    return { status: 200, headers: { 'x-nansen-credits-cost': '1' }, data: { data: summary(days) } };
+  };
+  return { call, seen };
+}
+const tmpDir = () => fs.mkdtempSync(path.join(os.tmpdir(), 'bait-reads-'));
+
+test('a pasted wallet: the address is validated before any read', async () => {
+  const mock = mockNansen();
+  const { service } = liveRoom([], mock);
+  for (const bad of ['0x123', 'hello', `${PASTED}00`, '', 42]) {
+    await assert.rejects(service.start({ wallet: bad }), /not a Hyperliquid address/);
+  }
+  assert.equal(mock.seen.length, 0, 'no credit spent on a bad address');
+});
+
+test('a pasted wallet plays the same round from one live read, cached by address, raw responses saved', async () => {
+  const mock = mockNansen({ pnl30: -900_000, pnl7: 12_000 });
+  const rawDir = tmpDir();
+  const { service } = liveRoom([...answer(0, 'neutral', 'Go on.')], mock, { rawDir });
+  const one = await service.start({ wallet: PASTED });
+  assert.equal(one.finished, false);
+  assert.ok(one.dossier.facts.length >= 1, 'the flattering facts come from the live read');
+  assert.equal(mock.seen.length, 2, 'two summaries, 2 credits');
+  const two = await service.start({ wallet: PASTED.toUpperCase().replace('0X', '0x') });
+  assert.equal(two.finished, false);
+  assert.equal(mock.seen.length, 2, 'the second start is a cache hit');
+  const { listRawReads } = await import('./live-evidence.js');
+  const saved = listRawReads(rawDir);
+  assert.equal(saved.length, 1);
+  assert.match(saved[0].sha256, /^[a-f0-9]{64}$/);
+  const body = JSON.parse(fs.readFileSync(path.join(rawDir, saved[0].file), 'utf8'));
+  assert.equal(body.responses['30d'].body.data.realized_pnl_usd, -900_000, 'the file is the response as Nansen sent it');
+  assert.equal(body.responses['7d'].request.address, PASTED);
+});
+
+test('a pasted wallet under a spent cap is refused plainly, with no request sent', async () => {
+  const mock = mockNansen();
+  const { service } = liveRoom([], mock, { dailyCap: LIVE_READ_CREDITS });
+  await service.start({ wallet: PASTED });
+  await assert.rejects(service.start({ wallet: PASTED2 }), /used up/);
+  assert.equal(mock.seen.length, 2);
+});
+
+test('a wallet with no perp history says so and starts nothing', async () => {
+  const mock = walletMock(() => ({ realized_pnl_usd: 0, win_rate: null, closed_trade_count: 0, top5_coins: [] }));
+  const { service } = liveRoom([], mock, { rawDir: tmpDir() });
+  await assert.rejects(service.start({ wallet: PASTED }), /no closed Hyperliquid perp trade for this wallet in the last 30 days/);
+});
+
+test('a wallet with nothing flattering still gets the BAIT check and its verdict', async () => {
+  const mock = walletMock(days => ({ realized_pnl_usd: days === 7 ? -5_000 : -40_000, win_rate: 0.31, closed_trade_count: days === 7 ? 40 : 180,
+    winning_trade_count: 20, fees_usd: 10, traded_coin_count: 2, top5_coins: [{ coin: 'BTC', realized_pnl_usd: -12_000 }] }));
+  const { service } = liveRoom([], mock, { rawDir: tmpDir() });
+  const res = await service.start({ wallet: PASTED });
+  assert.equal(res.checkOnly, true);
+  assert.equal(res.final.headline, 'Nothing flattering to pitch.');
+  assert.equal(res.final.verdict, 'block');
+  assert.equal(res.final.gate.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');
+  assert.equal(res.final.gate.live, true);
+});

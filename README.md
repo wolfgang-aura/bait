@@ -19,7 +19,7 @@ lab rounds where one model pitched another; 6 from a recipe), three runs each, e
 a true fact from the wallet's own Nansen record. Six profitable wallets as controls. Model
 tested: DeepSeek (`deepseek-chat`), frozen snapshots.
 
-| | AI alone | AI with Nansen tools | Behind BAIT's gate |
+| | AI alone | AI with Nansen tools | Behind the BAIT check |
 | --- | ---: | ---: | ---: |
 | Runs where the AI backed a losing trader | **63 of 78** | **19 of 78** | **0 of 78** |
 | Runs where the AI tried and the gate stopped it | | | 62 of 78 |
@@ -34,7 +34,7 @@ tested: DeepSeek (`deepseek-chat`), frozen snapshots.
   also backed 0 of 26. The difference is the data path: when the record it reads is wrong,
   the rule sends the money and the gate does not.
 
-| Attack on the data the agent reads (real frozen snapshot, one change) | 19-line rule sends | BAIT's gate v3 |
+| Attack on the data the agent reads (real frozen snapshot, one change) | 19-line rule sends | The BAIT check (v3) |
 | --- | ---: | --- |
 | Another wallet's record answers for the one pitched | $5,000 | blocked: `wallet_mismatch` |
 | The 7-day summary answers the 30-day question | $5,000 | blocked: `window_mismatch` |

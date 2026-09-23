@@ -44,7 +44,7 @@ fill tape behind the trade details is still the 21 Sep capture, and the screen s
 
 Can true facts sell a losing trader to an AI?
 
-BAIT gates wallet-allocation agents. 6 losing wallets, 26 true-fact attacks: the AI alone backed a loser 63/78, with Nansen tools 19/78, behind BAIT's gate 0/78.
+BAIT gates wallet-allocation agents. 6 losing wallets, 26 true-fact attacks: the AI alone backed a loser 63/78, with Nansen tools 19/78, behind the BAIT check 0/78.
 
 Play it: https://bait-wyqr.onrender.com
 https://github.com/wolfgang-aura/bait @nansen_ai
@@ -55,9 +55,9 @@ required tag and repository.
 ## Draft description
 
 BAIT is the check that runs before an AI agent moves money, for teams whose agents
-allocate capital to traders. In the Pitch Room you talk MERIDIAN, an AI with no data tools
+allocate capital to traders. In the Pitch Room you talk PENNY, an AI with no data tools
 and a $25,000 fund, into backing a trader using only true facts; the facts unlock one at a
-time and the loss stays sealed. The moment it agrees to send money, BAIT's gate reads the
+time and the loss stays sealed. The moment it agrees to send money, the BAIT check reads the
 trader's Nansen record: the 7-day and 30-day `profiler/perp-pnl-summary`, with named checks
 for a losing month, a week that reverses the month, too few trades, a low win rate, and
 stale or mismatched evidence. A profitable month carried by one market is capped at 25%

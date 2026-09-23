@@ -399,7 +399,7 @@ export function loadRoster({
       checkerData: snapshot,
       live: p.live === true,
       desk: {
-        name: 'meridian', policy: null,
+        name: 'penny', policy: null,
         // The control wallet's capture holds no fills, so the trade tool is not offered
         // for it. A tool that can only answer with zeros is worse than no tool.
         tools: p.tools ?? ['check_pnl', 'inspect_trades'],
@@ -439,6 +439,50 @@ export function refreshProspect(p, snapshot) {
   };
   const risk = copyRiskReport(next);
   return { ...next, risk, gateExpected: risk.verdict };
+}
+
+/** A Hyperliquid address, and nothing else. */
+export const WALLET_PATTERN = /^0x[0-9a-fA-F]{40}$/;
+
+/**
+ * A wallet the player pasted, as a prospect. Built from one live read with the same
+ * dossier, truth and report code as the four on the roster. There is no leaderboard row
+ * and no fill tape: the hype is the best flattering fact the read holds, and the tape
+ * checks say they are not assessed.
+ */
+export function walletProspect(walletInput, snapshot) {
+  const wallet = String(walletInput).toLowerCase();
+  const declared = { ...snapshot, trades_30d: snapshot.trades_30d ?? [], trades_pagination: { is_complete: true, ...(snapshot.trades_pagination ?? {}) } };
+  const dossier = hyperliquidDossier(declared, null);
+  const week = declared.pnl_summary_7d;
+  const best = bestCoin(declared.pnl_summary_30d);
+  const hype = week.realized_pnl_usd > 0
+    ? { value: money(week.realized_pnl_usd), caption: '7 days', sub: 'Nansen, read live' }
+    : best && best.realized_pnl_usd > 0
+      ? { value: money(best.realized_pnl_usd), caption: `${best.coin}, 30 days`, sub: 'Nansen, read live' }
+      : { value: 'no brag', caption: 'nothing flattering in the record', sub: 'Nansen, read live' };
+  const base = {
+    id: `wallet-${wallet}`, name: short(wallet), handle: null, wallet, short: short(wallet),
+    venue: 'hyperliquid', venueLabel: VENUES.hyperliquid.label, chain: VENUES.hyperliquid.chain,
+    accent: '#9AA2AD', portrait: 'nicecat', voice: null,
+    hypeRow: null,
+    hype: { ...hype, source: `Nansen live read, ${stamp(declared.retrieved_at)}`,
+      hypeDate: day(declared.retrieved_at), recordDate: day(declared.retrieved_at), hypeFrom: 'Nansen' },
+    truth: hyperliquidTruth(declared, 'live'),
+    truthAvailable: 'live',
+    dossier,
+    record: null,
+    snapshot: declared,
+    checkerData: declared,
+    live: true,
+    pasted: true,
+    desk: { name: 'penny', policy: null, tools: ['check_pnl'], nansen: { endpoints: ['profiler/perp-pnl-summary'], windows: [7, 30], live: true } },
+    executor: null,
+    guardPolicy: BENCHMARK_GUARD_POLICY_V3,
+    checkerNote: null,
+  };
+  const risk = copyRiskReport(base);
+  return { ...base, risk, gateExpected: risk.verdict };
 }
 
 /**
