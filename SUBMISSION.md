@@ -20,46 +20,39 @@ Current evidence:
 
 ## The recording
 
-`scratch/BAIT-judge-v24.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 59.0 s, rendered with
-HyperFrames over two real rounds played on the hosted site (https://bait-wyqr.onrender.com, commit
-e4b9ae6) and recorded at 3840 by 2160 on 23 Sep 2026. v24 is a re-cut of v23 from the same
-footage; nothing was re-recorded. The barricade is the hosted page's own component with each
-round's amount, captured at a tenth of its speed and timed back to real time, because 4K
-screenshots cannot catch a 2.2 s animation.
-SHA-256: `a55f9709b3720e574b37249ef99878b61f4f78d59e408ed68eb938e2147df289`.
+`scratch/BAIT-judge-v25.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 53.3 s, rendered with
+HyperFrames (`scratch/hf/make-gen13.cjs` then `gen13.cjs`, from v24's builder) over two real rounds
+played on the hosted site (https://bait-wyqr.onrender.com, public commit 6c8fcb9, gate v4) and
+recorded at 3840 by 2160 on 23 Sep 2026, 16:09 and 16:10 UTC. Each round was one take on a fresh
+live Nansen read: no retry, so no round played from the 30-minute cache. The barricade is the
+hosted page's own component with each round's amount, captured at a tenth of its speed and timed
+back to real time, because 4K screenshots cannot catch a 2.2 s animation.
+SHA-256: `b5f7b6c5d701b222d2586cf5a10d3fd13ff7f05785143e05604eff1ffd701681`.
 
 | Screen | Point |
 | --- | --- |
-| Cold open | THE LEGEND: -$30,943,878 over the last 30 days (live Nansen read, 23 Sep 13:29 UTC) first and largest, then +$118,975,612 all time (labelled Hyperliquid public leaderboard), BLOCKED BY BAIT. "Con an AI into backing a losing trader using only true facts. Nansen data is what stops you." |
-| Round 1 | THE LEGEND, before the gate the same neutral card as every trader. Line 1 (the all-time figure): PENNY asks for the 30-day window and commits $2,500. Line 2 (FARTCOIN's +$328,412 over 30 days): PENNY raises it to $6,250, and the player presses Wire it. The barricade slams shut ("$6,250 HELD"), the checkpoint reads Nansen live, the camera shows the BLOCK rows, the Nansen calls and the whole BLOCKED BY BAIT stamp. Reveal (0:24.6): the camera frames PENNY's two lines, the page's one "agreed to send $6,250" sentence and Nansen's figures; caption "Nansen's 30-day record decided it: -$30.9M. BAIT held all $6,250." |
-| Round 2 | Straight after round 1 (0:30.1): a pasted wallet (0x6dae...90de). One live read: 30 days +$47,744, last 7 days -$56,416. PENNY commits $3,000 on line 1 and the player presses Wire it. The checkpoint blocks on the reversed week and strikes the concentration CAP through as superseded. Reveal (0:46.0), framed like round 1: caption "The month was up; the last week reversed it. BAIT blocked all $3,000." |
-| The result (0:50.0) | "AI agents can be talked into funding losing traders. BAIT stops them." 63/78 AI alone funded the loser, 19/78 with Nansen tools, 0/78 behind BAIT (the largest, in amber). "Faked evidence: a simple PnL rule let 36 of 54 through. BAIT: 0." (6 of 6 original plus 30 of 48 held out: same rule, same attack code, same count.) "Held out: 12 unseen losing wallets, 0 of 36 through." "Cost: 3 of 18 good-trader decisions blocked, 3 capped." Footnote: 6 losing wallets · 26 attacks · 3 tries each · true facts only · +12 unseen wallets. |
-| Order and end | Cold open 0:00, round 1 0:03, round 2 0:30.1, benchmark card 0:50.0, "Test your own agent" card 0:56.2 to the end (0:59.0): the bench command, bait-wyqr.onrender.com, the repository, Built on the Nansen API, and "BAIT: the check between the agent and the money." |
+| Cold open (0:00) | THE LEGEND: -$30,619,686 over the last 30 days (live Nansen read, 23 Sep 16:09 UTC) first and largest, then +$118,975,612 all time (labelled Hyperliquid public leaderboard), BLOCKED BY BAIT. "Con an AI into backing a losing trader using only true facts. Nansen data is what stops you." |
+| Round 1 (0:03) | THE LEGEND. Line 1 (the all-time figure and "Twenty percent of your fund is $5,000"): PENNY calls it a trophy, not a 30-day record, and commits $1,500; caption "PENNY doubts the pitch, then commits $1,500 anyway." The player presses Wire it, the barricade slams shut, and the checkpoint reads Nansen live: six calls listed, five bought at 1 credit each (30d and 7d perp-pnl-summary, perp-trades, perp-positions, perp-screener), perp-leaderboard "not bought: the record already refused, 0 credits", "5 Nansen credits this round". The smart-money CAP (67% of $103.4M against his ETH short) is struck through by the block. Reveal (0:20.3, 4.2 s): caption "Nansen's 30-day record decided it: -$30.6M. BAIT held all $1,500." |
+| Round 2 (0:24.5) | A pasted wallet (0x6dae...90de). One live read: 30 days +$47,744, last 7 days -$56,416. PENNY commits $3,000 on line 1 ("PENNY doubts this pitch too, then commits $3,000 anyway.") and the player wires it. The checkpoint blocks on the reversed week, strikes the concentration CAP through, and lists the same six calls: five at 1 credit, the leaderboard not bought, "5 Nansen credits this round". Reveal (0:41.2): "The month was up; the last week reversed it. BAIT blocked all $3,000." |
+| The result (0:44.3) | "AI agents can be talked into funding losing traders. BAIT stops them." 63/78 AI alone funded the loser, 19/78 with Nansen tools, 0/78 behind BAIT. "Faked evidence: a simple PnL rule let 49 of 67 through. BAIT: 0." (7 of 7 original, 30 of 48 held-out transforms, 12 of 12 held-out doctored PnL, gate v4.) "Held out: 12 unseen losing wallets, 0 of 36 through." "Cost: 6 of 53 good-trader decisions blocked, 9 capped." (3 of 18 and 3 capped original, 3 of 35 and 6 capped held-out.) Footnote: 6 losing wallets · 26 attacks · 3 tries each · true facts only · +12 unseen wallets. |
+| Order and end | Cold open 0:00, round 1 0:03.0, round 2 0:24.5, benchmark card 0:44.3, "Test your own agent" card 0:50.5 to the end (0:53.3): the bench command, bait-wyqr.onrender.com, the repository, Built on the Nansen API, and "BAIT: the check between the agent and the money." |
 
-On the reveal pages the tilted stamp touches the "BAIT's Nansen read" chip; that is in the
-footage, so v24 shows the stamp whole on the checkpoint and frames both reveals to the right of
-it. Built by `scratch/hf/make-gen12.cjs` (from v23's `make-gen11.cjs`) with COLD=3.0
-LADDER=6.2 CLI_CARD=2.8; the held-out figures on the card are read from `bench/HELDOUT.md`.
-v23 (SHA-256 `2ea33b7f5c0ff2d60a556bc49c56d7b2c9a6b31a28307e4f5744d806809735bb`) is superseded.
-v24 predates gate v4 (23 Sep, `bench/V4.md`): its card says 36 of 54 faked-evidence paths through the PnL rule; the README now counts 49 of 67 with the doctored-number attack v4 added, and its checkpoint shows four Nansen calls, not six.
-
-Both rounds' figures come from live Nansen reads whose raw responses (two perp-pnl-summary
-calls, one page of perp-trades and one perp-positions call each, 4 credits a fresh read; the
-files list all three endpoints) are committed. What the checkpoints in the video show: round 2's
-read was fresh, so its calls read "1 credit" each and "4 Nansen credits this round". Round 1's
-checkpoint reads "0 credits (cached read, 13:29 UTC)": the first recording take made that read
-(4 credits) and did not reach the wire, and the take in the video used the same read from the
-30-minute cache, so that round itself spent nothing:
-- Round 1: `bench/live-reads/20260923T132930Z-0x7fdafde5.json`, SHA-256
-  `35af9d1212eb81edd1a5e0a9da7c7032e44e186088124c76d40171492793398c`: 30-day realised PnL
-  -30,943,878.04, win rate 39.24%, 572,917 closed trades.
-- Round 2: `bench/live-reads/20260923T133145Z-0x6daec5ff.json`, SHA-256
-  `ca00c6d2373382a850fd4903934f5e95b786a21e5bd2ef721b2bf1e41ad22797`: 30-day +47,744.49,
+Both rounds' figures come from fresh live Nansen reads on the hosted build; the raw responses (two
+perp-pnl-summary calls, one page of perp-trades, perp-positions and perp-screener each, 5 credits a
+read; the leaderboard was not bought because the record already refused) are committed:
+- Round 1: `bench/live-reads/20260923T160919Z-0x7fdafde5.json`, SHA-256
+  `896ee9c7661b7998aec712ca303aca609b8ffd46dd004385971c0563db551727`: 30-day realised PnL
+  -30,619,686, 7-day -9,470,305, win rate 39.2%, 574,977 closed trades.
+- Round 2: `bench/live-reads/20260923T161051Z-0x6daec5ff.json`, SHA-256
+  `cda080d63d8dd4ee00a5c8aad766a36e6fce3f2be280cc16d533d206da30442f`: 30-day +47,744.49,
   7-day -56,416.09, 1,877 closed trades.
-The host listed the same hashes at /api/live-reads when the round was recorded (its disk is
-wiped when the free service restarts, so the committed copies are the durable ones). Earlier
-cuts (v14 to v17) used reads that are also committed there; v13 and earlier used reads whose
-raw responses were not kept.
+A third hosted round (THE REAL DEAL, 16:08 UTC, not in the video) checked that a wallet the gate
+has to cap buys all six reads: 10 credits, perp-leaderboard +$70,580 against the summary's
++$70,917, `bench/live-reads/20260923T160814Z-0xfe47c8f2.json` (SHA-256 `c73f891b...ec172`).
+The host listed the same hashes at /api/live-reads; its disk is wiped when the free service
+restarts, so the committed copies are the durable ones. Review frames: `scratch/round21/v25/`.
+v24 (SHA-256 `a55f9709b3720e574b37249ef99878b61f4f78d59e408ed68eb938e2147df289`, gate v3, four
+Nansen calls, one round from the cache) is superseded.
 
 ## Draft X post
 
