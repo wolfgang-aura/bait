@@ -32,7 +32,9 @@ import { agentVerdictLine } from '../validation/guard.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
 import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
-import { replayProvider, REPLAY_LABEL, REPLAY_SOURCE } from './replay-provider.js';
+import { replayProvider, REPLAY_SOURCE } from './replay-provider.js';
+import { chooseDeskMode, probeHosted, hostedProvider, validatePennyTurn, MODE_LABEL, HOSTED_PENNY_URL } from './desk-mode.js';
+import { ROOM_DESK, FORMAT_SUFFIX } from './room.js';
 import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP, listRawReads, RAW_NAME } from './live-evidence.js';
 
 /**
@@ -341,6 +343,8 @@ function health() {
   const roomLive = !!room.available;
   return {
     commit: DEPLOYED_COMMIT,
+    // Round 18: every Nansen call this project made, by endpoint and day (no bodies or addresses).
+    usage_ledger: '/api/usage',
     mode: roomLive ? 'live Nansen reads' : 'frozen snapshot',
     live: roomLive,
     live_reason: roomLive ? null : room.blocked_by ?? (room.enabled ? 'unavailable' : 'disabled'),
@@ -477,12 +481,21 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
  * touches the ledger.
  */
 /**
- * Round 18: with no model key on a local clone, PENNY plays recorded real replies instead
- * of refusing to start (BAIT_REPLAY=0 turns this off). Hosted mode never replays.
+ * Round 18: who answers as PENNY (prototype/desk-mode.js). A key here: DeepSeek directly. A
+ * local clone with no key: PENNY via the hosted server, which holds the key and applies its
+ * per-IP caps; if that server cannot be reached, recorded real replies. Every mode is labelled.
+ * BAIT_REPLAY=1 forces the replay; BAIT_REPLAY=0 keeps the old "add a key" stop.
  */
-const NO_KEY_REPLAY = !HOSTED && (process.env.BAIT_REPLAY === '1'
-  || (process.env.BAIT_REPLAY !== '0' && !(process.env.DEEPSEEK_API_KEY || loadEnv().DEEPSEEK_API_KEY)));
-const gameProvider = NO_KEY_REPLAY ? replayProvider() : {
+const HAS_MODEL_KEY = !!(process.env.DEEPSEEK_API_KEY || loadEnv().DEEPSEEK_API_KEY);
+/** Round ids seen by /api/penny, per IP, with the calls each has used. */
+const pennyRounds = new Map();
+const DESK_MODE = process.env.BAIT_REPLAY === '0' && !HAS_MODEL_KEY && !HOSTED ? 'off'
+  : chooseDeskMode({ hosted: HOSTED, hasKey: HAS_MODEL_KEY, replayEnv: process.env.BAIT_REPLAY,
+    hostedReachable: !HOSTED && !HAS_MODEL_KEY && process.env.BAIT_REPLAY !== '1' ? await probeHosted({ url: process.env.BAIT_HOSTED_URL || HOSTED_PENNY_URL }) : false });
+const NO_KEY_REPLAY = DESK_MODE === 'replay' || DESK_MODE === 'hosted';
+const gameProvider = DESK_MODE === 'replay' ? replayProvider()
+  : DESK_MODE === 'hosted' ? hostedProvider({ url: process.env.BAIT_HOSTED_URL || HOSTED_PENNY_URL })
+  : {
   model: 'deepseek-chat',
   chat: async input => {
     guard.chargeCall();
@@ -498,9 +511,11 @@ function gameHealth(worstCase = 6) {
     hosted: HOSTED, hostedRemaining: guard.callsRemaining() });
   const quota = nansenQuota();
   return {
-    ready: desk.ready, model: NO_KEY_REPLAY ? 'recorded replies' : 'DeepSeek', remainingCalls: remaining,
-    // Round 18: replay mode is said on the page, with where the replies come from.
-    replayMode: NO_KEY_REPLAY, replayLabel: NO_KEY_REPLAY ? REPLAY_LABEL : null, replaySource: NO_KEY_REPLAY ? REPLAY_SOURCE : null,
+    ready: desk.ready, model: DESK_MODE === 'replay' ? 'recorded replies' : DESK_MODE === 'hosted' ? 'DeepSeek via hosted server' : 'DeepSeek', remainingCalls: remaining,
+    // Round 18: a clone with no key says who answers as PENNY: the hosted server or recorded replies.
+    deskMode: DESK_MODE,
+    replayMode: NO_KEY_REPLAY, replayLabel: MODE_LABEL[DESK_MODE] ?? null, replaySource: DESK_MODE === 'replay' ? REPLAY_SOURCE : null,
+    hostedFallbacks: gameProvider.state?.fellBack ?? 0,
     // Why play is stopped, if it is: no_key, hosted_cap or local_cap, with the words to show.
     blocker: desk.blocker, message: desk.message,
     // True only when the hosted daily cap, not a missing key, is what stops play.
@@ -602,6 +617,12 @@ const server = http.createServer(async (req, res) => {
       return send(200, fs.readFileSync(full, 'utf8'));
     }
 
+    // Round 18: the public Nansen usage ledger (bench/nansen-usage.json), linked from /api/health.
+    if (url.pathname === '/api/usage' && req.method === 'GET') {
+      const file = path.resolve(HERE, '..', 'bench', 'nansen-usage.json');
+      if (!fs.existsSync(file)) return send(404, { error: 'no usage summary on this host' });
+      return send(200, JSON.parse(fs.readFileSync(file, 'utf8')));
+    }
     if (url.pathname === '/api/proof' && req.method === 'GET') {
       return send(200, buildProof({ results: loadRecordedResults(), live: liveEvidence.status(), stats: guard.stats(), liveReads: listRawReads(LIVE_READS_DIR).filter(r => !liveEvidence.isSealed?.(r.file)) }));
     }
@@ -636,6 +657,25 @@ const server = http.createServer(async (req, res) => {
     }
 
     // The Pitch Room. Same origin policy and same hosted caps as the card encounter.
+    // Round 18: PENNY's turn for a local clone with no model key. Only on the host that holds
+    // the key, only for the exact room desk prompt, counted against the per-IP round cap (a new
+    // round per clone round) and the daily call cap, at most four calls per round.
+    if (url.pathname === '/api/penny' && req.method === 'POST') {
+      if (!HOSTED || !HAS_MODEL_KEY) return send(404, { error: 'not a hosted PENNY server' });
+      const body = await readEncounterBody(req);
+      const turn = validatePennyTurn(body, { roomDesk: ROOM_DESK, formatSuffix: FORMAT_SUFFIX });
+      if (!turn.ok) return send(400, { error: turn.error });
+      const ip = clientIp(req, { trustProxy: HOSTED });
+      const round = String(req.headers['x-bait-round'] ?? '').slice(0, 64) || 'none';
+      const key = `${ip}|${round}`;
+      const used = pennyRounds.get(key) ?? 0;
+      if (used === 0) guard.startRound(ip);
+      if (used >= 4) return send(429, { error: 'this round has used its PENNY calls' });
+      pennyRounds.set(key, used + 1);
+      if (pennyRounds.size > 5000) pennyRounds.delete(pennyRounds.keys().next().value);
+      const out = await gameProvider.chat({ system: turn.system, turns: turn.turns, tools: [] });
+      return send(200, { text: out.text ?? '' });
+    }
     if (url.pathname.startsWith('/api/room')) {
       if (!originAllowed(req)) {
         return send(403, { error: HOSTED ? 'Cross-site requests are not accepted.' : 'This prototype only accepts local requests.' });

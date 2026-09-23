@@ -1,0 +1,80 @@
+{
+ "source": "validation/call_ledger.jsonl (dev repo), summarised by scripts/usage-summary.mjs",
+ "first": "2026-09-15T10:38:33.669Z",
+ "last": "2026-09-23T12:30:23.008Z",
+ "calls": 1160,
+ "ok": 1159,
+ "credits": 1132,
+ "byEndpoint": {
+  "account": {
+   "calls": 55,
+   "ok": 55,
+   "credits": 0
+  },
+  "perp-leaderboard": {
+   "calls": 6,
+   "ok": 6,
+   "credits": 30
+  },
+  "profiler/perp-pnl-summary": {
+   "calls": 1008,
+   "ok": 1008,
+   "credits": 1008
+  },
+  "profiler/perp-positions": {
+   "calls": 12,
+   "ok": 12,
+   "credits": 12
+  },
+  "profiler/perp-trades": {
+   "calls": 76,
+   "ok": 75,
+   "credits": 75
+  },
+  "tgm/token-information": {
+   "calls": 1,
+   "ok": 1,
+   "credits": 1
+  },
+  "tgm/flow-intelligence": {
+   "calls": 1,
+   "ok": 1,
+   "credits": 1
+  },
+  "tgm/holders": {
+   "calls": 1,
+   "ok": 1,
+   "credits": 5
+  }
+ },
+ "byDay": {
+  "2026-09-15": {
+   "calls": 60,
+   "credits": 74
+  },
+  "2026-09-18": {
+   "calls": 76,
+   "credits": 64
+  },
+  "2026-09-19": {
+   "calls": 282,
+   "credits": 275
+  },
+  "2026-09-20": {
+   "calls": 656,
+   "credits": 647
+  },
+  "2026-09-21": {
+   "calls": 13,
+   "credits": 13
+  },
+  "2026-09-22": {
+   "calls": 21,
+   "credits": 13
+  },
+  "2026-09-23": {
+   "calls": 52,
+   "credits": 46
+  }
+ }
+}

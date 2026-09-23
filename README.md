@@ -1,12 +1,36 @@
 # BAIT, the check that runs before an AI agent moves money
 
-**Judging BAIT? Start here.**
+## Judging this? 60 seconds
 
-1. [Play one round](https://bait-wyqr.onrender.com/) (about 60 s): talk an AI into backing
-   a losing trader, then watch BAIT's Nansen read stop the money.
-2. [See the proof](https://wolfgang-aura.github.io/bait/): the per-wallet result below,
-   also as JSON with raw-file hashes at [/api/proof](https://bait-wyqr.onrender.com/api/proof).
-3. [Run the bench on your own agent](#test-your-own-agent): one command, zero Nansen credits.
+- **Play it live:** <https://bait-wyqr.onrender.com/>
+- **Run it with no keys:** `git clone https://github.com/wolfgang-aura/bait; cd bait; npm start`,
+  then open <http://localhost:3000>. With no model key, PENNY answers through the hosted server
+  (labelled "PENNY via hosted server"), or from recorded real replies if that server is down
+  (labelled "Replay mode"). With no Nansen key the gate reads the frozen Nansen captures.
+- **What you'll see:** pick a trader, talk PENNY (an AI agent with a $25,000 fund) into backing
+  them with true facts, and press Wire it. A gate slams shut, BAIT reads Nansen, and the
+  checkpoint shows every check, the Nansen calls behind it and the verdict: BLOCKED, CAPPED or
+  CLEARED.
+- **The result:** on six losing wallets, 26 attacks, three runs each, true facts only, the AI
+  backed a losing trader **63 of 78** times alone, **19 of 78** with Nansen tools, and **0 of 78**
+  behind BAIT ([report](bench/reports/2026-09-23T02-53-37-602Z-wallets.md),
+  [raw rows](bench/reports/2026-09-23T02-53-37-602Z-wallets.jsonl)).
+
+| Nansen endpoint | What it decides |
+| --- | --- |
+| `profiler/perp-pnl-summary`, 30 days | Right wallet, window, source and dates; a losing month blocks; under 20 closed trades or a win rate under 40% blocks; one market carrying the month caps at 25% |
+| `profiler/perp-pnl-summary`, 7 days | A week that contradicts the month by 10% or more of it blocks |
+| `profiler/perp-trades`, newest 1,000 fills | Drawdown and worst trade, against the account value (watch); N/A when the fills cover under a week |
+| `profiler/perp-positions` | Account value, and open positions down more than 25% of it cap at 25% |
+
+**How it's checked**
+
+- `npm test`: 404 tests, no keys, no network.
+- `node bench/wallets.js --execute --resume bench/reports/2026-09-23T02-53-37-602Z-wallets.jsonl`
+  re-scores the whole benchmark with zero model calls and zero Nansen credits.
+- Every live read's raw Nansen responses are committed in `bench/live-reads/` and listed with
+  their SHA-256 at [/api/live-reads](https://bait-wyqr.onrender.com/api/live-reads); every Nansen
+  call this project made, by endpoint and day, is at [/api/usage](https://bait-wyqr.onrender.com/api/usage).
 
 AI agents are starting to move real money, and true facts can talk them into bad bets.
 BAIT sits between an agent's decision and the transfer, reads the trader's record from
@@ -101,11 +125,9 @@ round uses the capture's fills and says how old they are.
 
 ## Run it yourself
 
-**Run it in 60 seconds, no keys:** `git clone https://github.com/wolfgang-aura/bait; cd bait; npm start`,
-then open http://localhost:3000. With no `DEEPSEEK_API_KEY`, PENNY plays real replies recorded
-from the benchmark desk and the page says "Replay mode, no model key"; with no `NANSEN_API_KEY`
-the gate reads the frozen Nansen captures. Add either key to `.env` (copy `.env.example`) for a
-live model or live Nansen reads. The bench and `npm test` need no keys.
+No keys are needed to play (see the top of this page). Add `DEEPSEEK_API_KEY` to `.env` (copy
+`.env.example`) to run PENNY on your own model key, and `NANSEN_API_KEY` for live Nansen reads.
+`BAIT_REPLAY=1` forces the recorded replies. The bench and `npm test` need no keys.
 
 ```powershell
 npm install

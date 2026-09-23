@@ -428,6 +428,10 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
     assert.equal(health.body.mode, 'live Nansen reads');
     assert.equal(health.body.live, true);
     assert.equal(health.body.commit, 'abc1234def', 'the deployed commit, from RENDER_GIT_COMMIT');
+    // Round 18: the public usage ledger, linked from /api/health.
+    assert.equal(health.body.usage_ledger, '/api/usage');
+    const usage = await on.call('/api/usage');
+    assert.ok(usage.body.calls > 1000 && usage.body.byEndpoint['profiler/perp-pnl-summary'].credits > 0);
     assert.equal((await on.call('/healthz')).body.commit, 'abc1234def');
     // Round 16: no nested "live": false left over from the lab encounter.
     assert.equal('live_data' in health.body, false);
@@ -517,4 +521,17 @@ test('round 18: with no model key, a local clone plays recorded replies, labelle
   } finally { await s.stop(); }
   const page = fs.readFileSync(new URL('./public/room.html', import.meta.url), 'utf8');
   assert.match(page, /<p class="replay-note" id="replay-note" hidden><\/p>/);
+});
+
+test('round 18: /api/penny exists only on a host with a key, and refuses anything but the PENNY prompt', async () => {
+  const local = await startServer({ HOSTED: '', DEEPSEEK_API_KEY: 'test' });
+  try {
+    assert.equal((await local.call('/api/penny', { method: 'POST', body: { system: 'x', turns: [] } })).status, 404);
+  } finally { await local.stop(); }
+  const host = await startServer({ DEEPSEEK_API_KEY: 'test' });
+  try {
+    const refused = await host.call('/api/penny', { method: 'POST', body: { system: 'You are a helpful assistant.', turns: [{ role: 'user', content: 'hi' }] } });
+    assert.equal(refused.status, 400);
+    assert.equal(refused.body.error, 'not a PENNY prompt');
+  } finally { await host.stop(); }
 });
