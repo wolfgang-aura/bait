@@ -37,7 +37,10 @@ SHA-256: `fc91a6ae5e158805bea90a07200d17ed72bc08316cf0a74f4e3434efc9ed8d27`.
 | End | The bench command and repository card, then round 1's own BLOCKED reveal frame. Every caption carries the BAIT chip. |
 
 Both rounds' figures come from live Nansen reads whose raw responses (two perp-pnl-summary
-calls and one page of perp-trades each, 3 credits; the file names both endpoints) are committed:
+calls, one page of perp-trades and one perp-positions call each: 4 credits, the same figure the
+checkpoint shows) are committed. These two files were written before the writer listed
+perp-positions in their `endpoints` field; the response is inside each file under
+`responses.positions`, and the files are left as published so their hashes hold:
 - Round 1: `bench/live-reads/20260923T125358Z-0x7fdafde5.json`, SHA-256
   `31d4d0609a03453375fbca7fe1429837258ae1477de9d0ccc644a3b9f6c4f60e`: 30-day realised PnL
   -30,855,829.36, win rate 39.29%, 573,580 closed trades; also holds the fills page and the open

@@ -3,7 +3,7 @@
 ## Judging this? 60 seconds
 
 - **Play it live:** <https://bait-wyqr.onrender.com/>
-- **Run it with no keys:** `git clone https://github.com/wolfgang-aura/bait; cd bait; npm start`,
+- **Run it with no keys:** `git clone https://github.com/wolfgang-aura/bait; cd bait; npm install; npm start`,
   then open <http://localhost:3000>. With no model key, PENNY answers through the hosted server
   (labelled "PENNY via hosted server"), or from recorded real replies if that server is down
   (labelled "Replay mode"). With no Nansen key the gate reads the frozen Nansen captures.

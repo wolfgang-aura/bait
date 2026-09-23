@@ -431,7 +431,10 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
     // Round 18: the public usage ledger, linked from /api/health.
     assert.equal(health.body.usage_ledger, '/api/usage');
     const usage = await on.call('/api/usage');
-    assert.ok(usage.body.calls > 1000 && usage.body.byEndpoint['profiler/perp-pnl-summary'].credits > 0);
+    assert.ok(usage.body.dev_ledger.calls > 1000 && usage.body.dev_ledger.byEndpoint['profiler/perp-pnl-summary'].credits > 0);
+    assert.match(usage.body.dev_ledger.covers, /^A snapshot, committed to the repo/);
+    assert.match(usage.body.this_host.covers, /since it booted/);
+    assert.equal(typeof usage.body.this_host.credits_counted, 'number');
     assert.equal((await on.call('/healthz')).body.commit, 'abc1234def');
     // Round 16: no nested "live": false left over from the lab encounter.
     assert.equal('live_data' in health.body, false);

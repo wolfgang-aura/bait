@@ -761,18 +761,9 @@ function rollFunded(to) {
     void el.pop.offsetWidth;
     el.pop.classList.add('go');
   }
-  if (reduced || from === to) { text(el.funded, dollars(to)); return; }
-  const started = performance.now();
-  const step = now => {
-    // A frame timestamp can precede performance.now() at the start: clamp, or the meter dips below zero.
-    const t = Math.min(1, Math.max(0, (now - started) / 700));
-    text(el.funded, dollars(from + (to - from) * (1 - Math.pow(1 - t, 3))));
-    if (t < 1 && fundedShown === to) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-  // A throttled tab (or a screen recorder) can starve animation frames: the meter still lands
-  // on the real figure, so it never disagrees with the beat or the Wire button.
-  setTimeout(() => { if (fundedShown === to) text(el.funded, dollars(to)); }, 760);
+  // Round 19: no count-up. The meter shows the committed figure at once, so it can never read
+  // $2,999 beside a $3,000 card; the +$X pop carries the motion.
+  text(el.funded, dollars(to));
 }
 
 function setSuspicion(value) {
@@ -867,6 +858,8 @@ function adopt(state) {
   if (state.evidence && 'live' in state.evidence) setBadge(state.evidence);
   shots = state.shots ?? [];
   dossier = state.dossier;
+  // Round 19: the mode label follows the server; a hosted clone that fell back says Replay mode.
+  if (state.health?.replayLabel) { el.replayNote.hidden = false; text(el.replayNote, state.health.replayLabel); }
   if (state.prospect) { chosen = state.prospect; setAccent(NEUTRAL_ACCENT); }
   return state;
 }

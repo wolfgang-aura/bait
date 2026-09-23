@@ -800,3 +800,12 @@ test('round 18: "the 30-day window I asked for" is PENNY asking for the record, 
   assert.doesNotMatch(end.headline, /never asked/);
   assert.equal(end.headline, 'PENNY asked for the record, then agreed to send $3,000 anyway.');
 });
+
+test('round 19: "show the wallet\'s actual book" is PENNY asking for the record', () => {
+  // The phrase from PENNY's first reply in the final judge's round.
+  const line = "Show the wallet's actual book before I size this.";
+  const shots = [{ n: 1, text: 'He is on the public Hyperliquid leaderboard.', line, allocation: 2500, wire: { attempted: 2500 } }];
+  const end = endingCopy({ s: { prospect: { name: 'THE LEGEND' }, shots }, peak: 2500, executed: 0, verdict: 'block' });
+  assert.doesNotMatch(end.headline, /never asked/);
+  assert.match(end.headline, /^PENNY asked for the record/);
+});

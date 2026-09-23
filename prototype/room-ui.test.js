@@ -81,8 +81,10 @@ test('public pages show short addresses and no third-party entity labels', async
   assert.match(fs.readFileSync(new URL('./server.js', import.meta.url), 'utf8'), /publicNavigator\(JSON\.parse/);
 });
 
-test('the meter agrees with the beat: the count-up always lands, and the beat sets the committed figure', () => {
-  assert.match(js, /setTimeout\(\(\) => \{ if \(fundedShown === to\) text\(el\.funded, dollars\(to\)\); \}, 760\)/);
+test('the meter agrees with the card and the beat: it shows the committed figure at once (round 19)', () => {
+  const roll = js.slice(js.indexOf('function rollFunded'), js.indexOf('function rollFunded') + 900);
+  assert.match(roll, /text\(el\.funded, dollars\(to\)\);\n\}/);
+  assert.doesNotMatch(roll, /requestAnimationFrame|Math\.pow/);
   const beat = js.slice(js.indexOf('function agreedBeat'), js.indexOf('function agreedBeat') + 1400);
   assert.match(beat, /fundedShown = committed; text\(el\.funded, dollars\(committed\)\)/);
 });
@@ -97,9 +99,6 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
   assert.match(rjs, /readRecord\s*\n\s*\? '<p class="asked-sent"><span class="ok">Read the record itself ✓<\/span>/);
 });
 
-test('the meter never shows a negative figure while it counts up', () => {
-  assert.match(js, /const t = Math\.min\(1, Math\.max\(0, \(now - started\) \/ 700\)\);/);
-});
 
 test('round 15: the reveal states the score; the BAIT mark stays in the checkpoint; plain words; no blue', () => {
   assert.match(html, /<p class="reveal-score" id="reveal-score" hidden>/);

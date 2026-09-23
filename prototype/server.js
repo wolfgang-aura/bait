@@ -33,7 +33,7 @@ import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
 import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
 import { replayProvider, REPLAY_SOURCE } from './replay-provider.js';
-import { chooseDeskMode, probeHosted, hostedProvider, validatePennyTurn, MODE_LABEL, HOSTED_PENNY_URL } from './desk-mode.js';
+import { chooseDeskMode, probeHosted, hostedProvider, validatePennyTurn, labelFor, HOSTED_PENNY_URL } from './desk-mode.js';
 import { ROOM_DESK, FORMAT_SUFFIX } from './room.js';
 import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP, listRawReads, RAW_NAME } from './live-evidence.js';
 
@@ -331,6 +331,8 @@ function nansenQuota() {
   };
 }
 
+/** Round 19: when this process started, for the host's own usage counter. */
+const BOOTED_AT = new Date().toISOString();
 /** Round 17: the deployed commit, from the host's environment; null when it is not set. */
 const DEPLOYED_COMMIT = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || null;
 
@@ -489,7 +491,9 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
 const HAS_MODEL_KEY = !!(process.env.DEEPSEEK_API_KEY || loadEnv().DEEPSEEK_API_KEY);
 /** Round ids seen by /api/penny, per IP, with the calls each has used. */
 const pennyRounds = new Map();
-const DESK_MODE = process.env.BAIT_REPLAY === '0' && !HAS_MODEL_KEY && !HOSTED ? 'off'
+// BAIT_DESK=hosted|replay|deepseek pins the mode on a local server (used by the round 19 end-to-end check).
+const DESK_MODE = !HOSTED && ['hosted', 'replay', 'deepseek'].includes(process.env.BAIT_DESK) ? process.env.BAIT_DESK
+  : process.env.BAIT_REPLAY === '0' && !HAS_MODEL_KEY && !HOSTED ? 'off'
   : chooseDeskMode({ hosted: HOSTED, hasKey: HAS_MODEL_KEY, replayEnv: process.env.BAIT_REPLAY,
     hostedReachable: !HOSTED && !HAS_MODEL_KEY && process.env.BAIT_REPLAY !== '1' ? await probeHosted({ url: process.env.BAIT_HOSTED_URL || HOSTED_PENNY_URL }) : false });
 const NO_KEY_REPLAY = DESK_MODE === 'replay' || DESK_MODE === 'hosted';
@@ -514,7 +518,7 @@ function gameHealth(worstCase = 6) {
     ready: desk.ready, model: DESK_MODE === 'replay' ? 'recorded replies' : DESK_MODE === 'hosted' ? 'DeepSeek via hosted server' : 'DeepSeek', remainingCalls: remaining,
     // Round 18: a clone with no key says who answers as PENNY: the hosted server or recorded replies.
     deskMode: DESK_MODE,
-    replayMode: NO_KEY_REPLAY, replayLabel: MODE_LABEL[DESK_MODE] ?? null, replaySource: DESK_MODE === 'replay' ? REPLAY_SOURCE : null,
+    replayMode: NO_KEY_REPLAY, replayLabel: labelFor(DESK_MODE, gameProvider), replaySource: DESK_MODE === 'replay' || gameProvider.state?.fellBack ? REPLAY_SOURCE : null,
     hostedFallbacks: gameProvider.state?.fellBack ?? 0,
     // Why play is stopped, if it is: no_key, hosted_cap or local_cap, with the words to show.
     blocker: desk.blocker, message: desk.message,
@@ -619,9 +623,22 @@ const server = http.createServer(async (req, res) => {
 
     // Round 18: the public Nansen usage ledger (bench/nansen-usage.json), linked from /api/health.
     if (url.pathname === '/api/usage' && req.method === 'GET') {
+      // Round 19: two things, each named for what it covers.
       const file = path.resolve(HERE, '..', 'bench', 'nansen-usage.json');
-      if (!fs.existsSync(file)) return send(404, { error: 'no usage summary on this host' });
-      return send(200, JSON.parse(fs.readFileSync(file, 'utf8')));
+      const live = liveEvidence.status();
+      return send(200, {
+        this_host: {
+          covers: "This server's own live Nansen reads (the Pitch Room) since it booted. The free host restarts when idle, so this count starts again then.",
+          booted_at: BOOTED_AT,
+          live_reads: live.reads_this_process ?? 0,
+          credits_counted: live.credits_total ?? 0,
+          credits_today: live.credits_today ?? 0,
+          credits_per_read: live.credits_per_read ?? null,
+        },
+        dev_ledger: fs.existsSync(file)
+          ? { covers: 'A snapshot, committed to the repo, of every Nansen call made from the development machine (bench, captures, local rounds). It does not include this host\'s reads above.', ...JSON.parse(fs.readFileSync(file, 'utf8')) }
+          : null,
+      });
     }
     if (url.pathname === '/api/proof' && req.method === 'GET') {
       return send(200, buildProof({ results: loadRecordedResults(), live: liveEvidence.status(), stats: guard.stats(), liveReads: listRawReads(LIVE_READS_DIR).filter(r => !liveEvidence.isSealed?.(r.file)) }));

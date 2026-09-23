@@ -363,9 +363,9 @@ const recordName = () => 'Nansen';
  */
 // "30 days" as well as "30-day": a desk asking "where are the last 30 days?" has asked.
 /** Words that name the record PENNY could have asked for. */
-export const RECORD_WORDS = /\b(30[- ]?days?|thirty[- ]days?|last month|trailing|track record|record|p&l|pnl|profit and loss|drawdown|window|evidence|history|verif\w*)\b/i;
+export const RECORD_WORDS = /\b(30[- ]?days?|thirty[- ]days?|last month|trailing|track record|record|p&l|pnl|profit and loss|drawdown|window|evidence|history|verif\w*|book|performance|returns?|results|numbers)\b/i;
 /** A request: a question about the record, or an explicit ask to be shown it. */
-const ASKS = /\?|\b(show me|give me|send me|i need|i'd need|i want to see|need to see|let me see|prove it|where(?:'s| is| are)|(?:i|i've|i have) asked for|i asked)\b/i;
+const ASKS = /\?|\b(show (?:me|us|the|your)|give me|send me|i need|i'd need|i want to see|need to see|let me see|prove it|where(?:'s| is| are)|(?:i|i've|i have) asked for|i asked)\b/i;
 /** A remark that the record is missing, which is not a request. */
 const NOTES_MISSING = /\b(no|without|missing|lacks?|not shown|isn't shown|nothing on|nothing about|(?:tells?|says?) (?:me )?nothing)\b/i;
 /**
