@@ -21,7 +21,7 @@ Current evidence:
 
 ## The recording
 
-`scratch/BAIT-judge-v8.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, rendered with
+`scratch/BAIT-judge-v10.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, rendered with
 HyperFrames over a real round recorded at 3840 by 2160. SHA-256 is recorded below once the
 founder approves the cut.
 
