@@ -27,6 +27,8 @@
       <a href="https://github.com/wolfgang-aura/bait" rel="noopener">GitHub</a>
     </nav>
   </header>
+  <!-- Round 18: said up front when PENNY is playing recorded replies (no model key). -->
+  <p class="replay-note" id="replay-note" hidden></p>
 
   <!-- ============================================ 1. pick your hero ==== -->
   <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
@@ -287,6 +289,8 @@
       <p class="cp-read" id="cp-read"></p>
     </div>
     <ol class="cp-rows" id="cp-rows"></ol>
+    <!-- Round 18: the Nansen calls this verdict stands on. -->
+    <ul class="cp-calls" id="cp-calls" hidden aria-label="Nansen calls behind this verdict"></ul>
     <p class="cp-stamp" id="cp-stamp" hidden></p>
     <p class="cp-actions"><button type="button" class="primary cp-next" id="cp-next" hidden>See what happened &rarr;</button></p>
   </div>
@@ -295,18 +299,21 @@
 <!-- The barricade: the transfer heads for the exit, a gate slams shut across it, chain and
      lock drop, the BAIT mark lands. A different system has stepped in. -->
 <div class="barrier" id="barrier" hidden aria-hidden="true">
+  <!-- Round 18: two heavy gate panels slam shut from the edges and meet on a hazard seam; the
+       padlock drops onto the seam and snaps; the BAIT badge lands at stamp scale over what it held. -->
   <div class="bar-transfer" id="bar-transfer"><b id="bar-amt">$0</b><span id="bar-to">to this trader</span></div>
-  <div class="bar-gate top"></div>
-  <div class="bar-gate bottom"></div>
-  <svg class="bar-chain" viewBox="0 0 600 40" preserveAspectRatio="none" aria-hidden="true">
-    <rect x="4" y="10" width="42" height="20" rx="10" /><rect x="54" y="10" width="42" height="20" rx="10" /><rect x="104" y="10" width="42" height="20" rx="10" /><rect x="154" y="10" width="42" height="20" rx="10" /><rect x="204" y="10" width="42" height="20" rx="10" /><rect x="254" y="10" width="42" height="20" rx="10" /><rect x="304" y="10" width="42" height="20" rx="10" /><rect x="354" y="10" width="42" height="20" rx="10" /><rect x="404" y="10" width="42" height="20" rx="10" /><rect x="454" y="10" width="42" height="20" rx="10" /><rect x="504" y="10" width="42" height="20" rx="10" /><rect x="554" y="10" width="42" height="20" rx="10" />
+  <div class="bar-panel left"><i class="bar-hazard"></i></div>
+  <div class="bar-panel right"><i class="bar-hazard"></i></div>
+  <div class="bar-flash"></div>
+  <svg class="bar-lock" viewBox="0 0 120 150" aria-hidden="true">
+    <path class="shackle" d="M30 70 V42 a30 30 0 0 1 60 0 V70" fill="none" stroke-width="16" stroke-linecap="round"/>
+    <rect class="body" x="8" y="62" width="104" height="84" rx="12"/>
+    <rect class="shine" x="16" y="70" width="88" height="10" rx="5"/>
+    <circle class="keyhole" cx="60" cy="98" r="11"/>
+    <rect class="keyhole" x="55" y="100" width="10" height="26" rx="4"/>
   </svg>
-  <svg class="bar-lock" viewBox="0 0 64 80" aria-hidden="true">
-    <path d="M16 34 V22 a16 16 0 0 1 32 0 V34" fill="none" stroke-width="8"/>
-    <rect x="6" y="32" width="52" height="44" rx="6"/>
-    <circle cx="32" cy="52" r="6" class="keyhole"/>
-  </svg>
-  <p class="bar-mark"><span class="bait-badge">BAIT</span><span>stepped in</span></p>
+  <div class="bar-stamp"><span class="bait-badge">BAIT</span><b id="bar-held">$0 HELD</b><span class="bar-why">while BAIT checks the record</span></div>
+  <div class="bar-grain"></div>
 </div>
 
 <!-- The beat between PENNY agreeing and BAIT stepping in: who agreed, after how many lines. -->

@@ -232,6 +232,7 @@ export function toLine(text, max = 24) {
   if (!words.length) return '';
   if (words.length <= max) return words.join(' ');
   const head = words.slice(0, max).join(' ');
+  if (/[.!?]$/.test(head)) return head;
   const stop = Math.max(head.lastIndexOf('. '), head.lastIndexOf('? '), head.lastIndexOf('! '));
   return stop > 0 ? head.slice(0, stop + 1) : `${head}...`;
 }
@@ -389,6 +390,40 @@ export const CITES_WINDOW = /\b(?:30|thirty|7|seven)[- ]?(?:days?|d)\b|\b(?:this
 export const pitchShowedWindow = shots => shots.some(shot => CITES_WINDOW.test(String(shot.text ?? '')));
 /** Kept for callers that only need yes or no: the line asked for the record. */
 export const ASKED_FOR_RECORD = { test: line => recordMention(line) === 'asked' };
+
+/** Round 18: which gate rows each Nansen call stands on. */
+const CALL_ROWS = {
+  summary30: ['evidence_30d', 'realised_pnl_30d', 'thin_sample', 'low_win_rate', 'concentration'],
+  summary7: ['evidence_7d', 'regime_agreement'],
+  trades: ['fills_drawdown', 'fills_worst_trade'],
+  positions: ['open_book'],
+};
+/**
+ * Round 18: the Nansen calls behind a verdict, for the card under the checkpoint: endpoint,
+ * credits, when it was read, and the strongest word among the rows it decided. A cached read
+ * cost this round nothing and says so; a frozen round made no call at all.
+ */
+export function nansenCalls(snapshot, checks) {
+  const word = ids => {
+    const rs = checks.filter(c => ids.includes(c.id)).map(c => c.result);
+    return rs.includes('fail') ? 'BLOCK' : rs.includes('cap') ? 'CAP' : rs.includes('caution') ? 'WATCH' : rs.includes('pass') ? 'PASS' : 'N/A';
+  };
+  const lr = snapshot?.live_read;
+  if (!lr) {
+    return [{ endpoint: 'frozen Nansen capture', credits: 0, at: snapshot?.retrieved_at ?? null, cached: false, frozen: true,
+      decided: word([...CALL_ROWS.summary30, ...CALL_ROWS.summary7, ...CALL_ROWS.trades, ...CALL_ROWS.positions]) }];
+  }
+  const cached = !!lr.cached;
+  const cost = n => (cached ? 0 : n);
+  const at = lr.fetched_at ?? null;
+  const calls = [
+    { endpoint: 'profiler/perp-pnl-summary 30d', credits: cost(1), at, cached, decided: word(CALL_ROWS.summary30) },
+    { endpoint: 'profiler/perp-pnl-summary 7d', credits: cost(1), at, cached, decided: word(CALL_ROWS.summary7) },
+  ];
+  if (lr.fills_live) calls.push({ endpoint: 'profiler/perp-trades', credits: cost(snapshot.trades_pagination?.pages_fetched ?? 1), at, cached, decided: word(CALL_ROWS.trades) });
+  if (snapshot.open_positions?.live) calls.push({ endpoint: 'profiler/perp-positions', credits: cost(1), at, cached, decided: word(CALL_ROWS.positions) });
+  return calls;
+}
 
 /** Round 17: the evidence as the page may see it before the verdict: no figures, no raw pointer. */
 export function sealEvidence(ev) {
@@ -776,6 +811,11 @@ export function createRoomService({
       policy: { ...(p.guardPolicy ?? BENCHMARK_GUARD_POLICY), readAllWindows: true },
       now,
     });
+    const checks = [
+      ...(decision.checks ?? []).filter(c => !['tail_loss', 'max_drawdown'].includes(c.id))
+        .map(c => ({ id: c.id, result: c.result, plain: plainer(freshnessPlain(p, c)), source: CHECK_SOURCE[c.id] ?? null })),
+      ...tapeRows(p),
+    ];
     return {
       decision: decision.decision,
       code: decision.code,
@@ -790,11 +830,9 @@ export function createRoomService({
       policyId: decision.policy.id,
       // The whole check table, so the final card can show why, not just whether. The two
       // fill-tape rows come last: measured on the fills, live when the tape was read live.
-      checks: [
-        ...(decision.checks ?? []).filter(c => !['tail_loss', 'max_drawdown'].includes(c.id))
-          .map(c => ({ id: c.id, result: c.result, plain: plainer(freshnessPlain(p, c)), source: CHECK_SOURCE[c.id] ?? null })),
-        ...tapeRows(p),
-      ],
+      checks,
+      // Round 18: the Nansen calls this verdict stands on, shown under the checkpoint.
+      calls: nansenCalls(p.snapshot, checks),
       evidenceAt: decision.evidence.retrieved_at ?? null,
       live: !!p.snapshot?.live_read,
       // Round 17: the open positions were read live with the summaries (profiler/perp-positions).

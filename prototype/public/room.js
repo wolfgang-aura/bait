@@ -57,9 +57,10 @@ const el = {
   initials: $('initials'), submitScore: $('submit-score'), scoreStatus: $('score-status'),
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
   transcript: $('transcript-body'), bootError: $('boot-error'), setupNote: $('setup-note'),
-  checkpoint: $('checkpoint'), cpMove: $('cp-move'), cpRead: $('cp-read'), cpRows: $('cp-rows'), cpStamp: $('cp-stamp'),
+  checkpoint: $('checkpoint'), cpMove: $('cp-move'), cpRead: $('cp-read'), cpRows: $('cp-rows'), cpCalls: $('cp-calls'), cpStamp: $('cp-stamp'),
   agreedQuote: $('agreed-quote'), agreedMarks: $('agreed-marks'), wire: $('wire-it'),
-  barrier: $('barrier'), barAmt: $('bar-amt'), barTo: $('bar-to'),
+  replayNote: $('replay-note'),
+  barrier: $('barrier'), barAmt: $('bar-amt'), barTo: $('bar-to'), barHeld: $('bar-held'),
   cpNext: $('cp-next'), cpWhatif: $('cp-whatif'), cpTitle: $('cp-title'), hintKeys: $('hint-keys'), agreed: $('agreed'), agreedLine: $('agreed-line'),
   anyWallet: $('any-wallet'), anyWalletInput: $('any-wallet-input'), anyWalletGo: $('any-wallet-go'), anyWalletNote: $('any-wallet-note'),
 };
@@ -283,11 +284,13 @@ function markBait(node, sentence) {
 async function barricade(final) {
   text(el.barAmt, final.peakLabel);
   text(el.barTo, `to ${final.prospect?.name ?? 'this trader'}`);
+  // The transfer is held while the gate reads Nansen, whatever the verdict turns out to be.
+  text(el.barHeld, `${final.peakLabel} HELD`);
   el.barrier.hidden = false;
   el.barrier.classList.remove('run');
   void el.barrier.offsetWidth;
   el.barrier.classList.add('run');
-  await sleep(reduced ? 1200 : 2300);
+  await sleep(reduced ? 1200 : 2200);
   el.barrier.hidden = true;
 }
 
@@ -379,6 +382,8 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   const raw = final.evidence?.raw;
   if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
   el.cpRows.replaceChildren();
+  el.cpCalls.replaceChildren();
+  el.cpCalls.hidden = true;
   el.cpStamp.hidden = true;
   el.checkpoint.className = 'checkpoint';
   el.checkpoint.hidden = false;
@@ -399,6 +404,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     if (!reduced) await sleep(260);
   }
   if (!reduced) await sleep(250);
+  renderCalls(gate.calls ?? []);
   const kind = final.verdict === 'block' ? 'blocked' : final.verdict === 'capped' ? 'caution' : 'cleared';
   el.cpStamp.className = `cp-stamp ${kind}`;
   setStamp(el.cpStamp, final);
@@ -411,6 +417,34 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   await new Promise(resolve => el.cpNext.addEventListener('click', resolve, { once: true }));
   el.cpNext.hidden = true;
   el.checkpoint.hidden = true;
+}
+
+/**
+ * Round 18: under the checkpoint, the Nansen calls this verdict stands on: endpoint, credits,
+ * when it was read and the word it decided. Small, one line each.
+ */
+function renderCalls(calls) {
+  el.cpCalls.replaceChildren();
+  for (const c of calls) {
+    const li = document.createElement('li');
+    const at = c.at ? `${String(c.at).slice(11, 16)} UTC` : '';
+    const cost = c.frozen ? `no call this round, captured ${String(c.at ?? '').slice(0, 10)}` : c.cached ? `0 credits (cached read, ${at})` : `${c.credits} credit${c.credits === 1 ? '' : 's'} · ${at}`;
+    const name = document.createElement('b');
+    name.textContent = c.endpoint;
+    const verdict = document.createElement('span');
+    verdict.className = `v-${c.decided.replace('/', '')}`;
+    verdict.textContent = c.decided;
+    li.append(name, ` · ${cost} → `, verdict);
+    el.cpCalls.append(li);
+  }
+  const total = calls.reduce((a, c) => a + (c.credits || 0), 0);
+  const foot = document.createElement('li');
+  const link = document.createElement('a');
+  link.href = '/api/health';
+  link.textContent = 'all Nansen usage';
+  foot.append(`${total} Nansen credit${total === 1 ? '' : 's'} this round · `, link);
+  el.cpCalls.append(foot);
+  el.cpCalls.hidden = calls.length === 0;
 }
 
 /**
@@ -1367,6 +1401,11 @@ async function boot() {
     el.badge.title = config.evidence.liveReady
       ? 'Picking a trader reads two Nansen summaries for them.'
       : 'Live reads are off or used up. Every round plays the frozen capture.';
+    // Round 18: replay mode (no model key) is labelled before anyone pitches.
+    if (config.health?.replayMode) {
+      el.replayNote.hidden = false;
+      text(el.replayNote, config.health.replayLabel);
+    }
     if (config.health && config.health.ready === false) {
       // The server names the stop: a missing key, the hosted daily cap or a spent local budget.
       fail(config.health.message ?? (config.health.capReached ? 'Today’s live rounds are used up.' : 'The desk cannot take a pitch right now.'));

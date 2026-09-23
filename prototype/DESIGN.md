@@ -1,6 +1,29 @@
 # BAIT public page, version B
 
-## Version P: nothing before the gate, 23 September 2026 (current)
+## Version Q: the barricade has weight, 23 September 2026 (current)
+
+The old barricade (thin chain ovals on a line, a 64 px lock, a small "stepped in" label over
+a flat striped wall) read as amateur, with most of the screen empty.
+
+- **Two steel panels slam in from the edges** and meet at the centre in 320 ms, with a 1.2%
+  overshoot and settle, an amber flash at the seam and a 300 ms shake on contact. The panels
+  are dark warm steel (#25211C with a fine horizontal grain), a rivet grid every 88 px and an
+  inset frame, so they read as heavy.
+- **An amber/black hazard band** (45 degree stripes, 34 px, 14vh tall) runs across the seam.
+- **The padlock is 19vh tall**, amber body with a warm grey shackle, drops from above onto the
+  seam and snaps the shackle down.
+- **The BAIT badge lands at stamp scale** (9vh, tilted 3 degrees) with the amount under it,
+  "$5,000 HELD", and "while BAIT checks the record": true for every verdict at that moment.
+- **Vignette and grain** (a radial darkening and an SVG noise overlay) tie it to the reveal
+  and stamps. Amber #FFB020 only, no blue. SVG and CSS, no library.
+- **Timing:** 2.2 s in all, the stamp holding for about 0.7 s; reduced motion shows the
+  closed gate still for 1.2 s.
+- **Under the checkpoint**, one small line per Nansen call the verdict stands on: endpoint,
+  credits, time, and the word it decided (PASS, WATCH, CAP, BLOCK), then the round's total
+  and a link to all Nansen usage.
+- **Replay mode** (no model key, local only) is said in a dashed amber note above the page.
+
+## Version P: nothing before the gate, 23 September 2026
 
 Judge 6: the card colours gave the verdict away before BAIT ran, and some rows passed on a
 sliver of data.

@@ -493,3 +493,28 @@ test('round 17: the live-reads listing, a direct fetch and /api/proof all skip a
   assert.match(src, /if \(liveEvidence\.isSealed\?\.\(name\)\) return send\(404/);
   assert.match(src, /liveReads: listRawReads\(LIVE_READS_DIR\)\.filter\(r => !liveEvidence\.isSealed\?\.\(r\.file\)\)/);
 });
+
+test('round 18: with no model key, a local clone plays recorded replies, labelled, and the gate stays real', async () => {
+  const s = await startServer({ HOSTED: '', DEEPSEEK_API_KEY: '', BAIT_REPLAY: '1' });
+  try {
+    const config = await s.call('/api/room');
+    assert.equal(config.body.health.ready, true, 'no key does not stop play');
+    assert.equal(config.body.health.replayMode, true);
+    assert.match(config.body.health.replayLabel, /^Replay mode, no model key/);
+    const start = await s.call('/api/room/start', { method: 'POST', body: { prospect: 'legend' } });
+    assert.equal(start.status, 201);
+    const { loadReplayPool } = await import('./replay-provider.js');
+    const pool = loadReplayPool();
+    const line = start.body.dossier.facts[0].insert;
+    const one = await s.call(`/api/room/${start.body.id}/pitch`, { method: 'POST', body: { requestId: 'replay-test-1-aaaa', shot: 0, text: line } });
+    assert.equal(one.status, 200);
+    // PENNY's line is a recorded reply (cut to the room's 24 words at a sentence), not generated.
+    assert.ok(pool.some(r => r.reply.startsWith(one.body.line.replace(/\.\.\.$/, ''))), one.body.line);
+    if (one.body.funded > 0) {
+      const done = await s.call(`/api/room/${start.body.id}/finish`, { method: 'POST', body: { wire: true } });
+      assert.equal(done.body.final.verdict, 'block', 'the frozen capture still blocks THE LEGEND');
+    }
+  } finally { await s.stop(); }
+  const page = fs.readFileSync(new URL('./public/room.html', import.meta.url), 'utf8');
+  assert.match(page, /<p class="replay-note" id="replay-note" hidden><\/p>/);
+});

@@ -32,6 +32,7 @@ import { agentVerdictLine } from '../validation/guard.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
 import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
+import { replayProvider, REPLAY_LABEL, REPLAY_SOURCE } from './replay-provider.js';
 import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP, listRawReads, RAW_NAME } from './live-evidence.js';
 
 /**
@@ -475,7 +476,13 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css
  * provider's own ledger cap, so a refused attempt never reaches DeepSeek and never
  * touches the ledger.
  */
-const gameProvider = {
+/**
+ * Round 18: with no model key on a local clone, PENNY plays recorded real replies instead
+ * of refusing to start (BAIT_REPLAY=0 turns this off). Hosted mode never replays.
+ */
+const NO_KEY_REPLAY = !HOSTED && (process.env.BAIT_REPLAY === '1'
+  || (process.env.BAIT_REPLAY !== '0' && !(process.env.DEEPSEEK_API_KEY || loadEnv().DEEPSEEK_API_KEY)));
+const gameProvider = NO_KEY_REPLAY ? replayProvider() : {
   model: 'deepseek-chat',
   chat: async input => {
     guard.chargeCall();
@@ -487,11 +494,13 @@ const gameProvider = {
 function gameHealth(worstCase = 6) {
   const env = loadEnv();
   const remaining = Math.min(Math.max(0, CAPS.deepseek - modelCallsUsed('deepseek')), guard.callsRemaining());
-  const desk = deskStatus({ hasKey: !!(process.env.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY), remaining, worstCase,
+  const desk = deskStatus({ hasKey: NO_KEY_REPLAY || !!(process.env.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY), remaining: NO_KEY_REPLAY ? Infinity : remaining, worstCase,
     hosted: HOSTED, hostedRemaining: guard.callsRemaining() });
   const quota = nansenQuota();
   return {
-    ready: desk.ready, model: 'DeepSeek', remainingCalls: remaining,
+    ready: desk.ready, model: NO_KEY_REPLAY ? 'recorded replies' : 'DeepSeek', remainingCalls: remaining,
+    // Round 18: replay mode is said on the page, with where the replies come from.
+    replayMode: NO_KEY_REPLAY, replayLabel: NO_KEY_REPLAY ? REPLAY_LABEL : null, replaySource: NO_KEY_REPLAY ? REPLAY_SOURCE : null,
     // Why play is stopped, if it is: no_key, hosted_cap or local_cap, with the words to show.
     blocker: desk.blocker, message: desk.message,
     // True only when the hosted daily cap, not a missing key, is what stops play.

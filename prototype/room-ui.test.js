@@ -48,7 +48,12 @@ test('one BAIT mark: a solid amber badge in nav, checkpoint, stamps, the reveal 
   assert.doesNotMatch(css + read('replay.css'), /#4DA3FF/i, 'the blue is gone everywhere');
   assert.match(css, /\.bait-badge \{[^}]*background: var\(--bait\)/);
   assert.match(js, /markBait\(el\.revealSub, final\.subline\)/, "the reveal's second line carries the mark");
-  assert.match(html, /<p class="bar-mark"><span class="bait-badge">BAIT<\/span>/);
+  assert.match(html, /<div class="bar-stamp"><span class="bait-badge">BAIT<\/span><b id="bar-held">/);
+  // Round 18: two panels, a hazard band on the seam, a large lock, grain; no blue anywhere.
+  assert.equal((html.match(/class="bar-panel (left|right)"><i class="bar-hazard"><\/i>/g) ?? []).length, 2);
+  assert.match(css, /\.bar-lock \{[^}]*height: 19vh/);
+  assert.match(js, /text\(el\.barHeld, `\$\{final\.peakLabel\} HELD`\)/);
+  assert.match(js, /await sleep\(reduced \? 1200 : 2200\)/);
   assert.match(css, /\.barrier\.run, \.barrier\.run \* \{ animation: none !important; \}/, 'reduced motion: the gate is shown still');
 });
 

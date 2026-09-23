@@ -533,3 +533,23 @@ test('round 17: a fresh read is hidden from /api/live-reads until a gate has run
   clock += 30 * 60_000;
   assert.equal(other.live.isSealed(second), false);
 });
+
+test('round 18: the verdict lists the Nansen calls it stands on, with credits, time and the row each decided', async () => {
+  const { service } = liveRoom([...answer(3000, 'intrigued', 'Small.')], fillsMock({ fills: 6 }), { fillPages: 1, positions: false });
+  const round = await service.start({ prospect: 'grinder' });
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  const calls = final.gate.calls;
+  assert.deepEqual(calls.map(c => c.endpoint), ['profiler/perp-pnl-summary 30d', 'profiler/perp-pnl-summary 7d', 'profiler/perp-trades']);
+  assert.deepEqual(calls.map(c => c.credits), [1, 1, 1]);
+  assert.ok(calls.every(c => /^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(c.at)));
+  // The mock's month is +$12,000 and its week +$3,000: both summaries pass.
+  assert.equal(calls[0].decided, 'PASS');
+  assert.equal(calls[1].decided, 'PASS');
+  // A frozen round made no call and says so.
+  const { nansenCalls } = await import('./room.js');
+  const frozen = nansenCalls({ retrieved_at: '2026-09-21T00:00:00Z' }, [{ id: 'realised_pnl_30d', result: 'fail' }]);
+  assert.deepEqual(frozen, [{ endpoint: 'frozen Nansen capture', credits: 0, at: '2026-09-21T00:00:00Z', cached: false, frozen: true, decided: 'BLOCK' }]);
+  const client = fs.readFileSync(new URL('./public/room.js', import.meta.url), 'utf8');
+  assert.match(client, /renderCalls\(gate\.calls \?\? \[\]\);/);
+});

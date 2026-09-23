@@ -101,8 +101,11 @@ round uses the capture's fills and says how old they are.
 
 ## Run it yourself
 
-Playing a round needs `DEEPSEEK_API_KEY` in `.env` (copy `.env.example`); `NANSEN_API_KEY` is
-optional. The bench and `npm test` need no keys.
+**Run it in 60 seconds, no keys:** `git clone https://github.com/wolfgang-aura/bait; cd bait; npm start`,
+then open http://localhost:3000. With no `DEEPSEEK_API_KEY`, PENNY plays real replies recorded
+from the benchmark desk and the page says "Replay mode, no model key"; with no `NANSEN_API_KEY`
+the gate reads the frozen Nansen captures. Add either key to `.env` (copy `.env.example`) for a
+live model or live Nansen reads. The bench and `npm test` need no keys.
 
 ```powershell
 npm install
