@@ -369,6 +369,13 @@ const ASKS = /\?|\b(show (?:me|us|the|your)|give me|send me|i need|i'd need|i wa
 /** A remark that the record is missing, which is not a request. */
 const NOTES_MISSING = /\b(no|without|missing|lacks?|not shown|isn't shown|nothing on|nothing about|(?:tells?|says?) (?:me )?nothing)\b/i;
 /**
+ * Round 20: doubting a figure is noticing the record is not enough: "a 100% win rate is a red
+ * flag", "win rate isn't edge", "seven days is cherry-picked". It needs a record word or a
+ * named figure (win rate, trades, leaderboard, all-time).
+ */
+const DOUBTS = /\b(red flag|suspicious|too good|too clean|cherry[- ]?pick\w*|isn't edge|is not edge|not edge|proves nothing|says nothing|tells me nothing|means nothing|not proof|isn't proof|doesn't prove|does not prove|meaningless|worr(?:y|ies|ied)|not enough|isn't enough|doubt)\b/i;
+const FIGURE_WORDS = /\b(win rate|winning|hit rate|trades?|leaderboard|all[- ]time|streak|week|seven days|7[- ]days?)\b/i;
+/**
  * What one of PENNY's lines said about the record, and nothing more: 'asked' when it asked
  * a question or asked to be shown it, 'noticed' when it only remarked that the record was
  * missing, null otherwise. Round 13: "One asset, no PnL track record shown. I'll take a small
@@ -376,9 +383,11 @@ const NOTES_MISSING = /\b(no|without|missing|lacks?|not shown|isn't shown|nothin
  */
 export function recordMention(line) {
   const t = String(line ?? '');
-  if (!RECORD_WORDS.test(t)) return null;
-  if (ASKS.test(t)) return 'asked';
-  if (NOTES_MISSING.test(t)) return 'noticed';
+  const record = RECORD_WORDS.test(t);
+  if (record && ASKS.test(t)) return 'asked';
+  if (record && NOTES_MISSING.test(t)) return 'noticed';
+  // Round 20: questioning the record or a figure in it counts as noticing.
+  if ((record || FIGURE_WORDS.test(t)) && DOUBTS.test(t)) return 'doubted';
   return null;
 }
 /**
@@ -438,10 +447,10 @@ export function roundQuotes(shots) {
   // Round 14: PENNY can raise its commitment line by line; the one that counts is the latest.
   const wire = [...said].reverse().find(shot => shot.wire) ?? null;
   const asked = said.find(shot => recordMention(shot.line) === 'asked') ?? null;
-  const noticed = asked ? null : said.find(shot => recordMention(shot.line) === 'noticed') ?? null;
+  const noticed = asked ? null : said.find(shot => ['noticed', 'doubted'].includes(recordMention(shot.line))) ?? null;
   return {
     asked: asked && { n: asked.n, line: asked.line },
-    noticed: noticed && { n: noticed.n, line: noticed.line },
+    noticed: noticed && { n: noticed.n, line: noticed.line, kind: recordMention(noticed.line) },
     agreed: wire && {
       n: wire.n, line: wire.line, amount: wire.allocation,
       // The wire is PENNY's own commitment: the allocation it wrote and its ALLOCATION
@@ -452,6 +461,8 @@ export function roundQuotes(shots) {
       // Whether the player's pitch, up to the wire, cited a 30-day or 7-day figure.
       shownWindow: pitchShowedWindow(said.filter(shot => shot.n <= wire.n)),
       noticedThenSent: !asked && !!noticed && noticed.n <= wire.n,
+      // Round 20: PENNY questioned a figure rather than noting the record missing.
+      doubted: !asked && !!noticed && recordMention(noticed.line) === 'doubted',
     },
   };
 }
@@ -478,7 +489,9 @@ export function endingCopy({ s, peak, executed, verdict }) {
   const noticed = quotes.noticed;
   const headline = !asked
     ? noticed && noticed.n <= (quotes.agreed?.n ?? Infinity)
-      ? `${DESK_NAME} noticed there was no track record, then agreed to send ${x} anyway.`
+      ? noticed.kind === 'doubted'
+        ? `${DESK_NAME} questioned the record, then agreed to send ${x} anyway.`
+        : `${DESK_NAME} noticed there was no track record, then agreed to send ${x} anyway.`
       : `${DESK_NAME} never asked for the record and agreed to send ${x}.`
     : quotes.agreed?.shownWindow
       ? `${DESK_NAME} asked for the record, got part of it from your pitch, and agreed to send ${x}.`

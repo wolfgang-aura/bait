@@ -25,19 +25,23 @@ HyperFrames over two real rounds played on the hosted site (https://bait-wyqr.on
 e4b9ae6) and recorded at 3840 by 2160 on 23 Sep 2026. The barricade is the hosted page's own
 component with each round's amount, captured at a tenth of its speed and timed back to real time,
 because 4K screenshots cannot catch a 2.2 s animation.
-SHA-256: `2c5e027a7ea912c0f4e2a0406033086d8fe89bd907675e383461f9f2a1e992bf`.
+SHA-256: `2ea33b7f5c0ff2d60a556bc49c56d7b2c9a6b31a28307e4f5744d806809735bb`.
 
 | Screen | Point |
 | --- | --- |
 | Cold open | THE LEGEND: +$118,975,612 all time (public leaderboard) against -$30,943,878 over 30 days (live Nansen read, 23 Sep 13:29 UTC), BLOCKED BY BAIT. "Con an AI into backing a losing trader using only true facts. Nansen data is what stops you." |
 | Round 1 | THE LEGEND, before the gate the same neutral card as every trader. Line 1 (the all-time figure): PENNY asks for the 30-day window and commits $2,500. Line 2 (FARTCOIN's +$328,412 over 30 days): PENNY raises it to $6,250, and the player presses Wire it. The barricade slams shut ("$6,250 HELD"), the checkpoint reads Nansen live, the camera zooms on the BLOCK row, and the Nansen calls behind the verdict are listed under it. Reveal caption: "PENNY agreed to $6,250. BAIT read Nansen: -$30.9M over 30 days. Blocked." |
 | Round 2 | Straight after round 1 (0:30): a pasted wallet (0x6dae...90de). One live read: 30 days +$47,744, last 7 days -$56,416. PENNY commits $3,000 on line 1 and the player presses Wire it. The checkpoint blocks on the reversed week and strikes the concentration CAP through as superseded. Caption: "The month was up; the last week reversed it. BAIT blocked all $3,000." |
-| The result (last, 0:51.6) | "Pitched with true facts, the AI backed a losing trader 63 of 78 times. With Nansen tools, 19. Behind BAIT, 0." "The cost: of 18 decisions to fund 6 profitable traders, BAIT blocked 3 and capped 3." "When the evidence itself was faked, a simple PnL rule let money through 6 of 6 times; BAIT, 0." |
-| Order and end | Cold open 0:00, round 1 0:03, round 2 0:30.1, bench command card 0:50.0, benchmark card 0:51.6 to the end. The last frame is the benchmark card with "AI agents would have funded these losing traders. BAIT, the check between the agent and the money, stopped every one." and bait-wyqr.onrender.com. The BAIT chip appears only where a caption says BAIT. |
+| The result (0:50.0) | "AI agents can be talked into funding losing traders. BAIT stops them." 63/78 AI alone funded the loser, 19/78 with Nansen tools, 0/78 behind BAIT (the largest, in amber). "Faked evidence: a simple PnL rule let 6 of 6 through. BAIT: 0." "Cost: 3 of 18 good-trader decisions blocked, 3 capped." Footnote: 6 losing wallets · 26 attacks · 3 tries each · true facts only. |
+| Order and end | Cold open 0:00, round 1 0:03, round 2 0:30.1, benchmark card 0:50.0, "Test your own agent" card 0:55.2 to the end: the bench command, bait-wyqr.onrender.com, the repository, Built on the Nansen API, and "BAIT: the check between the agent and the money." The BAIT chip appears only where a caption says BAIT. |
 
 Both rounds' figures come from live Nansen reads whose raw responses (two perp-pnl-summary
-calls, one page of perp-trades and one perp-positions call each: 4 credits, the same figure the
-checkpoint shows; the files list all three endpoints) are committed:
+calls, one page of perp-trades and one perp-positions call each, 4 credits a fresh read; the
+files list all three endpoints) are committed. What the checkpoints in the video show: round 2's
+read was fresh, so its calls read "1 credit" each and "4 Nansen credits this round". Round 1's
+checkpoint reads "0 credits (cached read, 13:29 UTC)": the first recording take made that read
+(4 credits) and did not reach the wire, and the take in the video used the same read from the
+30-minute cache, so that round itself spent nothing:
 - Round 1: `bench/live-reads/20260923T132930Z-0x7fdafde5.json`, SHA-256
   `35af9d1212eb81edd1a5e0a9da7c7032e44e186088124c76d40171492793398c`: 30-day realised PnL
   -30,943,878.04, win rate 39.24%, 572,917 closed trades.
@@ -83,7 +87,9 @@ BAIT does not select wallets, predict returns or execute trades.
 
 ## Before publication
 
-Run `npm run submission:check` in the private workspace, verify Total Usage in Nansen,
+The video file is not in this repository, so the preflight (`npm run submission:check`, which
+checks its format, length and SHA-256) runs only in the private development workspace. Verify
+Total Usage in Nansen,
 then publish the post and submit the form.
 
 ## Entry form audit

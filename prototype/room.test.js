@@ -582,7 +582,7 @@ test('the ending is worded from the round\'s own transcript: asked, then agreed 
   assert.equal(final.headline, 'PENNY asked for the record, was never shown it, and agreed to send $7,500.');
   assert.deepEqual(final.quotes.asked, { n: 1, line: 'All-time only. Show me the 30-day record first.' });
   assert.deepEqual(final.quotes.agreed, { n: 2, line: 'One coin, one month, big number. Small size.', amount: 7500,
-    committed: { allocation: 7500, pct: 30 }, askedThenSent: true, shownWindow: false, noticedThenSent: false }, 'the wire is the commitment PENNY wrote, and it asked first');
+    committed: { allocation: 7500, pct: 30 }, askedThenSent: true, shownWindow: false, noticedThenSent: false, doubted: false }, 'the wire is the commitment PENNY wrote, and it asked first');
 
   // Never asks: the line that agreed says nothing about a record.
   const blind = makeRoom(answer(2500, 'sold', 'Great week. Funded.'));
@@ -808,4 +808,19 @@ test('round 19: "show the wallet\'s actual book" is PENNY asking for the record'
   const end = endingCopy({ s: { prospect: { name: 'THE LEGEND' }, shots }, peak: 2500, executed: 0, verdict: 'block' });
   assert.doesNotMatch(end.headline, /never asked/);
   assert.match(end.headline, /^PENNY asked for the record/);
+});
+
+test('round 20: PENNY calling a 100% win rate "a red flag" questioned the record; never "never asked"', () => {
+  const line = 'A 100% win rate is a red flag, not a reason to size up. Small probe.';
+  const shots = [{ n: 1, text: '100% win rate across 424 closed trades in 7 days.', line, allocation: 2500, wire: { attempted: 2500 } }];
+  const q = roundQuotes(shots);
+  assert.equal(q.agreed.doubted, true);
+  const end = endingCopy({ s: { prospect: { name: 'THE GRINDER' }, shots }, peak: 2500, executed: 0, verdict: 'block' });
+  assert.doesNotMatch(end.headline, /never asked/);
+  assert.equal(end.headline, 'PENNY questioned the record, then agreed to send $2,500 anyway.');
+  // "Win rate isn't edge." from the v23 take reads the same way.
+  assert.equal(roundQuotes([{ ...shots[0], line: "Win rate isn't edge. Where's your realized PnL and drawdown?" }]).asked.n, 1);
+  assert.equal(roundQuotes([{ ...shots[0], line: 'Win rate alone says nothing about sizing.' }]).agreed.doubted, true);
+  // A plain line with no doubt stays "never asked".
+  assert.equal(roundQuotes([{ ...shots[0], line: 'Great week. Funded.' }]).noticed, null);
 });

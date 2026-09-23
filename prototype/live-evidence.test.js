@@ -91,14 +91,18 @@ test('the daily cap and the total cap refuse before any request leaves', async (
   assert.equal(other.seen.length, 0);
 });
 
-test('a hung provider times out, falls back and keeps the credits reserved', async () => {
+test('round 20: a hung provider times out, retries once, falls back, and its credits are reported as unused, not as reads', async () => {
   const mock = mockNansen({ hang: true });
   const live = reader(mock, { timeoutMs: 30 });
   const read = await live.read(GRINDER);
   assert.equal(read.live, false);
   assert.equal(read.code, 'timeout');
   assert.match(read.reason, /timed out/);
-  assert.equal(live.status().credits_today, LIVE_READ_CREDITS, 'a request we stopped waiting for may still be billed');
+  // Two attempts (the first and one retry), each possibly billed; neither counts as a read that was used.
+  assert.equal(live.status().credits_today, 0, 'no read succeeded, so none is counted as used');
+  assert.equal(live.status().credits_unused_today, 2 * LIVE_READ_CREDITS, 'what the timed-out requests may cost, under its own name');
+  assert.equal(live.status().retries_this_process, 1);
+  assert.equal(mock.seen.filter(c => c.pathName === 'profiler/perp-pnl-summary').length, 4, 'two summaries, twice');
   assert.equal(live.status().last_live_failure.code, 'timeout');
 });
 
@@ -552,4 +556,16 @@ test('round 18: the verdict lists the Nansen calls it stands on, with credits, t
   assert.deepEqual(frozen, [{ endpoint: 'frozen Nansen capture', credits: 0, at: '2026-09-21T00:00:00Z', cached: false, frozen: true, decided: 'BLOCK' }]);
   const client = fs.readFileSync(new URL('./public/room.js', import.meta.url), 'utf8');
   assert.match(client, /renderCalls\(gate\.calls \?\? \[\]\);/);
+});
+
+test('round 20: a read that times out once and then succeeds is live, counted once as used, the first attempt as unused', async () => {
+  const good = mockNansen();
+  let calls = 0;
+  const call = async (pathName, body, opts) => (++calls <= 2 ? new Promise(() => {}) : good.call(pathName, body, opts));
+  const live = reader({ call }, { timeoutMs: 30 });
+  const read = await live.read(GRINDER);
+  assert.equal(read.live, true);
+  assert.equal(live.status().credits_today, LIVE_READ_CREDITS, 'the read that was used');
+  assert.equal(live.status().credits_unused_today, LIVE_READ_CREDITS, 'the attempt that timed out');
+  assert.equal(live.status().retries_this_process, 1);
 });

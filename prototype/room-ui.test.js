@@ -13,7 +13,7 @@ test('the target is PENNY, named as someone else\'s agent; no page shows MERIDIA
 
 test('the round rule is said up front: raise the commitment, then Wire it; the wire gets its beat, then the barricade', () => {
   assert.match(html, /Pitch again to raise it, then press <b>Wire it<\/b>/);
-  assert.match(html, /Your score is the dollars you get wired\./);
+  assert.match(html, /Your score is the dollars PENNY agrees to wire\./);
   assert.match(html, /<button id="wire-it" type="button" class="wire-btn" hidden>Wire it<\/button>/);
   assert.match(js, /Wired: PENNY is sending \$\{amt\} to \$\{to\} after \$\{n\} line/);
   assert.ok(js.indexOf('await agreedBeat(') < js.indexOf('await barricade(') && js.indexOf('await barricade(') < js.indexOf('await playCheckpoint(result.prospect'),
@@ -102,7 +102,10 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
 
 test('round 15: the reveal states the score; the BAIT mark stays in the checkpoint; plain words; no blue', () => {
   assert.match(html, /<p class="reveal-score" id="reveal-score" hidden>/);
-  assert.match(js, /Your score: \$\{final\.peakLabel\} wired/);
+  // Round 20: never "wired" beside "$0 reached"; the score is what PENNY agreed to wire.
+  assert.match(js, /Score: \$\{final\.peakLabel\} PENNY agreed to wire/);
+  assert.doesNotMatch(js + html, /Your score: |dollars you get wired/);
+  assert.match(html, /Best cons: what PENNY agreed to wire/);
   assert.match(html, /<div class="cp-head">\s*<p class="cp-brand">/);
   const css = read('room.css');
   assert.match(css, /\.cp-head \{ position: sticky;/);

@@ -42,7 +42,8 @@ export const POSITIONS_ENDPOINT = 'profiler/perp-positions';
 export const DEFAULT_FILL_PAGES = 1;
 export const DEFAULT_DAILY_CAP = 2000;
 export const DEFAULT_TOTAL_CAP = 18000;
-export const DEFAULT_READ_TIMEOUT_MS = 8_000;
+// Round 20: 8 s timed out on busy wallets (THE STREAK); 15 s, and one retry on a timeout.
+export const DEFAULT_READ_TIMEOUT_MS = 15_000;
 
 /**
  * The gate the room runs on a live read. The production two-window policy with one
@@ -132,7 +133,10 @@ export function createLiveEvidence({
   const READ_CREDITS = LIVE_READ_CREDITS + pages * creditCostFor(FILLS_ENDPOINT) + (positions ? creditCostFor(POSITIONS_ENDPOINT) : 0);
   const cache = new Map();
   const inFlight = new Map();
-  const counter = { day: utcDay(now()), creditsToday: 0, creditsTotal: 0, lastSuccessAt: null, lastFailure: null, reads: 0 };
+  // Round 20: creditsToday/Total count only reads that succeeded and were used. Credits a failed or
+  // timed-out read may have been billed for are kept apart (unusedToday/Total), still counted
+  // against the caps so a flaky provider can never overspend, and reported under their own name.
+  const counter = { day: utcDay(now()), creditsToday: 0, creditsTotal: 0, unusedToday: 0, unusedTotal: 0, lastSuccessAt: null, lastFailure: null, reads: 0, retries: 0 };
 
   if (stateFile) {
     try {
@@ -140,6 +144,8 @@ export function createLiveEvidence({
       if (Number.isFinite(saved.creditsTotal)) counter.creditsTotal = saved.creditsTotal;
       if (saved.day === counter.day && Number.isFinite(saved.creditsToday)) counter.creditsToday = saved.creditsToday;
       if (typeof saved.lastSuccessAt === 'string') counter.lastSuccessAt = saved.lastSuccessAt;
+      if (Number.isFinite(saved.unusedTotal)) counter.unusedTotal = saved.unusedTotal;
+      if (saved.day === counter.day && Number.isFinite(saved.unusedToday)) counter.unusedToday = saved.unusedToday;
     } catch { /* no file yet, or a wiped disk: start from zero and say so in /healthz */ }
   }
   const persist = () => {
@@ -151,7 +157,7 @@ export function createLiveEvidence({
   };
   const rollDay = () => {
     const today = utcDay(now());
-    if (counter.day !== today) { counter.day = today; counter.creditsToday = 0; }
+    if (counter.day !== today) { counter.day = today; counter.creditsToday = 0; counter.unusedToday = 0; }
   };
 
   /** Why a read would not be attempted right now, or null when it would. */
@@ -159,11 +165,13 @@ export function createLiveEvidence({
     if (!enabled) return { code: 'disabled', reason: 'live reads are off on this host' };
     if (!keyPresent) return { code: 'no_key', reason: 'no Nansen key is configured' };
     rollDay();
-    if (counter.creditsToday + READ_CREDITS > dailyCap) {
-      return { code: 'daily_cap', reason: `today's live Nansen credits are used up (${counter.creditsToday} of ${dailyCap})` };
+    const today = counter.creditsToday + counter.unusedToday;
+    const total = counter.creditsTotal + counter.unusedTotal;
+    if (today + READ_CREDITS > dailyCap) {
+      return { code: 'daily_cap', reason: `today's live Nansen credits are used up (${today} of ${dailyCap})` };
     }
-    if (counter.creditsTotal + READ_CREDITS > totalCap) {
-      return { code: 'total_cap', reason: `the live Nansen credit allowance is used up (${counter.creditsTotal} of ${totalCap})` };
+    if (total + READ_CREDITS > totalCap) {
+      return { code: 'total_cap', reason: `the live Nansen credit allowance is used up (${total} of ${totalCap})` };
     }
     return null;
   }
@@ -202,6 +210,7 @@ export function createLiveEvidence({
       }
     };
     let timedOut = false;
+    let ok = false;
     try {
       // allSettled, so both requests have finished and been counted before any refund.
       const settled = await within(Promise.allSettled([one(30), one(7)]), timeoutMs)
@@ -266,7 +275,7 @@ export function createLiveEvidence({
       if (!usableSummary(summary30) || !usableSummary(summary7)) {
         throw Object.assign(new Error('Nansen returned a summary without realised PnL, win rate or closed trade count'), { code: 'unusable' });
       }
-      return {
+      const result = {
         live: true, wallet, fetchedAt: iso(at), windows,
         summary30: { ...summary30, top5_coins: Array.isArray(summary30.top5_coins) ? summary30.top5_coins : [] },
         summary7: { ...summary7, top5_coins: Array.isArray(summary7.top5_coins) ? summary7.top5_coins : [] },
@@ -275,6 +284,8 @@ export function createLiveEvidence({
         positions: book,
         raw,
       };
+      ok = true;
+      return result;
     } finally {
       // A timed-out read can still be billed after we stop waiting, so its reservation is
       // kept. Otherwise refund what never reached Nansen. Over-counting only makes the
@@ -282,6 +293,14 @@ export function createLiveEvidence({
       const refund = timedOut ? 0 : Math.max(0, READ_CREDITS - charged);
       counter.creditsToday = Math.max(0, counter.creditsToday - refund);
       counter.creditsTotal = Math.max(0, counter.creditsTotal - refund);
+      // Round 20: a read that failed was not used; what it may have cost moves to the unused count.
+      if (!ok) {
+        const kept = READ_CREDITS - refund;
+        counter.creditsToday = Math.max(0, counter.creditsToday - kept);
+        counter.creditsTotal = Math.max(0, counter.creditsTotal - kept);
+        counter.unusedToday += kept;
+        counter.unusedTotal += kept;
+      }
     }
   }
 
@@ -315,7 +334,15 @@ export function createLiveEvidence({
       if (inFlight.has(wallet)) return inFlight.get(wallet);
       const job = (async () => {
         try {
-          const read = await fetchRead(wallet);
+          let read;
+          try { read = await fetchRead(wallet); } catch (err) {
+            // Round 20: one retry after a timeout, if the caps still allow a read.
+            const timeout = err?.code === 'timeout' || /timeout|timed out|aborted/i.test(String(err?.message));
+            if (!timeout || blocker()) throw err;
+            counter.retries += 1;
+            log(`live read timed out wallet=${wallet.slice(0, 10)}; retrying once`);
+            read = await fetchRead(wallet);
+          }
           cache.set(wallet, read);
           counter.lastSuccessAt = new Date().toISOString();
           counter.lastFailure = null;
@@ -351,8 +378,14 @@ export function createLiveEvidence({
         blocked_by: stop?.code ?? null,
         credits_per_read: READ_CREDITS,
         fill_pages_per_read: pages,
+        // Credits of reads that succeeded and were used by a round.
         credits_today: counter.creditsToday,
         credits_total: counter.creditsTotal,
+        // Credits a failed or timed-out read may have been billed for; not used by any round,
+        // still counted against the caps.
+        credits_unused_today: counter.unusedToday,
+        credits_unused_total: counter.unusedTotal,
+        retries_this_process: counter.retries,
         daily_cap: dailyCap,
         total_cap: totalCap,
         day_utc: counter.day,
