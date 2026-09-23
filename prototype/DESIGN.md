@@ -1,6 +1,30 @@
 # BAIT public page, version B
 
-## Version Q: the barricade has weight, 23 September 2026 (current)
+## Version R: the reveal says it once, 24 September 2026 (current)
+
+Second complaint on the reveal (v25 video, round 2): the tilted stamp sat on the headline and the
+BAIT line, and the same sentence appeared three times (headline, "agreed to send $X" tag, the amber
+"That's the failure BAIT exists for" footer). The fix is the composition, not the stamp.
+
+- **Three lines, full width, said once.** (1) The headline: what PENNY did, from the server.
+  (2) One BAIT line: "BAIT's Nansen read blocked it: $X held, $0 reached <name>." followed, in dim
+  regular weight, by the first sentence of the deciding check in the gate's own words (the old
+  "Why:" line, merged), e.g. "Closed trades over 30 days came to -$31,872,988." A clear has no
+  deciding figure. (3) The score in amber mono. The text block is capped at 1180 px.
+- **At most one of PENNY's lines**, the one that backs the headline (asked for or noticed the
+  record, else the agreeing line), dim italic, one line, only when it is 16 words or fewer;
+  hidden below 900 px so it is never cut mid-quote. It is the evidence for the headline's claim,
+  not a repeat of it.
+- **The stamp lives in the pitch half**, in a grid cell of its own (column 2, row 2: beside the
+  portrait, above the name and figure), so no text box can be under it. Font clamp(18px, 1.7vw,
+  32px), rotated -6 degrees, entry from 1.12x about its centre (was 2.4x, which swelled over the
+  headline). Below 900 px it takes its own full-width row under "What you pitched", 20 px, -4 degrees.
+- **Verified** by `scratch/round22/reveal-shots.cjs`: BLOCK (legend), CAP (realdeal) and CLEAR
+  (grinder, `&verdict=allow`, layout only) at 1920x1080, 1440x900 and 390x844; the stamp's box,
+  settled and at 1.12x, touches no text box or the VS; no horizontal scroll. Captures in
+  `scratch/round22/reveal/`.
+
+## Version Q: the barricade has weight, 23 September 2026
 
 The old barricade (thin chain ovals on a line, a 64 px lock, a small "stepped in" label over
 a flat striped wall) read as amateur, with most of the screen empty.

@@ -44,7 +44,7 @@ const el = {
   facts: $('facts'), nextFact: $('next-fact'), sealed: $('sealed'), sealedHead: $('sealed-head'),
   sealedLabel: $('sealed-label'), premiseName: $('premise-name'), premiseSlot: $('premise-slot'),
   revealStamp: $('reveal-stamp'), revealTitle: $('reveal-title'), revealSub: $('reveal-sub'), revealScore: $('reveal-score'),
-  revealWhy: $('reveal-why'), revealQuotes: $('reveal-quotes'), hypeLabel: $('hype-label'), recordLabel: $('record-label'),
+  revealQuote: $('reveal-quote'), hypeLabel: $('hype-label'), recordLabel: $('record-label'),
   ladderModel: $('ladder-model'),
   composer: $('composer'), line: $('line'), go: $('go'), count: $('count'), status: $('status'),
   stopped: $('stopped'), stoppedSub: $('stopped-sub'),
@@ -450,6 +450,19 @@ function renderCalls(calls) {
   el.cpCalls.hidden = calls.length === 0;
 }
 
+/** A quote on the reveal is one line or none. */
+const QUOTE_WORDS = 16;
+
+/**
+ * The figure that decided a block or a cap: the first sentence of the deciding check, in
+ * the gate's own words ("Closed trades over 30 days came to -$31,872,988."). A clear has none.
+ */
+function decidingFigure(final) {
+  if (!final?.because || !['block', 'capped'].includes(final.verdict)) return '';
+  if (!(final.peak > 0 || final.checkOnly)) return '';
+  return String(final.because).split(/(?<=\.)\s+(?=[A-Z])/)[0].trim();
+}
+
 /**
  * The reveal. BAIT's decision on the one transfer comes first, then what was pitched
  * against what was left out, then the rest of the report. Every word and figure is the
@@ -467,47 +480,34 @@ function showReveal(p, final) {
   // Round 15: the score, as the board records it: the dollars PENNY wired, and in how many lines.
   const scored = final.peak > 0 && !final.checkOnly && !final.whatIfOf;
   el.revealScore.hidden = !scored;
-  const n = final.quotes?.agreed?.n;
+  const lines = final.quotes?.agreed?.n;
   // Round 20: the score is what PENNY agreed to wire, not what reached the trader (BAIT decides that).
-  text(el.revealScore, scored ? `Score: ${final.peakLabel} PENNY agreed to wire${n ? `, in ${n} line${n === 1 ? '' : 's'}` : ''}.` : '');
-  el.revealWhy.hidden = !(final.because && ['block', 'capped'].includes(final.verdict) && (final.peak > 0 || final.checkOnly));
-  text(el.revealWhy, final.because ? `Why: ${final.because}` : '');
-  // PENNY's own words: where it asked for the record, then where it agreed.
-  el.revealQuotes.replaceChildren();
+  text(el.revealScore, scored ? `Score: ${final.peakLabel} PENNY agreed to wire${lines ? `, in ${lines} line${lines === 1 ? '' : 's'}` : ''}.` : '');
+  // Round 22: the reveal says three things once. The headline (what PENNY did), one BAIT
+  // line with the figure that decided it, and the score. The old "agreed to send" tag and
+  // the amber sentence repeated the headline, so they are gone.
+  const why = decidingFigure(final);
+  if (why) {
+    const span = document.createElement('span');
+    span.className = 'reveal-why';
+    span.textContent = ` ${why}`;
+    el.revealSub.append(span);
+  }
+  // At most one of PENNY's lines, the one that backs the headline's claim (where it asked
+  // for or noticed the missing record), and only when it fits on one line.
   const q = final.quotes ?? {};
-  const rows = [];
-  const mention = q.asked ?? q.noticed;
-  if (mention && mention.n !== q.agreed?.n) rows.push(['asked', `Line ${mention.n}`, mention.line, null]);
-  if (q.agreed) rows.push(['agreed', `Line ${q.agreed.n}`, q.agreed.line, `agreed to send ${dollars(q.agreed.amount)}`]);
-  for (const [kind, n, line, tail] of rows) {
-    const li = document.createElement('li');
-    li.className = kind;
+  const said = (q.asked ?? q.noticed)?.line ?? q.agreed?.line ?? '';
+  const n = (q.asked ?? q.noticed)?.n ?? q.agreed?.n;
+  const short = said && said.split(/\s+/).length <= QUOTE_WORDS;
+  el.revealQuote.hidden = !short;
+  el.revealQuote.replaceChildren();
+  if (short) {
     const who = document.createElement('b');
-    who.textContent = `${n} · PENNY`;
-    const said = document.createElement('q');
-    said.textContent = line;
-    li.append(who, said);
-    if (tail) { const t = document.createElement('em'); t.textContent = tail; li.append(t); }
-    el.revealQuotes.append(li);
+    who.textContent = `Line ${n} · PENNY`;
+    const line = document.createElement('q');
+    line.textContent = said;
+    el.revealQuote.append(who, ' ', line);
   }
-  if (q.agreed?.askedThenSent || q.agreed?.noticedThenSent) {
-    const li = document.createElement('li');
-    li.className = 'finding';
-    const sent = dollars(q.agreed.committed?.allocation ?? q.agreed.amount);
-    const what = q.agreed.askedThenSent
-      ? q.agreed.shownWindow
-        ? `PENNY asked for the record, got part of it from your pitch, and agreed to send ${sent}.`
-        : `PENNY asked for the record, was never shown it, and agreed to send ${sent} anyway.`
-      : q.agreed.doubted ? `PENNY questioned the record and agreed to send ${sent} anyway.`
-      : `PENNY noticed there was no track record and agreed to send ${sent} anyway.`;
-    // Only a block or a cap is BAIT catching the failure; a cleared record is said as that.
-    li.textContent = final.verdict === 'block' || final.verdict === 'capped'
-      ? `${what} That's the failure BAIT exists for.`
-      : `${what} This record held up, so BAIT let the transfer through.`;
-    el.revealQuotes.append(li);
-    rows.push(['finding']);
-  }
-  el.revealQuotes.hidden = rows.length === 0;
   text(el.hypeLabel, 'What you pitched');
   text(el.recordLabel, final.verdict === 'block' ? 'What you left out' : 'What the record shows');
   if (final.verdict === 'capped') text(el.recordLabel, 'Why BAIT capped it');
@@ -1232,10 +1232,13 @@ async function fixture(name, prospectId) {
   adopt(state);
   const p = frozen.prospect;
   // The verdict is the gate's real decision on the frozen record, not the report's.
-  const block = frozen.gate.decision === 'block';
-  const capped = frozen.gate.code === 'capped';
+  // `&verdict=allow` is layout only: no roster record clears, so a CLEAR reveal is drawn on
+  // this record's figures with the verdict forced (local fixture route only).
+  const cleared = new URLSearchParams(location.search).get('verdict') === 'allow';
+  const block = !cleared && frozen.gate.decision === 'block';
+  const capped = !cleared && frozen.gate.code === 'capped';
   const amount = 2500;
-  const sent = Math.round(frozen.gate.executed);
+  const sent = cleared ? amount : Math.round(frozen.gate.executed);
   const verdict = block ? 'block' : capped ? 'capped' : 'allow';
   // Layout only: the amount is a fixture value shaped like the server's `wire` object.
   const wire = {

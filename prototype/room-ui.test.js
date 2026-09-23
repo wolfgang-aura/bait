@@ -25,11 +25,39 @@ test('the round rule is said up front: raise the commitment, then Wire it; the w
   // PENNY's own words and the two marks: asked for the record, sent anyway.
   assert.match(js, /Asked for the record ✓/);
   assert.match(js, /Sent anyway ✗/);
-  assert.match(js, /That's the failure BAIT exists for\./);
-  // One verdict: the finding is claimed only when BAIT blocked or capped; no CAUTION stamp.
-  assert.match(js, /final\.verdict === 'block' \|\| final\.verdict === 'capped'/);
-  assert.match(js, /This record held up, so BAIT let the transfer through\./);
+  // One verdict: the deciding figure is claimed only when BAIT blocked or capped; no CAUTION stamp.
+  assert.match(js, /if \(!final\?\.because \|\| !\['block', 'capped'\]\.includes\(final\.verdict\)\) return '';/);
   assert.doesNotMatch(js, /CAUTION/);
+});
+
+test('round 22: the reveal says each thing once, and the stamp never sits on its text', () => {
+  const css = read('room.css');
+  const reveal = js.slice(js.indexOf('function showReveal'), js.indexOf('function showTruth'));
+  // Three lines: the headline, one BAIT line carrying the deciding figure, the score.
+  assert.match(reveal, /text\(el\.revealTitle, final\.headline\)/);
+  assert.match(reveal, /markBait\(el\.revealSub, final\.subline\)/);
+  assert.match(reveal, /const why = decidingFigure\(final\);[\s\S]*el\.revealSub\.append\(span\)/, 'the Why rides on the BAIT line');
+  assert.match(reveal, /text\(el\.revealScore, scored \? `Score: /);
+  // The repeat sentence, the separate "agreed to send" tag and the "Why:" line are gone.
+  assert.doesNotMatch(js, /exists for/);
+  assert.doesNotMatch(js, /let the transfer through/);
+  assert.doesNotMatch(reveal, /agreed to send \$\{/);
+  assert.doesNotMatch(reveal, /`Why: /);
+  assert.doesNotMatch(html + js, /reveal-quotes|reveal-why" id=|revealWhy|revealQuotes/);
+  // At most one of PENNY's lines, and only a short one.
+  assert.match(js, /const QUOTE_WORDS = 16;/);
+  assert.match(html, /<p class="reveal-quote" id="reveal-quote" hidden>/);
+  // The stamp is not in the text column: it lives in the pitch half, in a grid cell of its own.
+  const head = html.slice(html.indexOf('id="reveal-head"'), html.indexOf('id="splash"'));
+  assert.doesNotMatch(head, /reveal-stamp/, 'no stamp in the reveal head');
+  const pitch = html.slice(html.indexOf('class="half hype-half"'), html.indexOf('class="half-art"'));
+  assert.match(pitch, /<p class="stamp" id="reveal-stamp">/, 'the stamp sits over "What you pitched"');
+  assert.match(css, /#reveal-stamp \{\s*grid-column: 2; grid-row: 2;/);
+  assert.match(css, /\.hype-half \.half-text \{ grid-column: 2; grid-row: 3; \}/, 'the name and figure take the row below it');
+  assert.doesNotMatch(css, /#reveal-stamp[^}]*position: absolute/);
+  assert.doesNotMatch(css, /\.reveal-head \{[^}]*grid-template-columns/, 'no stamp column beside the text');
+  // Its entry never grows it past 1.12x, so it cannot swell over the headline.
+  assert.match(css, /@keyframes reveal-stamp \{ from \{ opacity: 0; transform: rotate\(-6deg\) scale\(1\.12\); \}/);
 });
 
 test('the checkpoint stays until the player clicks "See what happened"', () => {
