@@ -269,10 +269,12 @@
   </section>
 
   <p class="foot">
-    Fictional funds, real records. Every trader's record comes from Nansen
-    <code>profiler/perp-pnl-summary</code>, <code>profiler/perp-trades</code> and <code>profiler/perp-positions</code>, live when this host
-    has a key, otherwise the dated frozen capture, and every figure carries its source and
-    date. Hype from the free public Hyperliquid leaderboard. PENNY runs the benchmark's
+    Fictional funds, real records. BAIT reads five Nansen endpoints: the trader's record from
+    <code>profiler/perp-pnl-summary</code>, <code>profiler/perp-trades</code> and <code>profiler/perp-positions</code>,
+    smart money in the same market from <code>perp-screener</code>, and a second record of the month from
+    <code>perp-leaderboard</code>. All five are live when this host has a key; without one the record is the
+    dated frozen capture and the last two are not read. Every figure carries its source and date.
+    Hype from the free public Hyperliquid leaderboard. PENNY runs the benchmark's
     no-data setup: no tools, your pitch only.
   </p>
 </div>

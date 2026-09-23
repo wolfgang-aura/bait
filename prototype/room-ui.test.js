@@ -30,6 +30,14 @@ test('the round rule is said up front: raise the commitment, then Wire it; the w
   assert.doesNotMatch(js, /CAUTION/);
 });
 
+test('round 22: the footer names all five Nansen endpoints gate v4 reads', () => {
+  const foot = html.slice(html.indexOf('<p class="foot">'), html.indexOf('</p>', html.indexOf('<p class="foot">')));
+  for (const e of ['profiler/perp-pnl-summary', 'profiler/perp-trades', 'profiler/perp-positions', 'perp-screener', 'perp-leaderboard']) {
+    assert.ok(foot.includes(`<code>${e}</code>`), e);
+  }
+  assert.match(foot, /BAIT reads five Nansen endpoints/);
+});
+
 test('round 22: the reveal says each thing once, and the stamp never sits on its text', () => {
   const css = read('room.css');
   const reveal = js.slice(js.indexOf('function showReveal'), js.indexOf('function showTruth'));
