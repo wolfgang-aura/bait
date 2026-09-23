@@ -41,3 +41,11 @@ test('the Play page offers any wallet, validated like the server', async () => {
   assert.equal(String(WALLET_PATTERN), String(/^0x[0-9a-fA-F]{40}$/));
   assert.match(js, /export const WALLET_RE = \/\^0x\[0-9a-fA-F\]\{40\}\$\//);
 });
+
+test('the agreed beat is one card: its hint sits inside it, not over the room', () => {
+  const start = html.indexOf('id="agreed"');
+  const beat = html.slice(start, html.indexOf('<div class="boot-error"', start));
+  assert.match(beat, /<div class="agreed-card">\s*<p class="agreed-line" id="agreed-line"><\/p>\s*<p class="agreed-hint">/);
+  assert.match(read('room.css'), /\.agreed-card \{[^}]*background: var\(--panel\)/);
+});
+
