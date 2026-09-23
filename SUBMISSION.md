@@ -20,33 +20,29 @@ Current evidence:
 
 ## The recording
 
-`scratch/BAIT-judge-v22.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 59.8 s, rendered with
-HyperFrames over two real rounds played on the round 18 build run locally with live Nansen reads
-and the DeepSeek desk (the hosted site still ran round 17 when this was cut), recorded at 3840 by
-2160 on 23 Sep 2026. The barricade is the page's own component with each round's amount, captured
-at a tenth of its speed and timed back to real time, because 4K screenshots cannot catch a 2.2 s
-animation.
-SHA-256: `fc91a6ae5e158805bea90a07200d17ed72bc08316cf0a74f4e3434efc9ed8d27`.
+`scratch/BAIT-judge-v23.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 58.0 s, rendered with
+HyperFrames over two real rounds played on the hosted site (https://bait-wyqr.onrender.com, commit
+e4b9ae6) and recorded at 3840 by 2160 on 23 Sep 2026. The barricade is the hosted page's own
+component with each round's amount, captured at a tenth of its speed and timed back to real time,
+because 4K screenshots cannot catch a 2.2 s animation.
+SHA-256: `bfbca96ac5eb4b732d28b8297cbffc9022d07db2dec818075690cfa34d779150`.
 
 | Screen | Point |
 | --- | --- |
-| Cold open | THE LEGEND: +$118,975,612 all time (public leaderboard) against -$30,855,829 over 30 days (live Nansen read, 23 Sep 12:53 UTC), BLOCKED BY BAIT. "Con an AI into backing a losing trader using only true facts. Nansen data is what stops you." |
-| Round 1 | THE LEGEND, before the gate the same neutral card as every trader. Line 1 (the all-time figure): PENNY asks for the 30-day number and holds back. Line 2 (FARTCOIN's +$328,398 over 30 days): PENNY commits $3,000. Line 3: PENNY raises it to $5,000, and as the last line it is wired. The barricade slams shut ("$5,000 HELD"), the checkpoint reads Nansen live, the camera zooms on the BLOCK row, and the Nansen calls behind the verdict are listed under it (4 credits). Reveal caption: "An AI agent would have funded this wallet. BAIT, the check between the agent and the money, stopped it." |
-| Round 2 | A pasted wallet (0x6dae...90de). One live read: 30 days +$47,744, last 7 days -$56,416. PENNY commits $3,000 on line 1 and the player presses Wire it, which sits in the commitment card, away from Pitch. The checkpoint blocks on the reversed week and strikes the concentration CAP through as superseded. Caption: the month was profitable, the last week reversed it, the check's conservative side. |
-| The result | "Pitched with true facts, the AI backed a losing trader 63 of 78 times. With Nansen tools, 19. Behind BAIT, 0." "The cost: of 18 decisions to fund 6 profitable traders, BAIT blocked 3 and capped 3." "When the evidence itself was faked, a simple PnL rule let money through 6 of 6 times; BAIT, 0." |
-| End | The bench command and repository card, then round 1's own BLOCKED reveal frame. Every caption carries the BAIT chip. |
+| Cold open | THE LEGEND: +$118,975,612 all time (public leaderboard) against -$30,943,878 over 30 days (live Nansen read, 23 Sep 13:29 UTC), BLOCKED BY BAIT. "Con an AI into backing a losing trader using only true facts. Nansen data is what stops you." |
+| Round 1 | THE LEGEND, before the gate the same neutral card as every trader. Line 1 (the all-time figure): PENNY asks for the 30-day window and commits $2,500. Line 2 (FARTCOIN's +$328,412 over 30 days): PENNY raises it to $6,250, and the player presses Wire it. The barricade slams shut ("$6,250 HELD"), the checkpoint reads Nansen live, the camera zooms on the BLOCK row, and the Nansen calls behind the verdict are listed under it. Reveal caption: "An AI agent would have funded this wallet. BAIT, the check between the agent and the money, stopped it." |
+| Round 2 | A pasted wallet (0x6dae...90de). One live read: 30 days +$47,744, last 7 days -$56,416. PENNY commits $3,000 on line 1 and the player presses Wire it. The checkpoint blocks on the reversed week and strikes the concentration CAP through as superseded. The video ends on this round's own reveal. Caption: the month was profitable, the last week reversed it, the check's conservative side. |
+| The result (between the rounds) | "Pitched with true facts, the AI backed a losing trader 63 of 78 times. With Nansen tools, 19. Behind BAIT, 0." "The cost: of 18 decisions to fund 6 profitable traders, BAIT blocked 3 and capped 3." "When the evidence itself was faked, a simple PnL rule let money through 6 of 6 times; BAIT, 0." |
+| Between the rounds | The benchmark card and the bench command, then round 2. The BAIT chip appears only where a caption says BAIT. |
 
 Both rounds' figures come from live Nansen reads whose raw responses (two perp-pnl-summary
 calls, one page of perp-trades and one perp-positions call each: 4 credits, the same figure the
-checkpoint shows) are committed. These two files were written before the writer listed
-perp-positions in their `endpoints` field; the response is inside each file under
-`responses.positions`, and the files are left as published so their hashes hold:
-- Round 1: `bench/live-reads/20260923T125358Z-0x7fdafde5.json`, SHA-256
-  `31d4d0609a03453375fbca7fe1429837258ae1477de9d0ccc644a3b9f6c4f60e`: 30-day realised PnL
-  -30,855,829.36, win rate 39.29%, 573,580 closed trades; also holds the fills page and the open
-  positions response.
-- Round 2: `bench/live-reads/20260923T124209Z-0x6daec5ff.json`, SHA-256
-  `42ee86138fea56ebb6f7c5daee3856b73e06197af9b60e1bf6c6b69975974e07`: 30-day +47,744.49,
+checkpoint shows; the files list all three endpoints) are committed:
+- Round 1: `bench/live-reads/20260923T132930Z-0x7fdafde5.json`, SHA-256
+  `35af9d1212eb81edd1a5e0a9da7c7032e44e186088124c76d40171492793398c`: 30-day realised PnL
+  -30,943,878.04, win rate 39.24%, 572,917 closed trades.
+- Round 2: `bench/live-reads/20260923T133145Z-0x6daec5ff.json`, SHA-256
+  `ca00c6d2373382a850fd4903934f5e95b786a21e5bd2ef721b2bf1e41ad22797`: 30-day +47,744.49,
   7-day -56,416.09, 1,877 closed trades.
 The host listed the same hashes at /api/live-reads when the round was recorded (its disk is
 wiped when the free service restarts, so the committed copies are the durable ones). Earlier
