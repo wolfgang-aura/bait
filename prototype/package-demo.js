@@ -22,7 +22,10 @@ export function demoFiles() {
     .replace("fetch('/wallets.json'", "fetch('./wallets.json'"));
   for (const name of ['replay.css', 'player-summary.js']) files.set(name, read(name));
   files.set('recorded-results.json', JSON.stringify(buildResults(), null, 2) + '\n');
-  files.set('wallets.json', fs.readFileSync(path.join(root, 'validation', 'wallet-navigator.json'), 'utf8'));
+  // No third-party entity labels on the published copy (same rule as the server).
+  const nav = JSON.parse(fs.readFileSync(path.join(root, 'validation', 'wallet-navigator.json'), 'utf8'));
+  nav.venues = nav.venues.map(v => ({ ...v, wallets: v.wallets.map(({ label, ...w }) => w) }));
+  files.set('wallets.json', JSON.stringify(nav, null, 2) + String.fromCharCode(10));
   return files;
 }
 

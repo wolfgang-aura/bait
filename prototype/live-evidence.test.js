@@ -409,3 +409,22 @@ test('a live tape shorter than a week is measured and labelled with its span, ne
   assert.ok(!p.risk.not_assessed.some(n => ['max_drawdown', 'tail_loss'].includes(n.id)), 'both measured on the live tape');
   assert.ok(copyRiskReport(p).max_drawdown, 'a drawdown value exists');
 });
+
+test('the worst-trade row always shows the value read off the live fills, with the span', async () => {
+  const mock = fillsMock({ fills: 6 });
+  const { service } = liveRoom([...answer(5000, 'intrigued', 'Opening small.')], mock, { fillPages: 1 });
+  const round = await service.start({ prospect: 'grinder' });
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, {});
+  const row = final.gate.checks.find(c => c.id === 'fills_worst_trade');
+  assert.match(row.plain, /Worst single closed trade over (all 6 fills in the window|the newest 6 fills \(5 hours\)): -\$500/);
+  assert.notEqual(row.result, 'fail', 'never blocks');
+  const dd = final.gate.checks.find(c => c.id === 'fills_drawdown');
+  assert.doesNotMatch(dd.plain, /\d\.\d hours/, 'one span format');
+  // A pasted wallet with no account value: the value is shown and the missing bar is said.
+  const pasted = liveRoom([...answer(4000, 'intrigued', 'Fine.')], fillsMock({ fills: 6 }), { fillPages: 1 }).service;
+  const res = await pasted.start({ wallet: '0x3333333333333333333333333333333333333333' });
+  await say(pasted, res.id, 0, res.dossier.facts[0].insert);
+  const pf = (await pasted.finish(res.id, {})).final.gate.checks.find(c => c.id === 'fills_worst_trade');
+  assert.match(pf.plain, /Worst single closed trade over .*: -\$500\. No bar applied/);
+});

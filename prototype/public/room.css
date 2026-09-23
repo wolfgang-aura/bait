@@ -892,3 +892,25 @@ html[data-frozen="true"] .cp-card, html[data-frozen="true"] .cp-row, html[data-f
 .cp-whatif[hidden] { display: none; }
 .cp-row.caution { border-left-color: var(--amber); } .cp-row.caution b { color: var(--amber); }
 .flagline.check.caution b { color: var(--amber); }
+
+/* ---------------------------------------------- round 12 */
+.agreed-card .agreed-quote { margin: 10px 0 0; font: italic 500 16px/1.4 var(--display); color: var(--text); }
+.agreed-card .agreed-quote[hidden], .agreed-card .agreed-marks[hidden] { display: none; }
+.agreed-card .agreed-marks { margin: 8px 0 0; font: 700 14px/1.4 var(--mono); color: var(--dim); }
+.mark-ok { color: var(--green); }
+.mark-bad { color: var(--red); }
+.reveal-quotes li.finding { display: block; margin-top: 6px; font: 600 14px/1.45 var(--display); color: var(--amber); }
+/* Round 12: the pitched figure is never under the seam. Below 900 px the record half rises
+   26 px into the pitch half, so the pitch half keeps that much clear; between 900 and
+   1200 px the figure shrinks with the half instead of running under the VS panel. */
+@media (max-width: 900px) { .hype-half { padding-bottom: 44px; } }
+@media (min-width: 901px) and (max-width: 1200px) {
+  .hype-half { grid-template-columns: 128px minmax(0, 1fr); }
+  .hype-stat span { font-size: clamp(20px, 2.5vw, 30px); }
+}
+.hype-half .half-text { min-width: 0; }
+@media (min-width: 901px) and (max-width: 1200px) { .hype-half { padding-right: 60px; } }
+
+/* round 12: the stamp never lands on the last row */
+.cp-stamp { margin-top: 24px; transform: rotate(-2deg); }
+.agreed-card .agreed-quote, .agreed-card .agreed-marks { text-align: left; }

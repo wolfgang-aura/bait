@@ -57,6 +57,7 @@ const el = {
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
   transcript: $('transcript-body'), bootError: $('boot-error'), setupNote: $('setup-note'),
   checkpoint: $('checkpoint'), cpMove: $('cp-move'), cpRead: $('cp-read'), cpRows: $('cp-rows'), cpStamp: $('cp-stamp'),
+  agreedQuote: $('agreed-quote'), agreedMarks: $('agreed-marks'),
   cpNext: $('cp-next'), cpWhatif: $('cp-whatif'), cpTitle: $('cp-title'), hintKeys: $('hint-keys'), agreed: $('agreed'), agreedLine: $('agreed-line'),
   anyWallet: $('any-wallet'), anyWalletInput: $('any-wallet-input'), anyWalletGo: $('any-wallet-go'), anyWalletNote: $('any-wallet-note'),
 };
@@ -271,10 +272,22 @@ function agreedBeat(shot, final) {
   const to = final?.prospect?.name ?? chosen?.name ?? dossier?.name ?? 'this trader';
   const amt = shot?.wire?.attemptedLabel ?? final?.peakLabel ?? '';
   text(el.agreedLine, `PENNY agreed after ${n} line${n === 1 ? '' : 's'}: sending ${amt} to ${to}`);
+  // PENNY's own words, and what they amount to: it asked for the record, got none, and
+  // committed the money anyway. The amount is the allocation PENNY wrote in its reply.
+  const q = final?.quotes?.agreed;
+  el.agreedQuote.hidden = !q?.line;
+  text(el.agreedQuote, q?.line ? `PENNY: “${q.line}” · committed ${dollars(q.committed?.allocation ?? q.amount)}${q.committed?.pct != null ? ` (ALLOCATION: ${q.committed.pct}%)` : ''}` : '');
+  el.agreedMarks.hidden = !q?.askedThenSent;
+  el.agreedMarks.replaceChildren();
+  if (q?.askedThenSent) {
+    const ok = document.createElement('span'); ok.className = 'mark-ok'; ok.textContent = 'Asked for the record ✓';
+    const bad = document.createElement('span'); bad.className = 'mark-bad'; bad.textContent = 'Sent anyway ✗';
+    el.agreedMarks.append(ok, ' · got none · ', bad);
+  }
   el.agreed.hidden = false;
   return new Promise(resolve => {
     const done = () => { clearTimeout(timer); el.agreed.removeEventListener('click', done); el.agreed.hidden = true; resolve(); };
-    const timer = setTimeout(done, 1500);
+    const timer = document.documentElement.dataset.frozen ? null : setTimeout(done, final?.quotes?.agreed?.askedThenSent ? 3200 : 1500);
     el.agreed.addEventListener('click', done);
   });
 }
@@ -376,11 +389,31 @@ function showReveal(p, final) {
     if (tail) { const t = document.createElement('em'); t.textContent = tail; li.append(t); }
     el.revealQuotes.append(li);
   }
+  if (q.agreed?.askedThenSent) {
+    const li = document.createElement('li');
+    li.className = 'finding';
+    li.textContent = `PENNY asked for the 30-day record, got none, and agreed to send ${dollars(q.agreed.committed?.allocation ?? q.agreed.amount)} anyway. That's the failure BAIT exists for.`;
+    el.revealQuotes.append(li);
+    rows.push(['finding']);
+  }
   el.revealQuotes.hidden = rows.length === 0;
   text(el.hypeLabel, 'What you pitched');
   text(el.recordLabel, final.verdict === 'block' ? 'What you left out' : 'What the record shows');
   if (final.verdict === 'capped') text(el.recordLabel, 'Why BAIT capped it');
   showTruth(p);
+  // A block on a reversal was decided by the losing week, so that is what the player left
+  // out: the week goes in the big number, the month in the rows.
+  if (final.verdict === 'block' && final.gate?.failed === 'regime_agreement') {
+    const week = (p.truth.rows ?? []).find(r => /^7-day realised/i.test(r.label));
+    if (week) {
+      text(el.truthPnl, week.value);
+      text(el.truthPnlCaption, '7-day realised PnL, the window that decided it');
+      el.recordHalf.classList.add('bad'); el.recordHalf.classList.remove('good');
+      for (const dt of el.truthRows.querySelectorAll('dt')) {
+        if (/^7-day realised/i.test(dt.textContent)) { dt.textContent = '30-day realised'; dt.nextElementSibling.textContent = p.truth.pnlLabel; }
+      }
+    }
+  }
   window.scrollTo(0, 0);
   if (final.verdict === 'block' && final.peak > 0 && !reduced) {
     body.classList.remove('shake');
@@ -1161,8 +1194,7 @@ async function fixture(name, prospectId) {
     enterRoom();
     renderState({ ...state, shotsUsed: 2, shotsLeft: 0, finished: true, funded: amount, suspicion: 20, mood: 'intrigued',
       peak: amount, stopped: 0, shots: fixtureShots, line: 'Fixture reply: fine, a small probe.', checks: [] });
-    text(el.agreedLine, `PENNY agreed after 2 lines: sending ${dollars(amount)} to ${p.name}`);
-    el.agreed.hidden = false;
+    agreedBeat(fixtureShots[1], { ...fixtureFinal, quotes: { agreed: { ...fixtureFinal.quotes.agreed, committed: { allocation: amount, pct: 10 }, askedThenSent: true } } });
     return;
   }
 

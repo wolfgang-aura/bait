@@ -1,6 +1,22 @@
 # BAIT public page, version B
 
-## Version K: the referee, the what-if, a live tape, 23 September 2026 (current)
+## Version L: the finding on screen, 23 September 2026 (current)
+
+- **PENNY asked, then sent.** The agreed beat quotes PENNY's line with the commitment it wrote
+  ("committed $2,000 (ALLOCATION: 8%)") and, when it asked for the record first, the marks
+  "Asked for the record ✓ · got none · Sent anyway ✗" (green, red). The beat holds 3.2 s in
+  that case. The reveal adds one amber line: "PENNY asked for the 30-day record, got none,
+  and agreed to send $X anyway. That's the failure BAIT exists for." The proof page's recorded
+  replies carry the same marks.
+- **A reversal's left-out fact is the losing week.** When the block came from the 7-day /
+  30-day disagreement, the big red number is the 7-day realised PnL and the 30-day moves to
+  the rows.
+- **One span format** ("1 hour 9 minutes"), worst trade always shown with its value, and the
+  research footnote (840 summaries) kept off the checkpoint rows.
+- **Addresses:** short form everywhere but the raw reads; no third-party entity labels.
+- **The pitched figure never sits under the seam** (800, 1024, 1280, 375 px checked).
+
+## Version K: the referee, the what-if, a live tape, 23 September 2026
 
 Changes on top of Version J, from an independent judge's re-grade.
 

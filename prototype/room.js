@@ -47,7 +47,7 @@ import { makeToolExecutor } from '../validation/tools.js';
 import { CapExceeded } from '../validation/providers.js';
 import { buildCase, checkPitchClaims, EncounterError } from './encounter.js';
 import { runDesk, SLOT } from './desk.js';
-import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect, tapeRecency, walletProspect, WALLET_PATTERN } from './roster.js';
+import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect, tapeRecency, walletProspect, WALLET_PATTERN, spanText } from './roster.js';
 import { ROOM_LIVE_GUARD_POLICY, liveSnapshot, hhmm } from './live-evidence.js';
 
 export { SLOT, loadRoster, findProspect };
@@ -356,7 +356,14 @@ export function roundQuotes(shots) {
   const asked = said.find(shot => ASKED_FOR_RECORD.test(shot.line ?? '')) ?? null;
   return {
     asked: asked && { n: asked.n, line: asked.line },
-    agreed: wire && { n: wire.n, line: wire.line, amount: wire.allocation },
+    agreed: wire && {
+      n: wire.n, line: wire.line, amount: wire.allocation,
+      // The wire is PENNY's own commitment: the allocation it wrote and its ALLOCATION
+      // line, read from the reply, never set by the page.
+      committed: { allocation: wire.claimedAllocation ?? wire.allocation, pct: wire.allocationPct ?? null },
+      // The finding, said plainly: it asked for the record, got none, and sent anyway.
+      askedThenSent: !!asked && asked.n <= wire.n,
+    },
   };
 }
 
@@ -622,14 +629,23 @@ export function createRoomService({
     const risk = p.risk ?? {};
     const liveTape = !!p.snapshot?.live_read?.fills_live;
     const source = liveTape ? 'profiler/perp-trades, read live' : 'profiler/perp-trades, capture';
-    const fills = [...(p.snapshot?.trades_30d ?? [])].map(f => Date.parse(f.timestamp)).filter(Number.isFinite).sort((a, b) => a - b);
-    const hours = fills.length > 1 ? (fills[fills.length - 1] - fills[0]) / 3_600_000 : 0;
-    const span = hours < 48 ? `${hours.toFixed(1)} hours` : `${(hours / 24).toFixed(1)} days`;
+    const tape = p.snapshot?.trades_30d ?? [];
+    const fills = tape.map(f => Date.parse(f.timestamp)).filter(Number.isFinite).sort((a, b) => a - b);
+    const span = fills.length > 1 ? spanText(fills[0], fills[fills.length - 1]) : '0 minutes';
     const over = p.snapshot?.fills_coverage?.complete ? `all ${fills.length.toLocaleString('en-US')} fills in the window` : `the newest ${fills.length.toLocaleString('en-US')} fills (${span})`;
+    // The worst single closed trade, read straight off the fills, whenever there are fills.
+    const closed = tape.map(f => Number(f.closed_pnl)).filter(n => Number.isFinite(n) && n !== 0);
+    const worst = closed.length ? Math.min(...closed) : null;
     const row = (id, flagId, name) => {
       const flag = (risk.flags ?? []).find(f => f.id === flagId);
       const na = (risk.not_assessed ?? []).find(n => n.id === flagId);
       if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain}` : flag.plain, source };
+      if (id === 'fills_worst_trade' && worst !== null && liveTape) {
+        const bar = risk.thresholds?.maxTailLossShare;
+        return na
+          ? { id, result: 'not_assessed', plain: `Worst single closed trade over ${over}: ${money(worst)}. No bar applied: the evidence has no account value to size it against.`, source }
+          : { id, result: 'pass', plain: `Worst single closed trade over ${over}: ${money(worst)}, inside the ${Math.round((bar ?? 0.25) * 100)}% bar.`, source };
+      }
       if (na) return { id, result: 'not_assessed', plain: `Not assessed: ${na.reason}.`, source };
       const dd = risk.max_drawdown;
       const plain = id === 'fills_drawdown' && dd
@@ -639,6 +655,9 @@ export function createRoomService({
     };
     return [row('fills_drawdown', 'max_drawdown', 'Drawdown'), row('fills_worst_trade', 'tail_loss', 'Worst single trade')];
   };
+
+  /** On screen, one sentence per row: the research footnote stays in the reports. */
+  const plainer = text => String(text ?? '').replace(/ Across 840 saved summaries[^.]*\.[^.]*\./, '').replace(/ Across 840 saved summaries.*$/, '');
 
   /** Which Nansen read each check stands on, printed beside it on the gate table. */
   const CHECK_SOURCE = {
@@ -683,7 +702,7 @@ export function createRoomService({
       // fill-tape rows come last: measured on the fills, live when the tape was read live.
       checks: [
         ...(decision.checks ?? []).filter(c => !['tail_loss', 'max_drawdown'].includes(c.id))
-          .map(c => ({ id: c.id, result: c.result, plain: freshnessPlain(p, c), source: CHECK_SOURCE[c.id] ?? null })),
+          .map(c => ({ id: c.id, result: c.result, plain: plainer(freshnessPlain(p, c)), source: CHECK_SOURCE[c.id] ?? null })),
         ...tapeRows(p),
       ],
       evidenceAt: decision.evidence.retrieved_at ?? null,
@@ -1026,10 +1045,14 @@ export function createRoomService({
         stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', caution: 'CAUTION', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
         ...endingCopy({ s, peak, executed, verdict }),
         // The one check that decided it, in the gate's own words.
-        because: gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null,
+        because: plainer(gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null) || null,
         checkedRecord: recordName(s.prospect),
         bestLine,
       };
+      if (whatIf) {
+        const word = { block: 'blocked', capped: 'capped', allow: 'cleared', caution: 'cleared with a caution' }[whatIf.verdict] ?? 'checked';
+        final.subline = `PENNY said no on its own. Had it agreed to ${whatIf.amountLabel}, the BAIT check would have ${word} it on ${final.prospect.name}'s record.`;
+      }
       s.final = final;
       return place(s, body);
     },

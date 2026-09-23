@@ -513,7 +513,7 @@ test('a desk that never commits gets an ending that says so plainly', async () =
   assert.equal(final.wiresAttempted, 0);
   assert.equal(final.stamp, 'NO WIRE');
   assert.equal(final.headline, 'PENNY refused to send money.');
-  assert.equal(final.subline, "Nothing reached the BAIT check. Below is what it would have checked on THE GRINDER.");
+  assert.equal(final.subline, "PENNY said no on its own. Had it agreed to $5,000, the BAIT check would have blocked it on THE GRINDER's record.");
   // Frozen mode still runs the gate on the snapshot and shows its table.
   assert.ok(final.gate.checks.length >= 3, 'the gate ran on the frozen record');
   assert.equal(final.gate.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');
@@ -571,7 +571,8 @@ test('the ending is worded from the round\'s own transcript: asked, then agreed 
   let { final } = await asked.service.finish(start.id, {});
   assert.equal(final.headline, "It asked for the record. You didn't give it. It agreed to send $7,500.");
   assert.deepEqual(final.quotes.asked, { n: 1, line: 'All-time only. Show me the 30-day record first.' });
-  assert.deepEqual(final.quotes.agreed, { n: 2, line: 'One coin, one month, big number. Small size.', amount: 7500 });
+  assert.deepEqual(final.quotes.agreed, { n: 2, line: 'One coin, one month, big number. Small size.', amount: 7500,
+    committed: { allocation: 7500, pct: 30 }, askedThenSent: true }, 'the wire is the commitment PENNY wrote, and it asked first');
 
   // Never asks: the line that agreed says nothing about a record.
   const blind = makeRoom(answer(2500, 'sold', 'Great week. Funded.'));

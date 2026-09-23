@@ -88,6 +88,9 @@ function renderEndpoints() {
 
 /* ---------- 1 · attack: the recorded round ---------- */
 
+/** Same test the room uses (prototype/room.js ASKED_FOR_RECORD): the desk asked for the record. */
+const ASKED = /\b(30[- ]?days?|thirty[- ]days?|last month|trailing|track record|(?:the|recent|your|his|her|full) record|window|show me|verif|evidence|drawdown|longer history|whole book)\b/i;
+
 function deskCard(key, side, finished) {
   const funded = side.allocation > 0;
   return `
@@ -98,6 +101,7 @@ function deskCard(key, side, finished) {
       </div>
       <p class="alloc"><strong>${money(side.allocation)}</strong><span>of $25,000${finished ? '' : ', so far'}</span></p>
       <p class="reply">${escape(side.reply)}</p>
+      ${ASKED.test(side.reply) && side.allocation > 0 ? '<p class="asked-sent"><span class="ok">Asked for the record ✓</span> · got none · <span class="bad">Sent anyway ✗</span></p>' : ''}
       <details class="records">
         <summary>${side.research.length ? `${side.research.length} Nansen records checked this pitch` : 'No new records checked this pitch'}</summary>
         ${side.research.map(r => `<p><strong>${escape(r.label)}</strong>${r.partial ? ', partial fills' : ''}<br>${escape(r.finding)}<br>${escape(r.source)}</p>`).join('')
@@ -265,7 +269,9 @@ function renderAudit() {
 /* ---------- 4 · navigate: recorded wallet decisions ---------- */
 
 const signedMoney = n => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-const walletName = wallet => wallet.handle ? `@${wallet.handle}` : wallet.label;
+// Address policy: proof tables show the short form and link out; no third-party entity labels.
+const shortAddr = a => `${String(a).slice(0, 6)}...${String(a).slice(-4)}`;
+const walletName = wallet => wallet.handle ? `@${wallet.handle}` : shortAddr(wallet.address);
 
 function walletCard(venue, wallet) {
   const evidence = wallet.evidence;
@@ -280,7 +286,7 @@ function walletCard(venue, wallet) {
   return `<article class="wallet-card" data-venue="${escape(venue.id)}" data-decision="${escape(wallet.expected)}">
     <div class="wallet-card-head"><span class="venue-tag">${escape(venue.name)}</span><span class="decision" data-state="${escape(wallet.expected)}">${escape(wallet.expected)}</span></div>
     <h3>${escape(walletName(wallet))}</h3>
-    <div class="address-row"><code title="${escape(wallet.address)}">${escape(wallet.address)}</code><button type="button" class="copy-address" data-address="${escape(wallet.address)}">Copy</button></div>
+    <div class="address-row"><code>${escape(shortAddr(wallet.address))}</code></div>
     <p class="wallet-pnl" data-state="${escape(wallet.expected)}">${signedMoney(evidence.realized_pnl_usd)}</p>
     <p class="wallet-pnl-label">30-day realised PnL · ${evidence.closed_trade_count.toLocaleString('en-US')} closed trades · ${(evidence.win_rate * 100).toFixed(1)}% win rate</p>
     ${venue.id === 'fomo' ? `<p class="headline-compare" data-warning="${disagreement}">Fomo headline ${signedMoney(wallet.headline_pnl_usd)}${disagreement ? `, but observed realised ${signedMoney(evidence.realized_pnl_usd)}` : ''}</p>` : ''}

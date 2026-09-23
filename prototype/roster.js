@@ -42,7 +42,8 @@ const minute = iso => `${new Date(iso).toISOString().slice(0, 10)} ${new Date(is
  * dates are not enough when a thousand fills land inside one hour: "2026-08-22 to
  * 2026-08-22" reads like a full day of trading and it was 74 minutes.
  */
-const span = (fromIso, toIso) => {
+export const spanText = (from, to) => span(from, to);
+function span(fromIso, toIso) {
   const minutes = Math.max(0, Math.round((Date.parse(toIso) - Date.parse(fromIso)) / 60_000));
   if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'}`;
   if (minutes < 60 * 48) {
@@ -52,7 +53,7 @@ const span = (fromIso, toIso) => {
   }
   const d = Math.round(minutes / 1440);
   return `${d} days`;
-};
+}
 // Capture dates are printed in UTC and say so, because the same instant is a different
 // calendar day in the founder's timezone and a date without a zone invites that argument.
 const stamp = iso => `${day(iso)} UTC`;

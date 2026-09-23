@@ -39,7 +39,12 @@ import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP, listRawReads,
  * full address, because they are Nansen's responses byte for byte and a figure must be
  * checkable against the wallet. Summary tables (/api/proof, the proof page) use 0x1234...abcd.
  */
-export const ADDRESS_POLICY = 'Raw live reads carry the full wallet address (they are the Nansen responses as sent). Summary tables, /api/proof and the proof page use the short form 0x1234...abcd.';
+/** The navigator as the public sees it: no third-party entity labels (redistribution risk). */
+export function publicNavigator(nav) {
+  return { ...nav, venues: (nav.venues ?? []).map(v => ({ ...v, wallets: (v.wallets ?? []).map(({ label, ...w }) => w) })) };
+}
+
+export const ADDRESS_POLICY = 'Raw live reads carry the full wallet address (they are the Nansen responses as sent). Everything else (proof tables, /api/proof, the proof page) shows the short form 0x1234...abcd and links out. No third-party entity labels are republished.';
 
 /** Every fresh live Nansen read's raw responses, saved as they arrived (bench/live-reads). */
 const LIVE_READS_DIR = process.env.HOSTED_LIVE_READS_DIR || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'bench', 'live-reads');
@@ -760,7 +765,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (url.pathname === '/wallets.json') {
-      return send(200, fs.readFileSync(path.join(VALIDATION, 'wallet-navigator.json'), 'utf8'));
+      return send(200, JSON.stringify(publicNavigator(JSON.parse(fs.readFileSync(path.join(VALIDATION, 'wallet-navigator.json'), 'utf8')))));
     }
 
     // The guard console page is retired (round 9): its explanation lives on the proof

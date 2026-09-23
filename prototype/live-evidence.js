@@ -69,7 +69,11 @@ export const RAW_NAME = /^\d{8}T\d{6}Z-0x[0-9a-f]{8}\.json$/;
 export function saveRawRead(dir, { wallet, fetchedAt, windows, responses }) {
   if (!dir) return null;
   const body = JSON.stringify({
-    kind: 'nansen-live-read', endpoint: LIVE_ENDPOINT, wallet, fetched_at: fetchedAt, windows,
+    kind: 'nansen-live-read', endpoint: LIVE_ENDPOINT,
+    // Every endpoint this file holds a response from (round 12). Files saved before then
+    // carry `endpoint` only, though some also hold perp-trades fills: bench/live-reads/README.md.
+    endpoints: responses.fills ? [LIVE_ENDPOINT, 'profiler/perp-trades'] : [LIVE_ENDPOINT],
+    wallet, fetched_at: fetchedAt, windows,
     // As Nansen sent them: status, the credit header and the whole JSON body, per window.
     responses,
   }, null, 2) + '\n';
