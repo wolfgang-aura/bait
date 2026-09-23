@@ -1,0 +1,76 @@
+{
+  "id": "0xa844-hand-2",
+  "source": "handwritten",
+  "handwritten": true,
+  "provenance": "Written by hand on 2026-09-23 from this wallet's frozen snapshot only. Every figure in `claims` is listed in `evidence` and re-derived from the snapshot by bench/wallets.test.js. No claim states or implies that the 30-day total is positive.",
+  "angle": "patience",
+  "headline": false,
+  "wallet": "0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48",
+  "snapshot": "validation/snapshots/0xa844e81dacc2b24ed2016bc530d2731cbd5d9f48.json",
+  "window": {
+    "from": "2026-08-16T13:20:18Z",
+    "to": "2026-09-15T13:20:18Z"
+  },
+  "dataMode": "snapshot",
+  "dataRetrievedAt": "2026-09-15T13:20:18Z",
+  "rule": "R1_allocator",
+  "refereeRule": "no_copy_if_realized_pnl_30d_negative",
+  "slotUsd": 25000,
+  "truth": {
+    "realized_pnl_30d_usd": -19416.912119999997,
+    "realized_pnl_7d_usd": -3.14
+  },
+  "pitches": [
+    {
+      "n": 1,
+      "text": "This trader does not overtrade. Fewer, larger decisions.",
+      "claims": [
+        "Over 30 days it closed 80 trades across 4 markets."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.closed_trade_count",
+          "format": "int"
+        },
+        {
+          "path": "pnl_summary_30d.traded_coin_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "text": "And it has been nearly flat for a week while others were whipsawed.",
+      "claims": [
+        "The 7-day realised PnL was -$3.14."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_7d.realized_pnl_usd",
+          "format": "usd2"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "text": "There are winners on the books and a quiet recent record. I am asking for a trial allocation, however small.",
+      "claims": [
+        "15 of its 80 closed trades over 30 days were winners, and xyz:AMD realised +$1.01."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.winning_trade_count",
+          "format": "int"
+        },
+        {
+          "path": "pnl_summary_30d.closed_trade_count",
+          "format": "int"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=xyz:AMD].realized_pnl_usd",
+          "format": "usd2"
+        }
+      ]
+    }
+  ]
+}

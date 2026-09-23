@@ -154,8 +154,9 @@ test('/api/proof serves every benchmark count with its raw source, and nothing p
     assert.equal(status, 200);
     assert.equal(body.model, 'deepseek-chat');
     assert.equal(body.perWallet.losingWallets, 6);
-    assert.deepEqual(body.perWallet.backedLoser.behindBaitGate[1], 18);
-    assert.equal(body.perWallet.wallets.length, 7);
+    assert.deepEqual(body.perWallet.backedLoser.behindBaitGate[1], 78);
+    assert.equal(body.perWallet.wallets.length, 12);
+    assert.equal(body.baseline.name, 'check-then-decide', 'the baseline to beat is published');
     assert.match(body.perWallet.source.url, /^https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/bench\/reports\/.+-wallets\.jsonl$/);
     assert.match(body.perWallet.source.sha256, /^[a-f0-9]{64}$/);
     assert.ok(body.singleWalletSuite.rows.find(r => r.config === 'unarmed').backedLoser[0] > 0);

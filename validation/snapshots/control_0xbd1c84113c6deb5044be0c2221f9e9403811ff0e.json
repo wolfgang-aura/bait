@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "source": "live",
+  "wallet": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
+  "chain": "hyperliquid",
+  "retrieved_at": "2026-09-23T00:36:29Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-24T00:36:29Z",
+      "to": "2026-09-23T00:36:29Z"
+    },
+    "7d": {
+      "from": "2026-09-16T00:36:29Z",
+      "to": "2026-09-23T00:36:29Z"
+    }
+  },
+  "pnl_summary_30d": {
+    "top5_coins": [
+      {
+        "coin": "BTC",
+        "realized_pnl_usd": 6890819.833430001,
+        "realized_roi": 0.11886710278106774,
+        "closed_trade_count": 977,
+        "fees_usd": 38497.457049
+      }
+    ],
+    "traded_coin_count": 1,
+    "traded_times": 12,
+    "closed_trade_count": 977,
+    "winning_trade_count": 977,
+    "realized_pnl_usd": 6890819.833430001,
+    "realized_pnl_percent": 0.11886710278106774,
+    "win_rate": 1,
+    "fees_usd": 38497.457049
+  },
+  "pnl_summary_7d": {
+    "top5_coins": [
+      {
+        "coin": "BTC",
+        "realized_pnl_usd": 2518178.56001,
+        "realized_roi": 0.09620721741889658,
+        "closed_trade_count": 443,
+        "fees_usd": 10469.811237
+      }
+    ],
+    "traded_coin_count": 1,
+    "traded_times": 2,
+    "closed_trade_count": 443,
+    "winning_trade_count": 443,
+    "realized_pnl_usd": 2518178.56001,
+    "realized_pnl_percent": 0.09620721741889658,
+    "win_rate": 1,
+    "fees_usd": 10469.811237
+  },
+  "open_positions": {
+    "skipped": "live refresh does not fetch positions (the game tools never read them)"
+  },
+  "trades_30d": [],
+  "trades_pagination": {
+    "per_page": 1000,
+    "pages_fetched": 0,
+    "is_complete": false,
+    "max_pages": 0,
+    "note": "fills not fetched: summaries-only control (2 credits)"
+  },
+  "sources": [
+    {
+      "path": "profiler/perp-pnl-summary",
+      "body": {
+        "address": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
+        "date": {
+          "from": "2026-08-24T00:36:29Z",
+          "to": "2026-09-23T00:36:29Z"
+        }
+      },
+      "note": "live 30d summary",
+      "at": "2026-09-23T00:36:29Z"
+    },
+    {
+      "path": "profiler/perp-pnl-summary",
+      "body": {
+        "address": "0xbd1c84113c6deb5044be0c2221f9e9403811ff0e",
+        "date": {
+          "from": "2026-09-16T00:36:29Z",
+          "to": "2026-09-23T00:36:29Z"
+        }
+      },
+      "note": "live 7d summary",
+      "at": "2026-09-23T00:36:30Z"
+    }
+  ],
+  "fills_coverage": {
+    "complete": false,
+    "fills": 0,
+    "pages_fetched": 0,
+    "covers_from": null,
+    "covers_to": "2026-09-23T00:36:29Z",
+    "covers_7d": false
+  },
+  "reconciliation": {
+    "skipped": "partial fill coverage",
+    "note": "Only the most recent 0 fills were fetched, so fill totals cannot be reconciled against the 30-day summary.",
+    "fills_fetched": 0,
+    "fills_complete": false,
+    "summary_realized_pnl_usd": 6890819.833430001
+  },
+  "role": "control",
+  "selection": "validation/wallet-navigator.json (expected: allow, 20 Sep)"
+}

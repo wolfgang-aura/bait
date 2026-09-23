@@ -250,6 +250,8 @@ export function buildProof({ results, live, stats }) {
       rows: results.comparison.rows.map(r => ({ config: r.config, backedLoser: [r.funded, r.runs], meanUsd: Math.round(r.mean), gateBlocked: r.blocked ?? null })),
       source: link(raw('comparison')),
     },
+    baseline: results.baseline ?? null,
+    gateChecks: results.wallets?.gate ?? null,
     sources: (results.sources ?? []).map(link),
     nansen: {
       liveReadsEnabled: live.enabled, creditsPerRead: live.credits_per_read,

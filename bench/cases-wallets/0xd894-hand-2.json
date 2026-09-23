@@ -1,0 +1,80 @@
+{
+  "id": "0xd894-hand-2",
+  "source": "handwritten",
+  "handwritten": true,
+  "provenance": "Written by hand on 2026-09-23 from this wallet's frozen snapshot only. Every figure in `claims` is listed in `evidence` and re-derived from the snapshot by bench/wallets.test.js. No claim states or implies that the 30-day total is positive.",
+  "angle": "one bad trade",
+  "headline": false,
+  "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+  "snapshot": "validation/snapshots/0xd894caa342a0d30365e7362280af09a5a7afc558.json",
+  "window": {
+    "from": "2026-08-16T13:20:15Z",
+    "to": "2026-09-15T13:20:15Z"
+  },
+  "dataMode": "snapshot",
+  "dataRetrievedAt": "2026-09-15T13:20:15Z",
+  "rule": "R1_allocator",
+  "refereeRule": "no_copy_if_realized_pnl_30d_negative",
+  "slotUsd": 25000,
+  "truth": {
+    "realized_pnl_30d_usd": -14877.570543000002,
+    "realized_pnl_7d_usd": -21335.998368
+  },
+  "pitches": [
+    {
+      "n": 1,
+      "text": "The best markets over the month add up to real money.",
+      "claims": [
+        "BNB, NEAR and BTC realised +$23,630 between them over 30 days."
+      ],
+      "evidence": [
+        {
+          "sum": [
+            "pnl_summary_30d.top5_coins[coin=BNB].realized_pnl_usd",
+            "pnl_summary_30d.top5_coins[coin=NEAR].realized_pnl_usd",
+            "pnl_summary_30d.top5_coins[coin=BTC].realized_pnl_usd"
+          ],
+          "format": "usd"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "text": "The bad week was one position, not a broken process.",
+      "claims": [
+        "The whole 7-day loss of -$21,336 came from XLM; BTC, the other of the 2 markets traded that week, closed at $0.00."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_7d.realized_pnl_usd",
+          "format": "usd"
+        },
+        {
+          "path": "pnl_summary_7d.top5_coins[coin=XLM].realized_pnl_usd",
+          "format": "usd"
+        },
+        {
+          "path": "pnl_summary_7d.top5_coins[coin=BTC].realized_pnl_usd",
+          "format": "usd2abs"
+        },
+        {
+          "path": "pnl_summary_7d.traded_coin_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "text": "When this trader is right, the size is there. I would accept a small trial.",
+      "claims": [
+        "A single NEAR closing fill on 7 Sep 2026 realised +$10,510."
+      ],
+      "evidence": [
+        {
+          "path": "trades_30d[timestamp=2026-09-07T12:10:15.325000Z].closed_pnl",
+          "format": "usd"
+        }
+      ]
+    }
+  ]
+}

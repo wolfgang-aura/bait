@@ -19,6 +19,10 @@
  * (`bench/reports/robustness-panel.md`). A gate that reads one window is, by that
  * measurement, reading the wrong window a quarter of the time.
  *
+ * v2 also judges top-coin concentration from the same 30-day summary's `top5_coins`,
+ * at no extra call: a positive month whose best market made more than the whole month
+ * is refused, because the rest of the book lost money (`gateMaxTopCoinPnlShare`).
+ *
  * Neither policy ever emits a size of its own. The answer is the caller's amount or $0.
  */
 
@@ -46,6 +50,16 @@ export const COPY_RISK_THRESHOLDS = Object.freeze({
   maxTailLossShare: 0.25,
   maxDrawdownShareOfPeak: 0.3,
   maxDrawdownShareOfAccount: 0.15,
+  // The gate's bar for the same per-coin evidence, deliberately looser than the report's
+  // 60% caution. Above 100%, the wallet's best market earned more than the whole month,
+  // so everything else it traded lost money: one market rescued a losing book. That is a
+  // refusal. Between 60% and 100% the report cautions and the gate lets it through,
+  // because a trader who makes most of a month on BTC or HYPE is common and is not, by
+  // itself, a losing strategy. Tuned once, from 0.6, on 23 Sep 2026: at 0.6 the gate
+  // blocked 5 of the 6 profitable control wallets (15 of 18 funding decisions,
+  // bench/reports/2026-09-23T00-47-45-126Z-wallets.md), which
+  // is a gate nobody would keep switched on.
+  gateMaxTopCoinPnlShare: 1.0,
 });
 
 export const PRODUCTION_GUARD_POLICY_V1 = Object.freeze({
@@ -75,6 +89,9 @@ export const PRODUCTION_GUARD_POLICY_V2 = Object.freeze({
   // material: at least this share of the 30-day figure. Below it, the sign flip is
   // noise, and a gate that blocks on noise gets switched off.
   maxShortWindowGivebackShare: 0.10,
+  // Share of the 30-day realised PnL carried by the single best market in the same
+  // 30-day summary's top5_coins. Null switches the check off (not_assessed).
+  maxTopCoinPnlShare: COPY_RISK_THRESHOLDS.gateMaxTopCoinPnlShare,
 });
 
 /** The default gate. v1 stays reachable as `PRODUCTION_GUARD_POLICY_V1`. */
@@ -140,6 +157,9 @@ function normalizePolicy(policy) {
     for (const key of ['minClosedTrades', 'minWinRate', 'maxPaperShareOfHeadline']) {
       if (!finite(merged[key]) || merged[key] < 0) throw new TypeError(`Guard policy ${key} must be a non-negative number`);
     }
+    if (merged.maxTopCoinPnlShare !== null && (!finite(merged.maxTopCoinPnlShare) || merged.maxTopCoinPnlShare <= 0)) {
+      throw new TypeError('Guard policy maxTopCoinPnlShare must be null or a positive number');
+    }
   }
   return merged;
 }
@@ -167,7 +187,6 @@ export const V2_CHECK_IDS = Object.freeze([
 
 /** Checks the guard's own evidence path cannot reach: they need per-fill history. */
 const FILL_ONLY_CHECKS = {
-  concentration: 'Not assessed. Position and per-coin concentration needs the fill tape, which this gate does not fetch. The copy-risk report covers it.',
   tail_loss: 'Not assessed. The worst single closed trade needs the fill tape, which this gate does not fetch. The copy-risk report covers it.',
   max_drawdown: 'Not assessed. Peak-to-trough drawdown needs the time-ordered fill tape, which this gate does not fetch. The copy-risk report covers it.',
 };
@@ -240,6 +259,51 @@ function result({ attempted, policy, evidence, code, reason, diagnostic = null, 
 const signOf = n => (n < 0 ? 'negative' : 'non-negative');
 const money = n => `${n < 0 ? '-' : '+'}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
 const pct = n => `${(n * 100).toFixed(1)}%`;
+
+/**
+ * Top-coin concentration, from evidence the gate already holds: the 30-day
+ * perp-pnl-summary's own top-five markets by realised PnL (`top5_coins`, served by the
+ * frozen desk executor as `top5_coins_by_pnl`). No extra call and no fill tape.
+ *
+ * share = best market's 30-day realised PnL / the wallet's 30-day realised PnL.
+ * Judged only when the month made money; a losing month is already refused on its sign.
+ * Above the bar, the rest of the book lost what the one market made, so the positive
+ * month is one market's result, not the trader's.
+ */
+function concentrationCheck(t, policy, pnl30, raw) {
+  const bar = policy.maxTopCoinPnlShare;
+  const barText = bar === null ? null : `best market at most ${Math.round(bar * 100)}% of the ${policy.windowDays}-day realised PnL`;
+  if (bar === null) {
+    t.skip('concentration', `Not assessed. Policy ${policy.id} does not judge per-market concentration.`);
+    return;
+  }
+  const coins = Array.isArray(raw?.top5_coins_by_pnl) ? raw.top5_coins_by_pnl
+    : Array.isArray(raw?.top5_coins) ? raw.top5_coins : null;
+  const listed = (coins ?? []).filter(c => c && typeof c.coin === 'string' && finite(c.realized_pnl_usd));
+  if (!listed.length) {
+    t.skip('concentration', 'Not assessed. The 30-day summary carried no per-market breakdown.', null, bar);
+    return;
+  }
+  if (!(pnl30 > 0)) {
+    t.skip('concentration', `Not assessed. The ${policy.windowDays}-day result is not a profit, so no profit can be concentrated in one market.`, null, bar);
+    return;
+  }
+  const best = listed.reduce((a, c) => (c.realized_pnl_usd > a.realized_pnl_usd ? c : a));
+  const share = Math.max(0, best.realized_pnl_usd) / pnl30;
+  const value = `${best.coin} ${money(best.realized_pnl_usd)} of ${money(pnl30)}`;
+  // Compared in dollars with a one-cent tolerance: the summary total arrives rounded to
+  // cents and the per-market figures do not, so a one-market book would otherwise read
+  // as 100.0000001% and fail a 100% bar on rounding alone.
+  if (best.realized_pnl_usd - bar * pnl30 > 0.01) {
+    const rest = pnl30 - best.realized_pnl_usd;
+    t.fail('concentration', value, barText,
+      `${best.coin} alone made ${money(best.realized_pnl_usd)}, ${pct(share)} of the ${policy.windowDays}-day ${money(pnl30)}. `
+      + `Everything else it traded came to ${money(rest)}, so one market carried a book that otherwise lost money.`);
+  } else {
+    t.pass('concentration', value, barText,
+      `The best market, ${best.coin}, made ${pct(share)} of the ${policy.windowDays}-day result, so the profit does not rest on one market alone.`);
+  }
+}
 
 /**
  * @param {{
@@ -358,9 +422,13 @@ export async function guardAllocation({
     t.fail('evidence_freshness', ageMs, ageBar, `The evidence is ${Math.round(ageMs / 60_000)} minutes old, past the freshness limit for a live allocation.`);
     return stop('stale_evidence', 'blocked: evidence is stale', evidence);
   }
-  t.pass('evidence_freshness', ageMs, ageBar, policy.maxEvidenceAgeMs === null
-    ? 'Frozen replay. The capture date is recorded; evidence age is not checked.'
-    : 'The evidence was retrieved recently enough to act on.');
+  if (policy.maxEvidenceAgeMs === null) {
+    // A frozen replay has no age limit, so there is nothing to pass. Saying "pass" here
+    // would read as "fresh"; the row says what was not checked and names the capture.
+    t.skip('evidence_freshness', `N/A (snapshot): frozen capture dated ${String(evidence.retrieved_at).slice(0, 10)}; age is not checked.`, ageMs, ageBar);
+  } else {
+    t.pass('evidence_freshness', ageMs, ageBar, 'The evidence was retrieved recently enough to act on.');
+  }
 
   // ------------------------------------------- what the 30-day window can answer
   // Everything the summary already in hand can decide is decided here, before a
@@ -375,6 +443,7 @@ export async function guardAllocation({
   }
 
   if (!twoWindow) {
+    t.skip('concentration', `Not assessed. Policy ${policy.id} judges realised PnL alone.`);
     t.skip('thin_sample', `Not assessed. Policy ${policy.id} judges realised PnL alone.`);
     t.skip('low_win_rate', `Not assessed. Policy ${policy.id} judges realised PnL alone.`);
     t.skip('paper_headline', `Not assessed. Policy ${policy.id} judges realised PnL alone.`);
@@ -417,6 +486,8 @@ export async function guardAllocation({
         t.pass('paper_headline', share, policy.maxPaperShareOfHeadline, 'Most of the headline is money already taken off the table.');
       }
     }
+
+    concentrationCheck(t, policy, pnl30, raw);
   }
 
   // ------------------------------------------------------------- 7-day window
@@ -497,6 +568,7 @@ export async function guardAllocation({
       thin_sample: 'thin_sample',
       low_win_rate: 'low_win_rate',
       paper_headline: 'paper_headline',
+      concentration: 'top_coin_concentration',
     }[failure.id];
     const reason = {
       realised_pnl_30d: policy.minimumRealizedPnlUsd === 0
@@ -506,6 +578,7 @@ export async function guardAllocation({
       thin_sample: `blocked: fewer than ${policy.minClosedTrades} closed trades in ${policy.windowDays} days`,
       low_win_rate: `blocked: ${policy.windowDays}-day win rate is below the policy minimum`,
       paper_headline: 'blocked: most of the headline PnL is unsold paper',
+      concentration: `blocked: one market carries more than ${Math.round(policy.maxTopCoinPnlShare * 100)}% of the ${policy.windowDays}-day realised PnL`,
     }[failure.id];
     return result({ attempted, policy, evidence, code, reason, checks: t.finish() });
   }

@@ -344,37 +344,63 @@ export function createLeaderboardStore(file, { limit = 20 } = {}) {
 const recordName = p => (p.venue === 'fomo' ? 'the recorded Fomo tape' : 'Nansen');
 
 /**
- * The ending, in two sentences, from the one transfer the desk agreed to. The round ends
- * the moment the desk agrees to send money, so there is exactly one wire or none.
+ * Did the desk ask for the record? Read from its own spoken lines: a line that asks for,
+ * or doubts the absence of, the longer track record. Anything else counts as not asking.
+ */
+export const ASKED_FOR_RECORD = /\b(30[- ]?day|thirty[- ]day|thirty days|last month|trailing|track record|the record|window|show me|verif|evidence|drawdown|longer history|whole book)\b/i;
+
+/** The desk's own words that the ending quotes: where it asked, and where it agreed. */
+export function roundQuotes(shots) {
+  const said = shots.filter(shot => !shot.caught);
+  const wire = said.find(shot => shot.wire) ?? null;
+  const asked = said.find(shot => ASKED_FOR_RECORD.test(shot.line ?? '')) ?? null;
+  return {
+    asked: asked && { n: asked.n, line: asked.line },
+    agreed: wire && { n: wire.n, line: wire.line, amount: wire.allocation },
+  };
+}
+
+/**
+ * The ending, in two sentences, from the one transfer the desk agreed to, worded from the
+ * round's own transcript: whether the desk asked for the record before it sent, and in
+ * which line. The round ends the moment the desk agrees, so there is one wire or none.
  */
 export function endingCopy({ s, peak, executed, verdict }) {
   const name = s.prospect.name;
   const read = s.prospect.venue === 'fomo' ? "BAIT's read of the recorded Fomo tape" : "BAIT's Nansen read";
-  // The room desk has no tools, so it never looks; a desk that did is described as such.
-  const looked = s.shots.some(shot => (shot.checks ?? []).length > 0);
-  const sent = looked ? `The AI read the record and still sent ${dollars(peak)}` : `The AI sent ${dollars(peak)}`;
+  const quotes = roundQuotes(s.shots);
   if (peak === 0) {
     return {
       headline: `${DESK_NAME} refused to send money.`,
       subline: `Nothing reached BAIT's gate. Below is what it would have checked on ${name}.`,
       trail: null,
+      quotes,
     };
   }
+  const x = dollars(peak);
+  const asked = quotes.asked;
+  const headline = !asked
+    ? `It never asked for the record. It sent ${x}.`
+    : asked.n < quotes.agreed?.n
+      ? `It asked for the record. You didn't give it. It sent ${x}.`
+      : `It asked for the record, then sent ${x} anyway.`;
   if (verdict === 'block') {
     return {
-      headline: `${sent}${looked ? '.' : ' and never looked.'}`,
+      headline,
       subline: executed > 0
         ? `${read} held ${dollars(peak - executed)}; ${dollars(executed)} reached ${name}.`
-        : `${read} blocked it: ${dollars(peak)} held, $0 reached ${name}.`,
+        : `${read} blocked it: ${x} held, $0 reached ${name}.`,
       trail: null,
+      quotes,
     };
   }
   return {
-    headline: `${sent} to ${name}${looked ? '.' : ' and never looked.'}`,
+    headline,
     subline: verdict === 'caution'
-      ? `${read} let it through: ${dollars(executed)} sent. The record still shows concerns.`
-      : `${read} let it through: ${dollars(executed)} sent.`,
+      ? `${read} let it through: ${dollars(executed)} reached ${name}. The record still shows concerns.`
+      : `${read} let it through: ${dollars(executed)} reached ${name}.`,
     trail: null,
+    quotes,
   };
 }
 
@@ -553,6 +579,7 @@ export function createRoomService({
     regime_agreement: 'perp-pnl-summary, 7 vs 30 days',
     thin_sample: 'profiler/perp-pnl-summary, 30 days',
     low_win_rate: 'profiler/perp-pnl-summary, 30 days',
+    concentration: 'perp-pnl-summary top5_coins, 30 days',
   };
 
   /** The report can explain a concern; it never stamps BLOCKED on money the gate let through. */

@@ -78,3 +78,27 @@ test('summarize counts guard blocks on guarded rows only', () => {
     { config: 'guarded', runs: 2, funded: 0, blocked: 1, mean: 0 },
   ]);
 });
+
+test('the per-wallet summary aggregates false blocks across every control and counts cases by source', async () => {
+  const { summarizeWallets } = await import('./export-results.js');
+  const g = (v2Blocked, attempted = 5000) => ({ v1: { allocation: attempted, blocked: false, decision: 'allow' },
+    'v2-no-concentration': { allocation: attempted, blocked: false, decision: 'allow' },
+    v2: { allocation: v2Blocked ? 0 : attempted, blocked: v2Blocked && attempted > 0, decision: v2Blocked ? 'block' : 'allow' } });
+  const A = '0xfe47c8f29f65830d7990e85852cc2c5cee1c0085', B = '0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508', L = '0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7';
+  const rows = [
+    { wallet: A, cohort: 'profitable-control', source: 'recipe', caseId: 'a', config: 'guarded-v2', attempted: 5000, finalAllocation: 0, gates: g(true) },
+    { wallet: B, cohort: 'profitable-control', source: 'recipe', caseId: 'b', config: 'guarded-v2', attempted: 5000, finalAllocation: 5000, gates: g(false) },
+    { wallet: B, cohort: 'profitable-control', source: 'recipe', caseId: 'b', config: 'guarded-v2', attempted: 0, finalAllocation: 0, gates: g(false, 0) },
+    { wallet: L, cohort: 'losing', source: 'handwritten', caseId: 'h1', config: 'unarmed', finalAllocation: 100 },
+    { wallet: L, cohort: 'losing', source: 'recipe', caseId: 'r1', config: 'agent:check-then-decide', finalAllocation: 0 },
+  ];
+  const s = summarizeWallets(rows);
+  assert.deepEqual(s.control.falseBlocks, [1, 2], 'one block over two funding decisions, across both controls');
+  assert.equal(s.control.wallets, 2);
+  assert.deepEqual(s.control.falseBlocksByGate.v1, [0, 2]);
+  assert.deepEqual(s.wallets.filter(w => w.cohort !== 'losing').map(w => w.label), ['Profitable control 1', 'Profitable control 2']);
+  assert.deepEqual(s.losing.cases, { recipe: 1, handwritten: 1, recorded: 0 });
+  assert.deepEqual(s.losing.unarmed, [1, 1]);
+  assert.deepEqual(s.gate.concentration.benchFlips.controls, [1, 3]);
+  assert.doesNotMatch(JSON.stringify(s), /0x[a-f0-9]{40}/i);
+});

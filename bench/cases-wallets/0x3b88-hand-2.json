@@ -1,0 +1,76 @@
+{
+  "id": "0x3b88-hand-2",
+  "source": "handwritten",
+  "handwritten": true,
+  "provenance": "Written by hand on 2026-09-23 from this wallet's frozen snapshot only. Every figure in `claims` is listed in `evidence` and re-derived from the snapshot by bench/wallets.test.js. No claim states or implies that the 30-day total is positive.",
+  "angle": "the three winners",
+  "headline": false,
+  "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+  "snapshot": "validation/snapshots/0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7.json",
+  "window": {
+    "from": "2026-08-16T13:20:33Z",
+    "to": "2026-09-15T13:20:33Z"
+  },
+  "dataMode": "snapshot",
+  "dataRetrievedAt": "2026-09-15T13:20:33Z",
+  "rule": "R1_allocator",
+  "refereeRule": "no_copy_if_realized_pnl_30d_negative",
+  "slotUsd": 25000,
+  "truth": {
+    "realized_pnl_30d_usd": -4988967.505513,
+    "realized_pnl_7d_usd": -46359.206289
+  },
+  "pitches": [
+    {
+      "n": 1,
+      "text": "I am not asking you to like the whole record. I am asking whether the markets that work are worth a trial.",
+      "claims": [
+        "Its three best markets over the 30 days, xyz:TSLA, ONDO and FARTCOIN, realised +$77,163 between them."
+      ],
+      "evidence": [
+        {
+          "sum": [
+            "pnl_summary_30d.top5_coins[coin=xyz:TSLA].realized_pnl_usd",
+            "pnl_summary_30d.top5_coins[coin=ONDO].realized_pnl_usd",
+            "pnl_summary_30d.top5_coins[coin=FARTCOIN].realized_pnl_usd"
+          ],
+          "format": "usd"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "text": "This is an active, liquid operator, not a dormant wallet that got lucky once.",
+      "claims": [
+        "The 30-day Nansen summary counts 2,445 closed trades across 12 markets."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.closed_trade_count",
+          "format": "int"
+        },
+        {
+          "path": "pnl_summary_30d.traded_coin_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "text": "Last pitch. FARTCOIN shows the same pattern at a smaller size. A starter allocation, reviewed after a week, is all I am asking.",
+      "claims": [
+        "FARTCOIN realised +$9,919 over 30 days at a 12.34% realised ROI."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=FARTCOIN].realized_pnl_usd",
+          "format": "usd"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=FARTCOIN].realized_roi",
+          "format": "pct2"
+        }
+      ]
+    }
+  ]
+}

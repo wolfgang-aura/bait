@@ -324,15 +324,17 @@ test('the guard reads the recorded tape, and the copy-risk report is the stricte
   assert.equal(orangie.risk.verdict, 'block');
 });
 
-test('BAIT lets the one Nansen record that holds up reach the wire', async () => {
+test('THE REAL DEAL is refused by the concentration check: one market made more than the month', async () => {
   const p = by('realdeal');
   const { makeToolExecutor } = await import('../validation/tools.js');
   const decision = await guardAllocation({
     executor: makeToolExecutor(p.snapshot, { mode: 'armed' }),
     wallet: p.wallet, allocation: 5_000, policy: p.guardPolicy,
   });
-  assert.equal(decision.decision, 'allow');
-  assert.equal(decision.allocation, 5_000);
+  assert.equal(decision.decision, 'block');
+  assert.equal(decision.allocation, 0);
+  assert.equal(decision.checks.find(c => c.id === 'concentration').result, 'fail');
+  assert.equal(decision.checks.find(c => c.id === 'realised_pnl_30d').result, 'pass', 'the month itself is profitable');
   assert.equal(decision.evidence.source, NANSEN_SOURCE);
   assert.equal(p.risk.execution_authorized, false, 'the report never authorizes execution');
 });

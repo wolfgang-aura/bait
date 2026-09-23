@@ -10,7 +10,8 @@ test('a frozen replay never claims its evidence was retrieved recently', async (
   const decision = await guardAllocation({ executor, wallet, allocation: 2500,
     policy: BENCHMARK_GUARD_POLICY_V2, now: () => new Date('2026-09-22T00:00:00Z') });
   const freshness = decision.checks.find(row => row.id === 'evidence_freshness');
-  assert.match(freshness.plain, /Frozen replay/);
+  assert.equal(freshness.result, 'not_assessed', 'no age limit means nothing was passed');
+  assert.equal(freshness.plain, 'N/A (snapshot): frozen capture dated 2026-09-15; age is not checked.');
   assert.doesNotMatch(freshness.plain, /recently enough/);
   assert.equal(decision.allocation, 0);
 });

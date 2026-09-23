@@ -47,7 +47,7 @@ const el = {
   facts: $('facts'), nextFact: $('next-fact'), sealed: $('sealed'), sealedHead: $('sealed-head'),
   sealedLabel: $('sealed-label'), premiseName: $('premise-name'), premiseSlot: $('premise-slot'),
   revealStamp: $('reveal-stamp'), revealTitle: $('reveal-title'), revealSub: $('reveal-sub'),
-  revealWhy: $('reveal-why'), hypeLabel: $('hype-label'), recordLabel: $('record-label'),
+  revealWhy: $('reveal-why'), revealQuotes: $('reveal-quotes'), hypeLabel: $('hype-label'), recordLabel: $('record-label'),
   ladderModel: $('ladder-model'),
   composer: $('composer'), line: $('line'), go: $('go'), count: $('count'), status: $('status'),
   stopped: $('stopped'), stoppedSub: $('stopped-sub'),
@@ -395,6 +395,24 @@ function showReveal(p, final) {
   text(el.revealSub, final.subline);
   el.revealWhy.hidden = !(final.because && final.verdict === 'block' && final.peak > 0);
   text(el.revealWhy, final.because ? `Why: ${final.because}` : '');
+  // MERIDIAN's own words: where it asked for the record, then where it agreed.
+  el.revealQuotes.replaceChildren();
+  const q = final.quotes ?? {};
+  const rows = [];
+  if (q.asked && q.asked.n !== q.agreed?.n) rows.push(['asked', `Line ${q.asked.n}`, q.asked.line, null]);
+  if (q.agreed) rows.push(['agreed', `Line ${q.agreed.n}`, q.agreed.line, `sent ${dollars(q.agreed.amount)}`]);
+  for (const [kind, n, line, tail] of rows) {
+    const li = document.createElement('li');
+    li.className = kind;
+    const who = document.createElement('b');
+    who.textContent = `${n} · MERIDIAN`;
+    const said = document.createElement('q');
+    said.textContent = line;
+    li.append(who, said);
+    if (tail) { const t = document.createElement('em'); t.textContent = tail; li.append(t); }
+    el.revealQuotes.append(li);
+  }
+  el.revealQuotes.hidden = rows.length === 0;
   text(el.hypeLabel, 'What you pitched');
   text(el.recordLabel, final.verdict === 'block' ? 'What you left out' : 'What the record shows');
   showTruth(p);
@@ -501,11 +519,13 @@ function renderReport(host, risk) {
  */
 function renderGate(host, gate) {
   host.replaceChildren();
-  const label = { pass: 'pass', fail: 'block' };
+  const label = { pass: 'pass', fail: 'block', not_assessed: 'n/a' };
+  // Freshness is always shown: on a frozen snapshot it reads n/a rather than pass.
+  const shown = c => c.result !== 'not_assessed' || c.id === 'evidence_freshness';
   // Rows the gate could not look at are named once in the footer, so the table stays
   // the length of what was actually decided.
-  const skipped = (gate.checks ?? []).filter(c => c.result === 'not_assessed');
-  for (const check of (gate.checks ?? []).filter(c => c.result !== 'not_assessed')) {
+  const skipped = (gate.checks ?? []).filter(c => !shown(c));
+  for (const check of (gate.checks ?? []).filter(shown)) {
     const row = document.createElement('div');
     row.className = `flagline check ${check.result}`;
     const b = document.createElement('b');
@@ -957,9 +977,10 @@ async function renderLadder() {
       li.append(n, sp);
       el.ladder.append(li);
     }
-    text(el.ladderHead, `${w.losing.wallets} losing wallets, 3 runs each, true facts from each wallet's own Nansen record`);
+    const cases = Object.values(w.losing.cases ?? {}).reduce((a, b) => a + b, 0);
+    text(el.ladderHead, `${w.losing.wallets} losing wallets, ${cases} attacks, 3 runs each, true facts only`);
     const model = w.model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : w.model;
-    text(el.ladderModel, `Model tested: ${model} · profitable control: ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} funding decisions blocked`);
+    text(el.ladderModel, `Model tested: ${model} · on profitable traders the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} funding decisions`);
   } catch { el.ladder.closest('.ladder-strip').hidden = true; }
 }
 
@@ -1051,7 +1072,8 @@ async function fixture(name, prospectId) {
     prospect: { id: p.id, name: p.name, handle: p.handle, venueLabel: p.venueLabel },
     // Same sentences the server's endingCopy writes; the gate table is the gate's real
     // decision on the frozen record, run by the fixture route for this $2,500.
-    headline: block ? `The AI sent ${dollars(amount)} and never looked.` : `The AI sent ${dollars(amount)} to ${p.name} and never looked.`,
+    headline: `It asked for the record. You didn't give it. It sent ${dollars(amount)}.`,
+    quotes: { asked: { n: 1, line: 'Fixture reply: show me the 30-day record.' }, agreed: { n: 2, line: 'Fixture reply: fine, a small probe.', amount } },
     subline: block
       ? `BAIT's Nansen read blocked it: ${dollars(amount)} held, $0 reached ${p.name}.`
       : `BAIT's Nansen read let it through: ${dollars(amount)} sent.`,

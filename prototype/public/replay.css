@@ -711,3 +711,10 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
     transition-duration: 0.001ms !important;
   }
 }
+
+/* What the gate claims: plain, above the fold's end, never in a fold. */
+.claims-box { margin: 0 0 28px; padding: 16px 20px; border-left: 3px solid var(--accent); background: rgba(255,255,255,.02); max-width: 88ch; }
+.claims-box p { margin: 6px 0 0; font: 400 15px/1.5 var(--sans); color: var(--ink-dim); }
+.claims-box strong { color: var(--ink); }
+
+.wallets-table .flip { font-style: normal; font-size: .8em; color: var(--ink-faint); margin-left: 6px; }

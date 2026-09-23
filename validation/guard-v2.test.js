@@ -46,10 +46,13 @@ function executorWith({
   closed7 = 424,
   winRate7 = 1,
   retrieved_at = fixture.retrieved_at,
+  // The fixture's own per-market list belongs to its real -$4.7M month. A hand-set
+  // month gets a per-market list consistent with it: the best market makes half.
+  top5 = r30 > 0 ? [{ coin: 'BTC', realized_pnl_usd: r30 / 2 }, { coin: 'ETH', realized_pnl_usd: r30 / 4 }] : fixture.pnl_summary_30d.top5_coins,
 } = {}) {
   const snapshot = structuredClone(fixture);
   Object.assign(snapshot.pnl_summary_30d, {
-    realized_pnl_usd: r30, closed_trade_count: closed30, win_rate: winRate30,
+    realized_pnl_usd: r30, closed_trade_count: closed30, win_rate: winRate30, top5_coins: top5,
   });
   Object.assign(snapshot.pnl_summary_7d, {
     realized_pnl_usd: r7, closed_trade_count: closed7, win_rate: winRate7,
@@ -279,7 +282,9 @@ test('the checks table is complete and readable on an allow and on a block', asy
   assert.equal(allow.checks.filter(c => c.result === 'fail').length, 0);
   assert.equal(block.checks.filter(c => c.result === 'fail').length, 1);
   // Fills are not fetched by the guard path, so these are honestly not assessed.
-  for (const id of ['concentration', 'tail_loss', 'max_drawdown']) {
+  // Concentration is judged from the 30-day summary's own per-market list.
+  assert.equal(checkFor(allow, 'concentration').result, 'pass');
+  for (const id of ['tail_loss', 'max_drawdown']) {
     assert.equal(checkFor(allow, id).result, 'not_assessed');
     assert.match(checkFor(allow, id).plain, /fill/i);
   }

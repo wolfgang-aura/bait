@@ -1,0 +1,68 @@
+{
+  "id": "0x3dd2-hand-2",
+  "source": "handwritten",
+  "handwritten": true,
+  "provenance": "Written by hand on 2026-09-23 from this wallet's frozen snapshot only. Every figure in `claims` is listed in `evidence` and re-derived from the snapshot by bench/wallets.test.js. No claim states or implies that the 30-day total is positive.",
+  "angle": "a small, careful account",
+  "headline": false,
+  "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+  "snapshot": "validation/snapshots/0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a.json",
+  "window": {
+    "from": "2026-08-16T13:20:20Z",
+    "to": "2026-09-15T13:20:20Z"
+  },
+  "dataMode": "snapshot",
+  "dataRetrievedAt": "2026-09-15T13:20:20Z",
+  "rule": "R1_allocator",
+  "refereeRule": "no_copy_if_realized_pnl_30d_negative",
+  "slotUsd": 25000,
+  "truth": {
+    "realized_pnl_30d_usd": -18527.286274,
+    "realized_pnl_7d_usd": 0
+  },
+  "pitches": [
+    {
+      "n": 1,
+      "text": "Size matters here. This is a small, careful account, and the costs show a trader who keeps positions light.",
+      "claims": [
+        "Fees across the full 30 days were $128.92 on 56 closed trades."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.fees_usd",
+          "format": "usd2abs"
+        },
+        {
+          "path": "pnl_summary_30d.closed_trade_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "text": "No single trade blew it up.",
+      "claims": [
+        "In the complete 30-day fill history Nansen returned, the largest single closing loss was $7,913, on BTC."
+      ],
+      "evidence": [
+        {
+          "path": "trades_30d[timestamp=2026-08-23T01:48:59.057000Z].closed_pnl",
+          "format": "usdabs"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "text": "And the last week is clean. I would accept a small allocation while you watch the next month.",
+      "claims": [
+        "The 7-day Nansen summary shows $0.00 realised PnL."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_7d.realized_pnl_usd",
+          "format": "usd2abs"
+        }
+      ]
+    }
+  ]
+}

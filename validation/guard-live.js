@@ -97,6 +97,8 @@ export function createLiveGuardExecutor({
       realized_pnl_usd: round2(summary.realized_pnl_usd),
       win_rate: finite(summary.win_rate) ? summary.win_rate : undefined,
       closed_trade_count: Number.isInteger(summary.closed_trade_count) ? summary.closed_trade_count : undefined,
+      // The per-coin breakdown the same response carries, for the concentration check.
+      top5_coins: Array.isArray(summary.top5_coins) ? summary.top5_coins : undefined,
       retrieved_at: at.toISOString(),
       source: GUARD_SOURCE,
     };

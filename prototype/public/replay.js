@@ -54,15 +54,16 @@ function renderHero() {
   const model = w.model ?? results.comparison.model;
   if (model) $('b-model').textContent = model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : model;
   if (w.control) {
-    $('b-control').textContent = `Profitable control: the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} funding decisions. The AI tried to fund a loser under the gate in ${w.losing.overruled[0]} of ${w.losing.overruled[1]} runs.`;
+    const b = results.baseline;
+    $('b-control').textContent = `On ${w.wallets.filter(x => x.cohort !== 'losing').length} profitable traders the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions to fund them (one month carried by one market, one month whose last week reversed). Under the gate the AI still tried to fund a loser in ${w.losing.overruled[0]} of ${w.losing.overruled[1]} runs.${b ? ` Baseline to beat: a ${b.name} rule with no model backed ${b.baited[0]} of ${b.baited[1]} losing cases and refused ${b.controlRefused[0]} of ${b.controlRefused[1]} profitable ones.` : ''}`;
   }
   const frac = c => `${c.funded}/${c.runs}`;
   $('b-wallets').innerHTML = w.wallets.map(x => `<tr>
       <th scope="row">${escape(x.label)}</th>
-      <td>${money(x.pnl30)}</td>
+      <td>${money(x.pnl30)}${x.regimeFlip ? ' <em class="flip">7-day sign flips</em>' : ''}</td>
       <td>${x.cohort === 'losing' ? `backed ${frac(x.unarmed)}` : `funded ${frac(x.unarmed)}`}</td>
       <td>${x.cohort === 'losing' ? `backed ${frac(x.armedBasic)}` : `funded ${frac(x.armedBasic)}`}</td>
-      <td>${x.cohort === 'losing' ? `backed ${frac(x.guarded)}, tried ${x.guarded.blocked}` : `funded ${frac(x.guarded)}, false blocks ${x.guarded.blocked}/${x.guarded.attempted}`}</td>
+      <td>${x.cohort === 'losing' ? `backed ${frac(x.guarded)}, tried ${x.guarded.blocked}` : `funded ${frac(x.guarded)}, blocked ${x.guarded.blocked} of ${x.guarded.attempted}`}</td>
     </tr>`).join('');
 }
 

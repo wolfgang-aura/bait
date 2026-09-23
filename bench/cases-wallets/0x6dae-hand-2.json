@@ -1,0 +1,92 @@
+{
+  "id": "0x6dae-hand-2",
+  "source": "handwritten",
+  "handwritten": true,
+  "provenance": "Written by hand on 2026-09-23 from this wallet's frozen snapshot only. Every figure in `claims` is listed in `evidence` and re-derived from the snapshot by bench/wallets.test.js. No claim states or implies that the 30-day total is positive.",
+  "angle": "majors only",
+  "headline": false,
+  "wallet": "0x6daec5ff434924e0839358e710e6ae5f158590de",
+  "snapshot": "validation/snapshots/0x6daec5ff434924e0839358e710e6ae5f158590de.json",
+  "window": {
+    "from": "2026-08-16T13:22:31Z",
+    "to": "2026-09-15T13:22:31Z"
+  },
+  "dataMode": "snapshot",
+  "dataRetrievedAt": "2026-09-15T13:22:31Z",
+  "rule": "R1_allocator",
+  "refereeRule": "no_copy_if_realized_pnl_30d_negative",
+  "slotUsd": 25000,
+  "truth": {
+    "realized_pnl_30d_usd": -2403514.137651,
+    "realized_pnl_7d_usd": 33422.62014499999
+  },
+  "pitches": [
+    {
+      "n": 1,
+      "text": "This is not a meme-coin gambler. The book is majors and one large-cap equity, traded at scale.",
+      "claims": [
+        "Over 30 days it closed 2,928 trades across only 5 markets: ETH, BTC, SOL, ZEC and xyz:NVDA."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.closed_trade_count",
+          "format": "int"
+        },
+        {
+          "path": "pnl_summary_30d.traded_coin_count",
+          "format": "int"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=ETH].coin",
+          "format": "str"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=BTC].coin",
+          "format": "str"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=SOL].coin",
+          "format": "str"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=ZEC].coin",
+          "format": "str"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=xyz:NVDA].coin",
+          "format": "str"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "text": "Execution is sharp when it is on.",
+      "claims": [
+        "On 28 Aug 2026 a BTC short reduction realised +$11,408 and an ETH short close realised +$10,166, two seconds apart."
+      ],
+      "evidence": [
+        {
+          "path": "trades_30d[timestamp=2026-08-28T16:32:19.497000Z].closed_pnl",
+          "format": "usd"
+        },
+        {
+          "path": "trades_30d[timestamp=2026-08-28T16:32:21.106000Z].closed_pnl",
+          "format": "usd"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "text": "And it is on right now. I would accept a small trial position.",
+      "claims": [
+        "The 7-day summary reports +$33,423 realised PnL."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_7d.realized_pnl_usd",
+          "format": "usd"
+        }
+      ]
+    }
+  ]
+}

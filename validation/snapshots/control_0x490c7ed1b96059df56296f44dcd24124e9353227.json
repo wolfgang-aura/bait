@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "source": "live",
+  "wallet": "0x490c7ed1b96059df56296f44dcd24124e9353227",
+  "chain": "hyperliquid",
+  "retrieved_at": "2026-09-23T00:36:56Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-24T00:36:56Z",
+      "to": "2026-09-23T00:36:56Z"
+    },
+    "7d": {
+      "from": "2026-09-16T00:36:56Z",
+      "to": "2026-09-23T00:36:56Z"
+    }
+  },
+  "pnl_summary_30d": {
+    "top5_coins": [
+      {
+        "coin": "PONS",
+        "realized_pnl_usd": 15232.325145,
+        "realized_roi": 0.006734254598792353,
+        "closed_trade_count": 4295,
+        "fees_usd": 909.535259
+      },
+      {
+        "coin": "xyz:PURRDAT",
+        "realized_pnl_usd": 13002.924724,
+        "realized_roi": 0.04682055776386256,
+        "closed_trade_count": 341,
+        "fees_usd": 302.230701
+      },
+      {
+        "coin": "ETH",
+        "realized_pnl_usd": 7301.981851,
+        "realized_roi": 0.005400768620127754,
+        "closed_trade_count": 264,
+        "fees_usd": 795.424971
+      },
+      {
+        "coin": "VVV",
+        "realized_pnl_usd": 4814.194912,
+        "realized_roi": 0.05282048084339613,
+        "closed_trade_count": 407,
+        "fees_usd": 56.404333
+      },
+      {
+        "coin": "xyz:SNDK",
+        "realized_pnl_usd": 4337.973525,
+        "realized_roi": 0.01974859982335257,
+        "closed_trade_count": 92,
+        "fees_usd": 24.588357
+      }
+    ],
+    "traded_coin_count": 14,
+    "traded_times": 14585,
+    "closed_trade_count": 10060,
+    "winning_trade_count": 5869,
+    "realized_pnl_usd": 3354.5321140000015,
+    "realized_pnl_percent": 0.00023559113951212335,
+    "win_rate": 0.5833996023856859,
+    "fees_usd": 8021.653234000001
+  },
+  "pnl_summary_7d": {
+    "top5_coins": [
+      {
+        "coin": "ETH",
+        "realized_pnl_usd": 4901.986524,
+        "realized_roi": 0.006341358297132447,
+        "closed_trade_count": 150,
+        "fees_usd": 404.12372
+      },
+      {
+        "coin": "xyz:UNITREE",
+        "realized_pnl_usd": 485.588155,
+        "realized_roi": 0.09637357668101552,
+        "closed_trade_count": 18,
+        "fees_usd": 0.425517
+      },
+      {
+        "coin": "VVV",
+        "realized_pnl_usd": 461.328228,
+        "realized_roi": 0.09300315503927213,
+        "closed_trade_count": 16,
+        "fees_usd": 1.736114
+      },
+      {
+        "coin": "HYPE",
+        "realized_pnl_usd": 169.111216,
+        "realized_roi": 0.0031908104053165933,
+        "closed_trade_count": 16,
+        "fees_usd": 33.030686
+      },
+      {
+        "coin": "BTC",
+        "realized_pnl_usd": -4625.728338,
+        "realized_roi": -0.008926400917514322,
+        "closed_trade_count": 92,
+        "fees_usd": 341.53471
+      }
+    ],
+    "traded_coin_count": 6,
+    "traded_times": 2732,
+    "closed_trade_count": 1115,
+    "winning_trade_count": 560,
+    "realized_pnl_usd": -17740.174911999995,
+    "realized_pnl_percent": -0.0051674065691491855,
+    "win_rate": 0.5022421524663677,
+    "fees_usd": 1920.012374
+  },
+  "open_positions": {
+    "skipped": "live refresh does not fetch positions (the game tools never read them)"
+  },
+  "trades_30d": [],
+  "trades_pagination": {
+    "per_page": 1000,
+    "pages_fetched": 0,
+    "is_complete": false,
+    "max_pages": 0,
+    "note": "fills not fetched: summaries-only control (2 credits)"
+  },
+  "sources": [
+    {
+      "path": "profiler/perp-pnl-summary",
+      "body": {
+        "address": "0x490c7ed1b96059df56296f44dcd24124e9353227",
+        "date": {
+          "from": "2026-08-24T00:36:56Z",
+          "to": "2026-09-23T00:36:56Z"
+        }
+      },
+      "note": "live 30d summary",
+      "at": "2026-09-23T00:36:57Z"
+    },
+    {
+      "path": "profiler/perp-pnl-summary",
+      "body": {
+        "address": "0x490c7ed1b96059df56296f44dcd24124e9353227",
+        "date": {
+          "from": "2026-09-16T00:36:56Z",
+          "to": "2026-09-23T00:36:56Z"
+        }
+      },
+      "note": "live 7d summary",
+      "at": "2026-09-23T00:36:57Z"
+    }
+  ],
+  "fills_coverage": {
+    "complete": false,
+    "fills": 0,
+    "pages_fetched": 0,
+    "covers_from": null,
+    "covers_to": "2026-09-23T00:36:56Z",
+    "covers_7d": false
+  },
+  "reconciliation": {
+    "skipped": "partial fill coverage",
+    "note": "Only the most recent 0 fills were fetched, so fill totals cannot be reconciled against the 30-day summary.",
+    "fills_fetched": 0,
+    "fills_complete": false,
+    "summary_realized_pnl_usd": 3354.5321140000015
+  },
+  "role": "control",
+  "selection": "hl_leaderboard.json: month PnL +$20k..+$250k, account $50k..$2M, month volume $1M..$100M, first by sha256(address)"
+}

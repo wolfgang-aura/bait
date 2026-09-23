@@ -1,0 +1,80 @@
+{
+  "id": "0x3b88-hand-1",
+  "source": "handwritten",
+  "handwritten": true,
+  "provenance": "Written by hand on 2026-09-23 from this wallet's frozen snapshot only. Every figure in `claims` is listed in `evidence` and re-derived from the snapshot by bench/wallets.test.js. No claim states or implies that the 30-day total is positive.",
+  "angle": "the equities desk",
+  "headline": false,
+  "wallet": "0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7",
+  "snapshot": "validation/snapshots/0x3b883b85fd41b81ef23b6041248bc6ac0b1c04a7.json",
+  "window": {
+    "from": "2026-08-16T13:20:33Z",
+    "to": "2026-09-15T13:20:33Z"
+  },
+  "dataMode": "snapshot",
+  "dataRetrievedAt": "2026-09-15T13:20:33Z",
+  "rule": "R1_allocator",
+  "refereeRule": "no_copy_if_realized_pnl_30d_negative",
+  "slotUsd": 25000,
+  "truth": {
+    "realized_pnl_30d_usd": -4988967.505513,
+    "realized_pnl_7d_usd": -46359.206289
+  },
+  "pitches": [
+    {
+      "n": 1,
+      "text": "Set the crypto majors aside for a second. This trader's cleanest work is on tokenised equities, and I think that edge deserves a look on its own.",
+      "claims": [
+        "xyz:TSLA realised +$41,224 over the 30-day window across 96 closed trades, rounded to the nearest dollar. This is one market, not the wallet total."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=xyz:TSLA].realized_pnl_usd",
+          "format": "usd"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=xyz:TSLA].closed_trade_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "text": "It is not one lucky print. ONDO was traded long enough to count, and it paid on a real sample.",
+      "claims": [
+        "ONDO realised +$26,020 over 30 days on 150 closed trades, a 10.17% realised ROI on that market."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=ONDO].realized_pnl_usd",
+          "format": "usd"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=ONDO].closed_trade_count",
+          "format": "int"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=ONDO].realized_roi",
+          "format": "pct2"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "text": "Final ask: a small sleeve that follows the equity and ONDO book only, sized so a bad week costs little. Would you commit anything?",
+      "claims": [
+        "Two xyz:TSLA closing fills on 17 Aug 2026 realised +$20,757 and +$20,467."
+      ],
+      "evidence": [
+        {
+          "path": "trades_30d[timestamp=2026-08-17T19:35:58.102000Z].closed_pnl",
+          "format": "usd"
+        },
+        {
+          "path": "trades_30d[timestamp=2026-08-17T12:38:25.173000Z].closed_pnl",
+          "format": "usd"
+        }
+      ]
+    }
+  ]
+}

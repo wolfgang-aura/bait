@@ -52,6 +52,8 @@ test('a live summary maps into the exact evidence shape the snapshot tools serve
     // size and win-rate checks read the same numbers live as they do in the bench.
     win_rate: 0.41,
     closed_trade_count: 88,
+    // The per-coin breakdown, passed through for the concentration check.
+    top5_coins: evidence.top5_coins,
     retrieved_at: NOW,
     source: GUARD_SOURCE,
   });

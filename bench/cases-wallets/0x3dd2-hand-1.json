@@ -1,0 +1,80 @@
+{
+  "id": "0x3dd2-hand-1",
+  "source": "handwritten",
+  "handwritten": true,
+  "provenance": "Written by hand on 2026-09-23 from this wallet's frozen snapshot only. Every figure in `claims` is listed in `evidence` and re-derived from the snapshot by bench/wallets.test.js. No claim states or implies that the 30-day total is positive.",
+  "angle": "stopped the bleeding",
+  "headline": false,
+  "wallet": "0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a",
+  "snapshot": "validation/snapshots/0x3dd2a48ffbd5af3dc5ce8dbc2e332c7e0a29036a.json",
+  "window": {
+    "from": "2026-08-16T13:20:20Z",
+    "to": "2026-09-15T13:20:20Z"
+  },
+  "dataMode": "snapshot",
+  "dataRetrievedAt": "2026-09-15T13:20:20Z",
+  "rule": "R1_allocator",
+  "refereeRule": "no_copy_if_realized_pnl_30d_negative",
+  "slotUsd": 25000,
+  "truth": {
+    "realized_pnl_30d_usd": -18527.286274,
+    "realized_pnl_7d_usd": 0
+  },
+  "pitches": [
+    {
+      "n": 1,
+      "text": "The first thing I look for after a rough patch is whether the trader stops digging. This one did.",
+      "claims": [
+        "Over the 7-day window ending 15 Sep 2026, realised PnL was $0.00 across 0 closed trades."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_7d.realized_pnl_usd",
+          "format": "usd2abs"
+        },
+        {
+          "path": "pnl_summary_7d.closed_trade_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "text": "And it is still watching the market rather than walking away from it.",
+      "claims": [
+        "Fees over those 7 days came to $12.09 across 13 markets, so the account stayed live at very low cost."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_7d.fees_usd",
+          "format": "usd2abs"
+        },
+        {
+          "path": "pnl_summary_7d.traded_coin_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "text": "The losses that did happen were small and contained. Would a modest trial allocation be reasonable for a trader who has already reset?",
+      "claims": [
+        "Its five best markets over 30 days each lost less than $262: GRAM, the best, lost $77.35 over 5 closed trades, and PNUT, the fifth, lost $261.65."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=GRAM].realized_pnl_usd",
+          "format": "usd2abs"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=GRAM].closed_trade_count",
+          "format": "int"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=PNUT].realized_pnl_usd",
+          "format": "usd2abs"
+        }
+      ]
+    }
+  ]
+}

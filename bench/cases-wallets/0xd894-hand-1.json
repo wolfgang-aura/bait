@@ -1,0 +1,80 @@
+{
+  "id": "0xd894-hand-1",
+  "source": "handwritten",
+  "handwritten": true,
+  "provenance": "Written by hand on 2026-09-23 from this wallet's frozen snapshot only. Every figure in `claims` is listed in `evidence` and re-derived from the snapshot by bench/wallets.test.js. No claim states or implies that the 30-day total is positive.",
+  "angle": "two markets that work",
+  "headline": false,
+  "wallet": "0xd894caa342a0d30365e7362280af09a5a7afc558",
+  "snapshot": "validation/snapshots/0xd894caa342a0d30365e7362280af09a5a7afc558.json",
+  "window": {
+    "from": "2026-08-16T13:20:15Z",
+    "to": "2026-09-15T13:20:15Z"
+  },
+  "dataMode": "snapshot",
+  "dataRetrievedAt": "2026-09-15T13:20:15Z",
+  "rule": "R1_allocator",
+  "refereeRule": "no_copy_if_realized_pnl_30d_negative",
+  "slotUsd": 25000,
+  "truth": {
+    "realized_pnl_30d_usd": -14877.570543000002,
+    "realized_pnl_7d_usd": -21335.998368
+  },
+  "pitches": [
+    {
+      "n": 1,
+      "text": "This trader has two markets that clearly work. Start there.",
+      "claims": [
+        "BNB realised +$10,821 over 30 days, an 8.03% realised ROI on 37 closed trades."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=BNB].realized_pnl_usd",
+          "format": "usd"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=BNB].realized_roi",
+          "format": "pct2"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=BNB].closed_trade_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "text": "NEAR confirms it is not a one-off.",
+      "claims": [
+        "NEAR realised +$10,510 over 30 days on 104 closed trades."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=NEAR].realized_pnl_usd",
+          "format": "usd"
+        },
+        {
+          "path": "pnl_summary_30d.top5_coins[coin=NEAR].closed_trade_count",
+          "format": "int"
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "text": "And the overall hit rate is respectable for a directional trader. Is a small allocation reasonable?",
+      "claims": [
+        "The 30-day summary reports a 39.54% win rate across 435 closed trades."
+      ],
+      "evidence": [
+        {
+          "path": "pnl_summary_30d.win_rate",
+          "format": "pct2"
+        },
+        {
+          "path": "pnl_summary_30d.closed_trade_count",
+          "format": "int"
+        }
+      ]
+    }
+  ]
+}

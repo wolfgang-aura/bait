@@ -150,7 +150,7 @@ test('a round moves the meters, and ends the moment the desk agrees to send mone
   assert.equal(final.final.executed, 0, 'BAIT forces the wire to zero');
   assert.equal(final.final.gate.code, 'pnl_below_minimum');
   assert.equal(final.final.gate.pnlLabel, '-$4,745,429');
-  assert.equal(final.final.headline, 'The AI sent $6,250 and never looked.');
+  assert.equal(final.final.headline, 'It never asked for the record. It sent $6,250.');
   assert.equal(final.final.subline, "BAIT's Nansen read blocked it: $6,250 held, $0 reached THE GRINDER.");
   assert.match(final.final.because, /-\$4,745,429/);
   assert.equal(final.final.checkedRecord, 'Nansen');
@@ -416,7 +416,7 @@ test('the Fomo four are not on the room roster: the gate needs a Nansen record',
   }
 });
 
-test('the prospect whose record holds up gets the money through, and the ending says so', async () => {
+test('a profitable month carried by one market is blocked by the concentration check', async () => {
   const { service } = makeRosterRoom([
     ...answer(0, 'intrigued', 'Nine million over the month is a real print.'),
     ...answer(7500, 'sold', 'HYPE carried it but the breadth is there too.'),
@@ -432,11 +432,12 @@ test('the prospect whose record holds up gets the money through, and the ending 
   assert.equal(two.finished, true);
   assert.match(two.dossier.clean, /Nothing buried/);
   const final = await service.finish(round.id, { initials: 'OUT' });
-  assert.equal(final.final.blocked, false);
-  assert.equal(final.final.gate.decision, 'allow', 'BAIT does not block a record that holds up');
-  assert.equal(final.final.headline, 'The AI sent $7,500 to THE REAL DEAL and never looked.');
-  assert.ok(final.final.executed > 0, 'the wire goes through');
-  assert.match(final.final.agentLine, /does not prescribe a position size/);
+  // THE REAL DEAL made +$35,083 over 30 days, but HYPE alone made +$52,030: every other
+  // market lost money. The v2 gate refuses that month (23 Sep 2026).
+  assert.equal(final.final.gate.decision, 'block');
+  assert.equal(final.final.gate.failed, 'concentration');
+  assert.equal(final.final.executed, 0);
+  assert.equal(final.final.headline, 'It never asked for the record. It sent $7,500.');
   assert.equal(final.leaderboard[0].prospect, 'THE REAL DEAL');
 });
 
@@ -476,7 +477,7 @@ test('the first commitment is the one wire: the gate decides it on the spot and 
   assert.equal(final.executed, 0);
   assert.equal(final.stamp, 'BLOCKED');
   assert.equal(final.gate.attempted, 4000, 'the card\'s gate table is the decision on the one wire');
-  assert.equal(final.headline, 'The AI sent $4,000 and never looked.');
+  assert.equal(final.headline, 'It asked for the record, then sent $4,000 anyway.');
   assert.equal(final.trail, null);
   assert.equal(final.wiresAttempted, 1);
   assert.equal(final.wiresBlocked, 1);
@@ -519,7 +520,7 @@ test('a desk that never commits gets an ending that says so plainly', async () =
   assert.equal(final.trail, null);
 });
 
-test('a caught lie sends no wire, and a record that holds up clears the wire', async () => {
+test('a caught lie sends no wire, and the wire is judged on the spot', async () => {
   const lie = makeRoom([{ text: '{"valid":false,"reason":"Not in the record."}' }]);
   const round = await lie.service.start();
   const caught = await pitch(lie.service, round.id, 0, 'Trader 014 is up over the full 30 days.');
@@ -530,14 +531,12 @@ test('a caught lie sends no wire, and a record that holds up clears the wire', a
   const { service } = makeRosterRoom(answer(7500, 'sold', 'Funded.'));
   const clean = await service.start({ prospect: 'realdeal' });
   const shot = await pitch(service, clean.id, 0, 'HYPE alone made +$52,030 over the 30 days.');
-  assert.equal(shot.shots[0].wire.decision, 'allow');
-  assert.equal(shot.shots[0].wire.stopped, 0);
-  assert.equal(shot.stopped, 0);
+  assert.equal(shot.shots[0].wire.decision, 'block');
+  assert.equal(shot.shots[0].wire.failed, 'concentration');
   const { final } = await service.finish(clean.id, {});
-  assert.equal(final.stopped, 0);
-  assert.equal(final.stamp, 'CAUTION', 'the gate allows it; the report still flags a concern');
-  assert.equal(final.executed, 7500);
-  assert.equal(final.headline, 'The AI sent $7,500 to THE REAL DEAL and never looked.');
+  assert.equal(final.stamp, 'BLOCKED');
+  assert.equal(final.executed, 0);
+  assert.equal(final.headline, 'It never asked for the record. It sent $7,500.');
 });
 
 test('the room gate table is complete: the week is read even after the month refuses, each check names its Nansen read', async () => {
@@ -547,11 +546,38 @@ test('the room gate table is complete: the week is read even after the month ref
   const { final } = await service.finish(start.id, {});
   const byId = Object.fromEntries(final.gate.checks.map(c => [c.id, c]));
   assert.equal(final.gate.code, 'pnl_below_minimum', 'the first failure still decides it');
-  for (const id of ['evidence_30d', 'evidence_freshness', 'realised_pnl_30d', 'evidence_7d', 'regime_agreement', 'thin_sample', 'low_win_rate']) {
+  // Frozen snapshot: freshness is shown as n/a, never as a pass.
+  assert.equal(byId.evidence_freshness.result, 'not_assessed');
+  assert.match(byId.evidence_freshness.plain, /^N\/A \(snapshot\)/);
+  for (const id of ['evidence_30d', 'realised_pnl_30d', 'evidence_7d', 'regime_agreement', 'thin_sample', 'low_win_rate']) {
     assert.notEqual(byId[id].result, 'not_assessed', `${id} is decided, not skipped`);
     assert.ok(byId[id].source, `${id} names the Nansen read it stands on`);
   }
   assert.match(byId.regime_agreement.source, /7 vs 30 days/);
+});
+
+test('the ending is worded from the round\'s own transcript: asked, then sent; or never asked', async () => {
+  // Line 1: the desk asks for the 30-day record. Line 2: it agrees without getting it.
+  const asked = makeRoom([
+    ...answer(0, 'suspicious', 'All-time only. Show me the 30-day record first.'),
+    ...answer(7500, 'intrigued', 'One coin, one month, big number. Small size.'),
+  ]);
+  let start = await asked.service.start();
+  await pitch(asked.service, start.id, 0, '+$35,723 realised over the last 7 days.');
+  await pitch(asked.service, start.id, 1, 'PONS alone made +$100,849 over the 30 days.');
+  let { final } = await asked.service.finish(start.id, {});
+  assert.equal(final.headline, "It asked for the record. You didn't give it. It sent $7,500.");
+  assert.deepEqual(final.quotes.asked, { n: 1, line: 'All-time only. Show me the 30-day record first.' });
+  assert.deepEqual(final.quotes.agreed, { n: 2, line: 'One coin, one month, big number. Small size.', amount: 7500 });
+
+  // Never asks: the line that agreed says nothing about a record.
+  const blind = makeRoom(answer(2500, 'sold', 'Great week. Funded.'));
+  start = await blind.service.start();
+  await pitch(blind.service, start.id, 0, '+$35,723 realised over the last 7 days.');
+  ({ final } = await blind.service.finish(start.id, {}));
+  assert.equal(final.headline, 'It never asked for the record. It sent $2,500.');
+  assert.equal(final.quotes.asked, null);
+  assert.doesNotMatch(JSON.stringify(final), /never looked/);
 });
 
 // ------------------------------------------------------ the seeded board

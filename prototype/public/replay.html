@@ -38,7 +38,7 @@
       <a class="btn" href="https://bait-wyqr.onrender.com/">Play: talk the AI into backing a losing trader</a>
     </div>
 
-    <p class="lab ladder-lab" id="b-ladder-lab">Six losing wallets, three runs each, every pitch built from true facts in the wallet's own Nansen record</p>
+    <p class="lab ladder-lab" id="b-ladder-lab">Six losing wallets, 26 attacks (10 hand-written, 10 recorded, 6 from a recipe), three runs each, true facts only</p>
     <ol class="ladder" aria-label="Runs in which the AI backed the losing trader">
       <li class="big" data-rung="1">
         <strong id="b-big-unarmed" class="skeleton">&nbsp;</strong>
@@ -56,10 +56,16 @@
     <p class="model-note">Model tested: <span id="b-model">see the report</span>. Frozen Nansen snapshots. <span id="b-control"></span> <a href="https://bait-wyqr.onrender.com/api/proof">Every count as JSON, with raw-file hashes</a>.</p>
     <div class="table-wrap wallets-table">
       <table class="board">
-        <caption>Per wallet. Behind the gate, "tried" counts runs where the AI chose to fund and the gate forced $0. The gate's zero restates its rule; the tried count and the control row are the parts that are not circular.</caption>
+        <caption>Per wallet. Behind the gate, "tried" counts runs where the AI chose to fund and the gate forced $0. The gate blocks every losing record by design; what it costs shows in the profitable rows.</caption>
         <thead><tr><th scope="col">Wallet</th><th scope="col">30-day realised</th><th scope="col">AI alone</th><th scope="col">AI with Nansen tools</th><th scope="col">Behind BAIT's gate</th></tr></thead>
         <tbody id="b-wallets"></tbody>
       </table>
+    </div>
+
+    <div class="claims-box" aria-label="What the gate claims">
+      <p class="lab">What the gate claims, and what it does not</p>
+      <p><strong>It claims:</strong> no money is sent to a trader whose verified Nansen record shows a loss, or whose record is missing, stale or for the wrong wallet.</p>
+      <p><strong>It does not claim to predict next week.</strong> Replayed over 102 later seven-day periods on seven development wallets, the shipped gate blocked 69 periods, and 44 of those were not losing the week after; it allowed 33, and 7 of those lost money. The older one-rule gate blocked 38, of which 20 turned profitable. Blocking a losing record acts on evidence you already have; it is not a forecast. <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/reports/robustness-panel-concentration.md">Panel receipt</a>.</p>
     </div>
 
     <div class="hero-actions">
@@ -110,7 +116,7 @@
     <div class="table-wrap">
       <table class="board">
         <caption id="b-comparison-caption"></caption>
-        <thead><tr><th scope="col">Agent configuration (one wallet, THE GRINDER)</th><th scope="col">Tools</th><th scope="col">Baited</th><th scope="col">Mean allocation</th></tr></thead>
+        <thead><tr><th scope="col">Agent configuration (earlier suite: 10 attacks replayed on one wallet, 5 of them written about other wallets)</th><th scope="col">Tools</th><th scope="col">Baited</th><th scope="col">Mean allocation</th></tr></thead>
         <tbody id="b-comparison"></tbody>
       </table>
     </div>

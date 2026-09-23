@@ -790,6 +790,12 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
 .reveal-title { margin: 0; font: 700 clamp(20px, 2.4vw, 28px)/1.2 var(--display); letter-spacing: -.02em; }
 .reveal-sub { margin: 6px 0 0; font: 600 clamp(15px, 1.5vw, 18px)/1.4 var(--display); color: var(--text); }
 .reveal-why { margin: 6px 0 0; font: 400 12.5px/1.5 var(--mono); color: var(--dim); }
+.reveal-quotes { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; }
+.reveal-quotes li { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font: 500 14px/1.4 var(--display); color: var(--text); }
+.reveal-quotes b { font: 500 10.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.reveal-quotes q { font-style: italic; }
+.reveal-quotes li.asked q { color: var(--dim); }
+.reveal-quotes em { font: 700 13px/1 var(--mono); font-style: normal; color: var(--amber); }
 .truth .truth-actions { margin: 14px 0 22px; }
 .truth .screen-title { font-size: clamp(17px, 1.9vw, 22px); }
 .for-whom { display: block; margin-top: 4px; font: 400 14px/1.4 var(--mono); color: var(--faint); }
@@ -832,7 +838,8 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .record-half { clip-path: polygon(0 26px, 100% 0, 100% 100%, 0 100%); margin: -26px 0 0; padding: 34px 18px 18px; }
   /* On the horizontal split the seam runs across, so the VS sits on its right end. */
   .vs { top: 50%; left: auto; right: 18px; transform: translateY(-50%) rotate(-8deg); font-size: 46px; }
-  .hype-half { grid-template-columns: 116px 1fr; gap: 10px 14px; }
+  .hype-half { grid-template-columns: 96px minmax(0, 1fr); gap: 10px 14px; }
+  .hype-stat span { font-size: 22px; }
 
   .readouts { grid-template-columns: 1fr auto; gap: 14px; }
   .pips { grid-column: 1 / -1; margin-bottom: 0; }
@@ -840,7 +847,15 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .client-side { grid-column: 1 / -1; }
   .bubble { min-height: 0; padding: 13px 14px; font-size: 16px; }
   .talk { padding-top: 0; }
-  .composer { position: sticky; bottom: 0; z-index: 3; padding-top: 10px; background: linear-gradient(to top, var(--page) 76%, transparent); }
+  /* Phone order: MERIDIAN and its reply, then the fact chips, then the input under them,
+     in normal flow, so nothing floats over the portrait or the chips. */
+  .composer { position: static; padding-top: 12px; }
+  #line { min-height: 84px; padding: 12px; }
+  .stage .mark-side { min-height: 0; }
+  .stage .desk-portrait { flex: none; min-height: 0; aspect-ratio: 3 / 4; }
+  .scene { align-items: start; }
+  .stage .readouts { grid-template-columns: 1fr auto; }
+  .stage .funded-readout { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
   .composer-row { flex-direction: column; }
   #go { min-width: 0; width: 100%; padding: 14px 0; }
   .verdict { grid-template-columns: 1fr; gap: 16px; }
