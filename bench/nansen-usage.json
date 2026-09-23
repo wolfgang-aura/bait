@@ -1,35 +1,35 @@
 {
  "source": "validation/call_ledger.jsonl (dev repo), summarised by scripts/usage-summary.mjs",
  "first": "2026-09-15T10:38:33.669Z",
- "last": "2026-09-23T12:30:23.008Z",
- "calls": 1160,
- "ok": 1159,
- "credits": 1132,
+ "last": "2026-09-23T14:28:33.354Z",
+ "calls": 1276,
+ "ok": 1275,
+ "credits": 1260,
  "byEndpoint": {
   "account": {
-   "calls": 55,
-   "ok": 55,
+   "calls": 59,
+   "ok": 59,
    "credits": 0
   },
   "perp-leaderboard": {
-   "calls": 6,
-   "ok": 6,
-   "credits": 30
+   "calls": 8,
+   "ok": 8,
+   "credits": 40
   },
   "profiler/perp-pnl-summary": {
-   "calls": 1008,
-   "ok": 1008,
-   "credits": 1008
+   "calls": 1062,
+   "ok": 1062,
+   "credits": 1062
   },
   "profiler/perp-positions": {
-   "calls": 12,
-   "ok": 12,
-   "credits": 12
+   "calls": 39,
+   "ok": 39,
+   "credits": 39
   },
   "profiler/perp-trades": {
-   "calls": 76,
-   "ok": 75,
-   "credits": 75
+   "calls": 103,
+   "ok": 102,
+   "credits": 102
   },
   "tgm/token-information": {
    "calls": 1,
@@ -42,6 +42,16 @@
    "credits": 1
   },
   "tgm/holders": {
+   "calls": 1,
+   "ok": 1,
+   "credits": 5
+  },
+  "tgm/perp-pnl-leaderboard": {
+   "calls": 1,
+   "ok": 1,
+   "credits": 5
+  },
+  "smart-money/perp-trades": {
    "calls": 1,
    "ok": 1,
    "credits": 5
@@ -73,8 +83,8 @@
    "credits": 13
   },
   "2026-09-23": {
-   "calls": 52,
-   "credits": 46
+   "calls": 168,
+   "credits": 174
   }
  }
 }
