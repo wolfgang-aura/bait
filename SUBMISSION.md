@@ -21,10 +21,10 @@ Current evidence:
 
 ## The recording
 
-`scratch/BAIT-judge-v12.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 45.7 s, rendered with
+`scratch/BAIT-judge-v13.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 45.7 s, rendered with
 HyperFrames over a real round played on the hosted site (https://bait-wyqr.onrender.com) and
 recorded at 3840 by 2160 on 23 Sep 2026.
-SHA-256: `a3a4f6b6c6e40b694786f4dd66ab66393b69915548d3eceb9016d5e503159b11`.
+SHA-256: `072012a903632b4613c156501bddc21c36876114cdc207795aadabc4f6aef8f0`.
 
 | Screen | Point |
 | --- | --- |
