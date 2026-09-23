@@ -185,6 +185,26 @@ h1 {
 }
 .hero-sub .skeleton-inline { height: 0.85em; }
 
+/* The two findings, as static text, between the product line and the play button. */
+.findings { display: grid; gap: 8px; margin: -12px 0 28px; max-width: 68ch; }
+.findings li { display: grid; grid-template-columns: 116px 1fr; gap: 12px; align-items: baseline; font: 400 15px/1.45 var(--sans); color: var(--ink-dim); }
+.findings span {
+  font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint);
+}
+.findings strong { color: var(--accent); font-weight: 700; }
+
+/* The first thing on the page: the live game. */
+.live-strip {
+  display: block; padding: 10px 24px;
+  background: var(--accent); color: var(--accent-ink);
+  font: 500 14px/1.35 var(--sans); text-align: center; text-decoration: none;
+}
+.live-strip:hover { background: #FFC24F; }
+@media (max-width: 760px) {
+  .live-strip { padding: 10px 16px; text-align: left; }
+  .findings li { grid-template-columns: 1fr; gap: 4px; }
+}
+
 .ladder {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

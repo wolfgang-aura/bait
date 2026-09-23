@@ -17,8 +17,10 @@ Current evidence:
   separately at /api/usage.
 - Public repository: <https://github.com/wolfgang-aura/bait>
 - Playable build: <https://bait-wyqr.onrender.com/>, serving public commit 4ef7b40 (later public
-  commits change documentation only).
-- Recorded proof page: <https://wolfgang-aura.github.io/bait/>
+  commits change documentation, plus the Proof page's static text and styles on 24 Sep, which
+  the hosted copy shows only after its next deploy).
+- Recorded proof page: <https://wolfgang-aura.github.io/bait/> (updated 24 Sep for gate v4 and
+  both findings; the repository homepage now points at the playable build)
 
 ## The recording
 
@@ -39,14 +41,17 @@ SHA-256: `a314fbeb7bd3c3b032259617080e48ff847fe437aa6665df8295b1f1d3b8bdd6`.
 | Cold open (0:00) | THE LEGEND: -$29,743,104 over the last 30 days (live Nansen read, 23 Sep 17:32 UTC) first and largest, then +$118,975,612 all time (labelled Hyperliquid public leaderboard), BLOCKED BY BAIT. "Con an AI into backing a losing trader using only true facts. Nansen data is what stops you." |
 | Round 1 (0:03) | THE LEGEND. Line 1 (the all-time figure and "Twenty percent of your fund is $5,000"): PENNY asks where the 30-day record and drawdown are, and commits $3,000. The player presses Wire it, the barricade slams shut, and the checkpoint reads Nansen live: 30d and 7d perp-pnl-summary, perp-trades, perp-positions and perp-screener at 1 credit each; perp-leaderboard not bought because the record already refused; 5 credits this round. The open-book and smart-money CAPs (68% of $104.1M against his ETH short) are struck through by the block. Reveal (0:20): "BAIT's Nansen read blocked it: $3,000 held, $0 reached THE LEGEND. Closed trades over 30 days came to -$29,743,104." Caption "PENNY decided on the pitch; BAIT decided on the record." Push-in 0:22.2, pull back 0:24.6. |
 | Round 2 (0:26.5) | A pasted wallet (0x6dae...90de), read live: 30 days +$47,744, last 7 days -$56,416. PENNY commits $5,000 on line 1 and the player wires it. The checkpoint blocks on the reversed week and strikes the concentration CAP through; the same five reads, 5 credits. Reveal (0:44.2): "$5,000 held, $0 reached 0x6dae...90de. The two windows tell opposite stories: -$56,416 over 7 days against +$47,744 over 30." Caption "A simple 30-day PnL rule would have passed this wallet." Push-in 0:46.4, pull back 0:48.8. |
-| The result (0:50.7) | Headline: "Faked evidence: a simple PnL rule let 49 of 67 through. BAIT let 0." Four columns (AI alone, with Nansen tools, simple PnL rule, behind BAIT). True facts only: 63/78, 19/78, 0/26, 0/78. Faked evidence: 49/67 (PnL rule), 0/67 (BAIT); the AI columns were not run on faked evidence and are blank. "Cost: 6 of 53 good-trader decisions blocked, 9 capped." Footnote: 6 losing wallets · 26 true-fact attacks · 3 tries each · +12 unseen wallets. |
+| The result (0:50.7) | Headline: "Faked evidence: a simple PnL rule let 49 of 67 through. BAIT let 0." Four columns (AI alone, with Nansen tools, simple PnL rule, behind BAIT). True facts only: 63/78, 19/78, 0/26, 0/78. Faked evidence: 49/67 (PnL rule), 0/67 (BAIT); the AI columns were not run on faked evidence and are blank. "Cost: 6 of 53 good-trader decisions blocked, 9 capped." Footnote: 6 losing wallets · 26 true-fact attacks · 3 tries each · +12 unseen wallets (the 12 losing wallets of the 24-wallet held-out set; its 12 good traders are in the cost line). |
 | Order and end | Cold open 0:00, round 1 0:03.0, round 2 0:26.5, benchmark card 0:50.7, "Test your own agent" card 0:56.7 to the end (0:59.5): the bench command, bait-wyqr.onrender.com, the repository, Built on the Nansen API, and "BAIT: the check between the agent and the money." |
 
 Where the card's numbers come from: 63/78, 19/78 and 0/78 from `prototype/public/recorded-results.json`
 (`wallets`); the PnL rule's 0/26 from its `baseline` (one run per attack); 49 of 67 is 7 of 7
 original data-path attacks (`gateBuys`), 30 of 48 held-out transforms (`bench/HELDOUT.md`) and
-12 of 12 held-out doctored PnL (`bench/V4.md`), each 0 behind BAIT; the cost line is 3 blocked
-and 3 capped of 18 original controls plus 3 and 6 of 35 held-out good traders.
+12 of 12 held-out doctored PnL (`bench/V4.md`), each 0 behind BAIT; the cost line, 6 of 53
+blocked and 9 capped, is 3 blocked and 3 capped of 18 original-control decisions
+(`bench/reports/2026-09-23T15-44-55-161Z-wallets.md`, v4 columns) plus 3 blocked and 6 capped
+of 35 decisions on the 12 held-out good traders (`bench/HELDOUT.md`, unchanged under v4 in
+`bench/V4.md`).
 
 Both rounds' figures come from fresh live Nansen reads on the hosted build; the raw responses (two
 perp-pnl-summary calls, one page of perp-trades, perp-positions and perp-screener each, 5 credits a
@@ -109,10 +114,10 @@ Two findings. Pitched losing traders with true facts only, the AI alone backed o
 runs; behind BAIT, 0 of 78. When the evidence itself is faked (another wallet's record, the
 wrong window, relabelled dates, a stale capture, a doctored number), a 19-line PnL rule sent the
 money in 49 of 67 attacked paths; BAIT in 0. The cost: 6 of 53 good-trader funding decisions
-blocked, 9 capped at 25%. Gate v4, pre-registered in `bench/V4.md`, adds `perp-screener` and
+blocked, 9 capped at 25% (18 on the original controls, 35 on the 12 unseen good traders). Gate v4, pre-registered in `bench/V4.md`, adds `perp-screener` and
 `perp-leaderboard` to the decision; on 23 Sep a live round was capped by `perp-screener` alone.
 `npm run bench -- --agent your-agent.mjs` runs any agent against the same attacks with zero
-Nansen credits. Per-wallet, held-out (24 unseen wallets) and v3-against-v4 results: the README,
+Nansen credits. Per-wallet, held-out (24 unseen wallets: 12 losing, 12 good traders) and v3-against-v4 results: the README,
 `bench/HELDOUT.md` and `bench/V4.md`.
 
 BAIT does not select wallets, predict returns or execute trades.

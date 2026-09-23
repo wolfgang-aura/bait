@@ -5,8 +5,10 @@ of their votes. Each answer links to code or tracked evidence.
 
 ## First objection: "This is just a 30-day PnL checker"
 
-It was, until 22 September. The default gate is now `wallet-copy-risk-v3` (v2's refusals, with a one-market month capped
-rather than refused), and it
+It was, until 22 September. The default gate became `wallet-copy-risk-v3` (v2's refusals, with a one-market month capped
+rather than refused), and since 23 September it is `wallet-copy-risk-v4`: every v3 row below
+plus `perp-screener` (smart money against the largest open position caps at 25%) and
+`perp-leaderboard` (a summary that claims more than the leaderboard's record refuses). The gate
 publishes its whole reasoning on every decision, allow or block:
 
 | Check | Reads | Bar |

@@ -129,6 +129,10 @@ hand-written and recorded attacks, which drove most of the 63 of 78, are not in 
   HYPE losers whose 7-day summary was $0 (0xccf1...0ab1 2 of 3, 0x48d8...37a2 1 of 3).
 - **Faked evidence on unseen wallets:** the 19-line PnL rule sent money in 30 of 48 attacked
   paths; BAIT in 0 of 48. The published figure is 6 of 6 through, BAIT 0.
+  *Note, 24 Sep 2026: "6 of 6" was the original data-path set when this was written. Gate v4
+  (`bench/V4.md`, later on 23 Sep) added a seventh attack, the doctored PnL, so the published
+  original figure is now 7 of 7 through, BAIT 0
+  (`bench/reports/2026-09-23T15-45-02-468Z-gate-buys.md`). The 30 of 48 above is unchanged.*
 - **Errors:** one replay (0x4fe2...ac59, AI alone, run 1) returned an invalid allocation. It was
   rerun once with `--resume`, which reuses the other 215 rows unchanged (3 model calls); the
   rerun ended at $0. The first rows file, with the error row, is kept.

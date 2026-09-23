@@ -14,7 +14,18 @@ BAIT does not execute trades, predict returns, rank wallets, guarantee future pr
 or replace portfolio risk controls. Passing the guard means the proposal satisfies one
 minimum eligibility rule. It does not mean the wallet is safe or worth copying.
 
-## Default policy: `wallet-copy-risk-v3`
+## Default policy since 23 Sep 2026: `wallet-copy-risk-v4`
+
+`wallet-copy-risk-v4` (`PRODUCTION_GUARD_POLICY`, pre-registered in
+[bench/V4.md](../bench/V4.md)) keeps every v3 rule below and adds two reads, both only when
+nothing earlier refused: `perp-screener` (1 credit), which caps at 25% when at least two thirds
+of at least $1M of smart money's open positions in the wallet's largest open position's market
+sit on the other side, and `perp-leaderboard` (5 credits), which refuses a 30-day summary that
+claims more realised PnL than the leaderboard's record of the same days (`record_disagreement`).
+Either read failing is `not_assessed` and changes nothing. `PRODUCTION_GUARD_POLICY_V3` or
+`--policy v3` runs v3.
+
+## `wallet-copy-risk-v3` (default until 23 Sep 2026)
 
 `wallet-copy-risk-v3` is v2 below with two changes: a profitable month that one market
 carried is capped at 25% of the request instead of refused, and (revision 3, 23 Sep 2026)
@@ -122,7 +133,7 @@ const decision = await guardAllocation({
   executor,                  // adapter that serves the Nansen PnL summary
   wallet,                    // 0x-prefixed 20-byte address
   allocation: proposedUsd,  // non-negative finite number
-  // policy is optional. The default is wallet-copy-risk-v3.
+  // policy is optional. The default is wallet-copy-risk-v4.
   // Pass PRODUCTION_GUARD_POLICY_V1 for the one-window rule.
 });
 
@@ -161,7 +172,9 @@ frozen. Any other tool name throws. The credit guard in `validation/nansen.js` s
 the path.
 
 Cost is one credit per window: one for `wallet-realized-pnl-30d-v1`, two for
-`wallet-copy-risk-v2` or `-v3`, and only one when the 30-day evidence already refuses.
+`wallet-copy-risk-v2` or `-v3`, and only one when the 30-day evidence already refuses. v3 and
+v4 add `profiler/perp-positions` (1) once the summaries pass; v4 adds `perp-screener` (1) and
+`perp-leaderboard` (5), so the CLI's v4 default costs at most 9.
 
 `runLiveGuard` wraps that adapter, enforces 15-minute freshness, and adds
 `creditsCharged` and `creditsRemaining` to the decision. Its own default policy is
@@ -171,7 +184,7 @@ contract test asserts the one-credit v1 behaviour; pass `policy` for v2.
 Two ways to run it, both needing only `NANSEN_API_KEY` in `.env`:
 
 ```powershell
-# wallet-copy-risk-v3 (the default), two windows, two credits, prints the full check table
+# wallet-copy-risk-v4 (the default), at most 9 credits, 1 if the month refuses; prints the full check table
 npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000
 
 # the recorded one-window rule, one credit

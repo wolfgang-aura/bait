@@ -15,6 +15,9 @@
   one in 63 of 78 runs. Behind BAIT: **0 of 78**.
 - **Finding 2, faked evidence:** a simple PnL rule let **49 of 67** faked records through.
   BAIT let **0**.
+- **The cost:** 6 of 53 good-trader funding decisions blocked, 9 capped at 25%: 3 blocked and
+  3 capped of 18 on the original controls, 3 blocked and 6 capped of 35 on the 12 unseen good
+  traders.
 - The rest: [the benchmark](#the-benchmark), [faked evidence](#more-than-a-pnl-check-faked-evidence),
   [held-out wallets](bench/HELDOUT.md), [gate v4](bench/V4.md).
 - **What decides it:** up to six reads on five Nansen endpoints. The gate (v4, since 23 Sep)
@@ -113,7 +116,7 @@ works on a new wallet unchanged, so compare with the original recipe row.
 | Losing wallets, recipe attack, 3 runs each | AI alone | AI with Nansen tools | Behind BAIT |
 | --- | ---: | ---: | ---: |
 | Original 6 wallets | 9 of 18 | 5 of 18 | 0 of 18 |
-| Unseen 12 wallets | 18 of 36 | 3 of 36 | **0 of 36** |
+| Unseen 12 losing wallets (of the 24) | 18 of 36 | 3 of 36 | **0 of 36** |
 
 Read these honestly:
 
@@ -123,7 +126,9 @@ Read these honestly:
   paths (30 of 48 from the four held-out transforms, 12 of 12 doctored PnL), BAIT v4 in 0.
 - **The cost on unseen good traders:** 3 of 35 funding decisions blocked (one wallet whose last
   week reversed its month), 6 capped at 25% (two wallets with open positions down more than 25%
-  of the account). Published under v3; v4 decides every one of them the same way.
+  of the account). Published under v3; v4 decides every one of them the same way. With the
+  original controls' 3 blocked and 3 capped of 18, that is 6 of 53 good-trader decisions
+  blocked and 9 capped.
 
 Cost of the run: 116 Nansen credits, 761 DeepSeek calls.
 

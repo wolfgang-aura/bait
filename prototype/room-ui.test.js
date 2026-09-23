@@ -129,8 +129,13 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
   const page = read('replay.html');
   const rjs = read('replay.js');
   assert.doesNotMatch(page, /10 recorded attacks|One Nansen call|one credit per check|Five wallets, with evidence|-\$847,025\.38/);
-  assert.match(page, /26 attacks on 6 losing wallets, 6 profitable controls and 6 attacks on the evidence itself/);
-  assert.match(page, /A Pitch Room live read also takes the newest page of fills, 4 credits\./);
+  assert.match(page, /26 attacks on 6 losing wallets, 6 profitable controls and 7 attacks on the evidence itself/);
+  assert.match(page, /A Pitch Room live read also takes the newest page of fills: 5 credits when the record refuses, 10 when the gate clears or caps\./);
+  // Gate v4's five endpoints and both findings are static text, so the Pages copy carries them.
+  for (const e of ['perp-pnl-summary', 'perp-trades', 'perp-positions', 'perp-screener', 'perp-leaderboard']) assert.match(page, new RegExp(e));
+  assert.match(page, /the AI alone backed one in 63 of 78 runs\. Behind BAIT: <strong>0 of 78<\/strong>/);
+  assert.match(page, /A simple PnL rule let 49 of 67 faked records through\. BAIT let <strong>0<\/strong>/);
+  assert.match(page, /<a class="live-strip" href="https:\/\/bait-wyqr\.onrender\.com\/">/);
   assert.match(page, /Dated examples: five wallets read on 20 Sep 2026/);
   assert.match(rjs, /readRecord\s*\n\s*\? '<p class="asked-sent"><span class="ok">Read the record itself ✓<\/span>/);
 });

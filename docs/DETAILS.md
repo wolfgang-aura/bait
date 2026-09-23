@@ -14,9 +14,10 @@ $Z held`. Since revision 3 (round 17) the gate also reads the wallet's current p
 (`profiler/perp-positions`): open positions down more than 25% of the account value cap the
 request the same way. A failed positions read is not assessed and never raises an amount;
 anything else missing or failed means $0. In the Pitch Room the AI runs the bench's no-data
-setup (your pitch only); only the gate reads Nansen. Live rounds read the two summaries, the
-newest page of trade fills and the open positions live (4 credits; the guard CLI reads the
-summaries and positions, 3 credits, 1 if the month already refuses). Drawdown and worst trade
+setup (your pitch only); only the gate reads Nansen. Under v3, live rounds read the two
+summaries, the newest page of trade fills and the open positions live (4 credits; the guard CLI
+reads the summaries and positions, 3 credits, 1 if the month already refuses); v4's two extra
+reads and their cost follow below. Drawdown and worst trade
 are measured on those fills only when they cover a week or more; a page that covers less (a
 busy wallet's 1,000 fills can be minutes) shows those rows as N/A, too short to judge. A frozen
 round uses the capture's fills and says how old they are.
@@ -54,11 +55,13 @@ held-out set. Every live round keeps Nansen's raw responses in `bench/live-reads
 - The relabelled-window attack was found by our own bench: v3 checked the window label, not its
   dates, and funded it ([report](../bench/reports/2026-09-23T02-09-47-226Z-gate-buys.md)). Fixed
   in `5b40663` (v3 revision 2); re-scored at revision 2, no per-wallet or panel decision changed.
-- The faked-evidence table counts 6 attacks on 5 wallets. Its separate policy row, a profitable
+- The faked-evidence table counts 7 attacks on 5 wallets (6 until v4 added the doctored-PnL row). Its separate policy row, a profitable
   wallet whose last week reversed its month, is the same control behind the 3 of 18 blocked.
 - The held-out rerun of the faked-evidence set uses the four attacks that apply mechanically to
   any wallet (`other-wallet`, `short-window`, `relabelled-window`, `replayed-capture`), 48 paths.
-  With the original six, the 19-line rule let 36 of 54 through; BAIT 0 of 54.
+  With the original six, the 19-line rule let 36 of 54 through; BAIT 0 of 54. The headline
+  49 of 67 adds v4's seventh original attack and the held-out doctored PnL: 7 of 7 original,
+  30 of 48 held-out transforms, 12 of 12 held-out doctored PnL; BAIT 0 of 67.
 - Gate v4 (23 Sep, [bench/V4.md](../bench/V4.md)): pre-registered in `21e99f1` before any v4
   read, results in `7701c5a`. Re-gating every recorded answer with zero model calls, v4 decided
   all honest rows exactly as v3 (0/78, 3 blocked and 3 capped of 18, 0/36, 3 and 6 of 35, 0/54
