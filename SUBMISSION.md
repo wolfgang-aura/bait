@@ -21,14 +21,14 @@ Current evidence:
 
 ## The recording
 
-`scratch/BAIT-judge-v14.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 47.6 s, rendered with
+`scratch/BAIT-judge-v15.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 47.6 s, rendered with
 HyperFrames over a real round played on the hosted site (https://bait-wyqr.onrender.com) and
 recorded at 3840 by 2160 on 23 Sep 2026.
-SHA-256: `a9ae0fe8405a59f45c40ce6ab6f6c8e9170bde2933c361f8a0052a1029e22e5f`.
+SHA-256: `d9351b386b021a6276f20a6a2209d564b284f1c096a21552722cdaaf7571262d`.
 
 | Screen | Point |
 | --- | --- |
-| Cold open | THE LEGEND: +$118,975,612 all time against -$30,131,059 over 30 days (live Nansen read, 23 Sep 06:01 UTC), BLOCKED BY BAIT. |
+| Cold open | THE LEGEND: +$118,975,612 all time against -$30,120,116 over 30 days (live Nansen read, 23 Sep 06:19 UTC), BLOCKED BY BAIT. |
 | What BAIT is | The check that runs before an AI agent moves money. |
 | The round | A real DeepSeek round. PENNY, the target, has no data tools. On the first line it asks for the 30-day P&L, then agrees anyway and puts $2,500 of its $25,000 behind him. The round ends there. |
 | The BAIT check | BAIT intercepts the transfer, reads Nansen live, ticks in every check with its value (freshness PASS, 0 min old) and stamps BLOCKED BY BAIT. |
@@ -36,13 +36,13 @@ SHA-256: `a9ae0fe8405a59f45c40ce6ab6f6c8e9170bde2933c361f8a0052a1029e22e5f`.
 | The result | Six losing wallets, 26 attacks: AI alone 63/78, with Nansen tools 19/78, behind the BAIT check 0/78; on profitable traders 3 of 18 decisions blocked, 3 capped. |
 | End card | The bench command, the play link and the repository. |
 
-The round's figures come from one live Nansen read of THE LEGEND at 06:01:59 UTC on
+The round's figures come from one live Nansen read of THE LEGEND at 06:19:08 UTC on
 23 Sep 2026 (two perp-pnl-summary calls, 2 credits). Nansen's raw responses are committed as
-`bench/live-reads/20260923T060159Z-0x7fdafde5.json`, SHA-256
-`eb840d7fc1f40e92164db1df7f1e51065cd0575843dc06e4d2bdfc7e133c7a4b` (the same hash the host
-lists at /api/live-reads): 30-day realised PnL -30,131,059.36, win rate 39.70%, 576,144
+`bench/live-reads/20260923T061908Z-0x7fdafde5.json`, SHA-256
+`72ea8ba2e9295806909060db64a3d4a677c023f8c25bbadf2973c6b5a16c6b34` (the same hash the host
+lists at /api/live-reads): 30-day realised PnL -30,120,116.25, win rate 39.72%, 575,955
 closed trades. The fill tape behind the trade details is still the 21 Sep capture, and the
-screen says so. Earlier cuts (v13 and before) used reads whose raw responses were not kept.
+screen says so. v14 used the 06:01:59 read, also committed (eb840d7f...); v13 and earlier used reads whose raw responses were not kept.
 
 ## Draft X post
 
