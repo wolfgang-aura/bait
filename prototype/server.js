@@ -234,7 +234,8 @@ export function buildProof({ results, live, stats, liveReads = [] }) {
   return {
     product: 'BAIT: the check that runs before an AI agent moves money',
     // Raw live Nansen responses on this host and in the repository, each with its SHA-256.
-    liveReads: liveReads.map(r => ({ ...r, url: `/api/live-reads/${r.file}`, repo: REPO_BLOB + 'bench/live-reads/' + r.file })),
+    // Addresses stay out of the proof (a test holds it to that); the raw files carry them.
+    liveReads: liveReads.map(({ wallet, ...r }) => ({ ...r, wallet: `${wallet.slice(0, 6)}...${wallet.slice(-4)}`, url: `/api/live-reads/${r.file}`, repo: REPO_BLOB + 'bench/live-reads/' + r.file })),
     model: w?.model ?? results.comparison.model ?? null,
     perWallet: w && {
       recordedAt: w.recordedAt, repeatsPerCell: w.repeats,
