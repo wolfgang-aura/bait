@@ -83,7 +83,7 @@ test('public pages show short addresses and no third-party entity labels', async
 
 test('the meter agrees with the card and the beat: it shows the committed figure at once (round 19)', () => {
   const roll = js.slice(js.indexOf('function rollFunded'), js.indexOf('function rollFunded') + 900);
-  assert.match(roll, /text\(el\.funded, dollars\(to\)\);\n\}/);
+  assert.match(roll, /text\(el\.funded, dollars\(to\)\);\r?\n\}/);
   assert.doesNotMatch(roll, /requestAnimationFrame|Math\.pow/);
   const beat = js.slice(js.indexOf('function agreedBeat'), js.indexOf('function agreedBeat') + 1400);
   assert.match(beat, /fundedShown = committed; text\(el\.funded, dollars\(committed\)\)/);
