@@ -36,7 +36,7 @@
  * and 7-day summaries when the round starts (./live-evidence.js, cached per wallet for 30
  * minutes, hard credit caps), reused by the desk, the claim checker and every wire. Any
  * failure, cap or missing key plays the frozen capture exactly as before, and the round
- * says which one it got. The Fomo four always play their recorded tape.
+ * says which one it got.
  */
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -118,7 +118,7 @@ export function buildProspectDossier(p) {
     venueLabel: p.venueLabel,
     accent: p.accent,
     portrait: p.portrait,
-    record: p.venue === 'fomo' ? 'Fomo Radar' : 'Nansen',
+    record: 'Nansen',
     slot: SLOT,
     shots: SHOTS,
     maxPitch: MAX_PITCH,
@@ -340,8 +340,8 @@ export function createLeaderboardStore(file, { limit = 20 } = {}) {
 
 // ----------------------------------------------------------------- ending
 
-/** The record BAIT read, in the words a stranger knows: Nansen, or the recorded Fomo tape. */
-const recordName = p => (p.venue === 'fomo' ? 'the recorded Fomo tape' : 'Nansen');
+/** The record BAIT read, in the words a stranger knows. */
+const recordName = () => 'Nansen';
 
 /**
  * Did the desk ask for the record? Read from its own spoken lines: a line that asks for,
@@ -367,7 +367,7 @@ export function roundQuotes(shots) {
  */
 export function endingCopy({ s, peak, executed, verdict }) {
   const name = s.prospect.name;
-  const read = s.prospect.venue === 'fomo' ? "BAIT's read of the recorded Fomo tape" : "BAIT's Nansen read";
+  const read = "BAIT's Nansen read";
   const quotes = roundQuotes(s.shots);
   if (peak === 0) {
     return {
@@ -448,7 +448,7 @@ export function createRoomService({
   // A service built from a bare snapshot, as the tests do, gets a one-prospect roster
   // holding exactly that snapshot. A service built by the server gets the Hyperliquid
   // four: every tile on the front door is a wallet Nansen covers, and the gate reads
-  // Nansen for it. The Fomo four stay in the side proof at /?view=fomo.
+  // Nansen for it.
   const lineup = (roster ?? (() => {
     const all = loadRoster();
     const data = source?.data;
@@ -466,7 +466,6 @@ export function createRoomService({
    * The round's record. A Hyperliquid pick asks the live reader once; a live read becomes
    * the round's snapshot, and the desk, the claim checker, the truth screen and every
    * wire all read that one object. Anything else is the frozen capture, with the reason.
-   * The Fomo four have no live source and say so.
    */
   async function prospectFor(id) {
     const chosen = id ? lineup.find(p => p.id === id) : fallback;
@@ -475,9 +474,6 @@ export function createRoomService({
       mode: chosen.truthAvailable, live: false, code, reason,
       capturedAt: chosen.truth.capturedAt, source: chosen.truth.source,
     });
-    if (chosen.venue !== 'hyperliquid') {
-      return { p: chosen, evidence: { ...frozen('Fomo traders play their recorded Fomo Radar tape. There is no live source for them.', 'recorded'), mode: 'recorded' } };
-    }
     if (!liveEvidence) return { p: chosen, evidence: frozen('Live reads are not wired into this service.', 'disabled') };
     const read = await liveEvidence.read(chosen.wallet);
     if (!read.live) return { p: chosen, evidence: frozen(read.reason, read.code) };

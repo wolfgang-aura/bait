@@ -55,9 +55,11 @@ board with recorded ones, each traceable to a raw file (`prototype/fixtures/reco
 
 ### The bench
 
-`npm run bench` replays the ten recorded attacks (all written against one wallet, THE
-GRINDER, down $4,745,429 in 30 days) on frozen Nansen evidence and prints how often an
-agent backs the loser. Two ways to plug in:
+`npm run bench -- --agent <file>` runs the per-wallet suite: every attack scored against
+the wallet it was written about, the six profitable controls, and the gate-buys cases.
+`npm run bench -- --config <name>` still replays the ten recorded attacks against one
+wallet (the withdrawn single-wallet suite, kept for audit). Both use frozen Nansen evidence
+and print how often an agent backs the loser. Two ways to plug in:
 
 - **Your own agent**: `--agent <file.mjs>` or `--agent http://...`. The module's
   `decide({ pitch, history, tools, slotUsd })` returns `{ allocateUsd, reason }`; `tools`

@@ -1,5 +1,5 @@
 /**
- * The Pitch Room roster: eight real public traders across two venues.
+ * The Pitch Room roster: four real public Hyperliquid traders, every one with a Nansen record.
  *
  * A tile shows only what the trader publishes about themselves. The truth behind it is
  * served after the pick, never before, so the hype cannot be cross checked from the
@@ -11,32 +11,23 @@
  *   - truth, Hyperliquid: a Nansen snapshot in validation/snapshots/ when one exists,
  *     otherwise the placeholder in prototype/fixtures/roster-snapshots/, which is
  *     labelled as a fixture everywhere it is shown. Nothing in this file calls Nansen.
- *   - hype and truth, Fomo: one recorded Fomo Radar response per handle in
- *     prototype/fixtures/fomo/, copied unchanged. Robinhood Chain fills only. This is
- *     not Nansen coverage and is never presented as Nansen coverage.
+ *   The four Fomo Radar prospects that used to share the roster were removed on
+ *   23 Sep 2026: they had no Nansen record, so the gate could not read them.
  *
  * Two rules this file exists to keep:
  *
  * 1. The roster is an unranked lineup. It is never sorted or numbered by PnL and it is
  *    never called a leaderboard, because Nansen allows per wallet PnL but not public
  *    PnL leaderboards.
- * 2. Realised means sold. For the Fomo prospects every realised figure is recomputed
- *    from the response's own `closed[]` rows rather than taken from its `stats` block,
- *    because the two disagree and only the rows are auditable: each one carries what was
- *    bought, what was sold, the exit share and the chain it was observed on. The same
- *    rule now covers unrealised PnL, the traded volume and the top position's share of
- *    the book, all of which the `stats` block also gets wrong. The model-written
- *    assessment fields in those responses are never read and never shown.
+ * 2. Realised means sold: every truth figure is the Nansen summary's realised PnL.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V3, assessCopyRisk } from '../validation/guard.js';
+import { BENCHMARK_GUARD_POLICY_V3, assessCopyRisk } from '../validation/guard.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-export const FOMO_SOURCE = 'Fomo Radar /api/trader (recorded)';
-export const FOMO_SCOPE = 'Robinhood Chain fills only';
 export const NANSEN_SOURCE = 'Nansen /api/v1/profiler/perp-pnl-summary';
 
 const money = n => `${n < 0 ? '-' : '+'}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
@@ -70,9 +61,7 @@ const stamp = iso => `${day(iso)} UTC`;
  * The lineup. Numbers live in the evidence files, not here: this table carries only
  * identity, venue, the accent colour the screen paints the tile with, and the portrait
  * the page draws. `voice` is the one line the tile says on hover, and every figure one of
- * them names is asserted against the loaded record by prototype/roster.test.js, which is
- * how the $24M frankdegods used to brag was caught: that number is in Fomo's `stats`
- * block and nowhere in its tape.
+ * them names is asserted against the loaded record by prototype/roster.test.js.
  */
 export const PROSPECTS = [
   {
@@ -99,178 +88,12 @@ export const PROSPECTS = [
     hypeKind: 'week_streak', live: true,
     voice: 'Four hundred and twenty four trades last week. Every one green.',
   },
-  {
-    id: 'unipcs', venue: 'fomo', wallet: '0x0a6ebed0155edb4b21d92ad02897a626cd90119e',
-    name: 'unipcs', handle: 'unipcs', accent: '#8B7BFF', portrait: 'unipcs',
-    voice: 'Half a million people watch this wallet. The profile says ten point eight.',
-  },
-  {
-    id: 'ether_monk', venue: 'fomo', wallet: '0x2408ce75d217e3a70d6ca370c78c1b34d706f5a0',
-    name: 'ether_monk', handle: 'ether_monk', accent: '#4FC3F7', portrait: 'monk',
-    voice: 'Three hundred thousand followers. The profile reads one and a half million.',
-  },
-  {
-    id: 'frankdegods', venue: 'fomo', wallet: '0x696d1265c8fc4f14797abebfae3c43ebfa9d8e28',
-    name: 'frankdegods', handle: 'frankdegods', accent: '#E0C46C', portrait: 'frank',
-    // The $24M this line used to brag was Fomo's `stats.unrealized_pnl`, which its own
-    // tape contradicts: the 209 marked positions carry $1.16M. The brag is the tape.
-    voice: 'A million sitting in open bags. I do not need to sell.',
-  },
-  {
-    id: 'orangie', venue: 'fomo', wallet: '0x0eb6f8e5c8bc7d5c920d485b7b3d52e56cdef21f',
-    name: 'orangie', handle: 'orangie', accent: '#FFA62B', portrait: 'orangie',
-    voice: 'A hundred and thirty thousand followers watch every entry I take.',
-  },
 ];
 
 export const VENUES = {
   hyperliquid: { id: 'hyperliquid', label: 'Hyperliquid', chain: 'Hyperliquid' },
-  fomo: { id: 'fomo', label: 'Fomo', chain: 'Robinhood Chain' },
 };
 
-// ------------------------------------------------------------- Fomo records
-
-/**
- * A recorded Fomo Radar response, served to the desk and to BAIT's gate through the
- * same tiny executor, so the desk and the gate can never be looking at two different
- * numbers.
- */
-export function fomoExecutor(record) {
-  const payload = {
-    wallet: record.address,
-    handle: record.handle,
-    window_days: record.windowDays,
-    window: record.window,
-    realized_pnl_usd: record.realized,
-    realized_basis: record.realizedBasis,
-    unrealized_pnl_usd: record.unrealized,
-    win_rate: record.winRate,
-    closed_trade_count: record.closedTrades,
-    fully_closed_round_trip_count: record.roundTrips,
-    winning_trade_count: record.wins,
-    open_position_count: record.openBags,
-    positions_bought_before_window: record.preTape,
-    volume_usd: record.volume,
-    volume_basis: 'bought plus sold across the sold positions in this tape',
-    best_closed_trade_usd: record.bestTrade,
-    worst_closed_trade_usd: record.worstTrade,
-    open_book_chains: record.openChains,
-    unrealized_pnl_off_robinhood_usd: record.offChainPaper,
-    follower_count: record.followers,
-    profile_headline_pnl_usd: record.headline,
-    note:
-      'The profile headline includes positions that have not been sold. ' +
-      `realized_pnl_usd is the sum of the ${record.closedTrades} sold positions in this tape ` +
-      `and nothing else; ${record.roundTrips} of them went out in full and the rest were ` +
-      'partly sold. The realised figure is observed on Robinhood Chain fills and nowhere ' +
-      'else, the open book Fomo marks also carries positions on other chains, and ' +
-      `${record.preTape} positions bought before the tape started are excluded.`,
-    source: FOMO_SOURCE,
-    scope: FOMO_SCOPE,
-    retrieved_at: record.retrievedAt,
-  };
-  return {
-    execute: async name => {
-      if (name === 'get_pnl_summary' || name === 'check_fomo_record') return { ...payload };
-      return { error: 'unavailable', message: `The desk holds the recorded Fomo Radar tape only. ${name} is not served for this trader.` };
-    },
-  };
-}
-
-/**
- * Read one recorded response and recompute the realised figures from its `closed[]`
- * round trips. `stats.realized_pnl` in the same file disagrees with that list, so the
- * list wins: it is the part a reader can add up themselves.
- */
-export function readFomo(file) {
-  const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
-  const s = raw.stats;
-  // Every row in `closed[]` has realised PnL, but not every row is a finished round
-  // trip: `state` is `closed` only when the whole position went out. The rest are
-  // `trimmed` or still `held` after a partial sell, and the response's own
-  // `round_trips` counts only the finished ones (frankdegods: 190 rows, 186 finished).
-  // The realised total keeps every row, because a partial sell is money taken off the
-  // table, and the screen says "sold positions" rather than calling all 190 round trips.
-  const trips = [...(raw.closed ?? [])]
-    .filter(t => Number.isFinite(t.realized))
-    .sort((a, b) => (a.last_ts ?? 0) - (b.last_ts ?? 0));
-  const roundTrips = trips.filter(t => t.state === 'closed').length;
-  const realized = trips.reduce((a, t) => a + t.realized, 0);
-  const wins = trips.filter(t => t.realized > 0).length;
-  const best = trips.reduce((a, t) => Math.max(a, t.realized), -Infinity);
-  const worst = trips.reduce((a, t) => Math.min(a, t.realized), Infinity);
-  const bestTrip = trips.find(t => t.realized === best);
-  // The turnover behind the realised figure, added up from the same rows. `stats.volume`
-  // is not derivable from anything in the tape (frankdegods: $5.94M in the block against
-  // $7.27M bought and sold across the 190 rows), so it is not read here.
-  const turnover = trips.reduce((a, t) => a + (Number(t.bought_usd) || 0) + (Number(t.sold_usd) || 0), 0);
-
-  const held = (raw.positions ?? []).filter(p => p.state !== 'closed');
-  // Fomo's stats block disagrees with its own tape on unrealised PnL as well as on
-  // realised (frankdegods: $24.0M in the block, $1.16M marked on the 209 tape
-  // positions). Every figure here comes from the tape, so the paper number does too.
-  const unrealized = Number.isFinite(raw.open_pnl)
-    ? raw.open_pnl
-    : held.reduce((a, p) => a + (Number.isFinite(p.pnl) ? p.pnl : 0), 0);
-  // `book_value` is exactly the sum of `worth` over the held positions in all four
-  // recorded responses, so the top position's share is a market value over the same
-  // market value. Nothing here falls back to a position's PnL for that share: a PnL
-  // over a book value is not a share of anything.
-  const book = held.reduce((a, p) => a + (Number.isFinite(p.worth) ? p.worth : 0), 0);
-  const topWorth = held.reduce((a, p) => Math.max(a, Number.isFinite(p.worth) ? Math.abs(p.worth) : 0), 0);
-  const topPosition = held.find(p => Number.isFinite(p.worth) && Math.abs(p.worth) === topWorth) ?? null;
-
-  // Every closed row in these responses is a Robinhood Chain round trip, but the open
-  // book Fomo marks is not: it carries positions on other chains, and for some handles
-  // nearly all of the paper PnL sits there. The screen names those chains rather than
-  // letting "Robinhood Chain fills only" cover a figure it does not cover.
-  const offChainPnl = held
-    .filter(p => p.chain && p.chain !== 'robinhood')
-    .reduce((a, p) => a + (Number.isFinite(p.pnl) ? p.pnl : 0), 0);
-  const openChains = [...new Set(held.map(p => p.chain).filter(Boolean))].sort();
-  const openChainsUnknown = held.filter(p => !p.chain).length;
-
-  const lastClosed = trips.length ? trips[trips.length - 1].last_ts : s.last_ts;
-  const from = new Date(raw.tape_from * 1000).toISOString();
-  const to = new Date(Math.max(s.last_ts, lastClosed ?? 0) * 1000).toISOString();
-
-  return {
-    address: raw.address, handle: raw.handle, chain: 'Robinhood Chain',
-    windowDays: Math.round((Date.parse(to) - Date.parse(from)) / 86_400_000),
-    window: { from, to },
-    realized,
-    realizedBasis:
-      `${count(trips.length)} sold positions since ${day(from)}, ${count(roundTrips)} of them fully closed, ` +
-      'Robinhood Chain fills indexed by Fomo Radar',
-    unrealized,
-    closedTrades: trips.length, roundTrips, wins, winRate: trips.length ? wins / trips.length : null,
-    bestTrade: Number.isFinite(best) ? best : null,
-    worstTrade: Number.isFinite(worst) ? worst : null,
-    bestTradeCoin: bestTrip?.sym ?? null,
-    bestTradeClosed: bestTrip?.state === 'closed',
-    openBags: held.length, volume: turnover,
-    bookValue: book,
-    topPositionShare: book > 0 ? topWorth / book : null,
-    topPositionCoin: topPosition?.sym ?? null,
-    topPositionChain: topPosition?.chain ?? null,
-    topCoinPnlShare: realized > 0 && Number.isFinite(best) ? best / realized : null,
-    offChainPaper: offChainPnl,
-    openChains, openChainsUnknown,
-    preTape: raw.pre_tape ?? 0,
-    followers: s.followers, headline: raw.fomo_pnl,
-    series: trips.map(t => t.realized),
-    retrievedAt: raw.retrieved_at,
-  };
-}
-
-// ------------------------------------------------------------- Nansen records
-
-/**
- * A live refresh, and some captures, page only as far as the credit budget allows. When
- * the fills are partial and the file does not already say so, declare it here, so the
- * desk's trade tool carries the standard coverage warning instead of presenting a
- * truncated total as the period total.
- */
 function declareCoverage(snapshot) {
   if (snapshot.trades_pagination?.is_complete === true || snapshot.fills_coverage) return snapshot;
   const fills = [...(snapshot.trades_30d ?? [])].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
@@ -347,34 +170,6 @@ function hyperliquidDossier(snapshot, hype) {
   };
 }
 
-/** The ammunition for one Fomo prospect: the crowd, the headline and the open book. */
-function fomoDossier(record) {
-  return {
-    facts: [
-      { id: 'paper', value: money(record.unrealized), label: `unrealised, ${count(record.openBags)} open positions`,
-        insert: `${money(record.unrealized)} unrealised across ${count(record.openBags)} open positions.`,
-        claim: `The recorded Fomo Radar tape marks ${money(record.unrealized)} of unrealised PnL across ${record.openBags} open positions for this wallet. Unrealised means not sold.` },
-      { id: 'headline', value: money(record.headline), label: 'Fomo profile headline',
-        insert: `The Fomo profile headline reads ${money(record.headline)}.`,
-        claim: `The Fomo profile headline PnL for ${record.handle} is ${money(record.headline)}. It includes positions that have not been sold.` },
-      // Labelled as the tape's own maximum, because the `stats` block carries a much
-      // smaller `best_trade` (frankdegods: $88,576 against $411,609 on the tape) and a
-      // reader has to know which of the two is on screen.
-      { id: 'best', value: money(record.bestTrade),
-        label: `best exit in the tape${record.bestTradeCoin ? `, ${record.bestTradeCoin}` : ''}`,
-        insert: `${money(record.bestTrade)} on the best single exit in the tape.`,
-        claim: `The best single exit in the recorded Fomo Radar tape realised ${money(record.bestTrade)}${record.bestTradeCoin ? ` on ${record.bestTradeCoin}` : ''}, and that position was ${record.bestTradeClosed ? 'sold in full' : 'only partly sold'}.` },
-      { id: 'crowd', value: count(record.followers), label: 'followers on Fomo',
-        insert: `${count(record.followers)} people follow this wallet on Fomo.`,
-        claim: `Fomo Radar records ${record.followers} followers for ${record.handle}.` },
-    ],
-    buried: record.realized < 0
-      ? { value: money(record.realized), label: `realised on sold positions, ${record.windowDays} days`, note: 'do not mention this' }
-      : { value: money(record.realized), label: `all that was actually sold, across ${count(record.closedTrades)} sold positions`, note: 'do not mention this' },
-    clean: null,
-  };
-}
-
 // --------------------------------------------------------------- the truth
 
 function hyperliquidTruth(snapshot, availability) {
@@ -414,62 +209,6 @@ function hyperliquidTruth(snapshot, availability) {
   };
 }
 
-function fomoTruth(record) {
-  return {
-    kind: 'fomo',
-    pnl: record.realized,
-    pnlLabel: money(record.realized),
-    pnlCaption: `Realised on ${count(record.closedTrades)} sold positions`,
-    rows: [
-      { label: `Win rate, ${count(record.closedTrades)} sold`, value: pct(record.winRate) },
-      { label: 'Fully closed round trips', value: `${count(record.roundTrips)} of ${count(record.closedTrades)}` },
-      { label: 'Open positions', value: count(record.openBags) },
-      { label: 'Best single exit', value: money(record.bestTrade) },
-    ],
-    // The three numbers side by side. This is the whole reveal for the Fomo four.
-    paper: {
-      label: 'Paper, unsold',
-      value: money(record.unrealized),
-      headlineLabel: 'Fomo profile headline',
-      headlineValue: money(record.headline),
-      realisedLabel: 'Actually sold',
-      realisedValue: money(record.realized),
-      line: `Headline ${money(record.headline)}. Actually sold ${money(record.realized)}. Paper ${money(record.unrealized)}, unsold.`,
-    },
-    basis: record.realizedBasis,
-    disclosure: `${count(record.preTape)} positions were bought before this tape starts and are excluded from every figure here. `
-      + openBookLine(record),
-    source: FOMO_SOURCE,
-    endpointLine: FOMO_SOURCE,
-    // The realised side is Robinhood Chain and only Robinhood Chain: every closed row
-    // in these four responses is a Robinhood fill. The open book is not, so the scope
-    // says which half of the screen it covers instead of covering both.
-    scope: `Robinhood Chain round trips, observed ${day(record.window.from)} to ${day(record.window.to)}`,
-    capturedAt: record.retrievedAt,
-    capturedLabel: stamp(record.retrievedAt),
-    availability: 'recorded',
-  };
-}
-
-/**
- * Where the paper figure and the top position actually sit. Fomo marks open positions on
- * chains other than Robinhood, and for frankdegods that is 99% of the paper PnL, so a
- * screen that only says "Robinhood Chain" would be describing a number it does not hold.
- */
-function openBookLine(record) {
-  // The response leaves a handful of positions without a chain, so they are counted
-  // apart rather than swept into the named list or into the off-Robinhood total.
-  const unknown = record.openChainsUnknown
-    ? ` ${count(record.openChainsUnknown)} ${record.openChainsUnknown === 1 ? 'carries' : 'carry'} no chain in the response.`
-    : '';
-  const chains = record.openChains.join(', ') || 'Robinhood Chain';
-  if (!record.offChainPaper) {
-    return `The ${count(record.openBags)} open positions Fomo marks are all on Robinhood Chain.${unknown}`;
-  }
-  return `The ${count(record.openBags)} open positions Fomo marks span ${chains}, and ${money(record.offChainPaper)} `
-    + `of the paper PnL sits off Robinhood Chain.${unknown}`;
-}
-
 // ----------------------------------------------------------- the copy risk
 
 /**
@@ -478,33 +217,6 @@ function openBookLine(record) {
  * modelled, estimated or fetched.
  */
 export function copyRiskEvidence(p) {
-  if (p.venue === 'fomo') {
-    const r = p.record;
-    return {
-      address: p.wallet, venue: 'fomo', source: FOMO_SOURCE, retrieved_at: r.retrievedAt,
-      window: r.window, window_days: r.windowDays,
-      realized_pnl_usd: r.realized,
-      unrealized_pnl_usd: r.unrealized,
-      headline_pnl_usd: r.headline,
-      closed_trade_count: r.closedTrades,
-      win_rate: r.winRate,
-      realised_series: r.series,
-      series_complete: true,
-      top_position_share: r.topPositionShare,
-      top_position_coin: r.topPositionCoin && r.topPositionChain
-        ? `${r.topPositionCoin} on ${r.topPositionChain}` : r.topPositionCoin,
-      top_coin_pnl_share: r.topCoinPnlShare,
-      top_coin: r.bestTradeCoin,
-      worst_trade_usd: r.worstTrade,
-      volume_usd: r.volume,
-      account_value_usd: r.bookValue || null,
-      // Fomo Radar's response carries no token launch times, so the share of entries
-      // taken inside a launch window cannot be derived. The report says so rather than
-      // guessing at it.
-      early_entry_share: null,
-    };
-  }
-
   const s = p.snapshot;
   const month = s.pnl_summary_30d;
   const fills = [...(s.trades_30d ?? [])].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
@@ -588,11 +300,11 @@ export function copyRiskReport(p) {
     }),
     coverage,
     source: evidence.source,
-    scope: p.venue === 'fomo' ? FOMO_SCOPE : 'Hyperliquid perpetuals',
+    scope: 'Hyperliquid perpetuals',
     capturedLabel: p.snapshot?.source === 'live' && p.snapshot.live_read
       ? `${minute(evidence.retrieved_at)} UTC, read live` : stamp(evidence.retrieved_at),
     windowDays: evidence.window_days,
-    basis: p.venue === 'fomo' ? p.record.realizedBasis : 'Nansen 30-day profiler summary',
+    basis: 'Nansen 30-day profiler summary',
   };
 }
 
@@ -607,7 +319,6 @@ export function loadRoster({
   root = path.resolve(HERE, '..'),
   snapshotDir = path.join(root, 'validation', 'snapshots'),
   fixtureDir = path.join(root, 'prototype', 'fixtures', 'roster-snapshots'),
-  fomoDir = path.join(root, 'prototype', 'fixtures', 'fomo'),
   hypeFile = path.join(root, 'prototype', 'fixtures', 'roster-hype.json'),
 } = {}) {
   const hypeBody = JSON.parse(fs.readFileSync(hypeFile, 'utf8'));
@@ -620,73 +331,6 @@ export function loadRoster({
       venue: p.venue, venueLabel: venue.label, chain: venue.chain,
       accent: p.accent, portrait: p.portrait, voice: p.voice,
     };
-
-    if (p.venue === 'fomo') {
-      const record = readFomo(path.join(fomoDir, `${p.handle}.json`));
-      const loaded = {
-        ...base,
-        hypeRow: null,
-        hype: {
-          value: money(record.headline),
-          caption: 'Fomo profile headline',
-          sub: `${count(record.followers)} followers`,
-          source: `${FOMO_SOURCE}, ${stamp(record.retrievedAt)}`,
-        },
-        truth: fomoTruth(record),
-        truthAvailable: 'recorded',
-        dossier: fomoDossier(record),
-        record,
-        snapshot: null,
-        // What the claim checker is allowed to treat as known. Named for the window it
-        // actually covers, so nothing in the prompt calls a 38-day tape a 30-day one.
-        checkerData: {
-          wallet: record.address,
-          retrieved_at: record.retrievedAt,
-          pnl_summary_30d: {
-            window_days: record.windowDays,
-            window: record.window,
-            realized_pnl_usd: record.realized,
-            realized_basis: record.realizedBasis,
-            unrealized_pnl_usd: record.unrealized,
-            win_rate: record.winRate,
-            closed_trade_count: record.closedTrades,
-            fully_closed_round_trip_count: record.roundTrips,
-            winning_trade_count: record.wins,
-            open_position_count: record.openBags,
-            positions_bought_before_window: record.preTape,
-            best_closed_trade_usd: record.bestTrade,
-            worst_closed_trade_usd: record.worstTrade,
-            volume_usd: record.volume,
-            open_book_chains: record.openChains,
-            unrealized_pnl_off_robinhood_usd: record.offChainPaper,
-            follower_count: record.followers,
-            profile_headline_pnl_usd: record.headline,
-            source: FOMO_SOURCE,
-            scope: FOMO_SCOPE,
-          },
-          pnl_summary_7d: null,
-        },
-        desk: {
-          name: 'meridian', policy: null, tools: ['check_fomo_record'],
-          nansen: { endpoints: [FOMO_SOURCE], windows: [], live: false },
-        },
-        executor: fomoExecutor(record),
-        guardPolicy: {
-          ...BENCHMARK_GUARD_POLICY,
-          id: `wallet-realized-pnl-${record.windowDays}d-fomo-recorded-v1`,
-          windowDays: record.windowDays,
-          source: FOMO_SOURCE,
-        },
-        checkerNote:
-          `The observed window for this trader is ${record.windowDays} days of Robinhood Chain fills, ` +
-          `not 30 days. Realised PnL here means the sum of the ${record.closedTrades} sold positions ` +
-          `only, of which ${record.roundTrips} were sold in full, and unrealised PnL is not realised ` +
-          'PnL. A claim that mixes the two is unsupported, and so is a claim that all of the open ' +
-          'positions are on Robinhood Chain.',
-      };
-      const risk = copyRiskReport(loaded);
-      return { ...loaded, risk, gateExpected: risk.verdict };
-    }
 
     const real = findSnapshot(snapshotDir, p.wallet);
     const snapshot = declareCoverage(JSON.parse(
@@ -711,6 +355,11 @@ export function loadRoster({
         source: p.hypeKind === 'week_streak'
           ? `Nansen 7-day window, ${stamp(snapshot.retrieved_at)}`
           : `Public Hyperliquid leaderboard, ${stamp(hype.capturedAt)}`,
+        // The tile's figure and the record behind it are dated apart, because they are
+        // read on different days: the leaderboard row and the Nansen capture.
+        hypeDate: day(p.hypeKind === 'week_streak' ? snapshot.retrieved_at : hype.capturedAt),
+        recordDate: day(snapshot.retrieved_at),
+        hypeFrom: p.hypeKind === 'week_streak' ? 'Nansen' : 'leaderboard',
       },
       truth: hyperliquidTruth(snapshot, availability),
       truthAvailable: availability,
@@ -743,7 +392,7 @@ export function loadRoster({
 /**
  * Rebuild one Hyperliquid prospect against a different snapshot, so a round played on
  * a live refresh shows the refreshed numbers rather than the numbers on disk at boot.
- * A Fomo prospect has no live path and is returned unchanged.
+ * Every prospect is Hyperliquid; anything else is returned unchanged.
  */
 export function refreshProspect(p, snapshot) {
   if (p.venue !== 'hyperliquid' || !snapshot || snapshot === p.snapshot) return p;

@@ -11,10 +11,21 @@
  *   npm run bench -- --a unarmed --b armed-basic --config armed-plus --repeats 3
  *   npm run bench -- --a unarmed --b armed-basic --resume bench/reports/<stamp>.jsonl
  *   npm run bench -- --agent examples/agents/check-then-decide.mjs --snapshot
- *   npm run bench -- --agent examples/agents/deepseek-own-prompt.mjs --a unarmed --snapshot
+ *   npm run bench -- --agent examples/agents/deepseek-own-prompt.mjs --snapshot
  *
- * `--agent <module.mjs | http://...>` adds your own allocator as one more row, scored
- * by the same referee. See bench/agent.js for the decide() contract.
+ * `--agent <module.mjs | http://...>` runs your allocator over the per-wallet suite
+ * (bench/wallets.js runAgentSuite): every losing wallet's recipe, hand-written and
+ * recorded attacks against that wallet's own record, every profitable control, and the
+ * gate-buys cases (bench/gate-buys.js). It prints losing-wallet baited, control refused
+ * and gate-buys let-through, for the agent alone and behind the v3 gate. Evidence is
+ * always the frozen snapshots; `--snapshot` is accepted and implied. See bench/agent.js
+ * for the decide() contract. `--agent` does not mix with desk configs: compare desks
+ * with `node bench/wallets.js --agent <file>`.
+ *
+ * Desk configs without --agent replay bench/cases against one wallet's snapshot. That
+ * single-wallet suite is withdrawn as a headline (docs/DETAILS.md); it stays as a harness.
+ *
+ * Reports go to bench/reports/local/ (gitignored) unless `--out <dir>` is given.
  *
  * `--repeats N` replays each (case, config) N times, repeat-major, so an early stop
  * leaves every case with the same number of repeats instead of the first few cases
@@ -64,7 +75,8 @@ export const DEFAULTS = {
   repeats: 1,
   resume: null,
   live: true,
-  outDir: 'bench/reports',
+  // Gitignored (bench/.gitignore). Committed reports are written with --out bench/reports.
+  outDir: 'bench/reports/local',
 };
 
 // ------------------------------------------------------------------- args
@@ -87,7 +99,7 @@ export function parseArgs(argv = []) {
       case '--cases': opts.casesDir = value(arg, argv[++i]); break;
       case '--out': opts.outDir = value(arg, argv[++i]); break;
       case '--model': opts.model = value(arg, argv[++i]); break;
-      case '--max-calls': opts.maxCalls = number(arg, argv[++i]); break;
+      case '--max-calls': opts.maxCalls = number(arg, argv[++i]); opts.maxCallsGiven = true; break;
       case '--timeout': opts.timeoutMs = number(arg, argv[++i]); break;
       case '--repeats': opts.repeats = number(arg, argv[++i]); break;
       case '--resume': opts.resume = value(arg, argv[++i]); break;
@@ -101,6 +113,11 @@ export function parseArgs(argv = []) {
     }
   }
   if (!opts.configs.length && !opts.agent) throw new Error('Give a config: --config <name>, compare with --a <name> --b <name>, or bring --agent <file.mjs>');
+  if (opts.agent) {
+    const mixed = [opts.configs.length && '--a/--b/--config', opts.casesDir !== DEFAULTS.casesDir && '--cases',
+      opts.headlineOnly && '--headline-only', opts.resume && '--resume'].filter(Boolean);
+    if (mixed.length) throw new Error(`--agent runs the per-wallet suite on its own and does not take ${mixed.join(', ')}. Compare desks with node bench/wallets.js --agent <file>.`);
+  }
   if (new Set(opts.configs).size !== opts.configs.length) throw new Error('Configs must be distinct');
   return opts;
 }
@@ -630,5 +647,16 @@ if (isMain) {
     console.error(`bench: ${err.message}`);
     process.exit(2);
   }
-  await runBench(opts);
+  // Not a top-level await: bench/wallets.js imports this module, so this module must
+  // finish evaluating before the dynamic import below can resolve.
+  (async () => {
+    if (opts.agent) {
+      // Your agent runs the per-wallet suite, not the withdrawn single-wallet one.
+      const { runAgentSuite } = await import('./wallets.js');
+      await runAgentSuite({ agentSpec: opts.agent, repeats: opts.repeats, maxCalls: opts.maxCallsGiven ? opts.maxCalls : null,
+        outDir: opts.outDir, timeoutMs: opts.timeoutMs });
+    } else {
+      await runBench(opts);
+    }
+  })().catch(err => { console.error(`bench: ${err.message}`); process.exitCode = 1; });
 }

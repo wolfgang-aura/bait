@@ -1,24 +1,23 @@
 /**
  * The Pitch Room front end.
  *
- * The roster is the front door. The Fomo cold open is a side proof at `/?view=fomo`.
+ * The roster is the front door: four Hyperliquid traders, each with a Nansen record.
  * Every wire the desk commits is drawn the moment the server's gate decides it, from
  * the shot's `wire` object; the page computes no gate result of its own.
  *
  * Five screens and one rule: nothing on screen is invented here. The cold open carries
- * only what /api/opener sends, the tiles carry only
+ * only the tiles carry only
  * what the server sends as hype, the truth screen carries only what the server sends
  * after the pick, and the evidence log prints an endpoint only when the server reports
  * a tool call that really happened. The desk's full reply lives in the transcript
  * drawer so the short bubble line stays auditable.
  *
- * `?state=opener|opener-reveal|roster|truth|shot2|final` renders a frozen state without starting a round or
+ * `?state=roster|shot2|transfer|reveal|final` renders a frozen state without starting a round or
  * making a model call, so a headless browser that cannot click can still capture every
  * screen. `&prospect=<id>` picks whose screen it renders. Documented in
  * prototype/DESIGN.md, Version D.
  */
 import { portraitSvg } from '/portraits.js';
-import { openerComparison } from '/opener-view.js';
 
 const $ = id => document.getElementById(id);
 const body = document.body;
@@ -28,10 +27,6 @@ const freeze = () => { reduced = true; document.documentElement.dataset.frozen =
 
 const el = {
   badge: $('evidence-badge'),
-  openerEyebrow: $('opener-eyebrow'), openerGrid: $('opener-grid'), openerHint: $('opener-hint'),
-  openerRanked: $('opener-ranked'), openerAfter: $('opener-after'), openerPunchline: $('opener-punchline'),
-  openerComparison: $('opener-comparison'),
-  openerPunchlineSub: $('opener-punchline-sub'), openerGo: $('opener-go'), openerFoot: $('opener-foot'),
   grid: $('roster-grid'), caller: $('caller'), callerLine: $('caller-line'), callerMeta: $('caller-meta'),
   truthScreen: $('truth-screen'), truthPortrait: $('truth-portrait'), truthName: $('truth-name'),
   truthHandle: $('truth-handle'), truthHype: $('truth-hype'), truthHypeCaption: $('truth-hype-caption'),
@@ -63,7 +58,7 @@ const el = {
 };
 
 const SCREENS = {
-  opener: 'opener-screen', roster: 'roster-screen',
+  roster: 'roster-screen',
   truth: 'truth-screen', playing: 'stage-screen', final: 'final-screen',
 };
 
@@ -71,9 +66,6 @@ const dollars = n => `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`;
 const text = (node, value) => { node.textContent = value ?? ''; };
 
 let roster = [];
-let opener = null;
-let openerFocus = 0;
-let openerPick = null;
 let focused = 0;
 let chosen = null;
 let dossier = null;
@@ -111,198 +103,6 @@ function setAccent(accent) {
   document.documentElement.style.setProperty('--accent', accent);
 }
 
-// ------------------------------------------------------- 0. the cold open
-
-/**
- * The pick screen. Seven cards carrying exactly what Fomo carries about these accounts:
- * the handle, the follower count and the profile headline PnL. Nothing is computed here
- * and nothing about the tape is drawn until the player has chosen.
- */
-/**
- * The seven are drawn with the roster's archetype busts, three of which they share.
- * None is a likeness; the accent is the one thing on the card that is the trader's.
- */
-const OPENER_CAST = {
-  unipcs: ['unipcs', '#8B7BFF'],
-  dumbcrayoneater: ['crayon', '#C6E24A'],
-  frankdegods: ['frank', '#E0C46C'],
-  orangie: ['orangie', '#FFA62B'],
-  theveeman: ['veeman', '#3FD3C4'],
-  econoar: ['econoar', '#4CD37A'],
-  notanicecat69: ['nicecat', '#FF5FA8'],
-};
-
-function renderOpener(data) {
-  opener = data;
-  text(el.openerEyebrow, [
-    `${data.pick.length} of the most followed traders on Fomo`,
-    data.scope,
-    `recorded ${data.capturedRange}`,
-  ].join('  ·  '));
-  text(el.openerFoot, [
-    `Follower count and headline PnL are the account's own Fomo profile figures.`,
-    `The ranking below them is recomputed from the recorded ${data.source} tape:`,
-    `realised PnL is the sum of the positions that were actually sold, and a tape with fewer`,
-    `than ${data.minSoldToRank} sold positions is labelled a thin sample rather than ranked.`,
-    `The busts are the game's archetypes, not likenesses.`,
-  ].join(' '));
-
-  el.openerGrid.replaceChildren();
-  // The bar under each follower count is that count against the biggest one on the
-  // board. It is the same number drawn twice, so a viewer sees the order at a glance
-  // without reading seven figures.
-  const widest = Math.max(...data.pick.map(t => t.followers));
-  data.pick.forEach((t, i) => {
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'card';
-    card.setAttribute('role', 'option');
-    card.setAttribute('aria-selected', 'false');
-    card.dataset.handle = t.handle;
-    const [portrait, accent] = OPENER_CAST[t.handle.toLowerCase()] ?? ['grinder', '#FFB020'];
-    card.style.setProperty('--accent', accent);
-    const art = document.createElement('span');
-    art.className = 'tile-art card-art';
-    art.innerHTML = portraitSvg(portrait, { mood: 'idle', accent, title: `@${t.handle}`, crop: 'face' });
-    const body = document.createElement('span');
-    body.className = 'card-body';
-    card.append(art, body);
-    for (const [cls, value, tag] of [
-      ['at', `@${t.handle}`, 'span'],
-      ['crowd', t.followersLabel, 'span'],
-      ['crowd-label', 'followers', 'span'],
-    ]) {
-      const node = document.createElement(tag);
-      node.className = cls;
-      node.textContent = value;
-      body.append(node);
-    }
-    const bar = document.createElement('span');
-    bar.className = 'crowd-bar';
-    const fill = document.createElement('i');
-    fill.style.width = `${(t.followers / widest) * 100}%`;
-    bar.append(fill);
-    body.append(bar);
-    for (const [cls, value] of [['head-pnl', t.headlineLabel], ['head-label', 'Fomo profile PnL']]) {
-      const node = document.createElement('span');
-      node.className = cls;
-      node.textContent = value;
-      body.append(node);
-    }
-    card.addEventListener('mouseenter', () => focusOpener(i));
-    card.addEventListener('focus', () => focusOpener(i));
-    card.addEventListener('click', () => { focusOpener(i); revealOpener(); });
-    el.openerGrid.append(card);
-  });
-  focusOpener(0);
-}
-
-function focusOpener(index) {
-  if (!opener?.pick.length) return;
-  openerFocus = (index + opener.pick.length) % opener.pick.length;
-  [...el.openerGrid.children].forEach((card, i) => {
-    card.setAttribute('aria-selected', String(i === openerFocus));
-    const bust = card.querySelector('.bust');
-    if (bust) bust.dataset.x = i === openerFocus ? 'confident' : 'idle';
-  });
-}
-
-/**
- * The flip. The same seven, reordered by realised PnL on sold positions, each carrying
- * one hard truth generated from its own tape and the source and capture date behind it.
- */
-function revealOpener() {
-  if (!opener || openerPick) return;
-  openerPick = opener.pick[openerFocus].handle;
-
-  // The line under the reveal answers the pick: the server sent one per handle, so a
-  // player who found the one tape that sells is told so instead of being lectured.
-  const said = opener.punchlines?.[openerPick];
-  text(el.openerPunchline, said?.lead ?? opener.punchline);
-  el.openerPunchline.classList.toggle('right', said?.id === 'found_it');
-  el.openerPunchlineSub.hidden = !said?.tail;
-  text(el.openerPunchlineSub, said?.tail);
-
-  el.openerGrid.hidden = true;
-  el.openerHint.hidden = true;
-  el.openerRanked.hidden = false;
-  el.openerAfter.hidden = false;
-  el.openerRanked.replaceChildren();
-
-  opener.reveal.forEach((t, i) => {
-    const row = document.createElement('li');
-    row.className = [
-      t.thinSample ? 'thin' : t.realised < 0 ? 'down' : 'up',
-      t.handle === openerPick ? 'mine' : '',
-    ].filter(Boolean).join(' ');
-    if (!reduced) row.style.animationDelay = `${i * 70}ms`;
-
-    const place = document.createElement('span');
-    place.className = 'place';
-    place.textContent = t.rankLabel;
-    if (t.best) {
-      const chip = document.createElement('b');
-      chip.className = 'best-chip';
-      chip.textContent = 'best on the tape';
-      place.append(document.createElement('br'), chip);
-    }
-    const who = document.createElement('span');
-    who.className = 'who-at';
-    who.textContent = `@${t.handle}`;
-    const crowd = document.createElement('em');
-    // The player's own choice is named beside the handle rather than stacked under the
-    // rank, so the row it lands on is no taller than the other six.
-    crowd.textContent = t.handle === openerPick
-      ? `${t.followersLabel} followers  ·  your pick`
-      : `${t.followersLabel} followers`;
-    who.append(crowd);
-
-    const got = document.createElement('span');
-    got.className = `got ${t.realised > 0 ? 'pos' : t.realised < 0 ? 'neg' : ''}`.trim();
-    got.textContent = t.realisedLabel;
-    const gotSub = document.createElement('em');
-    gotSub.textContent = `realised, ${t.sold} sold`;
-    got.append(gotSub);
-
-    const truth = document.createElement('span');
-    truth.className = 'truth';
-    const label = document.createElement('b');
-    label.textContent = t.hardTruth.label;
-    const line = document.createElement('span');
-    line.textContent = t.hardTruth.line;
-    truth.append(label, line);
-
-    // The supporting figures and the provenance, full width under the four columns, so
-    // every card names the source and the capture date its numbers came out of.
-    const meta = document.createElement('span');
-    meta.className = 'meta';
-    meta.textContent = [
-      `headline ${t.headlineLabel}`,
-      `paper ${t.paperLabel} across ${t.open} open`,
-      `${t.fullyClosed} of ${t.sold} fully closed`,
-      `win rate ${t.winRateLabel}`,
-      t.sourceLine,
-    ].join('  ·  ');
-
-    row.append(place, who, got, truth, meta);
-    el.openerRanked.append(row);
-  });
-
-  el.openerComparison.replaceChildren();
-  for (const trader of openerComparison(opener.reveal, openerPick)) {
-    const index = opener.reveal.indexOf(trader);
-    const card = el.openerRanked.children[index].cloneNode(true);
-    card.style.animationDelay = '0ms';
-    card.querySelector('.place').textContent = trader.handle === openerPick ? 'Your pick' : 'Highest realised';
-    el.openerComparison.append(card);
-  }
-
-  // The reveal is the whole point of the screen, so the page stays at the top of it
-  // rather than jumping to the button that has just taken focus.
-  el.openerGo.focus({ preventScroll: true });
-  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
-}
-
 // ------------------------------------------------------- 1. pick a hero
 
 function renderRoster(tiles) {
@@ -334,7 +134,13 @@ function renderRoster(tiles) {
     name.textContent = p.name;
     const sub = document.createElement('span');
     sub.textContent = p.handle ? `${p.handle} · ${p.short}` : p.short;
-    info.append(value, caption, name, sub);
+    // Both dates on the tile: where the brag was read, and when the record behind it was captured.
+    const dates = document.createElement('em');
+    dates.className = 'tile-dates';
+    dates.textContent = p.hype.hypeFrom === 'Nansen'
+      ? `Nansen ${p.hype.hypeDate}`
+      : `${p.hype.hypeFrom} ${p.hype.hypeDate} · Nansen ${p.hype.recordDate}`;
+    info.append(value, caption, name, sub, dates);
 
     tile.append(art, info);
     tile.addEventListener('mouseenter', () => focus(i));
@@ -360,7 +166,7 @@ function focus(index) {
     // The venue and the chain are the same word on Hyperliquid, so say it once.
     p.chain === p.venueLabel ? p.venueLabel : `${p.venueLabel} · ${p.chain}`,
     p.hype.source,
-    { capture: 'truth from a Nansen capture', fixture: 'truth is a fixture, not yet captured', recorded: 'truth from a recorded Fomo Radar response' }[p.truth_available],
+    { capture: 'truth from a Nansen capture', fixture: 'truth is a fixture, not yet captured' }[p.truth_available],
   ].join('  ·  '));
 }
 
@@ -1041,8 +847,6 @@ async function fixture(name, prospectId) {
   freeze();
   // Every fixture state except the cold open itself starts from the roster screen,
   // which is no longer the first screen on the page.
-  if (name === 'opener') { show('opener'); return; }
-  if (name === 'opener-reveal') { show('opener'); revealOpener(); return; }
   show('roster');
   const target = roster.find(p => p.id === prospectId) ?? roster[0];
   focus(roster.indexOf(target));
@@ -1135,8 +939,6 @@ async function fixture(name, prospectId) {
 
 // ------------------------------------------------------------------- boot
 
-let openerReadyPromise = Promise.resolve();
-
 async function boot() {
   el.line.addEventListener('input', updateCount);
   el.line.addEventListener('keydown', event => {
@@ -1144,14 +946,6 @@ async function boot() {
   });
   el.composer.addEventListener('submit', event => { event.preventDefault(); pitch(); });
   // The cold open takes the same keys as the roster, so the two screens behave alike.
-  el.openerGrid.addEventListener('keydown', event => {
-    const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 1, ArrowUp: -1 }[event.key];
-    if (step) { event.preventDefault(); focusOpener(openerFocus + step); el.openerGrid.children[openerFocus].focus(); return; }
-    if (event.key === 'Home') { event.preventDefault(); focusOpener(0); el.openerGrid.children[0].focus(); }
-    if (event.key === 'End') { event.preventDefault(); focusOpener(-1); el.openerGrid.children[openerFocus].focus(); }
-    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); revealOpener(); }
-  });
-  el.openerGo.addEventListener('click', () => { show('roster'); focus(focused); el.grid.focus(); });
   el.grid.addEventListener('keydown', event => {
     const step = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 4, ArrowUp: -4 }[event.key];
     if (step) { event.preventDefault(); focus(focused + step); el.grid.children[focused].focus(); return; }
@@ -1168,10 +962,8 @@ async function boot() {
     // The cold open is read-only and costs nothing, so it is fetched alongside the room
     // config rather than behind it. A failure here is fatal: the screen it draws is the
     // first thing a stranger sees and a blank one is worse than an error.
-    // The roster is the only fetch the front door waits on. The Fomo side proof loads on
-    // its own, after, and only matters at /?view=fomo; the ladder and board fill in behind.
+    // The roster is the only fetch the front door waits on; the ladder and board fill in behind.
     const config = await api('/api/room');
-    openerReadyPromise = api('/api/opener').then(renderOpener).catch(() => {});
     renderRoster(config.roster);
     boardEntries = config.leaderboard ?? [];
     renderBoard(boardEntries);
@@ -1181,7 +973,7 @@ async function boot() {
     // would buy a live read; once a round starts it names the round's own evidence.
     el.badge.textContent = config.evidence.liveReady ? 'live Nansen · read on pick' : 'frozen capture';
     el.badge.title = config.evidence.liveReady
-      ? 'Picking a Hyperliquid trader reads two Nansen summaries for them. The Fomo four play a recorded tape.'
+      ? 'Picking a trader reads two Nansen summaries for them.'
       : 'Live reads are off or used up. Every round plays the frozen capture.';
     if (config.health && config.health.ready === false) {
       fail(config.health.capReached ? 'Today’s live rounds are used up.' : 'The desk is offline right now.');
@@ -1194,9 +986,7 @@ async function boot() {
 
   const params = new URLSearchParams(window.location.search);
   const state = params.get('state');
-  if (state) { if (state.startsWith('opener')) await openerReadyPromise; await fixture(state, params.get('prospect')); return; }
-  // One front door: the roster. The Fomo cold open is a side proof behind a link.
-  if (params.get('view') === 'fomo') { await openerReadyPromise; show('opener'); el.openerGrid.focus(); return; }
+  if (state) { await fixture(state, params.get('prospect')); return; }
   show('roster');
   focus(focused);
 }

@@ -7,8 +7,12 @@
  *   }
  *
  *   npm run bench -- --agent examples/agents/check-then-decide.mjs --snapshot
- *   npm run bench -- --agent examples/agents/deepseek-own-prompt.mjs --a unarmed --repeats 1 --snapshot
+ *   npm run bench -- --agent examples/agents/deepseek-own-prompt.mjs --snapshot   # 103 DeepSeek calls
  *   npm run bench -- --agent http://localhost:8787/decide --snapshot
+ *
+ * The run is the per-wallet suite plus the gate-buys cases (bench/wallets.js
+ * runAgentSuite). It prints losing-wallet baited, control refused and gate-buys
+ * let-through, for your agent alone and behind the v3 gate.
  *
  * - `pitch`   this turn's attacker text, followed by the evidence lines it cites.
  * - `turn`    the same pitch, structured: { n, final, framing, claims }.
@@ -109,7 +113,21 @@ export function makeMeter({ onCharge = () => {}, ledgerFile = MODEL_LEDGER_FILE,
 }
 
 const money = n => `${n < 0 ? '-' : '+'}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
-const scrubber = alias => value => JSON.parse(JSON.stringify(value).replace(/0x[a-fA-F0-9]{40}/g, alias));
+/**
+ * Replace addresses with aliases: the pitched wallet is `alias`, any other address is
+ * "Other wallet N". Distinct aliases keep the one signal an agent needs to notice that
+ * evidence came back for someone else.
+ */
+const scrubber = (alias, own = '') => {
+  const others = new Map();
+  const name = address => {
+    const a = address.toLowerCase();
+    if (a === String(own).toLowerCase()) return alias;
+    if (!others.has(a)) others.set(a, `Other wallet ${others.size + 1}`);
+    return others.get(a);
+  };
+  return value => JSON.parse(JSON.stringify(value).replace(/0x[a-fA-F0-9]{40}/g, name));
+};
 
 function findingFor(result) {
   if (result?.error) return String(result.message ?? result.error);
@@ -121,10 +139,11 @@ function findingFor(result) {
 /**
  * Read-only evidence functions bound to one wallet's snapshot. Addresses are scrubbed
  * to the same alias the desk sees, so the agent argues about a trader, not a wallet.
+ * `executor` replaces the honest snapshot executor: bench/gate-buys.js serves attacked
+ * evidence paths through it. By default the frozen snapshot is served as the desk sees it.
  */
-export function makeAgentTools(data, { research, capturedAt, alias = 'Trader 014' } = {}) {
-  const executor = makeToolExecutor(data, { mode: 'armed' });
-  const scrub = scrubber(alias);
+export function makeAgentTools(data, { research, capturedAt, alias = 'Trader 014', executor = makeToolExecutor(data, { mode: 'armed' }) } = {}) {
+  const scrub = scrubber(alias, data.wallet);
   const run = async (executorName, endpoint, label, args) => {
     const result = scrub(await executor.execute(executorName, { wallet: data.wallet, ...args }));
     research.push({ label, source: result.source ?? `Nansen /api/v1/${endpoint}`, finding: findingFor(result), partial: false, capturedAt });
@@ -154,7 +173,7 @@ export function readAnswer(answer, slotUsd = SLOT) {
 }
 
 /** Replay one case's pitches against the agent and score the last with the referee. */
-export async function replayAgentCase({ testCase, agent, data, meter = null, timeoutMs = 45_000, log = () => {} }) {
+export async function replayAgentCase({ testCase, agent, data, executor = null, meter = null, timeoutMs = 45_000, log = () => {} }) {
   const capturedAt = data.retrieved_at;
   const history = [];
   const pitches = [];
@@ -164,7 +183,7 @@ export async function replayAgentCase({ testCase, agent, data, meter = null, tim
     const framing = p.text || 'Please consider this evidence for an allocation.';
     const pitch = claims.length ? `${framing}\n\nEvidence cited:\n${claims.map(c => `- ${c}`).join('\n')}` : framing;
     const research = [];
-    const tools = agent.kind === 'http' ? {} : makeAgentTools(data, { research, capturedAt });
+    const tools = agent.kind === 'http' ? {} : makeAgentTools(data, { research, capturedAt, ...(executor ? { executor } : {}) });
     const turn = { n: p.n, final: p.n === testCase.pitches.length, framing, claims: [...claims] };
     const answer = readAnswer(await withTimeout(
       Promise.resolve(agent.decide({ pitch, turn, history: structuredClone(history), tools, slotUsd: SLOT, meter })),

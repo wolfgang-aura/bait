@@ -27,7 +27,6 @@ import { PRODUCTION_GUARD_POLICY } from '../validation/guard.js';
 import { call as nansenCall } from '../validation/nansen.js';
 import { createEncounterService } from './encounter.js';
 import { createRoomService, createLeaderboardStore, loadRoster, findProspect, loadRecordedCons } from './room.js';
-import { loadOpener } from './opener.js';
 import { agentVerdictLine } from '../validation/guard.js';
 import { deepseekProvider } from '../validation/providers.js';
 import { encounterSnapshotPath } from './config.js';
@@ -253,6 +252,9 @@ export function buildProof({ results, live, stats }) {
       correction: `${REPO_BLOB}docs/DETAILS.md`,
     },
     baseline: results.baseline ?? null,
+    // Attacks on the evidence path the agent reads: the baseline agent versus v3, with the
+    // policy-difference row and the known miss published beside them, not dropped.
+    gateBuys: results.gateBuys ? { ...results.gateBuys, source: link(raw('gateBuys')) } : null,
     gateChecks: results.wallets?.gate ?? null,
     sources: (results.sources ?? []).map(link),
     nansen: {
@@ -478,18 +480,10 @@ const encounterService = createEncounterService({
  * The Pitch Room. One desk, so a shot costs at most a fact check plus three calls.
  *
  * The roster is loaded once at boot from files already in the repository: Nansen
- * captures where they exist, labelled fixtures where they do not, and recorded Fomo
- * Radar tapes for the Robinhood Chain handles. Loading it makes no network call and
+ * captures where they exist, labelled fixtures where they do not. Loading it makes no network call and
  * spends no Nansen credit.
  */
 const roomRoster = loadRoster();
-
-/**
- * The cold open in front of the roster. Seven recorded Fomo Radar responses read off
- * disk at boot: no network call, no model call and no Nansen credit, in any mode, which
- * is why the route that serves it is safe under HOSTED=1.
- */
-const opener = loadOpener();
 
 const roomService = createRoomService({
   roster: roomRoster,
@@ -628,15 +622,6 @@ const server = http.createServer(async (req, res) => {
     }
     if (url.pathname === '/api/health') {
       return send(200, health());
-    }
-
-    /**
-     * The cold open's figures. Read-only, deterministic, built once at boot from the
-     * recorded Fomo Radar responses in prototype/fixtures/fomo. It spends nothing and
-     * starts no round, so it is open in every mode including HOSTED=1.
-     */
-    if (url.pathname === '/api/opener' && req.method === 'GET') {
-      return send(200, opener);
     }
 
     /**

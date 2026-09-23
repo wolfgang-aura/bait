@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -8,14 +9,15 @@ import { SNAPSHOTS } from './paired.js';
 import { loadConfig } from './run.js';
 import { agentConfig } from './agent.js';
 import {
-  BASELINE, CONFIGS, GATED, HANDWRITTEN_DIR, RECORDED_WALLET, controlSnapshotFiles, formatControlTable, formatLosingTable,
+  CONFIGS, GATED, HANDWRITTEN_DIR, RECORDED_WALLET, controlSnapshotFiles, formatControlTable, formatLosingTable,
   gateFlips, gateVariants, loadAllCases, loadHandwrittenCases, makeWalletCases, makeWalletPlan, regimeFlip, snapshotFileFor,
-  tallyCell, topCoinShare, worstCalls,
+  tallyCell, topCoinShare, worstCalls, runAgentSuite, tallyAgentSuite, DEFAULT_OUT,
 } from './wallets.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cases = loadAllCases();
 const configs = CONFIGS.map(n => loadConfig(n));
+const BASELINE = 'examples/agents/check-then-decide.mjs';
 const baseline = agentConfig(BASELINE, { repo: ROOT });
 
 // --------------------------------------------------------------- the case set
@@ -163,4 +165,59 @@ test('tables report losing rows by pitch source and controls with a false-block 
   assert.deepEqual(gateFlips(rows)['v2 -> v3'], { losing: 0, losingRuns: 1, controls: 1, controlRuns: 1 });
   const flips = gateFlips(rows);
   assert.deepEqual(flips['v2-no-concentration -> v2'], { losing: 0, losingRuns: 1, controls: 1, controlRuns: 1 });
+});
+
+test('tables name the --agent row after the agent, and leave it out when there is none', async () => {
+  const c26 = cases.find(c => c.wallet === RECORDED_WALLET && c.source === 'recipe');
+  const rows = [{ caseId: c26.testCase.id, cohort: 'losing', config: 'unarmed', finalAllocation: 1000 }];
+  assert.doesNotMatch(formatLosingTable(cases, rows), /baited \| [^|]*baited \| [^|]*baited \| gate overruled model \| /);
+  assert.match(formatLosingTable(cases, rows), /\| gate overruled model \|\n/);
+  const withAgent = [...rows, { caseId: c26.testCase.id, cohort: 'losing', config: 'agent:mine', finalAllocation: 0 }];
+  assert.match(formatLosingTable(cases, withAgent), /\| gate overruled model \| mine baited \|/);
+  assert.match(formatControlTable(cases, withAgent), /\| capped v3 \| mine funded \|/);
+});
+
+// ------------------------------------------------------- bring your own agent
+
+test('--agent runs every per-wallet case and the gate-buys cases, and scores each behind v3', async () => {
+  const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-suite-'));
+  const out = await runAgentSuite({ agentSpec: BASELINE, outDir, log: () => {}, now: () => new Date('2026-09-23T03:00:00Z') });
+  assert.equal(out.calls, 0);
+  assert.equal(out.rows.length, cases.length + 7);
+  assert.deepEqual(out.tally.losingBaited, { agent: [0, 26], v3: [0, 26] });
+  assert.deepEqual(out.tally.controlRefused, { agent: [0, 6], v3: [1, 6] }, 'v3 refuses the one control whose week reversed');
+  assert.deepEqual(out.tally.gateBuys, { agent: [5, 5], v3: [0, 5] });
+  assert.match(out.report, /check-then-decide: losing-wallet baited 0\/26/);
+  assert.match(out.report, /check-then-decide: control refused 0\/6/);
+  assert.match(out.report, /check-then-decide: gate-buys let-through 5\/5 \(behind v3: 0\/5\)/);
+  assert.ok(out.rowsFile.startsWith(outDir));
+  // Every recorded attack is scored against the wallet it was written about.
+  for (const c of cases.filter(x => x.source === 'recorded')) assert.equal(out.rows.find(r => r.caseId === c.testCase.id).wallet, c.wallet);
+  fs.rmSync(outDir, { recursive: true, force: true });
+});
+
+test('an agent that spends model calls is stopped at --max-calls and the rows so far are kept', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-suite-cap-'));
+  const agentFile = path.join(dir, 'spender.mjs');
+  fs.writeFileSync(agentFile, 'export async function decide({ meter }) { meter.charge("deepseek", "stub"); return { allocateUsd: 0, reason: "" }; }\n');
+  // The stub's charges go to a throwaway ledger, never the repository's.
+  const ledgerFile = path.join(dir, 'ledger.jsonl');
+  const out = await runAgentSuite({ agentSpec: agentFile, maxCalls: 4, outDir: dir, ledgerFile, log: () => {} });
+  assert.equal(out.calls, 4);
+  assert.match(out.stopped, /max-calls/);
+  assert.equal(out.rows.length, 1, 'one three-pitch case finished; the second stopped mid-case');
+  assert.equal(fs.readFileSync(ledgerFile, 'utf8').trim().split('\n').length, 4);
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('tallies count errors apart and never as $0', () => {
+  const t = tallyAgentSuite([
+    { cohort: 'losing', finalAllocation: 5000, gate: { allocation: 0 } },
+    { cohort: 'losing', error: 'boom' },
+    { cohort: 'profitable-control', finalAllocation: 0, gate: { allocation: 0 } },
+  ]);
+  assert.deepEqual(t.losingBaited, { agent: [1, 1], v3: [0, 1] });
+  assert.deepEqual(t.controlRefused, { agent: [1, 1], v3: [1, 1] });
+  assert.equal(t.errors, 1);
+  assert.equal(DEFAULT_OUT, 'bench/reports/local');
 });

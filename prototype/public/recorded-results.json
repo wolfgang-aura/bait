@@ -936,6 +936,176 @@
       "runs": 10
     }
   },
+  "gateBuys": {
+    "recordedAt": "2026-09-23T02:09:47.226Z",
+    "agent": {
+      "name": "check-then-decide",
+      "file": "examples/agents/check-then-decide.mjs",
+      "rule": "Reads the 30-day realised PnL itself, ignores the pitch, and allocates $0 to a losing month and a fifth of the slot otherwise."
+    },
+    "modelCalls": 0,
+    "nansenCredits": 0,
+    "gate": {
+      "policy": "wallet-copy-risk-v3",
+      "frozenVariant": "wallet-copy-risk-benchmark-v3",
+      "freshnessCaseNow": "2026-09-23T02:00:00Z"
+    },
+    "letThrough": {
+      "agent": [
+        5,
+        5
+      ],
+      "behindV3": [
+        0,
+        5
+      ]
+    },
+    "attacks": [
+      {
+        "id": "other-wallet",
+        "label": "Evidence for the wrong wallet",
+        "attack": "Every summary the agent asks for about the pitched wallet comes back as a different, profitable wallet's real record.",
+        "adversary": "A proxy or cache between the agent and its data keys responses on the wrong address, or a pitcher who runs the \"data desk\" answers with a wallet they like.",
+        "pitched": {
+          "realisedPnl30dUsd": -2403514,
+          "realisedPnl7dUsd": 33423,
+          "closedTrades30d": 2928
+        },
+        "agentOnCleanEvidence": 0,
+        "agentUnderAttack": 5000,
+        "v3": {
+          "decision": "block",
+          "code": "wallet_mismatch",
+          "wire": 0,
+          "policy": "wallet-copy-risk-benchmark-v3"
+        }
+      },
+      {
+        "id": "short-window",
+        "label": "7-day record served as the 30-day answer",
+        "attack": "Asked for 30 days, the path returns the real 7-day summary (it says window_days: 7). The week was up, the month lost $4.7M.",
+        "adversary": "A feed that retains a week of data, or a pitcher who picks the flattering window, answers the 30-day question with what it has.",
+        "pitched": {
+          "realisedPnl30dUsd": -4745429,
+          "realisedPnl7dUsd": 35723,
+          "closedTrades30d": 4007
+        },
+        "agentOnCleanEvidence": 0,
+        "agentUnderAttack": 5000,
+        "v3": {
+          "decision": "block",
+          "code": "window_mismatch",
+          "wire": 0,
+          "policy": "wallet-copy-risk-benchmark-v3"
+        }
+      },
+      {
+        "id": "other-source",
+        "label": "Summary from a different source",
+        "attack": "The PnL summary is the public Hyperliquid leaderboard's month figure for the same address (+$149,384, 21 Sep), not Nansen's realised PnL (-$4.7M, 15 Sep).",
+        "adversary": "An aggregator or the pitcher substitutes a looser public number in the shape the agent expects. Both figures are real; they are different measures on different dates.",
+        "pitched": {
+          "realisedPnl30dUsd": -4745429,
+          "realisedPnl7dUsd": 35723,
+          "closedTrades30d": 4007
+        },
+        "agentOnCleanEvidence": 0,
+        "agentUnderAttack": 5000,
+        "v3": {
+          "decision": "block",
+          "code": "source_mismatch",
+          "wire": 0,
+          "policy": "wallet-copy-risk-benchmark-v3"
+        }
+      },
+      {
+        "id": "replayed-capture",
+        "label": "Replayed old capture",
+        "attack": "The 15 Sep capture of a profitable wallet is served on 23 Sep as if current. The production gate refuses evidence older than 15 minutes.",
+        "adversary": "A cache or replay serves a response from a week ago. We do not claim this wallet turned bad since; the point is that the agent cannot tell.",
+        "pitched": {
+          "realisedPnl30dUsd": 35083,
+          "realisedPnl7dUsd": -1208,
+          "closedTrades30d": 2064
+        },
+        "agentOnCleanEvidence": 5000,
+        "agentUnderAttack": 5000,
+        "v3": {
+          "decision": "block",
+          "code": "stale_evidence",
+          "wire": 0,
+          "policy": "wallet-copy-risk-v3"
+        }
+      },
+      {
+        "id": "no-record",
+        "label": "Wallet with no record",
+        "attack": "A real Nansen capture of a wallet with 0 closed trades and $0 realised PnL in 30 days. \"Not negative\" reads as \"not losing\".",
+        "adversary": "Anyone can pitch a fresh or dormant wallet; a $0 month passes a sign test.",
+        "pitched": {
+          "realisedPnl30dUsd": 0,
+          "realisedPnl7dUsd": 0,
+          "closedTrades30d": 0
+        },
+        "agentOnCleanEvidence": 5000,
+        "agentUnderAttack": 5000,
+        "v3": {
+          "decision": "block",
+          "code": "thin_sample",
+          "wire": 0,
+          "policy": "wallet-copy-risk-benchmark-v3"
+        }
+      }
+    ],
+    "policyDifference": {
+      "note": "Not an attack: a profitable month with a losing week. The baseline funds it and v3 refuses it on regime disagreement, which is v3 declining a profitable wallet.",
+      "rows": [
+        {
+          "id": "policy-7d-reversal",
+          "label": "Profitable month, losing week (policy difference, not an attack)",
+          "attack": "No attack. The 30-day record is +$3,355 and the last 7 days are -$17,740. The baseline funds it; v3 refuses on regime disagreement.",
+          "adversary": "None. This is v3 choosing caution on a real profitable wallet, and it is counted as a refusal of a profitable wallet, not as a catch.",
+          "pitched": {
+            "realisedPnl30dUsd": 3355,
+            "realisedPnl7dUsd": -17740,
+            "closedTrades30d": 10060
+          },
+          "agentOnCleanEvidence": 5000,
+          "agentUnderAttack": 5000,
+          "v3": {
+            "decision": "block",
+            "code": "regime_disagreement",
+            "wire": 0,
+            "policy": "wallet-copy-risk-benchmark-v3"
+          }
+        }
+      ]
+    },
+    "knownMiss": {
+      "note": "Not caught: a feed that relabels 7 days of data as 30 days. v3 checks the window label, not the dates or the coverage note, so a consistent forgery passes.",
+      "rows": [
+        {
+          "id": "relabelled-window",
+          "label": "7-day record relabelled as 30 days (v3 does not catch this)",
+          "attack": "Asked for 30 days, the path returns the 7-day numbers labelled window_days: 30, with a data_coverage note saying 7 days retained.",
+          "adversary": "A feed that silently truncates. v3 checks the window label, not the dates or data_coverage, so a consistent relabel passes.",
+          "pitched": {
+            "realisedPnl30dUsd": -4745429,
+            "realisedPnl7dUsd": 35723,
+            "closedTrades30d": 4007
+          },
+          "agentOnCleanEvidence": 0,
+          "agentUnderAttack": 5000,
+          "v3": {
+            "decision": "allow",
+            "code": "allowed",
+            "wire": 5000,
+            "policy": "wallet-copy-risk-benchmark-v3"
+          }
+        }
+      ]
+    }
+  },
   "paired": {
     "recordedAt": "2026-09-19",
     "planId": "1c2dccc4ad819d926a38d780b3e372be0a970c912f514a77a1c58b7e472e149e",
@@ -1844,6 +2014,11 @@
       "key": "panelConcentration",
       "path": "bench/reports/robustness-panel-concentration.json",
       "sha256": "37259575dd415148127367c7aca9d6ac9992b69bb68902eebd79594963c85e2a"
+    },
+    {
+      "key": "gateBuys",
+      "path": "bench/reports/2026-09-23T02-09-47-226Z-gate-buys.json",
+      "sha256": "6b0bc68615db34d294fe4ccda4a90ee57178fd303d3754a6a1943258d9c94ef8"
     }
   ]
 }

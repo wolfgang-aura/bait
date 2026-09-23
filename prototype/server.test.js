@@ -157,6 +157,9 @@ test('/api/proof serves every benchmark count with its raw source, and nothing p
     assert.deepEqual(body.perWallet.backedLoser.behindBaitGate[1], 78);
     assert.equal(body.perWallet.wallets.length, 12);
     assert.equal(body.baseline.name, 'check-then-decide', 'the baseline to beat is published');
+    assert.deepEqual(body.gateBuys.letThrough, { agent: [5, 5], behindV3: [0, 5] }, 'what the gate buys is served');
+    assert.equal(body.gateBuys.knownMiss.rows.length, 1, 'with the attack it does not catch');
+    assert.match(body.gateBuys.source.path, /^bench\/reports\/.+-gate-buys\.json$/);
     assert.match(body.perWallet.source.url, /^https:\/\/github\.com\/wolfgang-aura\/bait\/blob\/main\/bench\/reports\/.+-wallets\.jsonl$/);
     assert.match(body.perWallet.source.sha256, /^[a-f0-9]{64}$/);
     assert.equal('singleWalletSuite' in body, false, 'the superseded suite\'s counts are not served');
@@ -350,10 +353,11 @@ test('/api/assess reports copy risk from frozen evidence, and refuses the rest',
     assert.equal(body.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
     assert.ok(body.evidence.retrieved_at);
 
-    const byHandle = await s.call('/api/assess?handle=orangie');
+    const byHandle = await s.call('/api/assess?handle=BobbyBigSize');
     assert.equal(byHandle.status, 200);
-    assert.equal(byHandle.body.venue, 'fomo');
-    assert.equal(byHandle.body.evidence.source, 'Fomo Radar /api/trader (recorded)');
+    assert.equal(byHandle.body.venue, 'hyperliquid');
+    assert.equal((await s.call('/api/assess?handle=orangie')).status, 404, 'the Fomo tapes are gone');
+    assert.equal((await s.fetchText('/?view=fomo')).status, 200, 'the old link still loads the front door');
 
     const unknown = await s.call('/api/assess?address=0x0000000000000000000000000000000000000001');
     assert.equal(unknown.status, 404);

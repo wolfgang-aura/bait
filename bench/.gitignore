@@ -1,0 +1,3 @@
+# Reports from local runs: `npm run bench`, `node bench/wallets.js` and `node bench/gate-buys.js`
+# write here unless --out is given. Committed reports are written with --out bench/reports.
+reports/local/

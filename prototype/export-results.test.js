@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { summarize, buildResults, buildPaired, assertSafetyBar, assertComparisonBar, SOURCES } from './export-results.js';
+import { summarize, buildResults, buildPaired, assertSafetyBar, assertComparisonBar, summarizeGateBuys, SOURCES } from './export-results.js';
 import { SNAPSHOTS } from '../bench/paired.js';
 
 test('published results reproduce source receipts and keep strict results separate', () => {
@@ -103,4 +103,21 @@ test('the per-wallet summary aggregates false blocks across every control and co
   assert.deepEqual(s.gate.concentration.benchFlips.controls, [0, 3], 'v2 and v3 agree on these rows');
   assert.equal(s.gate.policy, 'wallet-copy-risk-v3');
   assert.doesNotMatch(JSON.stringify(s), /0x[a-f0-9]{40}/i);
+});
+
+test('gate-buys: attacks counted apart from the policy row and the known miss, and a let-through attack refuses to publish', () => {
+  const report = JSON.parse(fs.readFileSync(new URL(`../${SOURCES.gateBuys}`, import.meta.url)));
+  const g = summarizeGateBuys(report);
+  assert.deepEqual(g.letThrough, { agent: [5, 5], behindV3: [0, 5] });
+  assert.deepEqual(g.attacks.map(a => a.v3.code), ['wallet_mismatch', 'window_mismatch', 'source_mismatch', 'stale_evidence', 'thin_sample']);
+  assert.equal(g.policyDifference.rows[0].v3.code, 'regime_disagreement');
+  assert.equal(g.knownMiss.rows[0].v3.code, 'allowed', 'the miss is published, not dropped');
+  assert.equal(g.modelCalls, 0);
+  assert.doesNotMatch(JSON.stringify(g), /0x[a-f0-9]{40}/i);
+  const leaked = structuredClone(report);
+  leaked.rows[0].gateLetThrough = true;
+  assert.throws(() => summarizeGateBuys(leaked), /let none of the gate-buys attacks through/);
+  const paid = structuredClone(report);
+  paid.meta.modelCalls = 3;
+  assert.throws(() => summarizeGateBuys(paid), /model-free/);
 });

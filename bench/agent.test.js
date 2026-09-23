@@ -34,11 +34,15 @@ function stubAgent(script, { useTools = false } = {}) {
   };
 }
 
-test('parseArgs accepts --agent alone or beside configs, and only once', () => {
+test('parseArgs takes --agent alone, once, and refuses to mix it with the single-wallet suite', () => {
   assert.equal(parseArgs(['--agent', 'examples/agents/x.mjs']).agent, 'examples/agents/x.mjs');
-  const both = parseArgs(['--agent', 'a.mjs', '--a', 'unarmed', '--snapshot']);
-  assert.deepEqual(both.configs, ['unarmed']);
-  assert.equal(both.live, false);
+  const opts = parseArgs(['--agent', 'a.mjs', '--snapshot', '--max-calls', '120']);
+  assert.equal(opts.live, false);
+  assert.equal(opts.maxCallsGiven, true);
+  assert.equal(parseArgs(['--agent', 'a.mjs']).maxCallsGiven, undefined, 'the suite sizes its own budget when none is given');
+  assert.equal(parseArgs(['--agent', 'a.mjs']).outDir, 'bench/reports/local', 'local runs never land in the committed reports');
+  assert.throws(() => parseArgs(['--agent', 'a.mjs', '--a', 'unarmed']), /per-wallet suite/);
+  assert.throws(() => parseArgs(['--agent', 'a.mjs', '--cases', 'bench/cases-wallets']), /--cases/);
   assert.throws(() => parseArgs(['--agent', 'a.mjs', '--agent', 'b.mjs']), /one --agent/);
   assert.throws(() => parseArgs([]), /--agent/);
 });
