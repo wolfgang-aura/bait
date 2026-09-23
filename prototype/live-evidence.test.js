@@ -419,6 +419,10 @@ test('the worst-trade row always shows the value read off the live fills, with t
   const row = final.gate.checks.find(c => c.id === 'fills_worst_trade');
   assert.match(row.plain, /Worst single closed trade over (all 6 fills in the window|the newest 6 fills \(5 hours\)): -\$500/);
   assert.notEqual(row.result, 'fail', 'never blocks');
+  // The span of a partial tape comes from millisecond timestamps: never "NaN days".
+  const { spanText } = await import('./roster.js');
+  assert.equal(spanText(Date.parse('2026-09-23T05:59:00Z'), Date.parse('2026-09-23T07:26:00Z')), '1 hour 27 minutes');
+  assert.doesNotMatch(JSON.stringify(final.gate.checks), /NaN/);
   const dd = final.gate.checks.find(c => c.id === 'fills_drawdown');
   assert.doesNotMatch(dd.plain, /\d\.\d hours/, 'one span format');
   // A pasted wallet with no account value: the value is shown and the missing bar is said.
