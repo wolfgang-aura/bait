@@ -47,7 +47,7 @@ import { makeToolExecutor } from '../validation/tools.js';
 import { CapExceeded } from '../validation/providers.js';
 import { buildCase, checkPitchClaims, EncounterError } from './encounter.js';
 import { runDesk, SLOT } from './desk.js';
-import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect } from './roster.js';
+import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect, tapeRecency } from './roster.js';
 import { ROOM_LIVE_GUARD_POLICY, liveSnapshot, hhmm } from './live-evidence.js';
 
 export { SLOT, loadRoster, findProspect };
@@ -619,6 +619,9 @@ export function createRoomService({
       evidenceAt: decision.evidence.retrieved_at ?? null,
       live: !!p.snapshot?.live_read,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
+      // The fill tape's age against the summaries the gate read. The gate never reads the
+      // tape; the table says how old it is and that nothing on it decided this wire.
+      tape: (({ capturedAt, ageMs, maxAgeMs, stale }) => ({ capturedAt, ageMs, maxAgeMs, stale }))(tapeRecency(p.snapshot)),
     };
   }
 

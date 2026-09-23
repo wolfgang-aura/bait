@@ -106,6 +106,11 @@ function deskCard(key, side, finished) {
     </article>`;
 }
 
+/** The per-wallet table's name for a wallet with the same capture's 30-day figure. */
+function tableLabel(w) {
+  return results.wallets?.wallets?.find(row => Math.round(row.pnl30) === Math.round(w.pnl))?.label ?? null;
+}
+
 function renderRound() {
   const transcript = results.round.transcript;
   const pitch = transcript[step];
@@ -116,6 +121,12 @@ function renderRound() {
   $('b-claims').innerHTML = pitch.claims.map(claim => `<li>${escape(claim)}</li>`).join('');
   $('b-desks').innerHTML = Object.entries(pitch.desks).map(([key, side]) => deskCard(key, side, finished)).join('');
   $('b-loss').textContent = money(results.round.truth);
+  // Same wallet as a row of the per-wallet table, read on a different day: say which row
+  // and why the two figures differ, so the page never shows one wallet as two.
+  const same = results.round.sameWallet;
+  $('b-loss-note').textContent = same
+    ? `= ${same.label} in the per-wallet table, here read live ${day(same.roundReadAt)}. The table uses its ${day(same.tableCapturedAt)} capture, ${money(same.tablePnl30)}.`
+    : '';
   $('b-lesson').textContent = LESSONS[step];
   $('b-back').disabled = step === 0;
   $('b-next').textContent = finished ? 'See the score' : 'Next pitch';
@@ -245,7 +256,7 @@ function renderAudit() {
     `<tr><th scope="row">${policyName(id)}</th><td>${counts.losingFunded} of ${paired.summary.losingPairs}</td><td>${counts.profitableFunded} of ${paired.summary.profitablePairs}</td></tr>`).join('');
   $('b-paired-conclusion').textContent = `Mean final allocation to losing wallets changed by ${money(paired.summary.meanLosingAllocationChange)} under the strict policy, and the permissive policy already rejected four of the six losing wallets.`;
   $('b-wallet').innerHTML = paired.wallets.map((w, i) =>
-    `<option value="${escape(w.id)}">${w.cohort === 'profitable-control' ? 'Profitable control' : `Losing wallet ${i + 1}`}, ${money(w.pnl)} over 30 days</option>`).join('');
+    `<option value="${escape(w.id)}">${tableLabel(w) ?? (w.cohort === 'profitable-control' ? 'Profitable control' : `Losing wallet ${i + 1}`)}, ${money(w.pnl)} over 30 days</option>`).join('');
   renderPairedWallet();
 
   $('b-manifest').textContent = results.sources.map(s => `${s.path}${s.sha256 ? ` sha256 ${s.sha256}` : ''}`).join('\n');

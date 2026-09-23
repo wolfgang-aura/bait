@@ -458,6 +458,12 @@ body.shake { animation: shake 300ms cubic-bezier(.36, .07, .19, .97) both 700ms;
 .foot { margin: 22px 0 0; font: 400 10.5px/1.7 var(--mono); color: var(--faint); max-width: 90ch; }
 .foot code { color: var(--dim); }
 
+.setup-note {
+  margin: 0 0 14px; padding: 10px 14px; max-width: 760px;
+  background: #1B1012; border: 1px solid #5A2B2B; border-radius: var(--r);
+  font-size: 13px; line-height: 1.45; color: var(--text);
+}
+.setup-note[hidden] { display: none; }
 .boot-error {
   position: fixed; inset: auto 16px 16px 16px; max-width: 520px; margin: 0 auto;
   background: #1B1012; border: 1px solid #5A2B2B; border-radius: var(--r);

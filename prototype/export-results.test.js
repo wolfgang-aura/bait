@@ -124,3 +124,12 @@ test('gate-buys: attacks counted apart from the policy row and the known miss, a
   paid.meta.modelCalls = 3;
   assert.throws(() => summarizeGateBuys(paid), /model-free/);
 });
+
+test('the recorded round names its row in the per-wallet table, and every paired wallet matches a table row', () => {
+  const r = buildResults();
+  assert.equal(r.round.sameWallet.label, 'Losing wallet 5');
+  const row = r.wallets.wallets.find(w => w.label === r.round.sameWallet.label);
+  assert.equal(row.pnl30, r.round.sameWallet.tablePnl30);
+  assert.notEqual(Math.round(r.round.truth), Math.round(row.pnl30), 'different days, different figures: hence the label');
+  for (const w of r.paired.wallets) assert.ok(r.wallets.wallets.some(t => Math.round(t.pnl30) === Math.round(w.pnl)), w.id);
+});

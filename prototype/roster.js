@@ -216,8 +216,27 @@ function hyperliquidTruth(snapshot, availability) {
  * prospect trades on. Every field is a number already in the frozen record: nothing is
  * modelled, estimated or fetched.
  */
+/**
+ * How old the fill tape may be, measured against the summary read the decision stands on,
+ * before anything computed from it (drawdown, worst single trade) is kept out of the
+ * report's verdict. A live round reads the summaries live but its tape is the capture's;
+ * past a day the two describe different months, so the tape is shown but not used.
+ */
+export const TAPE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/** When the tape was captured and how far behind the summaries it is. No credits. */
+export function tapeRecency(s) {
+  const capturedAt = s?.fills_coverage?.from_capture ?? s?.retrieved_at ?? null;
+  const readAt = s?.retrieved_at ?? null;
+  const ageMs = Date.parse(readAt ?? '') - Date.parse(capturedAt ?? '');
+  const known = Number.isFinite(ageMs);
+  return { capturedAt, readAt, ageMs: known ? Math.max(0, ageMs) : null, maxAgeMs: TAPE_MAX_AGE_MS,
+    stale: !known || ageMs > TAPE_MAX_AGE_MS };
+}
+
 export function copyRiskEvidence(p) {
   const s = p.snapshot;
+  const tape = tapeRecency(s);
   const month = s.pnl_summary_30d;
   const fills = [...(s.trades_30d ?? [])].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
   const best = bestCoin(month);
@@ -227,6 +246,9 @@ export function copyRiskEvidence(p) {
   // so under a week of coverage they are not measured at all rather than footnoted.
   const covered = fills.length > 1 ? Date.parse(fills[fills.length - 1].timestamp) - Date.parse(fills[0].timestamp) : 0;
   const shortTape = !complete && fills.length > 0 && covered < 7 * 86_400_000;
+  // A tape too far behind the summaries is not measured at all: its drawdown and worst
+  // trade are a different stretch of time from the record the decision reads.
+  const unusable = shortTape || (fills.length > 0 && tape.stale);
   // A Hyperliquid capture holds the open perp book as an object of asset positions.
   const open = (s.open_positions?.asset_positions ?? []).map(row => row.position ?? {});
   const unrealised = open.reduce((a, o) => a + (Number(o.unrealized_pnl_usd) || 0), 0);
@@ -240,8 +262,10 @@ export function copyRiskEvidence(p) {
     headline_pnl_usd: null,
     closed_trade_count: month.closed_trade_count,
     win_rate: month.win_rate,
-    realised_series: shortTape ? [] : fills.map(f => Number(f.closed_pnl) || 0),
+    realised_series: unusable ? [] : fills.map(f => Number(f.closed_pnl) || 0),
     series_short: shortTape,
+    tape,
+    tape_stale: fills.length > 0 && tape.stale,
     series_complete: complete,
     series_fills: fills.length,
     // The stretch the held fills actually cover. A first page of 1,000 newest-first
@@ -253,7 +277,7 @@ export function copyRiskEvidence(p) {
     top_position_coin: book > 0 ? (open[notional.indexOf(Math.max(...notional))]?.token_symbol ?? null) : null,
     top_coin_pnl_share: month.realized_pnl_usd > 0 && best ? best.realized_pnl_usd / month.realized_pnl_usd : null,
     top_coin: best?.coin ?? null,
-    worst_trade_usd: fills.length && !shortTape ? Math.min(...fills.map(f => Number(f.closed_pnl) || 0)) : null,
+    worst_trade_usd: fills.length && !unusable ? Math.min(...fills.map(f => Number(f.closed_pnl) || 0)) : null,
     volume_usd: p.hypeRow?.month_volume_usd ?? null,
     account_value_usd: p.hypeRow?.account_value_usd ?? null,
     early_entry_share: null,
@@ -276,7 +300,12 @@ export function copyRiskReport(p) {
       + `(${minute(evidence.series_from)} to ${minute(evidence.series_to)} UTC)`
     : `the ${count(evidence.series_fills)} fills held in this capture`;
   const tooFew = `this capture holds only the newest ${count(evidence.series_fills)} of ${count(evidence.closed_trade_count)} closed trades, too few to measure them over ${count(evidence.window_days)} days`;
-  const coverage = short
+  const stale = evidence.tape_stale === true;
+  const days = evidence.tape.ageMs === null ? 'an unknown time' : `${(evidence.tape.ageMs / 86_400_000).toFixed(1)} days`;
+  const staleWhy = `the fill tape is the ${stamp(evidence.tape.capturedAt)} capture, ${days} older than the summaries this record reads (limit ${evidence.tape.maxAgeMs / 3_600_000} h), so nothing measured on it is used`;
+  const coverage = stale
+    ? `Drawdown and worst single trade are not assessed: ${staleWhy}.`
+    : short
     ? `Drawdown and worst single trade are not assessed: ${tooFew}.`
     : partial
     ? `Drawdown and worst single trade are measured over ${held}, not over the whole window.`
@@ -285,7 +314,8 @@ export function copyRiskReport(p) {
 
   return {
     ...report,
-    not_assessed: report.not_assessed.map(n => (short && ['max_drawdown', 'tail_loss'].includes(n.id) ? { ...n, reason: tooFew } : n)),
+    not_assessed: report.not_assessed.map(n => (['max_drawdown', 'tail_loss'].includes(n.id) && (stale || short) ? { ...n, reason: stale ? staleWhy : tooFew } : n)),
+    tape: { ...evidence.tape, stale: evidence.tape_stale === true },
     flags: report.flags.map(f => {
       if (!partial) return f;
       if (f.id === 'max_drawdown') {

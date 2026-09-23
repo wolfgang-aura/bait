@@ -115,6 +115,12 @@
     "allocations": {
       "unarmed": 13750,
       "armed": 2500
+    },
+    "sameWallet": {
+      "label": "Losing wallet 5",
+      "tablePnl30": -4745429.479047,
+      "tableCapturedAt": "2026-09-15T10:40:31Z",
+      "roundReadAt": "2026-09-18T14:10:27Z"
     }
   },
   "comparison": {

@@ -24,3 +24,15 @@ test('a spent local budget and a ready desk', () => {
   assert.equal(deskStatus({ ...base, remaining: 3 }).blocker, 'local_cap');
   assert.deepEqual(deskStatus(base), { ready: true, blocker: null, message: null });
 });
+
+test('the room shows a missing key inline in the page flow, never as the toast that covered the stats', async () => {
+  const fs = await import('node:fs');
+  const client = fs.readFileSync(new URL('./public/room.js', import.meta.url), 'utf8');
+  const html = fs.readFileSync(new URL('./public/room.html', import.meta.url), 'utf8');
+  const branch = client.slice(client.indexOf("blocker === 'no_key'"), client.indexOf('}', client.indexOf("blocker === 'no_key'")));
+  assert.match(branch, /el\.setupNote/);
+  assert.doesNotMatch(branch, /bootError/);
+  assert.match(html, /<p class="setup-note" id="setup-note" role="status" hidden><\/p>/);
+  // The inline note sits in the roster header, before the grid, not in a fixed layer.
+  assert.ok(html.indexOf('id="setup-note"') < html.indexOf('id="roster-grid"'));
+});

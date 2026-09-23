@@ -207,6 +207,10 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   assert.match(fresh.plain, /^Live Nansen read at \d\d:\d\d UTC, \d+ min old when this wire was checked \(limit 60 min\)\.$/);
   assert.equal(final.evidence.live, true);
   assert.match(final.agentLine, /^The live Nansen read found negative realised PnL/);
+  // The gate table states the tape's capture and age; a days-old tape is marked stale.
+  assert.ok(final.gate.tape.capturedAt, 'the tape capture date is on the gate result');
+  assert.equal(final.gate.tape.stale, final.gate.tape.ageMs > final.gate.tape.maxAgeMs);
+  assert.equal(final.gate.tape.stale, true, 'a live read today over a September capture tape is stale');
 });
 
 test('a live record that is no longer losing plays as a clean record: the gate clears or cautions', async () => {
@@ -250,4 +254,24 @@ test('a capped or failed read plays the frozen capture and says why; the Fomo fo
   assert.equal(r.evidence.code, 'daily_cap');
   assert.match(r.dossier.evidenceLabel, /^captured /);
   assert.equal(SHOTS, 3);
+});
+
+test('a fill tape more than a day behind the live summaries is shown but not used, and the report says why', async () => {
+  const { copyRiskReport, tapeRecency, TAPE_MAX_AGE_MS } = await import('./roster.js');
+  const legend = loadRoster().find(p => p.id === 'legend');
+  const frozen = copyRiskReport(legend);
+  assert.equal(frozen.tape.stale, false, 'a frozen capture reads its own tape: same moment, age 0');
+  assert.equal(tapeRecency(legend.snapshot).ageMs, 0);
+  const read = at => ({ live: true, fetchedAt: at, endpoint: 'profiler/perp-pnl-summary', windows: legend.snapshot.windows,
+    summary30: legend.snapshot.pnl_summary_30d, summary7: legend.snapshot.pnl_summary_7d });
+  const captured = Date.parse(legend.snapshot.retrieved_at);
+  const fresh = liveSnapshot(legend.snapshot, read(new Date(captured + TAPE_MAX_AGE_MS - 60_000).toISOString()));
+  assert.equal(tapeRecency(fresh).stale, false);
+  const stale = { ...legend, snapshot: liveSnapshot(legend.snapshot, read(new Date(captured + 2 * 86_400_000).toISOString())) };
+  const r = copyRiskReport(stale);
+  assert.equal(r.tape.stale, true);
+  assert.ok(Math.abs(r.tape.ageMs - 2 * 86_400_000) < 1000);
+  assert.ok(!r.flags.some(f => ['max_drawdown', 'tail_loss'].includes(f.id)), 'nothing measured on a stale tape reaches the verdict');
+  assert.match(r.coverage, /fill tape is the .* capture, 2\.0 days older than the summaries/);
+  assert.ok(r.not_assessed.filter(n => ['max_drawdown', 'tail_loss'].includes(n.id)).every(n => /nothing measured on it is used/.test(n.reason)));
 });

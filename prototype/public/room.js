@@ -54,7 +54,7 @@ const el = {
   finalHead: $('final-head'), finalSub: $('final-sub'), agentLine: $('agent-line'), finalReport: $('final-report'), finalGate: $('final-gate'),
   initials: $('initials'), submitScore: $('submit-score'), scoreStatus: $('score-status'),
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
-  transcript: $('transcript-body'), bootError: $('boot-error'),
+  transcript: $('transcript-body'), bootError: $('boot-error'), setupNote: $('setup-note'),
 };
 
 const SCREENS = {
@@ -324,6 +324,17 @@ function renderReport(host, risk) {
  * in the order the policy ran them. This is the part a judge reads to see that BAIT
  * is a rule set and not a single sign test.
  */
+/** What is live and what is captured: the fill tape's date and age, and whether it counted. */
+function tapeLine(gate) {
+  const t = gate.tape;
+  const day = String(t.capturedAt).slice(0, 10);
+  if (!gate.live) return `Summaries and fill tape: the same ${day} capture.`;
+  const age = t.ageMs === null ? 'age unknown' : `${(t.ageMs / 86_400_000).toFixed(1)} days older than the live read`;
+  return t.stale
+    ? `Summaries read live; fill tape from the ${day} capture, ${age}: shown, not used by any check.`
+    : `Summaries read live; fill tape from the ${day} capture, ${age}.`;
+}
+
 function renderGate(host, gate) {
   host.replaceChildren();
   const label = { pass: 'pass', fail: 'block', not_assessed: 'n/a', cap: 'cap' };
@@ -355,6 +366,7 @@ function renderGate(host, gate) {
   const windows = gate.shortWindowDays ? `${gate.shortWindowDays}-day and ${gate.windowDays}-day` : `${gate.windowDays}-day`;
   foot.textContent = [
     `Policy ${gate.policyId} · ${windows} · ${gate.source}${gate.live && gate.evidenceAt ? ` · live read ${String(gate.evidenceAt).slice(11, 16)} UTC` : ''} · ${gate.reason}`,
+    gate.tape && gate.tape.capturedAt ? tapeLine(gate) : '',
     skipped.length ? `Not decided by the gate (not reached after the block, or needs the fill tape the report below reads): ${skipped.map(c => c.id.replace(/_/g, ' ')).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
@@ -978,10 +990,12 @@ async function boot() {
     if (config.health && config.health.ready === false) {
       // The server names the stop: a missing key, the hosted daily cap or a spent local budget.
       fail(config.health.message ?? (config.health.capReached ? 'Today’s live rounds are used up.' : 'The desk cannot take a pitch right now.'));
-      // A missing key is a setup fact, so it is said at the front door, before a pick.
+      // A missing key is a setup fact, so it is said at the front door, before a pick,
+      // inline in the page flow. The fixed toast is for load failures only: over the
+      // front door it covered the stats block.
       if (config.health.blocker === 'no_key') {
-        el.bootError.hidden = false;
-        text(el.bootError, config.health.message);
+        el.setupNote.hidden = false;
+        text(el.setupNote, config.health.message);
       }
     }
   } catch (err) {

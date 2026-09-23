@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { makePlan, summarizePairs, SNAPSHOTS } from '../bench/paired.js';
 import { GATE_BUYS_CASES } from '../bench/gate-buys.js';
+import { ENCOUNTER_WALLET } from '../validation/quota.js';
 
 const root = new URL('../', import.meta.url);
 export const SOURCES = {
@@ -302,9 +303,18 @@ export function buildResults() {
   }));
   const comparisonRows = summarize(rows('comparison'));
   assertComparisonBar(comparisonRows);
+  // The recorded round is the encounter wallet read live on 18 Sep; the per-wallet table
+  // reads the same wallet's 15 Sep capture. Name the row so the two figures are linked.
+  const walletRows = rows('wallets');
+  const order = [...new Set(walletRows.map(r => r.wallet))];
+  const losingOrder = order.filter(w => walletRows.find(r => r.wallet === w).cohort === 'losing');
+  const roundIndex = losingOrder.indexOf(ENCOUNTER_WALLET);
+  if (roundIndex < 0) throw new Error('The recorded round wallet is not in the per-wallet table');
+  const roundSnap = snapshotFor(ENCOUNTER_WALLET);
   const result = {
     version: 1,
-    round,
+    round: { ...round, sameWallet: { label: `Losing wallet ${roundIndex + 1}`, tablePnl30: roundSnap.pnl_summary_30d.realized_pnl_usd,
+      tableCapturedAt: roundSnap.retrieved_at, roundReadAt: round.dataRetrievedAt } },
     comparison: { recordedAt: '2026-09-20T18:10:24Z', pnl: -4745429.479047, evidence: 'frozen',
       // The model is read off the run's own report header, so the page never names one
       // it did not test.
