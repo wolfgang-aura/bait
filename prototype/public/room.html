@@ -21,7 +21,7 @@
     <a class="mark" href="/" aria-label="BAIT, home"><span class="bait-badge">BAIT</span></a>
     <span class="mast-note">The Pitch Room</span>
     <nav>
-      <span class="badge" id="evidence-badge">frozen capture</span>
+      <span class="badge loading" id="evidence-badge">checking evidence…</span>
       <a href="/" aria-current="page">Play</a>
       <a href="/replay.html">Proof</a>
       <a href="https://github.com/wolfgang-aura/bait" rel="noopener">GitHub</a>
@@ -54,7 +54,7 @@
       <p class="caller-line" id="caller-line"></p>
       <p class="caller-meta" id="caller-meta"></p>
     </div>
-    <p class="hint">Arrow keys move. Enter picks. Every number on a tile is what that trader publishes about themselves. The full record stays hidden until BAIT checks it.</p>
+    <p class="hint"><span id="hint-keys">Arrow keys move. Enter picks.</span> Every number on a tile is what that trader publishes about themselves. The full record stays hidden until BAIT checks it.</p>
 
     <!-- Below the grid: the measured finding and the cons that really happened, so the
          first screen already says what the game proves. Both are read from files. -->
@@ -276,6 +276,7 @@
 <div class="checkpoint" id="checkpoint" hidden role="dialog" aria-modal="false" aria-labelledby="cp-title" aria-live="assertive">
   <div class="cp-card">
     <p class="cp-brand"><span class="bait-badge">BAIT</span><span>check · not part of PENNY</span></p>
+    <p class="cp-whatif" id="cp-whatif" hidden></p>
     <h2 class="cp-title" id="cp-title">BAIT intercepted the transfer</h2>
     <p class="cp-move" id="cp-move"></p>
     <p class="cp-read" id="cp-read"></p>

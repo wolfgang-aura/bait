@@ -15,8 +15,7 @@ Current evidence:
   at 11:12 UTC on 20 September, which meets the 1,000-call requirement. The local ledger
   holds 1,101 charged credits since 14 September.
 - Public repository: <https://github.com/wolfgang-aura/bait>
-- Playable build: <https://bait-wyqr.onrender.com/> (the dev branch is ahead of it until
-  the next push and Manual Deploy).
+- Playable build: <https://bait-wyqr.onrender.com/>, serving public main.
 - Recorded proof page: <https://wolfgang-aura.github.io/bait/>
 
 ## The recording

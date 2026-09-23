@@ -33,6 +33,11 @@ export const LIVE_ENDPOINT = 'profiler/perp-pnl-summary';
 export const LIVE_EVIDENCE_TTL_MS = 30 * 60_000;
 /** Two summaries per read. */
 export const LIVE_READ_CREDITS = 2 * creditCostFor(LIVE_ENDPOINT);
+/** The second live endpoint: the newest perp fills, newest first, one credit a page. */
+export const FILLS_ENDPOINT = 'profiler/perp-trades';
+export const FILLS_PER_PAGE = 1000;
+/** Pages of fills per read (round 11). 0 turns the fills read off. At most 3. */
+export const DEFAULT_FILL_PAGES = 1;
 export const DEFAULT_DAILY_CAP = 2000;
 export const DEFAULT_TOTAL_CAP = 18000;
 export const DEFAULT_READ_TIMEOUT_MS = 8_000;
@@ -109,7 +114,11 @@ export function createLiveEvidence({
   enabled, keyPresent, call = nansenCall, now = () => new Date(),
   ttlMs = LIVE_EVIDENCE_TTL_MS, dailyCap = DEFAULT_DAILY_CAP, totalCap = DEFAULT_TOTAL_CAP,
   timeoutMs = DEFAULT_READ_TIMEOUT_MS, stateFile = null, log = () => {}, rawDir = null,
+  fillPages = DEFAULT_FILL_PAGES, fillsTimeoutMs = 15_000,
 } = {}) {
+  const pages = Math.max(0, Math.min(3, Math.round(fillPages)));
+  // What one read can cost: two summaries and up to `pages` pages of fills.
+  const READ_CREDITS = LIVE_READ_CREDITS + pages * creditCostFor(FILLS_ENDPOINT);
   const cache = new Map();
   const inFlight = new Map();
   const counter = { day: utcDay(now()), creditsToday: 0, creditsTotal: 0, lastSuccessAt: null, lastFailure: null, reads: 0 };
@@ -139,10 +148,10 @@ export function createLiveEvidence({
     if (!enabled) return { code: 'disabled', reason: 'live reads are off on this host' };
     if (!keyPresent) return { code: 'no_key', reason: 'no Nansen key is configured' };
     rollDay();
-    if (counter.creditsToday + LIVE_READ_CREDITS > dailyCap) {
+    if (counter.creditsToday + READ_CREDITS > dailyCap) {
       return { code: 'daily_cap', reason: `today's live Nansen credits are used up (${counter.creditsToday} of ${dailyCap})` };
     }
-    if (counter.creditsTotal + LIVE_READ_CREDITS > totalCap) {
+    if (counter.creditsTotal + READ_CREDITS > totalCap) {
       return { code: 'total_cap', reason: `the live Nansen credit allowance is used up (${counter.creditsTotal} of ${totalCap})` };
     }
     return null;
@@ -163,7 +172,7 @@ export function createLiveEvidence({
     };
     // Reserve both credits before the first request leaves, so two rounds starting at
     // once cannot both squeeze under the cap. What did not reach Nansen is refunded.
-    charge(LIVE_READ_CREDITS);
+    charge(READ_CREDITS);
     let charged = 0;
     const responses = {};
     const one = async days => {
@@ -189,7 +198,35 @@ export function createLiveEvidence({
       const failed = settled.find(r => r.status === 'rejected');
       if (failed) throw failed.reason;
       const [summary30, summary7] = settled.map(r => r.value);
-      // Both responses reached us and were paid for: keep them, whatever they say.
+      // The second endpoint: the newest fills, live. A failure here keeps the summaries
+      // live and says the fills were not read; it never invents a fill.
+      let fills = null;
+      if (pages > 0 && !(noTrades(summary30) && noTrades(summary7))) {
+        const rows = [];
+        responses.fills = [];
+        try {
+          for (let page = 1; page <= pages; page++) {
+            const request = { address: wallet, date: windows['30d'], pagination: { page, per_page: FILLS_PER_PAGE }, order_by: [{ field: 'timestamp', direction: 'DESC' }] };
+            let res;
+            try {
+              res = await within(call(FILLS_ENDPOINT, request, { note: `room live fills page ${page}`, timeoutMs: fillsTimeoutMs }), fillsTimeoutMs);
+            } catch (err) { if (err?.status) charged += creditCostFor(FILLS_ENDPOINT); throw err; }
+            const hdr = res?.headers?.['x-nansen-credits-cost'];
+            const n = hdr === undefined || hdr === null || hdr === '' ? NaN : Number(hdr);
+            charged += Number.isFinite(n) ? n : creditCostFor(FILLS_ENDPOINT);
+            responses.fills.push({ request, status: res?.status ?? null, credits_cost_header: hdr ?? null, body: res?.data ?? null });
+            const got = Array.isArray(res?.data?.data) ? res.data.data : [];
+            rows.push(...got);
+            const last = res?.data?.pagination?.is_last_page === true || got.length < FILLS_PER_PAGE;
+            if (last) { fills = { rows, complete: true, pages: page }; break; }
+            if (page === pages) fills = { rows, complete: false, pages: page };
+          }
+        } catch (err) {
+          fills = { rows: [], complete: false, pages: 0, error: String(err?.message ?? err).slice(0, 160) };
+          log(`live fills failed wallet=${wallet.slice(0, 10)}: ${fills.error}`);
+        }
+      }
+      // Every response that reached us and was paid for is kept, whatever it says.
       let raw = null;
       try { raw = saveRawRead(rawDir, { wallet, fetchedAt: iso(at), windows, responses }); } catch (err) { log(`raw read save failed: ${err.message}`); }
       if (noTrades(summary30) && noTrades(summary7)) {
@@ -203,13 +240,14 @@ export function createLiveEvidence({
         summary30: { ...summary30, top5_coins: Array.isArray(summary30.top5_coins) ? summary30.top5_coins : [] },
         summary7: { ...summary7, top5_coins: Array.isArray(summary7.top5_coins) ? summary7.top5_coins : [] },
         endpoint: LIVE_ENDPOINT,
+        fills,
         raw,
       };
     } finally {
       // A timed-out read can still be billed after we stop waiting, so its reservation is
       // kept. Otherwise refund what never reached Nansen. Over-counting only makes the
       // cap stricter; under-counting could overspend it.
-      const refund = timedOut ? 0 : Math.max(0, LIVE_READ_CREDITS - charged);
+      const refund = timedOut ? 0 : Math.max(0, READ_CREDITS - charged);
       counter.creditsToday = Math.max(0, counter.creditsToday - refund);
       counter.creditsTotal = Math.max(0, counter.creditsTotal - refund);
     }
@@ -269,7 +307,8 @@ export function createLiveEvidence({
         key_present: !!keyPresent,
         available: stop === null,
         blocked_by: stop?.code ?? null,
-        credits_per_read: LIVE_READ_CREDITS,
+        credits_per_read: READ_CREDITS,
+        fill_pages_per_read: pages,
         credits_today: counter.creditsToday,
         credits_total: counter.creditsTotal,
         daily_cap: dailyCap,
@@ -292,7 +331,32 @@ export function createLiveEvidence({
  * capture's own dates, so no drawdown or trade figure is presented as part of the live read.
  */
 export function liveSnapshot(frozen, read) {
-  const fills = [...(frozen.trades_30d ?? [])].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+  const liveFills = read.fills && !read.fills.error;
+  const fills = [...(liveFills ? read.fills.rows : (frozen.trades_30d ?? []))].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+  if (liveFills) {
+    // Round 11: the fill tape is read live too. Its coverage is what the pages held.
+    return {
+      ...frozen,
+      schema_version: frozen.schema_version ?? 1, source: 'live', fixture: false,
+      wallet: String(frozen.wallet).toLowerCase(), retrieved_at: read.fetchedAt, windows: read.windows,
+      pnl_summary_30d: read.summary30, pnl_summary_7d: read.summary7,
+      trades_30d: fills,
+      trades_pagination: { per_page: FILLS_PER_PAGE, pages_fetched: read.fills.pages, is_complete: read.fills.complete },
+      fills_coverage: {
+        complete: read.fills.complete, fills: fills.length, live: true,
+        covers_from: read.fills.complete ? read.windows['30d'].from : (fills[0]?.timestamp ?? null),
+        covers_to: fills[fills.length - 1]?.timestamp ?? null,
+        covers_7d: read.fills.complete || (fills.length > 0 && Date.parse(fills[0].timestamp) <= Date.parse(read.windows['7d'].from)),
+        from_capture: read.fetchedAt,
+      },
+      live_read: {
+        fetched_at: read.fetchedAt, endpoint: read.endpoint, endpoints: [read.endpoint, FILLS_ENDPOINT],
+        credits: read.cached ? 0 : LIVE_READ_CREDITS + read.fills.pages, cached: !!read.cached,
+        fills_live: true, fills_from_capture: null,
+      },
+      reconciliation: { skipped: 'live fills are the newest pages only; not reconciled against the summary' },
+    };
+  }
   return {
     ...frozen,
     schema_version: frozen.schema_version ?? 1,

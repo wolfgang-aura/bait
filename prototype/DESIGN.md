@@ -1,6 +1,26 @@
 # BAIT public page, version B
 
-## Version J: PENNY, one BAIT badge, any wallet, 23 September 2026 (current)
+## Version K: the referee, the what-if, a live tape, 23 September 2026 (current)
+
+Changes on top of Version J, from an independent judge's re-grade.
+
+- **The referee is not PENNY.** A false figure is called by the referee, in amber mono under
+  the composer ("Referee: a figure in that line is not in the record. The line is spent."),
+  never inside PENNY's bubble; PENNY has no data and cannot know the record. Leaving the loss
+  out is the game: a line made only of offered fact cards can never be caught, and a
+  checker complaint that only names an omission is overruled. The checker's own reason,
+  which can quote the sealed loss, reaches the page only with the verdict.
+- **BAIT always shows its work.** When PENNY refuses on its own, the checkpoint still runs as
+  a labelled what-if: "PENNY said no on its own. Here's what the BAIT check would have done
+  with $5,000:", the same rows, and a stamp that reads "WOULD BE BLOCKED BY [BAIT]".
+- **No wrong badge.** The evidence badge reads "checking evidence…" (dashed, faint) until the
+  server says live or frozen; the caller line under the tiles names the same source.
+- **The tape is live.** A live round reads the newest perp fills (profiler/perp-trades, one
+  page) with the two summaries; drawdown and worst trade become rows in the checkpoint with
+  live values ("WATCH" in amber when the report flags them). The footer names every live read.
+- **Touch words on touch screens.** "Tap a trader to pick." replaces the arrow-key hint.
+
+## Version J: PENNY, one BAIT badge, any wallet, 23 September 2026
 
 Changes on top of Version I. Same viewports (1280 x 800, 375 x 812).
 

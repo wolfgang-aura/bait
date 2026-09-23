@@ -803,7 +803,7 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   /* On a phone the row keeps its verdict and name; the full sentence is on the reveal's
      gate table, one tap away. Every row and the stamp fit in one screen. */
   .cp-row span { display: none; }
-  .cp-stamp { margin-top: 12px; }
+  .cp-stamp { margin-top: 12px; font-size: 16px; white-space: nowrap; transform: rotate(-2deg); padding: 5px 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cp-card, .cp-row, .cp-stamp { animation: none; }
@@ -883,3 +883,12 @@ html[data-frozen="true"] .cp-card, html[data-frozen="true"] .cp-row, html[data-f
 }
 .agreed-card .agreed-line { border: 0; background: none; padding: 0; max-width: none; }
 .agreed-card .agreed-hint { margin-top: 10px; text-align: left; }
+
+/* ---------------------------------------------- round 11 */
+/* The referee is not PENNY: its own voice, outside the speech bubble. */
+#status.referee { color: var(--amber); font: 600 13px/1.4 var(--mono); border-left: 3px solid var(--amber); padding-left: 10px; }
+.badge.loading { color: var(--faint); border-style: dashed; }
+.cp-whatif { margin: 8px 0 0; font: 600 14px/1.4 var(--display); color: #8FBFF0; }
+.cp-whatif[hidden] { display: none; }
+.cp-row.caution { border-left-color: var(--amber); } .cp-row.caution b { color: var(--amber); }
+.flagline.check.caution b { color: var(--amber); }

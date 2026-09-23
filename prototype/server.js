@@ -34,6 +34,13 @@ import { encounterSnapshotPath } from './config.js';
 import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
 import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP, listRawReads, RAW_NAME } from './live-evidence.js';
 
+/**
+ * One address rule for every route: raw live reads (/api/live-reads and the files) carry the
+ * full address, because they are Nansen's responses byte for byte and a figure must be
+ * checkable against the wallet. Summary tables (/api/proof, the proof page) use 0x1234...abcd.
+ */
+export const ADDRESS_POLICY = 'Raw live reads carry the full wallet address (they are the Nansen responses as sent). Summary tables, /api/proof and the proof page use the short form 0x1234...abcd.';
+
 /** Every fresh live Nansen read's raw responses, saved as they arrived (bench/live-reads). */
 const LIVE_READS_DIR = process.env.HOSTED_LIVE_READS_DIR || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'bench', 'live-reads');
 import { keyFingerprint } from '../validation/nansen.js';
@@ -235,6 +242,7 @@ export function buildProof({ results, live, stats, liveReads = [] }) {
     product: 'BAIT: the check that runs before an AI agent moves money',
     // Raw live Nansen responses on this host and in the repository, each with its SHA-256.
     // Addresses stay out of the proof (a test holds it to that); the raw files carry them.
+    addressPolicy: ADDRESS_POLICY,
     liveReads: liveReads.map(({ wallet, ...r }) => ({ ...r, wallet: `${wallet.slice(0, 6)}...${wallet.slice(-4)}`, url: `/api/live-reads/${r.file}`, repo: REPO_BLOB + 'bench/live-reads/' + r.file })),
     model: w?.model ?? results.comparison.model ?? null,
     perWallet: w && {
@@ -286,6 +294,8 @@ const liveEvidence = createLiveEvidence({
   stateFile: ROOM_STUB ? null : (process.env.HOSTED_NANSEN_STATE_FILE || path.resolve(HERE, '..', 'scratch', 'room-nansen-credits.json')),
   log: (message) => console.log(`[room-live] ${message}`),
   rawDir: ROOM_STUB ? null : LIVE_READS_DIR,
+  // Pages of newest perp fills read live with the summaries (round 11), 1 credit a page.
+  fillPages: Number(process.env.HOSTED_LIVE_FILL_PAGES ?? 1),
 });
 
 // Seed the credit guard from the free account endpoint before anything can spend.
@@ -552,7 +562,8 @@ const server = http.createServer(async (req, res) => {
     // The raw live Nansen responses behind every live round, listed with their SHA-256,
     // so a figure on screen or in the video can be checked against the file.
     if (url.pathname === '/api/live-reads' && req.method === 'GET') {
-      return send(200, { dir: 'bench/live-reads', reads: listRawReads(LIVE_READS_DIR).map(r => ({ ...r, url: `/api/live-reads/${r.file}` })) });
+      return send(200, { dir: 'bench/live-reads', addressPolicy: ADDRESS_POLICY,
+        reads: listRawReads(LIVE_READS_DIR).map(r => ({ ...r, url: `/api/live-reads/${r.file}` })) });
     }
     if (url.pathname.startsWith('/api/live-reads/') && req.method === 'GET') {
       const name = url.pathname.slice('/api/live-reads/'.length);

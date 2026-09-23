@@ -54,6 +54,8 @@ later seven-day periods on seven development wallets, v3 blocked 63 (40 not losi
 after) and allowed 39 (6 capped; 9 lost money). The one-rule gate blocked 38: 15 made money the
 next week and 5 were flat ([panel receipt](bench/reports/robustness-panel-concentration.md)). A block
 acts on the evidence you have; it is not a forecast, and these wallets are not a held-out set.
+Every live round keeps Nansen's raw responses in `bench/live-reads/` and at `/api/live-reads`
+(full addresses there; summary tables use 0x1234...abcd).
 
 The relabelled-window row was found by our own bench: v3 checked the window label, not its
 dates, and funded it ([report](bench/reports/2026-09-23T02-09-47-226Z-gate-buys.md)). Fixed in

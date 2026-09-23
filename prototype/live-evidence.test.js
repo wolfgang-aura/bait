@@ -36,7 +36,7 @@ function mockNansen({ pnl30 = -2_000_000, pnl7 = 15_000, fail = null, hang = fal
 }
 
 const reader = (mock, extra = {}) => createLiveEvidence({
-  enabled: true, keyPresent: true, call: mock.call, now: () => T0, ...extra,
+  enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 0, ...extra,
 });
 
 // ----------------------------------------------------------------- the reader
@@ -345,4 +345,55 @@ test('a wallet with nothing flattering still gets the BAIT check and its verdict
   assert.equal(res.final.verdict, 'block');
   assert.equal(res.final.gate.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');
   assert.equal(res.final.gate.live, true);
+});
+
+// ------------------------------------------------------------ live fills (round 11)
+
+function fillsMock({ fills = 2 } = {}) {
+  const seen = [];
+  const call = async (pathName, body) => {
+    seen.push({ pathName, body });
+    if (pathName === 'profiler/perp-trades') {
+      const rows = Array.from({ length: fills }, (_, i) => ({ timestamp: new Date(Date.parse('2026-09-23T10:00:00Z') - i * 3_600_000).toISOString(),
+        token_symbol: 'BTC', side: 'Long', action: 'Close', closed_pnl: i % 2 ? -500 : 900, value_usd: 10_000 }));
+      return { status: 200, headers: { 'x-nansen-credits-cost': '1' }, data: { data: rows, pagination: { is_last_page: true } } };
+    }
+    const days = Math.round((Date.parse(body.date.to) - Date.parse(body.date.from)) / 86_400_000);
+    return { status: 200, headers: { 'x-nansen-credits-cost': '1' }, data: { data: {
+      realized_pnl_usd: days === 7 ? 3_000 : 12_000, win_rate: 0.6, closed_trade_count: 40, winning_trade_count: 24, fees_usd: 1, traded_coin_count: 1,
+      top5_coins: [{ coin: 'BTC', realized_pnl_usd: 12_000 }] } } };
+  };
+  return { call, seen };
+}
+
+test('a live read also reads the newest fills: second endpoint, charged, saved raw, and the tape is live, not stale', async () => {
+  const mock = fillsMock({ fills: 6 });
+  const rawDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-fills-'));
+  const live = createLiveEvidence({ enabled: true, keyPresent: true, call: mock.call, now: () => T0, fillPages: 1, rawDir });
+  const read = await live.read(GRINDER);
+  assert.equal(read.live, true);
+  assert.deepEqual(mock.seen.map(c => c.pathName).sort(), ['profiler/perp-pnl-summary', 'profiler/perp-pnl-summary', 'profiler/perp-trades']);
+  assert.equal(read.fills.rows.length, 6);
+  assert.equal(live.status().credits_today, 3, 'two summaries and one page of fills');
+  assert.equal(live.status().credits_per_read, 3);
+  const { listRawReads } = await import('./live-evidence.js');
+  const body = JSON.parse(fs.readFileSync(path.join(rawDir, listRawReads(rawDir)[0].file), 'utf8'));
+  assert.equal(body.responses.fills[0].body.data.length, 6, 'the fills are in the same raw file');
+  const grinder = loadRoster().find(p => p.id === 'grinder');
+  const snap = liveSnapshot(grinder.snapshot, read);
+  assert.equal(snap.live_read.fills_live, true);
+  assert.equal(snap.trades_30d.length, 6);
+  const { tapeRecency } = await import('./roster.js');
+  assert.equal(tapeRecency(snap).stale, false, 'a tape read in the same read is never stale');
+});
+
+test('a failed fills page keeps the summaries live and falls back to the capture tape, labelled', async () => {
+  const base = fillsMock();
+  const call = async (p, b, o) => { if (p === 'profiler/perp-trades') throw Object.assign(new Error('429'), { status: 429 }); return base.call(p, b, o); };
+  const live = createLiveEvidence({ enabled: true, keyPresent: true, call, now: () => T0, fillPages: 1 });
+  const read = await live.read(GRINDER);
+  assert.equal(read.live, true);
+  assert.match(read.fills.error, /429/);
+  const grinder = loadRoster().find(p => p.id === 'grinder');
+  assert.equal(liveSnapshot(grinder.snapshot, read).live_read.fills_live, undefined);
 });

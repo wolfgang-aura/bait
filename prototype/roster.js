@@ -182,7 +182,9 @@ function hyperliquidTruth(snapshot, availability) {
   // still the frozen capture's, and the scope says so with that capture's date.
   const live = snapshot.source === 'live' && snapshot.live_read;
   const coverage = live
-    ? `; summaries read live, ${fillsHeld ? `fill tape from the ${stamp(snapshot.live_read.fills_from_capture)} capture` : 'no fill tape held'}`
+    ? snapshot.live_read.fills_live
+      ? `; summaries and ${count(fillsHeld)} newest fills read live`
+      : `; summaries read live, ${fillsHeld ? `fill tape from the ${stamp(snapshot.live_read.fills_from_capture)} capture` : 'no fill tape held'}`
     : !partial ? ''
     : fillsHeld === 0
       ? ', summary only, this capture holds no individual fills'

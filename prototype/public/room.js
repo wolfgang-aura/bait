@@ -57,7 +57,7 @@ const el = {
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
   transcript: $('transcript-body'), bootError: $('boot-error'), setupNote: $('setup-note'),
   checkpoint: $('checkpoint'), cpMove: $('cp-move'), cpRead: $('cp-read'), cpRows: $('cp-rows'), cpStamp: $('cp-stamp'),
-  cpNext: $('cp-next'), agreed: $('agreed'), agreedLine: $('agreed-line'),
+  cpNext: $('cp-next'), cpWhatif: $('cp-whatif'), cpTitle: $('cp-title'), hintKeys: $('hint-keys'), agreed: $('agreed'), agreedLine: $('agreed-line'),
   anyWallet: $('any-wallet'), anyWalletInput: $('any-wallet-input'), anyWalletGo: $('any-wallet-go'), anyWalletNote: $('any-wallet-note'),
 };
 
@@ -79,6 +79,8 @@ let sending = false;
 let fundedShown = 0;
 let boardEntries = [];
 let wiresShown = 0;
+/** Whether a pick reads Nansen live; unknown (null) until the server has said. */
+let liveReady = null;
 
 // ------------------------------------------------------------- transport
 
@@ -170,7 +172,9 @@ function focus(index) {
     // The venue and the chain are the same word on Hyperliquid, so say it once.
     p.chain === p.venueLabel ? p.venueLabel : `${p.venueLabel} · ${p.chain}`,
     p.hype.source,
-    { capture: 'truth from a Nansen capture', fixture: 'truth is a fixture, not yet captured' }[p.truth_available],
+    liveReady === true ? 'truth read live from Nansen on pick'
+      : liveReady === false ? { capture: 'truth from a Nansen capture', fixture: 'truth is a fixture, not yet captured' }[p.truth_available]
+        : 'checking the evidence source…',
   ].join('  ·  '));
 }
 
@@ -234,6 +238,7 @@ async function pasteWallet(event) {
  * stamp says so; a round where PENNY refused on its own keeps the server's NO WIRE.
  */
 function stampLabel(final) {
+  if (final.whatIfOf) return `WOULD BE ${{ block: 'BLOCKED', capped: 'CAPPED', allow: 'CLEARED', caution: 'CLEARED' }[final.verdict] ?? 'CHECKED'} BY BAIT`;
   if (!final.peak && !final.checkOnly) return final.stamp;
   return { block: 'BLOCKED BY BAIT', capped: 'CAPPED BY BAIT', allow: 'CLEARED BY BAIT', caution: 'CLEARED BY BAIT · CAUTION' }[final.verdict] ?? final.stamp;
 }
@@ -279,6 +284,7 @@ const CHECK_NAME = {
   realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
   low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month',
   tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
+  fills_drawdown: 'Drawdown on the fill tape', fills_worst_trade: 'Worst single trade on the fill tape',
 };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -289,13 +295,19 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  */
 async function playCheckpoint(p, final, { hold = true } = {}) {
   const gate = final.gate ?? { checks: [] };
+  // A what-if (PENNY refused, so nothing reached BAIT) says so above the title.
+  el.cpWhatif.hidden = !final.whatIfOf;
+  text(el.cpWhatif, final.whatIfOf ? `PENNY said no on its own. Here's what the BAIT check would have done with ${final.peakLabel}:` : '');
+  text(el.cpTitle, final.whatIfOf ? 'What-if: the BAIT check on this record' : final.checkOnly ? 'The BAIT check on this record' : 'BAIT intercepted the transfer');
   const who = p?.short ?? chosen?.short ?? '';
-  text(el.cpMove, final.checkOnly
+  text(el.cpMove, final.whatIfOf
+    ? `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}, if it had agreed`
+    : final.checkOnly
     ? `No transfer to check: nothing flattering to pitch. The BAIT check read ${final.prospect?.name ?? p?.name ?? 'this wallet'} anyway.`
     : `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
   const at = String(gate.evidenceAt ?? '');
   text(el.cpRead, gate.live
-    ? `Reading Nansen perp-pnl-summary for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
+    ? `Reading Nansen perp-pnl-summary${gate.tape?.live ? ' and perp-trades' : ''} for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
     : `Reading Nansen perp-pnl-summary for ${who}: the ${at.slice(0, 10)} capture`);
   const raw = final.evidence?.raw;
   if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
@@ -303,8 +315,8 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   el.cpStamp.hidden = true;
   el.checkpoint.className = 'checkpoint';
   el.checkpoint.hidden = false;
-  const label = { pass: 'PASS', fail: 'BLOCK', not_assessed: 'N/A', cap: 'CAP' };
-  const rows = (gate.checks ?? []).filter(c => c.result !== 'not_assessed' || c.id === 'evidence_freshness');
+  const label = { pass: 'PASS', fail: 'BLOCK', not_assessed: 'N/A', cap: 'CAP', caution: 'WATCH' };
+  const rows = (gate.checks ?? []).filter(c => c.result !== 'not_assessed' || c.id === 'evidence_freshness' || c.id.startsWith('fills_'));
   if (!reduced) await sleep(450);
   for (const c of rows) {
     const li = document.createElement('li');
@@ -475,6 +487,7 @@ function tapeLine(gate) {
   const t = gate.tape;
   const day = String(t.capturedAt).slice(0, 10);
   if (!gate.live) return `Summaries and fill tape: the same ${day} capture.`;
+  if (t.live) return `Live: both perp-pnl-summary windows and the newest ${t.fills.toLocaleString('en-US')} perp fills, read ${String(t.capturedAt).slice(11, 16)} UTC.`;
   const age = t.ageMs === null ? 'age unknown' : `${(t.ageMs / 86_400_000).toFixed(1)} days older than the live read`;
   return t.stale
     ? `Summaries read live; fill tape from the ${day} capture, ${age}: shown, not used by any check.`
@@ -483,9 +496,9 @@ function tapeLine(gate) {
 
 function renderGate(host, gate) {
   host.replaceChildren();
-  const label = { pass: 'pass', fail: 'block', not_assessed: 'n/a', cap: 'cap' };
+  const label = { pass: 'pass', fail: 'block', not_assessed: 'n/a', cap: 'cap', caution: 'watch' };
   // Freshness is always shown: on a frozen snapshot it reads n/a rather than pass.
-  const shown = c => c.result !== 'not_assessed' || c.id === 'evidence_freshness';
+  const shown = c => c.result !== 'not_assessed' || c.id === 'evidence_freshness' || c.id.startsWith('fills_');
   // Rows the gate could not look at are named once in the footer, so the table stays
   // the length of what was actually decided.
   const skipped = (gate.checks ?? []).filter(c => !shown(c));
@@ -798,7 +811,9 @@ async function pitch() {
     el.line.value = '';
     updateCount();
     const last = state.shots[state.shots.length - 1];
-    if (last?.caught) text(el.status, 'Caught. That claim is not in the record.');
+    // The referee, not PENNY, calls a false figure. PENNY has no data, so it cannot.
+    if (last?.caught) { text(el.status, last.referee ?? 'Referee: a figure in that line is not in the record.'); el.status.classList.add('referee'); }
+    else el.status.classList.remove('referee');
     // Hold on the transfer card long enough to read it, then the reveal.
     // The agreed beat and the checkpoint are paced in finish(); no extra wait here.
     if (state.finished) setTimeout(finish, reduced ? 300 : last?.wire ? 600 : 1200);
@@ -845,6 +860,11 @@ function finish() {
       if (result.final.peak > 0) {
         await agreedBeat(shots.find(s => s.wire) ?? shots[shots.length - 1], result.final);
         await playCheckpoint(result.prospect, result.final);
+      } else if (result.final.whatIf) {
+        // PENNY refused on its own. BAIT still shows its work, as a labelled what-if.
+        const w = result.final.whatIf;
+        await playCheckpoint(result.prospect, { ...result.final, whatIfOf: true, gate: w.gate, verdict: w.verdict,
+          peakLabel: w.amountLabel, checkOnly: false });
       }
       showReveal(result.prospect, result.final);
       renderTranscript();
@@ -1116,6 +1136,26 @@ async function fixture(name, prospectId) {
     return;
   }
 
+  if (name === 'whatif') {
+    // PENNY refused on its own: the BAIT check as a labelled what-if on $5,000.
+    enterRoom();
+    renderState({ ...state, shotsUsed: 3, shotsLeft: 0, finished: true, funded: 0, suspicion: 70, mood: 'suspicious',
+      peak: 0, stopped: 0, shots: fixtureShots.slice(0, 1), line: 'Fixture reply: no.', checks: [] });
+    await playCheckpoint({ ...p, short: target.short }, { ...fixtureFinal, whatIfOf: true, peak: 0, peakLabel: dollars(5000) }, { hold: false });
+    return;
+  }
+
+  if (name === 'referee') {
+    // A false figure: the referee speaks under the composer, PENNY's bubble does not.
+    enterRoom();
+    renderState({ ...state, shotsUsed: 1, shotsLeft: 2, funded: 0, suspicion: 45, mood: 'caught', peak: 0, stopped: 0,
+      shots: [{ ...fixtureShots[0], caught: true, referee: 'Referee: a figure in that line is not in the record. The line is spent.' }],
+      line: 'Hm. Go on.', checks: [] });
+    text(el.status, 'Referee: a figure in that line is not in the record. The line is spent.');
+    el.status.classList.add('referee');
+    return;
+  }
+
   if (name === 'agreed') {
     // The beat between PENNY agreeing and BAIT stepping in, held for the capture.
     enterRoom();
@@ -1152,6 +1192,11 @@ async function fixture(name, prospectId) {
 async function boot() {
   el.line.addEventListener('input', updateCount);
   el.anyWallet.addEventListener('submit', pasteWallet);
+  el.anyWalletInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); el.anyWallet.requestSubmit(); }
+  });
+  // Touch screens get touch words.
+  if (matchMedia('(pointer: coarse)').matches) text(el.hintKeys, 'Tap a trader to pick.');
   el.line.addEventListener('keydown', event => {
     if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); el.composer.requestSubmit(); }
   });
@@ -1182,7 +1227,10 @@ async function boot() {
     renderLadder();
     // Before a pick nothing on screen is live. The badge says whether a Hyperliquid pick
     // would buy a live read; once a round starts it names the round's own evidence.
+    liveReady = !!config.evidence.liveReady;
+    el.badge.classList.remove('loading');
     el.badge.textContent = config.evidence.liveReady ? 'live Nansen · read on pick' : 'frozen capture';
+    focus(focused);
     el.badge.title = config.evidence.liveReady
       ? 'Picking a trader reads two Nansen summaries for them.'
       : 'Live reads are off or used up. Every round plays the frozen capture.';

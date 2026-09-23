@@ -662,3 +662,49 @@ test('a desk that asks for "the last 30 days" or "the recent record" has asked f
   ]) assert.match(line, ASKED_FOR_RECORD, line);
   assert.doesNotMatch('Great week. Funded.', ASKED_FOR_RECORD);
 });
+
+// ------------------------------------------------------------ round 11: omission is not a lie
+
+const OMISSION = { text: '{"valid":false,"reason":"The pitch omits that the full 30-day period realised -$30,120,116."}' };
+const desk = (committed, mood, line) => answer(committed, mood, line)[1];
+const rosterRoom = script => createRoomService({ roster: loadRoster(), provider: stubProvider(script), leaderboard: tempBoard(), health: () => ({ ready: true }) });
+
+test('pitching every offered fact card verbatim never produces Caught, even when the checker complains of omission', async () => {
+  for (const p of loadRoster()) {
+    const service = rosterRoom([OMISSION, desk(0, 'neutral', 'Go on.'), OMISSION, desk(0, 'neutral', 'More.'), OMISSION, desk(0, 'neutral', 'No.')]);
+    const round = await service.start({ prospect: p.id });
+    const cards = round.dossier.facts.map(f => f.insert);
+    let state = round;
+    for (let n = 0; n < 3 && !state.finished; n++) {
+      state = await pitch(service, round.id, n, cards.slice(n, n + 2).join(' ') || cards[0]);
+      const last = state.shots[state.shots.length - 1];
+      assert.equal(last.caught, false, `${p.id} line ${n + 1}: true card text was called a lie`);
+    }
+  }
+});
+
+test('an omission-only complaint is overruled on free text too; a false figure is still caught, by the referee', async () => {
+  const service = rosterRoom([OMISSION, desk(0, 'neutral', 'Go on.'),
+    { text: '{"valid":false,"reason":"The 7-day PnL is fabricated; the record says otherwise."}' }]);
+  const round = await service.start({ prospect: 'legend' });
+  const one = await pitch(service, round.id, 0, 'He is one of the most consistent traders on the board.');
+  assert.equal(one.shots[0].caught, false);
+  const two = await pitch(service, round.id, 1, 'He made +$9,999,999 last week.');
+  const shot = two.shots[1];
+  assert.equal(shot.caught, true);
+  assert.match(shot.referee, /^Referee: /);
+  assert.equal('refereeReason' in shot, false, 'the checker reason (which can quote the sealed loss) is not sent mid-round');
+  assert.doesNotMatch(JSON.stringify(two), /-\$30,120,116|fabricated/);
+  assert.doesNotMatch(two.line, /record|fabricat/i, 'PENNY does not speak the referee');
+});
+
+test('when PENNY refuses on its own, the final carries a labelled what-if BAIT check', async () => {
+  const service = rosterRoom([...answer(0, 'suspicious', 'No.'), ...answer(0, 'suspicious', 'No.'), ...answer(0, 'suspicious', 'No.')]);
+  const round = await service.start({ prospect: 'legend' });
+  for (let n = 0; n < 3; n++) await pitch(service, round.id, n, 'Back him.');
+  const { final } = await service.finish(round.id, {});
+  assert.equal(final.peak, 0);
+  assert.equal(final.whatIf.amount, 5000);
+  assert.equal(final.whatIf.verdict, 'block');
+  assert.ok(final.whatIf.gate.checks.length > 3);
+});

@@ -55,6 +55,8 @@ export const SHOTS = 3;
 export const MAX_PITCH = 200;
 export const START_SUSPICION = 30;
 export const DESK_NAME = 'PENNY';
+/** The what-if amount when PENNY refuses on its own: a fifth of the fund, the baseline agent's size. */
+export const WHAT_IF_USD = 5000;
 export const MOODS = ['neutral', 'intrigued', 'suspicious', 'sold', 'caught'];
 
 /**
@@ -523,7 +525,7 @@ export function createRoomService({
     const stub = { wallet: wallet.toLowerCase(), schema_version: 1, retrieved_at: read.fetchedAt, windows: read.windows,
       trades_30d: [], trades_pagination: { is_complete: true }, open_positions: null };
     const snap = liveSnapshot(stub, read);
-    const p = walletProspect(wallet, { ...snap, trades_pagination: { is_complete: true } });
+    const p = walletProspect(wallet, snap);
     return {
       p: { ...p, executor: makeToolExecutor(p.snapshot, { mode: 'armed' }), guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
       evidence: {
@@ -577,7 +579,7 @@ export function createRoomService({
     wiresBlocked: s.shots.filter(shot => shot.wire?.decision === 'block').length,
     mood: s.mood,
     line: s.line,
-    shots: over ? s.shots : s.shots.map(shot => ({ ...shot, checks: (shot.checks ?? []).map(sealCheck) })),
+    shots: over ? s.shots : s.shots.map(({ refereeReason, ...shot }) => ({ ...shot, full: shot.caught ? shot.referee : shot.full, checks: (shot.checks ?? []).map(sealCheck) })),
     checks: over ? s.checks : s.checks.map(sealCheck),
     phase: s.phase,
     busy: s.busy,
@@ -608,6 +610,30 @@ export function createRoomService({
     if (!read || check.id !== 'evidence_freshness' || check.result !== 'pass' || !Number.isFinite(check.value)) return check.plain;
     const limit = p.guardPolicy?.maxEvidenceAgeMs ? ` (limit ${Math.round(p.guardPolicy.maxEvidenceAgeMs / 60_000)} min)` : '';
     return `Live Nansen read at ${hhmm(read.fetched_at)}, ${Math.max(0, Math.round(check.value / 60_000))} min old when this wire was checked${limit}.`;
+  };
+
+/**
+   * Drawdown and worst single trade, from the fill tape. With a live tape (round 11) they
+   * are live values from profiler/perp-trades; a caution here moves the verdict to
+   * CAUTION through the report, it never overrides a block. With a stale or short tape
+   * they say why they were not measured.
+   */
+  const tapeRows = p => {
+    const risk = p.risk ?? {};
+    const liveTape = !!p.snapshot?.live_read?.fills_live;
+    const source = liveTape ? 'profiler/perp-trades, read live' : 'profiler/perp-trades, capture';
+    const row = (id, flagId, name) => {
+      const flag = (risk.flags ?? []).find(f => f.id === flagId);
+      const na = (risk.not_assessed ?? []).find(n => n.id === flagId);
+      if (flag) return { id, result: 'caution', plain: flag.plain, source };
+      if (na) return { id, result: 'not_assessed', plain: `Not assessed: ${na.reason}.`, source };
+      const dd = risk.max_drawdown;
+      const plain = id === 'fills_drawdown' && dd
+        ? `Worst peak-to-trough on ${dd.trades.toLocaleString('en-US')} fills: ${dollars(dd.max_drawdown_usd)}, under the ${Math.round((risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3) * 100)}% bar.`
+        : `${name} within the report's bar on the fills held.`;
+      return { id, result: 'pass', plain, source };
+    };
+    return [row('fills_drawdown', 'max_drawdown', 'Drawdown'), row('fills_worst_trade', 'tail_loss', 'Worst single trade')];
   };
 
   /** Which Nansen read each check stands on, printed beside it on the gate table. */
@@ -649,14 +675,20 @@ export function createRoomService({
       windowDays: decision.policy.window_days,
       shortWindowDays: decision.policy.short_window_days ?? null,
       policyId: decision.policy.id,
-      // The whole check table, so the final card can show why, not just whether.
-      checks: (decision.checks ?? []).map(c => ({ id: c.id, result: c.result, plain: freshnessPlain(p, c), source: CHECK_SOURCE[c.id] ?? null })),
+      // The whole check table, so the final card can show why, not just whether. The two
+      // fill-tape rows come last: measured on the fills, live when the tape was read live.
+      checks: [
+        ...(decision.checks ?? []).filter(c => !['tail_loss', 'max_drawdown'].includes(c.id))
+          .map(c => ({ id: c.id, result: c.result, plain: freshnessPlain(p, c), source: CHECK_SOURCE[c.id] ?? null })),
+        ...tapeRows(p),
+      ],
       evidenceAt: decision.evidence.retrieved_at ?? null,
       live: !!p.snapshot?.live_read,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
       // The fill tape's age against the summaries the gate read. The gate never reads the
       // tape; the table says how old it is and that nothing on it decided this wire.
-      tape: (({ capturedAt, ageMs, maxAgeMs, stale }) => ({ capturedAt, ageMs, maxAgeMs, stale }))(tapeRecency(p.snapshot)),
+      tape: { ...(({ capturedAt, ageMs, maxAgeMs, stale }) => ({ capturedAt, ageMs, maxAgeMs, stale }))(tapeRecency(p.snapshot)),
+        live: !!p.snapshot?.live_read?.fills_live, fills: p.snapshot?.trades_30d?.length ?? 0 },
     };
   }
 
@@ -945,6 +977,12 @@ export function createRoomService({
       const peakShot = s.shots.find(shot => !shot.caught && shot.allocation === peak && peak > 0) ?? null;
       const gate = await runGate(s.prospect, peak);
       const risk = s.prospect.risk;
+      // PENNY refused on its own, so no transfer reached BAIT. The player still sees what
+      // the BAIT check would have done, labelled as a what-if on a stated amount.
+      const whatIf = peak === 0 ? await (async () => {
+        const g = await runGate(s.prospect, WHAT_IF_USD);
+        return { amount: WHAT_IF_USD, amountLabel: dollars(WHAT_IF_USD), gate: g, verdict: verdictOf(g, risk) };
+      })() : null;
       const verdict = verdictOf(gate, risk);
       const executed = Math.round(gate.executed);
       const stopped = s.stopped;
@@ -968,6 +1006,7 @@ export function createRoomService({
         blocked: verdict === 'block',
         verdict,
         gate,
+        whatIf,
         risk,
         // On a live round a block was decided on the live read, so the sentence names it.
         // A caution still comes from the recorded tape's report, so that wording stays.
@@ -1016,10 +1055,15 @@ export function createRoomService({
     const before = s.suspicion;
     s.suspicion = clamp(s.suspicion + MOOD_SUSPICION.caught, 0, 100);
     s.mood = 'caught';
-    s.line = toLine(`That is not in the record. ${reason || ''}`);
+    // The referee speaks, not PENNY: PENNY has no data, so it cannot know the record. The
+    // checker's own reason can quote the sealed loss, so it is kept for the transcript
+    // after the round and never shown mid-round.
+    s.line = toLine('Hm. Go on.');
     const shot = {
       n: s.shots.length + 1, text, check: 'rejected', caught: true,
-      line: s.line, mood: 'caught', full: `Claim rejected: ${reason || 'the facts do not support this.'}`,
+      referee: 'Referee: a figure in that line is not in the record. The line is spent.',
+      refereeReason: reason || 'the facts do not support this.',
+      line: s.line, mood: 'caught', full: `Claim rejected by the referee: ${reason || 'the facts do not support this.'}`,
       allocation: s.funded, allocationPct: null, claimedAllocation: null,
       allocationAgrees: true, formatHonoured: true,
       suspicion: s.suspicion, suspicionBefore: before, checks: [], durationMs: Date.now() - started,

@@ -386,7 +386,7 @@ test('/api/assess reports copy risk from frozen evidence, and refuses the rest',
 const ROOM_STUB = fileURLToPath(new URL('./fixtures/room-nansen-stub.js', import.meta.url));
 
 test('/healthz reports the live-read caps and counters, and the key never reaches a log or a body', async () => {
-  const s = await startServer({ HOSTED_NANSEN_CREDITS_PER_DAY: '12', HOSTED_NANSEN_CREDITS_TOTAL: '99' });
+  const s = await startServer({ HOSTED_NANSEN_CREDITS_PER_DAY: '12', HOSTED_NANSEN_CREDITS_TOTAL: '99', HOSTED_LIVE_FILL_PAGES: '0' });
   try {
     const { body } = await s.call('/healthz');
     assert.equal(body.evidence, 'frozen');
@@ -437,7 +437,7 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
 test('hosted with NANSEN_LIVE=1: a Hyperliquid pick is live with its fetch time, a Fomo pick is not, and the cap holds', async () => {
   const s = await startServer({
     NANSEN_LIVE: '1', BAIT_TEST_STUBS: '1', ROOM_NANSEN_CALL_MODULE: ROOM_STUB,
-    HOSTED_NANSEN_CREDITS_PER_DAY: '3',
+    HOSTED_NANSEN_CREDITS_PER_DAY: '3', HOSTED_LIVE_FILL_PAGES: '0',
   });
   try {
     const config = await s.call('/api/room');
