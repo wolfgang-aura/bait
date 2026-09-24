@@ -10,6 +10,8 @@ agents allocate capital.
 
 1. **True facts.** Pitched losing traders with true facts only, the AI alone backed one in
    **63 of 78** runs, and **19 of 78** with Nansen tools. Behind BAIT: **0 of 78**.
+   On 24 wallets the project had never seen (12 of them losing, 3 runs each), the AI alone
+   backed a loser in **18 of 36** runs; behind BAIT, **0 of 36** ([HELDOUT.md](bench/HELDOUT.md)).
 2. **Faked evidence.** When the Nansen record the agent reads is faked in the data path
    (another wallet's record, the wrong window, relabelled dates, a stale capture, a doctored
    number), a simple 19-line PnL rule sent the money in **49 of 67** attacked paths. BAIT sent
