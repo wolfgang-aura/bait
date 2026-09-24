@@ -155,6 +155,21 @@
       ]
     }
   },
+  "secondModel": {
+    "model": "claude-sonnet-5",
+    "aiAlone": [
+      74,
+      78
+    ],
+    "behindBait": [
+      0,
+      78
+    ],
+    "gateStopped": [
+      74,
+      78
+    ]
+  },
   "cost": {
     "controls": {
       "decisions": 18,

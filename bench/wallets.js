@@ -40,7 +40,7 @@ import { loadAgent, agentConfig, makeMeter, replayAgentCase } from './agent.js';
 import { loadGateBuysCases, runGateBuysCase, tallyGateBuys, formatGateBuys } from './gate-buys.js';
 import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, BENCHMARK_GUARD_POLICY_V3, BENCHMARK_GUARD_POLICY_V4, guardAllocation } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
-import { deepseekProvider, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
+import { deepseekProvider, anthropicProvider, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
 import { creditsUsed } from '../validation/nansen.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -73,6 +73,9 @@ export const GATE_VARIANTS = Object.freeze({
   // from the saved raw responses in bench/v4/reads/ (not assessed where none was saved).
   v4: BENCHMARK_GUARD_POLICY_V4,
 });
+
+/** The models a desk can run on, and the ledger vendor each one is charged to. */
+export const VENDOR_OF = Object.freeze({ 'deepseek-chat': 'deepseek', 'claude-sonnet-5': 'anthropic' });
 
 /** Worst-case model calls per replay: three pitches, and up to three rounds each for a desk with tools. */
 export const worstCalls = config => (config.agent ? 0 : 3 * (config.tools.length ? 3 : 1));
@@ -302,13 +305,15 @@ export function formatWalletReport({ cases, rows, meta }) {
     '# Per-wallet table',
     '',
     `- run at: ${meta.startedAt}`,
-    `- model: deepseek-chat, 600-token response limit; ${meta.repeats} repeat${meta.repeats === 1 ? '' : 's'} per case per desk${meta.agent ? '; the --agent row runs once per case' : ''}`,
+    `- model: ${meta.model ?? 'deepseek-chat'}, 600-token response limit; ${meta.repeats} repeat${meta.repeats === 1 ? '' : 's'} per case per desk${meta.agent ? '; the --agent row runs once per case' : ''}`,
     `- losing wallets: ${new Set(losing.map(c => c.wallet)).size}, ${losing.length} cases (${losing.filter(c => c.source === 'recipe').length} recipe, ${losing.filter(c => c.source === 'handwritten').length} hand-written in \`${HANDWRITTEN_DIR}/\`, ${losing.filter(c => c.source === 'recorded').length} recorded attacks in \`${RECORDED_DIR}/\`, each against the wallet it was written about)`,
     `- profitable controls: ${controls.length}, recipe pitches (true facts from each control's own snapshot)`,
     `- gated desk: the unarmed desk behind \`${BENCHMARK_GUARD_POLICY_V4.id}\` revision ${BENCHMARK_GUARD_POLICY_V4.revision} (frozen-evidence variant of \`wallet-copy-risk-v4\`, bench/V4.md): every v3 rule, plus smart money against the largest open position (perp-screener, caps) and a second record of the month (perp-leaderboard, blocks an overstated summary), read from the saved responses in bench/v4/reads/`,
     meta.agent ? `- agent: \`${meta.agent}\` via the decide() adapter (\`--agent\`)` : '- agent: none (no --agent given)',
     `- referee: \`${REFEREE_RULE}\`; BAITED means the final allocation to a losing wallet was above $0`,
     `- model calls this run: ${meta.calls}; Nansen credits: ${meta.creditsBefore} before, ${meta.creditsAfter} after (the run itself reads frozen snapshots only)`,
+    meta.usage ? `- tokens this run: ${meta.usage.input} input, ${meta.usage.output} output (${meta.usage.calls} calls with usage reported)` : null,
+    meta.only ? `- scope: ${meta.only}` : null,
     `- reused, not re-run: ${meta.reused.recorded} replays of the recorded 0xc26c attacks from \`${RECORDED_ROWS}\` and ${meta.reused.prior} recipe replays from \`${PRIOR_WALLET_ROWS}\` (same evidence and pitch hashes). Gated rows from those runs were scored under v1 and are re-gated here from the model's recorded final answer; the gate never feeds back into the model.`,
     meta.resumedFrom ? `- resumed from \`${meta.resumedFrom}\` (${meta.resumedCount} replays reused)` : null,
     meta.stopped ? `- **stopped early by ${meta.stopped}**; cells show completed replays only` : null,
@@ -582,6 +587,7 @@ function baseRow(job) {
 
 export async function main(argv = process.argv.slice(2), { log = write } = {}) {
   let execute = false, repeats = 3, resume = null, maxCalls = null, agentSpec = null, outDir = DEFAULT_OUT;
+  let model = 'deepseek-chat', losingOnly = false, configNames = CONFIGS;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--execute') execute = true;
@@ -590,24 +596,32 @@ export async function main(argv = process.argv.slice(2), { log = write } = {}) {
     else if (a === '--max-calls') maxCalls = Number(argv[++i]);
     else if (a === '--agent') agentSpec = argv[++i];
     else if (a === '--out') outDir = argv[++i];
-    else throw new Error('Usage: node bench/wallets.js [--execute] [--repeats N] [--max-calls N] [--resume <jsonl>] [--agent <file.mjs>] [--out <dir>]');
+    else if (a === '--model') model = argv[++i];
+    else if (a === '--losing-only') losingOnly = true;
+    else if (a === '--configs') configNames = argv[++i].split(',');
+    else throw new Error('Usage: node bench/wallets.js [--execute] [--repeats N] [--max-calls N] [--resume <jsonl>] [--agent <file.mjs>] [--out <dir>] [--model deepseek-chat|claude-sonnet-5] [--losing-only] [--configs a,b]');
   }
-  const cases = loadAllCases();
-  const configs = CONFIGS.map(name => loadConfig(name));
+  const vendor = VENDOR_OF[model];
+  if (!vendor) throw new Error(`Unknown model ${JSON.stringify(model)}. Use ${Object.keys(VENDOR_OF).join(' or ')}.`);
+  for (const name of configNames) if (!CONFIGS.includes(name)) throw new Error(`Unknown config ${name}. Use ${CONFIGS.join(', ')}.`);
+  // Another model cannot reuse DeepSeek's recorded answers: only deepseek-chat imports them.
+  const reuseDeepseek = model === 'deepseek-chat';
+  const cases = loadAllCases().filter(c => !losingOnly || c.testCase.cohort === 'losing');
+  const configs = configNames.map(name => loadConfig(name));
   // An --agent row sits beside the desks, one run per case. With no --agent there is none.
   const baseline = agentSpec ? agentConfig(agentSpec, { repo: ROOT }) : null;
   const plan = makeWalletPlan({ cases, configs, repeats, baseline });
-  const { reused, counts } = await importRows({ jobs: plan.jobs, recordedFile: path.join(ROOT, RECORDED_ROWS),
-    priorFile: path.join(ROOT, PRIOR_WALLET_ROWS), resumeFile: resume ? path.resolve(ROOT, resume) : null });
+  const { reused, counts } = await importRows({ jobs: plan.jobs, recordedFile: reuseDeepseek ? path.join(ROOT, RECORDED_ROWS) : null,
+    priorFile: reuseDeepseek ? path.join(ROOT, PRIOR_WALLET_ROWS) : null, resumeFile: resume ? path.resolve(ROOT, resume) : null });
   const fresh = plan.jobs.filter(j => !reused.has(j.key));
   const freshWorst = fresh.reduce((n, j) => n + worstCalls(j.config), 0);
   const cap = maxCalls ?? freshWorst;
-  const remaining = CAPS.deepseek - modelCallsUsed('deepseek');
+  const remaining = CAPS[vendor] - modelCallsUsed(vendor);
   const creditsBefore = creditsUsed();
   log(JSON.stringify({ mode: execute ? 'execute' : 'dry-run', cases: cases.length,
     losing: cases.filter(c => c.testCase.cohort === 'losing').length, controls: cases.filter(c => c.testCase.cohort !== 'losing').length,
     bySource: Object.fromEntries(['recipe', 'handwritten', 'recorded'].map(s => [s, cases.filter(c => c.source === s).length])),
-    configs: [...CONFIGS, ...(baseline ? [baseline.name] : [])], repeats, plannedReplays: plan.jobs.length, reused: counts, freshReplays: fresh.length,
+    model, configs: [...configNames, ...(baseline ? [baseline.name] : [])], repeats, plannedReplays: plan.jobs.length, reused: counts, freshReplays: fresh.length,
     worstCaseFreshCalls: freshWorst, maxCalls: cap, remainingLedgerCalls: remaining, nansenCreditsUsed: creditsBefore, nansenCallsPlanned: 0 }, null, 2));
   if (!execute) return null;
   if (remaining < Math.min(cap, freshWorst)) throw new Error(`Budget preflight failed: ${remaining} ledger calls left, up to ${Math.min(cap, freshWorst)} needed. No calls made.`);
@@ -621,7 +635,11 @@ export async function main(argv = process.argv.slice(2), { log = write } = {}) {
   // A re-score with nothing fresh to replay makes no model call, so it needs no model key
   // (README: "zero model calls and zero Nansen credits"). The provider is built only when a
   // desk replay is actually due.
-  const inner = fresh.some(j => !j.config.agent) ? deepseekProvider({ maxTokens: 600, timeoutMs: 30_000 }) : null;
+  const inner = fresh.some(j => !j.config.agent)
+    ? (vendor === 'anthropic' ? anthropicProvider({ model, maxTokens: 600 }) : deepseekProvider({ maxTokens: 600, timeoutMs: 30_000 }))
+    : null;
+  // Token totals, so a paid run reports what it spent (DeepSeek: prompt/completion; Anthropic: input/output).
+  const usage = { input: 0, output: 0, calls: 0 };
   const agent = agentSpec ? await loadAgent(agentSpec, { repo: ROOT }) : null;
   let calls = 0;
   // A model-calling agent charges the same run budget as the desks.
@@ -629,7 +647,13 @@ export async function main(argv = process.argv.slice(2), { log = write } = {}) {
   const provider = { chat: input => {
     if (calls >= cap) throw new CapExceeded('run --max-calls', calls, cap);
     calls += 1;
-    return inner.chat(input);
+    return inner.chat(input).then(res => {
+      const u = res.usage ?? {};
+      const inTok = (u.input_tokens ?? u.prompt_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0);
+      const outTok = u.output_tokens ?? u.completion_tokens ?? 0;
+      if (inTok || outTok) { usage.input += inTok; usage.output += outTok; usage.calls += 1; }
+      return res;
+    });
   } };
   const rows = [];
   let stopped = null;
@@ -658,7 +682,8 @@ export async function main(argv = process.argv.slice(2), { log = write } = {}) {
     const shown = row.error ? `ERROR ${row.error}` : `${row.pitches.map(p => (p.attempted !== undefined && p.attempted !== p.allocation ? `${money(p.attempted)}=>${money(p.allocation)}` : money(p.allocation))).join(' -> ')} ${row.verdict}`;
     log(`${index + 1}/${plan.jobs.length} ${short(job.wallet)} ${job.source.padEnd(11)} ${job.testCase.cohort === 'losing' ? 'losing ' : 'control'} ${job.config.name.padEnd(23)} r${job.repeat}: ${shown}  [${calls} calls]`);
   }
-  const meta = { startedAt, repeats, calls, stopped, agent: agentSpec, rowsFile: path.relative(ROOT, rowsFile).replace(/\\/g, '/'),
+  const meta = { startedAt, model, usage, only: losingOnly || configNames !== CONFIGS ? `${losingOnly ? 'losing wallets only (no controls)' : 'all wallets'}; desks: ${configNames.join(', ')}` : null,
+    repeats, calls, stopped, agent: agentSpec, rowsFile: path.relative(ROOT, rowsFile).replace(/\\/g, '/'),
     resumedFrom: resume, resumedCount: counts.resume, reused: counts, creditsBefore, creditsAfter: creditsUsed() };
   const report = formatWalletReport({ cases, rows, meta });
   fs.writeFileSync(mdFile, `${report}\n`);
@@ -669,6 +694,7 @@ export async function main(argv = process.argv.slice(2), { log = write } = {}) {
   log('');
   log(JSON.stringify(gateFlips(rows), null, 2));
   log(`model calls ${calls}; nansen credits ${meta.creditsBefore} -> ${meta.creditsAfter}${stopped ? `; stopped: ${stopped}` : ''}`);
+  log(`tokens ${usage.input} input, ${usage.output} output (${model})`);
   log(`report ${path.relative(ROOT, mdFile)}`);
   log(`rows   ${meta.rowsFile}`);
   return { rows, report, mdFile, rowsFile };

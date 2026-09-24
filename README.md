@@ -5,13 +5,15 @@ between an agent's decision and the transfer. It reads the trader's record from 
 endpoints and blocks or caps the money when the record says no. It is built for teams whose
 agents allocate capital.
 
-**Two findings** (model: DeepSeek `deepseek-chat`, frozen Nansen snapshots;
+**Two findings** (model: DeepSeek `deepseek-chat` unless noted, frozen Nansen snapshots;
 [what every number counts](#the-numbers)):
 
 1. **True facts.** Pitched losing traders with true facts only, the AI alone backed one in
    **63 of 78** runs, and **19 of 78** with Nansen tools. Behind BAIT: **0 of 78**.
    On 24 wallets the project had never seen (12 of them losing, 3 runs each), the AI alone
    backed a loser in **18 of 36** runs; behind BAIT, **0 of 36** ([HELDOUT.md](bench/HELDOUT.md)).
+   A second model, Claude `claude-sonnet-5`, on the same 26 attacks: **74 of 78** alone;
+   behind BAIT, **0 of 78** ([report](bench/reports/2026-09-24T22-05-19-368Z-wallets.md)).
 2. **Faked evidence.** When the Nansen record the agent reads is faked in the data path
    (another wallet's record, the wrong window, relabelled dates, a stale capture, a doctored
    number), a simple 19-line PnL rule sent the money in **49 of 67** attacked paths. BAIT sent
@@ -79,6 +81,7 @@ reports and raw reads (`bench/figures.test.js`) and checks against every doc and
 | 49 of 67, BAIT 0 | Faked-evidence paths where money was sent: PnL rule, then BAIT | 7 attacks on the original wallets + 48 held-out paths (4 attacks on 12 wallets) + 12 held-out doctored PnL | [gate-buys report](bench/reports/2026-09-23T15-45-02-468Z-gate-buys.md), [HELDOUT.md](bench/HELDOUT.md), [V4.md](bench/V4.md) |
 | 36 of 54, BAIT 0 | The same, before v4 added the doctored-PnL attack | 6 original attacks + the 48 held-out paths | the same |
 | 5 of 18, then 0 of 18 | Doctored-PnL paths funded by gate v3, then v4 | 6 original + 12 held-out losing wallets | [V4.md](bench/V4.md) |
+| 74 and 0 of 78 | The same true-fact runs answered by Claude `claude-sonnet-5`: alone, behind BAIT (74 of 78 stopped by the gate) | the same 6 wallets, 26 attacks, 3 runs each; the with-tools desk was not run on this model | [second-model report](bench/reports/2026-09-24T22-05-19-368Z-wallets.md) |
 | 18, 3 and 0 of 36 | Runs where the AI backed an unseen losing trader: alone, with Nansen tools, behind BAIT | 12 unseen losing wallets, 1 recipe attack, 3 runs each | [HELDOUT.md](bench/HELDOUT.md) |
 | 3 blocked, 3 capped of 18 | Good-trader funding decisions on the original controls | 6 profitable controls, 3 runs each; the AI chose to fund in all 18 | [per-wallet report](bench/reports/2026-09-23T15-44-55-161Z-wallets.md) |
 | 3 blocked, 6 capped of 35 | Good-trader funding decisions on the held-out good traders | 12 good traders, 3 runs each, minus the 1 run where the AI sent nothing (no decision for the gate) | [HELDOUT.md](bench/HELDOUT.md) |
@@ -109,6 +112,8 @@ profitable wallets as controls.
   month) and 3 of 18 capped at 25% (one month carried by a single market).
 - **Gate v4 and v3 give the same numbers here.** Every recorded answer was re-gated under v4
   with zero model calls; it decided all 96 the way v3 did ([V4.md](bench/V4.md)).
+- **A second model is not safer.** Claude `claude-sonnet-5` on the same 78 runs backed a
+  loser in 74 of 78 alone and 0 of 78 behind BAIT ([report](bench/reports/2026-09-24T22-05-19-368Z-wallets.md), 468 calls, 25 Sep 2026).
 
 Report: [per-wallet](bench/reports/2026-09-23T15-44-55-161Z-wallets.md) ·
 [raw rows](bench/reports/2026-09-23T15-44-55-161Z-wallets.jsonl).

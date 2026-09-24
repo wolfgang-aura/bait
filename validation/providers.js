@@ -47,7 +47,9 @@ export const MAX_TOKENS = 1024;
 // was "go free on the DeepSeek calls": it is the cheap model, it is the only model the
 // player flow uses, and a playtest of one round costs up to twelve calls. Anthropic is
 // deliberately untouched, so the expensive vendor still stops at 98.
-export const CAPS = { anthropic: 98, deepseek: 5000 };
+// Anthropic 98 -> 580 on 25 Sep 2026 for one second-model run (claude-sonnet-5, AI alone
+// and behind the gate, 468 calls, about $1.6), founder-authorized.
+export const CAPS = { anthropic: 580, deepseek: 5000 };
 
 export class CapExceeded extends Error {
   constructor(vendor, used, cap) {
