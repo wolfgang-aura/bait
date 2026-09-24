@@ -18,6 +18,8 @@ agents allocate capital.
 **The cost.** 38 of 53 good-trader transfers went through in full; 9 were capped at 25% and 6
 were blocked.
 
+**Demo video (60 s, no narration needed):** <https://x.com/WolfGanG_Aura/status/2102859321969442856>
+
 **Play it live:** <https://bait-wyqr.onrender.com/> · Recorded proof:
 <https://wolfgang-aura.github.io/bait/>
 
