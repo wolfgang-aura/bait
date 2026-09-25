@@ -20,6 +20,7 @@ import {
   rejectionRuling, withTileExtras, rosterFacts,
 } from './room.js';
 import { refreshProspect } from './roster.js';
+import { ledgerOf } from './referee.js';
 import { frozenSnapshot } from './frozen-read.js';
 
 const saved = name => fileURLToPath(new URL(`../bench/live-reads/${name}`, import.meta.url));
@@ -557,4 +558,17 @@ test("final judge: the model's strike reason hides every sealed figure ($0 and 0
 test('final judge: the transcript has no raw state name ("mood caught")', () => {
   const js = fs.readFileSync(new URL('./public/room.js', import.meta.url), 'utf8');
   assert.doesNotMatch(js, /`mood \$\{shot\.mood\}`/);
+});
+
+test("final check: a no-loss claim about the tile's shown 100% week stands when the live week has losses; with no shown figure it strikes", async () => {
+  const { dossier, data, others } = await setup('grinder:live');
+  const live = { ...data, pnl_summary_7d: { ...(data.pnl_summary_7d ?? {}), win_rate: 0.9 } };
+  const facts = ledgerOf(dossier, live);
+  const tile = facts.find(f => f.origin === 'tile' && f.kind === 'money');
+  const hundred = facts.some(f => f.visible && f.kind === 'pct' && f.measure === 'win rate' && f.value === 100);
+  assert.ok(tile && hundred, 'the tile shows a figure and a 100% win rate');
+  const fig = `$${Math.round(Math.abs(tile.value) / 1000)}k`;
+  assert.equal(attributionStrike(`About ${fig} in the week to 15 Sep, per Nansen. Every trade green.`, dossier, live, { others }), null);
+  assert.equal(attributionStrike('Every trade green this week.', dossier, live, { others }),
+    spent("the line claims no losses, but Nansen's 7-day win rate is below 100%: trades were lost."));
 });

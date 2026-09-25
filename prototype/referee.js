@@ -615,10 +615,16 @@ export const notInRecord = quote => `Not in the record: “${quoteOf(quote)}”.
  * A no-loss claim: accounted for only by a 100% win rate in the window it names. Returns the
  * strike, or the spans a 100% win rate accounts for (so the absolute markers skip them).
  */
-function losslessRuling(t, data) {
+function losslessRuling(t, data, facts = []) {
   const spans = [];
   const sentence = bounds(t, false);
+  // A shown 100% win rate (the tile's saved week) accounts for a no-loss claim made about a figure
+  // shown beside it, whatever the live window now says.
+  const shownClean = facts.some(f => f.visible && f.kind === 'pct' && f.measure === 'win rate' && f.value === 100);
+  const shown = facts.filter(f => f.visible && f.kind === 'money');
+  const citesShown = x => extractFigures(x).some(g => g.kind === 'money' && shown.some(f => Math.abs(Math.abs(f.value) - g.n) <= Math.abs(f.value) * 0.1));
   for (const m of t.matchAll(LOSSLESS)) {
+    if (shownClean && citesShown(t)) { spans.push([m.index, m.index + m[0].length]); continue; }
     const [a, b] = sentence(m.index);
     // A week or a month named any way ("a clean week") is the window a no-loss claim is read in.
     const loose = x => claimedWindow(x) ?? (/\bweeks?\b/i.test(x) === /\bmonths?\b/i.test(x) ? null : /\bweeks?\b/i.test(x) ? '7d' : '30d');
@@ -743,7 +749,7 @@ export function attributionStrike(text, dossier, data, { others = [] } = {}) {
   const figs = extractFigures(t);
   const facts = ledgerOf(dossier, data);
   // Final judge: default-deny. Claims the record cannot account for strike first, by their own words.
-  const lossless = losslessRuling(t, data);
+  const lossless = losslessRuling(t, data, facts);
   if (lossless.reason) return spent(lossless.reason);
   const said = unaccounted(t, dossier, data, lossless.spans, f => f !== 'time' && f !== 'again');
   if (said) return spent(notInRecord(said));
