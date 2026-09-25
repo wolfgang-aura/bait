@@ -98,8 +98,11 @@ export function saveRawRead(dir, { wallet, fetchedAt, windows, responses }) {
     kind: 'nansen-live-read', endpoint: LIVE_ENDPOINT,
     // Every endpoint this file holds a response from (round 12). Files saved before then
     // carry `endpoint` only, though some also hold perp-trades fills: bench/live-reads/README.md.
-    endpoints: [LIVE_ENDPOINT, ...(responses.fills ? ['profiler/perp-trades'] : []), ...(responses.positions ? [POSITIONS_ENDPOINT] : []),
-      ...(responses.smart_money ? [SCREENER_ENDPOINT] : []), ...(responses.leaderboard ? [LEADERBOARD_ENDPOINT] : [])],
+    // From 25 Sep 2026 it also names each endpoint the owner read called (responses.operator:
+    // related-wallets, transactions; the siblings' perp-pnl-summary is already listed first).
+    endpoints: [...new Set([LIVE_ENDPOINT, ...(responses.fills ? ['profiler/perp-trades'] : []), ...(responses.positions ? [POSITIONS_ENDPOINT] : []),
+      ...(responses.smart_money ? [SCREENER_ENDPOINT] : []), ...(responses.leaderboard ? [LEADERBOARD_ENDPOINT] : []),
+      ...(Array.isArray(responses.operator) ? responses.operator.map(r => r?.endpoint).filter(e => typeof e === 'string') : [])])],
     wallet, fetched_at: fetchedAt, windows,
     // As Nansen sent them (status, the credit header and the whole JSON body, per window), minus
     // Nansen's address labels, which are not redistributed (validation/nansen-labels.js).

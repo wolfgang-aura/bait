@@ -21,8 +21,13 @@ calls (request, status, credit header, body). From 23 Sep 2026 06:41 UTC a read 
 position) and `responses.leaderboard` (`perp-leaderboard`, only when nothing earlier refused).
 From gate v5 in the room (25 Sep) it holds `responses.operator`: the owner read, one entry per call
 (`profiler/address/related-wallets` per chain, `profiler/address/transactions` for the funding
-transfer, each sibling's `profiler/perp-pnl-summary`). The top-level `"endpoints"` list does not yet
-name these three; read them from each entry's `endpoint`.
+transfer, each sibling's `profiler/perp-pnl-summary`). Each entry names its own `endpoint`. From 25 Sep 2026 (the
+writer in `prototype/live-evidence.js`) the top-level `"endpoints"` list also names every endpoint the
+owner read called, once each: `profiler/address/related-wallets` and `profiler/address/transactions`;
+the siblings' `profiler/perp-pnl-summary` is the endpoint already listed first. When the owner read did not
+run, they are not listed. Files saved before that change are kept as written, so a file whose
+`responses.operator` has entries but whose `"endpoints"` omits them predates it; read those from each
+entry's `endpoint`.
 Each response carries Nansen's `credits_cost_header`, so a file's credits can be summed from it.
 
 Known quirk: files saved before round 12 carry only `"endpoint": "profiler/perp-pnl-summary"`

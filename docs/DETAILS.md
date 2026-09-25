@@ -52,10 +52,11 @@ rerun either.
 ### What the gate claims, and what it does not
 
 It claims: no money reaches a trader whose verified Nansen record shows a loss, or whose
-record is missing, stale or for the wrong wallet. It does **not** predict next week. Over 102
-later seven-day periods on seven development wallets, the BAIT check blocked 63 (40 not losing
-the week after) and allowed 39 (6 capped; 9 lost money). The one-rule gate blocked 38: 15 made
+record is missing, stale or for the wrong wallet. It does **not** predict next week. Replayed on 23 Sep 2026 over 102
+later seven-day periods on seven development wallets, gate v3 blocked 63 (40 not losing
+the week after) and allowed 39 (6 capped; 9 lost money). Gate v1, the one-rule gate, blocked 38: 15 made
 money the next week and 5 were flat ([panel receipt](../bench/reports/robustness-panel-concentration.md)).
+The panel was not re-run under v4 or v5: their added checks read Nansen data it did not save.
 A block acts on the evidence you have; it is not a forecast, and these wallets are not a
 held-out set. Every live round keeps Nansen's raw responses in `bench/live-reads/` and at
 `/api/live-reads` (full addresses there; summary tables use 0x1234...abcd).
@@ -111,7 +112,7 @@ five the model proposed nothing. Source: the
 [frozen-evidence suite](../bench/reports/2026-09-20T18-10-24-277Z.md).
 
 What the ladder does not show: that the gate picks profitable wallets. On 102 later
-seven-day periods across the same seven development wallets, 14 of the 64 records it
+seven-day periods across the same seven development wallets, 14 of the 64 records gate v1
 allowed lost money next, and of the 38 it blocked, 15 made money and 5 were flat
 ([robustness panel](../bench/reports/robustness-panel.md)). One model, one losing wallet,
 no unseen test set. The gate is an execution policy with a measured limit, not a

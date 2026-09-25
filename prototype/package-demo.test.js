@@ -55,3 +55,18 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   assert.match(js, /capped \$\{c\.capped\[0\]\}/);
   assert.doesNotMatch(js + html, /24\/30|6\/30|0\/30|24 of 30|The guard that held/);
 });
+
+test('the proof page names the gate and date behind the panel counts, and they match the panel receipt', async () => {
+  const { readFileSync } = await import('node:fs');
+  const html = demoFiles().get('index.html');
+  const receipt = JSON.parse(readFileSync(new URL('../bench/reports/robustness-panel-concentration.json', import.meta.url), 'utf8'));
+  const { v1, v3 } = receipt.policies;
+  assert.equal(receipt.periods, 102);
+  assert.deepEqual([v3.blocked, v3.blocked_profitable, v3.allowed, v3.capped, v3.allowed_losing], [63, 40, 39, 6, 9]);
+  assert.equal(v1.blocked, 38);
+  assert.equal(receipt.policies.v4, undefined, 'the panel was never scored under v4');
+  assert.equal(receipt.policies.v5, undefined, 'the panel was never scored under v5');
+  assert.match(html, /Replayed on 23 Sep 2026 over 102 later seven-day periods on seven development wallets, gate v3 blocked 63 periods, and 40 of those were not losing the week after; it allowed 39 \(6 capped\), and 9 of those lost money\. Gate v1, the one-rule gate, blocked 38/);
+  assert.match(html, /The panel was not re-run under v4 or v5, the current gate/);
+  assert.doesNotMatch(html, /shipped gate blocked|older one-rule gate/);
+});

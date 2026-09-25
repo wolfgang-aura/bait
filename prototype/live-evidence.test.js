@@ -708,6 +708,25 @@ test('v5 live round: the operator behind the wallet lost money, so the operator 
   assert.doesNotMatch(text, /Some Fund|address_label/, 'the saved raw read is label-free');
   const saved = JSON.parse(text);
   assert.equal(saved.responses.operator.find(r => r.endpoint === 'profiler/address/related-wallets' && r.request.chain === 'arbitrum').body.data[0].funder_excluded_by_label, false);
+  // The top-level list names the owner read's endpoints too, once each (siblings' summary is perp-pnl-summary).
+  for (const e of ['profiler/address/related-wallets', 'profiler/address/transactions', 'profiler/perp-pnl-summary']) assert.ok(saved.endpoints.includes(e), `endpoints names ${e}`);
+  for (const r of saved.responses.operator) assert.ok(saved.endpoints.includes(r.endpoint), `endpoints names ${r.endpoint}`);
+  assert.equal(new Set(saved.endpoints).size, saved.endpoints.length, 'no endpoint listed twice');
+});
+
+test('saveRawRead lists the owner-read endpoints only when the owner read ran', async () => {
+  const { saveRawRead } = await import('./live-evidence.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-raw-'));
+  const base = { '30d': { status: 200 }, '7d': { status: 200 } };
+  const read = (at, responses) => JSON.parse(fs.readFileSync(path.join(dir, saveRawRead(dir, { wallet: GRINDER, fetchedAt: at, windows: {}, responses }).file), 'utf8'));
+  const skipped = read('2026-09-25T01:00:00.000Z', { ...base, operator: [] });
+  assert.deepEqual(skipped.endpoints, ['profiler/perp-pnl-summary']);
+  const ran = read('2026-09-25T01:01:00.000Z', { ...base, operator: [
+    { endpoint: 'profiler/address/related-wallets', request: { chain: 'ethereum' } },
+    { endpoint: 'profiler/address/related-wallets', request: { chain: 'arbitrum' } },
+    { endpoint: 'profiler/address/transactions', request: {} },
+    { endpoint: 'profiler/perp-pnl-summary', request: {} }] });
+  assert.deepEqual(ran.endpoints, ['profiler/perp-pnl-summary', 'profiler/address/related-wallets', 'profiler/address/transactions']);
 });
 
 test('v5 live round: an exchange funder is not an operator; the row says why and no sibling is read', async () => {

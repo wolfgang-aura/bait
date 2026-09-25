@@ -107,8 +107,10 @@ small development sample and is not presented as guard validation.
 Passing BAIT is only a minimum eligibility result. It is not a wallet recommendation.
 
 The out-of-time check makes that limit measurable. On 102 later seven-day periods from
-the same seven development wallets, 14 of 64 records allowed by the 30-day sign lost
-money next, while of 38 blocked records 15 made money and 5 were flat. BAIT therefore presents
+the same seven development wallets, 14 of 64 records allowed by gate v1's 30-day sign lost
+money next, while of 38 blocked records 15 made money and 5 were flat (measured 22 Sep 2026;
+gate v3 was replayed on the same periods on 23 Sep, and v4 and v5 were not, because their added
+checks read data the panel did not save: [panel receipt](../bench/reports/robustness-panel-concentration.md)). BAIT therefore presents
 the guard as a narrow execution policy and never as a profitable-wallet classifier.
 
 ## Judge 5: "The submission overclaims or cannot be reproduced"
