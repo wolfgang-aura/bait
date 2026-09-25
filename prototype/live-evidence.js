@@ -358,7 +358,7 @@ export function createLiveEvidence({
             }
           } catch { pre4 = null; }
           if (!index) {
-            operator = { error: 'not_read', message: 'Not assessed: this host has no operator index (bench/v5/operator-index.json), so no sibling wallet can be looked up.' };
+            operator = { error: 'not_read', message: 'Not assessed: this host has no owner index (bench/v5/operator-index.json), so no sibling wallet can be looked up.' };
           } else if (pre4 && pre4.decision !== 'block') {
             responses.operator = [];
             const counted = async (endpoint, request, opts = {}) => {
@@ -382,7 +382,7 @@ export function createLiveEvidence({
             }
           } else {
             const failed = (pre4 ?? pre)?.checks?.find(c => c.result === 'fail')?.id;
-            operator = { error: 'not_read', skipped: true, message: `Not read: ${failed ? `the "${failed}" check already refuses this wallet` : 'the summaries were not usable'}, so the operator's other wallets could not change the decision.` };
+            operator = { error: 'not_read', skipped: true, message: `Not read: ${failed ? `the "${failed}" check already refuses this wallet` : 'the summaries were not usable'}, so the owner's other wallets could not change the decision.` };
           }
         }
       }
@@ -538,7 +538,7 @@ export function createLiveEvidence({
           refused: READ_CREDITS - (v4Reads ? creditCostFor(RECORD_ENDPOINT) : 0) - V5_CREDITS,
           full: READ_CREDITS,
           note: v4Reads
-            ? `At most. refused: the 30-day record already refuses, perp-leaderboard and the operator read are not bought. full: the gate clears or caps, perp-leaderboard (5) is bought${V5_CREDITS ? `, and the operator read (gate v5, at most ${V5_CREDITS}: related-wallets on 2 chains, a funding transfer per chain only when the funder has indexed siblings, one perp-pnl-summary per sibling, at most ${MAX_SIBLINGS_READ})` : ''}. No open position: no perp-screener (1). A cached read costs 0.`
+            ? `At most. refused: the 30-day record already refuses, perp-leaderboard and the owner read are not bought. full: the gate clears or caps, perp-leaderboard (5) is bought${V5_CREDITS ? `, and the owner read (gate v5, at most ${V5_CREDITS}: related-wallets on 2 chains, a funding transfer per chain only when the funder has indexed siblings, one perp-pnl-summary per sibling, at most ${MAX_SIBLINGS_READ})` : ''}. No open position: no perp-screener (1). A cached read costs 0.`
             : 'At most. A cached read costs 0.',
         },
         fill_pages_per_read: pages,

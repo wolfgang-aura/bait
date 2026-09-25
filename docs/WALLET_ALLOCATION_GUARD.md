@@ -203,6 +203,8 @@ v4 add `profiler/perp-positions` (1) once the summaries pass; v4 adds `perp-scre
 `perp-leaderboard` (5), so v4 costs 9 at most. v5, the default since 25 Sep, adds
 `profiler/address/related-wallets` on two chains (2), one `profiler/address/transactions` read per
 counted funder (up to 2) and one 30-day summary per indexed sibling (up to 8): at most 21 credits.
+So a v5 check costs 1 credit when the month refuses and 10 to 21 credits once the wallet reaches the
+owner read (`liveCheckCredits` in `validation/guard-live.js`, the figure `/api/health` reports).
 
 `runLiveGuard` wraps that adapter, enforces 15-minute freshness, and adds
 `creditsCharged` and `creditsRemaining` to the decision. Its own default policy is
@@ -212,7 +214,7 @@ pinned to v1, because its contract test asserts the one-credit v1 behaviour; cal
 Two ways to run it, both needing only `NANSEN_API_KEY` in `.env`:
 
 ```powershell
-# wallet-copy-risk-v5 (the default), at most 21 credits, 1 if the month refuses; prints the full check table
+# wallet-copy-risk-v5 (the default): 1 credit if the month refuses, 10 to 21 with the owner read; prints the full check table
 npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000
 
 # the recorded one-window rule, one credit
@@ -228,7 +230,7 @@ same decision object with status 200. A rejected wallet or amount is still a gua
 decision, so it returns 200 with an `invalid_request` block; only unreadable JSON is a
 400. Under `HOSTED=1` the route returns 403 `guard_disabled_hosted`, because a public
 visitor must not be able to spend the key's credits. `/api/health` reports the route,
-the page and the policy id under `live_guard`.
+the page, the policy id and `credits_per_check` (`min`, `owner_read`, `max`) under `live_guard`.
 
 The earlier form page, `/guard.html`, was retired; it now redirects to the Proof page's
 "How BAIT works" section. In the Pitch Room, "Or paste any Hyperliquid wallet" runs the same
@@ -292,7 +294,7 @@ than a fault.
 | `checks` | The full check table, one row per check: `id`, `result`, `value`, `threshold`, `plain`. Present on every decision, allow and block. |
 | `policy` | `id`, `version`, `window_days`, `short_window_days`, `minimum_realized_pnl_usd`, `max_evidence_age_ms`. |
 | `evidence` | `wallet`, `window_days`, `realized_pnl_usd`, `realized_pnl_30d_usd`, `realized_pnl_7d_usd`, `closed_trade_count_30d`, `win_rate_30d`, `retrieved_at`, `short_window_days`, `short_window_retrieved_at`, `source`. Every field is null when the check could not read it. |
-| `creditsCharged` | Nansen credits this check spent. Added by `runLiveGuard`: 1 per summary window, positions or screener read, 5 for the leaderboard. |
+| `creditsCharged` | Nansen credits this check spent. Added by `runLiveGuard`: 1 per summary window, positions or screener read, 5 for the leaderboard, 1 per related-wallets, transactions or sibling summary read. |
 | `creditsRemaining` | Account balance last reported by Nansen, or null if unknown. |
 
 ## Benchmark versus production

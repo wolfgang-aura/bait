@@ -407,7 +407,7 @@ export const v4ReadsOf = snap => ({ record: snap?.v4_reads?.record ?? undefined,
 /** Gate v5's operator read on a live snapshot, as withV5Reads takes it. */
 export const v5ReadsOf = snap => (snap?.v5_reads?.operator
   ? { operator: snap.v5_reads.operator }
-  : { operatorNote: 'Not read: live operator reads are off on this host.' });
+  : { operatorNote: 'Not read: live owner reads are off on this host.' });
 /** A frozen round has no operator read: the row says so instead of "could not be read". */
 export const FROZEN_V5_READS = Object.freeze({ operatorNote: 'Not read: this round plays a frozen capture; related-wallets is read live only.' });
 /**
@@ -863,7 +863,7 @@ export function createRoomService({
       const n = op.siblings.length;
       const who = `First funder ${op.funders.map(f => shortAddr(f.funder)).join(' and ')} also paid for ${n} indexed wallet${n === 1 ? '' : 's'}`;
       return c.result === 'fail'
-        ? `${who}; with this one the operator made ${money(op.combined_pnl_30d_usd)} over ${days} days, so this wallet is the survivor.`
+        ? `${who}; with this one the owner made ${money(op.combined_pnl_30d_usd)} over ${days} days, so this wallet is the survivor.`
         : `${who}; together they made ${money(op.combined_pnl_30d_usd)} over ${days} days.`;
     }
     return String(c.plain ?? '').replace(/ This check can refuse only on sibling records it read; a missing read changes nothing\.$/, '');

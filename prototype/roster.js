@@ -58,6 +58,8 @@ function span(fromIso, toIso) {
 // Capture dates are printed in UTC and say so, because the same instant is a different
 // calendar day in the founder's timezone and a date without a zone invites that argument.
 const stamp = iso => `${day(iso)} UTC`;
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const dayMonth = iso => { const d = new Date(iso); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
 
 /**
  * The lineup. Numbers live in the evidence files, not here: this table carries only
@@ -66,6 +68,17 @@ const stamp = iso => `${day(iso)} UTC`;
  * them names is asserted against the loaded record by prototype/roster.test.js.
  */
 export const PROSPECTS = [
+  // A live-market wallet from the field test (bench/FIELD.md, leaderboard rank 195): its own
+  // record passes the PnL rule and gate v4 in full; only v5's owner check (operator_record)
+  // blocks it. Its frozen record is a saved live read, replayed (prototype/frozen-read.js).
+  // No leaderboard row: the brag is Nansen's own 7-day window. First on the roster and focused on
+  // load, marked "start here" (judge 3): a judge's first round lands on the owner reveal.
+  {
+    id: 'steadyhand', venue: 'hyperliquid', wallet: '0x20438cfdd36d75e185d6601697eb1973f4aee79d',
+    name: 'THE STEADY HAND', handle: null, accent: '#B9A3E3', portrait: 'monk',
+    hypeKind: 'week_streak', live: true, start: true,
+    voice: 'A hundred and ninety grand this week. Nothing flashy, just steady.',
+  },
   {
     id: 'legend', venue: 'hyperliquid', wallet: '0x7fdafde5cfb5465924316eced2d3715494c517d1',
     name: 'THE LEGEND', handle: 'BobbyBigSize', accent: '#FF5C39', portrait: 'legend',
@@ -87,18 +100,11 @@ export const PROSPECTS = [
   {
     id: 'grinder', venue: 'hyperliquid', wallet: '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4',
     name: 'THE GRINDER', handle: 'Trader 014', accent: '#FFB020', portrait: 'grinder',
-    hypeKind: 'week_streak', live: true,
-    voice: 'Four hundred and twenty four trades last week. Every one green.',
-  },
-  // A live-market wallet from the field test (bench/FIELD.md, leaderboard rank 195): its own
-  // record passes the PnL rule and gate v4 in full; only v5's owner check (operator_record)
-  // blocks it. Its frozen record is a saved live read, replayed (prototype/frozen-read.js).
-  // No leaderboard row: the brag is Nansen's own 7-day window.
-  {
-    id: 'steadyhand', venue: 'hyperliquid', wallet: '0x20438cfdd36d75e185d6601697eb1973f4aee79d',
-    name: 'THE STEADY HAND', handle: null, accent: '#B9A3E3', portrait: 'monk',
-    hypeKind: 'week_streak', live: true,
-    voice: 'A hundred and ninety grand this week. Nothing flashy, just steady.',
+    // Its brag is a dated past week, never "last week": a live read on 25 Sep 12:26 UTC
+    // (bench/live-reads/20260925T122635Z-0xc26cbb64.json) found 0 closed trades in the 7 days before
+    // it, the newest fill on 17 Sep, so the tile names the week it means.
+    hypeKind: 'best_week', live: true,
+    voice: 'My best week: four hundred and twenty four trades. Every one green.',
   },
 ];
 
@@ -383,7 +389,7 @@ export function loadRoster({
     const base = {
       id: p.id, name: p.name, handle: p.handle, wallet: p.wallet, short: short(p.wallet),
       venue: p.venue, venueLabel: venue.label, chain: venue.chain,
-      accent: p.accent, portrait: p.portrait, voice: p.voice,
+      accent: p.accent, portrait: p.portrait, voice: p.voice, start: p.start === true,
     };
 
     const real = findSnapshot(snapshotDir, p.wallet) ?? findSnapshot(frozenReadDir, p.wallet);
@@ -400,21 +406,23 @@ export function loadRoster({
       month: () => ({ value: money(hype.month_pnl_usd), caption: '30 days', sub: `${money(hype.all_time_pnl_usd)} all time` }),
       week: () => ({ value: money(hype.week_pnl_usd), caption: '7 days', sub: `${money(hype.all_time_pnl_usd)} all time` }),
       week_streak: () => ({ value: money(week.realized_pnl_usd), caption: '7 days', sub: `${pct(week.win_rate)} win rate` }),
+      best_week: () => ({ value: money(week.realized_pnl_usd), caption: `week to ${dayMonth(snapshot.windows['7d'].to)}`, sub: `${pct(week.win_rate)} win rate` }),
     }[p.hypeKind]();
+    const fromNansen = p.hypeKind === 'week_streak' || p.hypeKind === 'best_week';
 
     const loaded = {
       ...base,
       hypeRow: hype ?? null,
       hype: {
         ...headline,
-        source: p.hypeKind === 'week_streak'
-          ? `Nansen 7-day window, ${stamp(snapshot.retrieved_at)}`
+        source: fromNansen
+          ? `Nansen 7-day window${p.hypeKind === 'best_week' ? ' to' : ','} ${stamp(snapshot.retrieved_at)}`
           : `Public Hyperliquid leaderboard, ${stamp(hype.capturedAt)}`,
         // The tile's figure and the record behind it are dated apart, because they are
         // read on different days: the leaderboard row and the Nansen capture.
-        hypeDate: day(p.hypeKind === 'week_streak' ? snapshot.retrieved_at : hype.capturedAt),
+        hypeDate: day(fromNansen ? snapshot.retrieved_at : hype.capturedAt),
         recordDate: day(snapshot.retrieved_at),
-        hypeFrom: p.hypeKind === 'week_streak' ? 'Nansen' : 'leaderboard',
+        hypeFrom: fromNansen ? 'Nansen' : 'leaderboard',
       },
       truth: hyperliquidTruth(snapshot, availability),
       truthAvailable: availability,
@@ -523,6 +531,7 @@ export function rosterTile(p) {
     id: p.id, name: p.name, handle: p.handle, short: p.short,
     venue: p.venue, venueLabel: p.venueLabel, chain: p.chain,
     accent: p.accent, portrait: p.portrait, voice: p.voice,
+    start: p.start === true,
     hype: p.hype,
     truth_available: p.truthAvailable,
   };

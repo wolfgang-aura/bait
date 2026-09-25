@@ -32,11 +32,13 @@
 
   <!-- ============================================ 1. pick your hero ==== -->
   <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
-    <p class="concept" id="concept">
-      BAIT is the gate before an AI agent copies a wallet.
-      <b>It asks Nansen who funded the wallet, reads the owner&rsquo;s other wallets, and refuses when the owner lost.</b>
-      <span class="for-whom">Built for teams that let AI agents allocate capital.</span>
-    </p>
+    <!-- Judge 3: the first screen leads with the live-market finding (bench/FIELD.md), not the benchmark. -->
+    <div class="lead" id="concept">
+      <p class="lead-lab">Live market · Nansen&rsquo;s 30-day leaderboard · 25 Sep 2026</p>
+      <p class="concept"><b>5 of the top 200 wallets are the winning face of an owner whose other wallets lost more than it made.</b>
+        A &ldquo;don&rsquo;t copy a losing wallet&rdquo; rule funds all five. BAIT blocks all five: four on the owner, one for too few trades.</p>
+      <p class="for-whom">BAIT is the gate before an AI agent copies a wallet. It asks Nansen who funded the wallet, reads the owner&rsquo;s other wallets, and refuses when the owner lost. THE STEADY HAND is one of the five.</p>
+    </div>
     <div class="roster-head">
       <h1 class="screen-title" id="roster-title">Your turn: pick a trader, then talk the AI into backing them.</h1>
       <p class="truth-credit" id="truth-credit"><span>Truth source</span> <b>Nansen</b> profiler for every trader here · Hyperliquid perpetuals</p>
@@ -61,10 +63,16 @@
     <!-- Below the grid: the measured finding and the cons that really happened, so the
          first screen already says what the game proves. Both are read from files. -->
     <div class="front-proof">
-      <div class="ladder-strip" id="ladder-strip" aria-label="Recorded benchmark">
-        <p class="col-head" id="ladder-head">6 losing wallets, 26 attacks, 3 runs each, true facts only</p>
-        <ol class="ladder" id="ladder"></ol>
-        <p class="ladder-foot"><span id="ladder-model">Model tested: DeepSeek</span> · <a href="/replay.html">Recorded proof</a></p>
+      <div class="owners-strip" aria-label="The five owner wallets">
+        <p class="col-head">The five · 30 days to 25 Sep 06:04 UTC · owner&rsquo;s other wallets</p>
+        <ol class="owners-list" id="owners-list">
+          <li><b>0x615a...69d5</b><span class="pos">+$2,854,381</span><span class="neg">3 wallets, -$2,996,395</span><em>owner lost</em></li>
+          <li><b>0x153c...319a</b><span class="pos">+$812,498</span><span class="neg">7 wallets, -$2,650,967</span><em>owner lost</em></li>
+          <li><b>0x2e2b...2fab</b><span class="pos">+$743,510</span><span class="neg">8 wallets, -$759,169</span><em>too few trades</em></li>
+          <li><b>0xaac0...245b</b><span class="pos">+$432,831</span><span class="neg">2 wallets, -$10,129,956</span><em>owner lost</em></li>
+          <li><b>0x2043...e79d</b><span class="pos">+$358,593</span><span class="neg">4 wallets, -$1,234,554</span><em>owner lost</em></li>
+        </ol>
+        <p class="ladder-foot">Each row: what BAIT blocked it on. The owner is the first funder; shared funding is not proof of one owner. Benchmark: the AI alone backed a losing trader in 63 of 78 runs, 0 of 78 behind BAIT. <a href="/replay.html">Proof</a></p>
       </div>
       <div class="front-cons">
         <p class="col-head">Best cons so far: what PENNY agreed to wire · every one stopped by the gate</p>
@@ -273,7 +281,7 @@
     Fictional funds, real records. The Pitch Room's BAIT check reads Nansen: the trader's record from
     <code>profiler/perp-pnl-summary</code>, <code>profiler/perp-trades</code> and <code>profiler/perp-positions</code>,
     smart money in the same market from <code>perp-screener</code>, and a second record of the month from
-    <code>perp-leaderboard</code>, and the operator behind the wallet from
+    <code>perp-leaderboard</code>, and the owner behind the wallet from
     <code>profiler/address/related-wallets</code> (its first funder) and <code>profiler/address/transactions</code>
     (the funding transfer), with each sibling wallet's perp-pnl-summary. All seven are live when this host has a key;
     without one the record is the dated frozen capture and the last four are not read. Every figure carries its source and date.

@@ -73,7 +73,7 @@ test('a profitable wallet prints ALLOW, the enforced amount and the credit line,
     env: ENV, write: out.write, now: NOW, call: pnl(2_450_809.467724999),
   });
   assert.equal(code, 0);
-  assert.match(out.text(), /Fetching Nansen 7- and 30-day PnL summary and open positions, then smart money \(perp-screener\) and a second record \(perp-leaderboard\), then the operator behind the wallet \(related-wallets, transactions, sibling summaries\), at most 21 credits\.\.\./);
+  assert.match(out.text(), /Fetching Nansen 7- and 30-day PnL summary and open positions, then smart money \(perp-screener\) and a second record \(perp-leaderboard\), then the owner behind the wallet \(its first funder: related-wallets, transactions, sibling summaries\), at most 21 credits\.\.\./);
   assert.match(out.text(), /DECISION\s+ALLOW/);
   assert.match(out.text(), /enforced\s+\$5,000\.00/);
   assert.match(out.text(), /pnl 30d\s+\$2,450,809\.47/);

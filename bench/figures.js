@@ -141,6 +141,10 @@ export async function computeFigures() {
   const fullRead = 2 * costOf('profiler/perp-pnl-summary') + v4Endpoints.filter(e => e !== 'profiler/perp-pnl-summary').reduce((n, e) => n + costOf(e), 0);
   const cliMax = 2 * costOf('profiler/perp-pnl-summary') + costOf('profiler/perp-positions') + costOf('perp-screener') + costOf('perp-leaderboard')
     + operatorEnv.OPERATOR_CHAINS.length * (costOf(operatorEnv.RELATED_ENDPOINT) + costOf(operatorEnv.TRANSACTIONS_ENDPOINT)) + operatorEnv.MAX_SIBLINGS_READ * costOf('profiler/perp-pnl-summary');
+  // The same cost the guard CLI and /api/health state (validation/guard-live.js), checked against cliMax.
+  const { liveCheckCredits } = await import('../validation/guard-live.js');
+  const checkCredits = liveCheckCredits(policy);
+  if (checkCredits.max !== cliMax) throw new Error(`liveCheckCredits says at most ${checkCredits.max}, the endpoint sum ${cliMax}`);
   const gate = {
     default: policy.version,
     policy: policy.id,
@@ -152,6 +156,8 @@ export async function computeFigures() {
     roomPolicyBase: 'v4',
     roundCredits: { refused: fullRead - costOf('perp-leaderboard'), clearedOrCapped: fullRead },
     cliMaxCredits: cliMax,
+    // A v5 check that reaches the owner read: no open position and no counted funder, to the most.
+    ownerReadCredits: [checkCredits.ownerRead.min, checkCredits.ownerRead.max],
     capShare: policy.concentrationCapShare,
   };
 
@@ -312,6 +318,7 @@ function phraseRules(F) {
     { name: 'endpoint count', re: /\b(?:reads|on) (\w+) Nansen endpoints/g, want: [F.gate.endpointCount], map: w => NUMBER_WORDS[w.toLowerCase()] ?? n(w) },
     { name: 'read count', re: /\bup to (\w+) reads\b/gi, want: [F.gate.maxReads], map: w => NUMBER_WORDS[w.toLowerCase()] ?? n(w) },
     { name: 'CLI credits', re: /\bat most (\d+)(?![\d,])(?= credits| otherwise|\)|\.)/g, want: [F.gate.cliMaxCredits] },
+    { name: 'owner read credits', re: /(\d+) to (\d+) (?:credits )?(?:once the wallet reaches|with) the owner read/g, want: F.gate.ownerReadCredits },
     { name: 'round credits, cleared or capped', re: /(\d+) (?:credits )?when the gate (?:has to )?clears? or caps/g, want: [F.gate.roundCredits.clearedOrCapped] },
     { name: 'smart money share', re: /(\d+)% of (?:its )?\$([\d.]+)M in SOL/g, want: [L.smartMoneyOppositePct, L.smartMoneyTotalUsdM] },
     { name: 'live round cap', re: /\$([\d,]+) allowed, \$([\d,]+) held/g, want: [L.allowedUsd, L.heldUsd] },
@@ -350,11 +357,11 @@ export function checkText(file, text, F = loadFigures()) {
     const [num, den] = [n(m[1]), n(m[2])];
     if (fr.has(den) && !fr.get(den).has(num)) problems.push(`${where(m.index)}: "${m[0]}" but FIGURES.json has only ${[...fr.get(den)].join(', ')} of ${den}`);
   }
-  // "N of D operator attacks" / "N of D operator controls": N must be one of that set's counts.
+  // "N of D owner attacks" / "N of D owner controls" (the older word "operator" too): N must be one of that set's counts.
   if (F.operator) {
     const o = F.operator;
     const sets = { attack: [o.pnlRule, o.v4, o.bait], control: [o.controls.pnlRule, o.controls.v4, o.controls.bait] };
-    for (const mm of text.matchAll(/(\d+) of (\d+) (?:real )?operator (attack|control)s?/g)) {
+    for (const mm of text.matchAll(/(\d+) of (\d+) (?:real )?(?:operator|owner) (attack|control)s?/g)) {
       const ok = sets[mm[3]].some(([a, d]) => a === n(mm[1]) && d === n(mm[2]));
       if (!ok) problems.push(`${where(mm.index)}: operator ${mm[3]} figure "${mm[0]}" is not in FIGURES.json operator`);
     }

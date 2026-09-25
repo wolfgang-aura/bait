@@ -67,7 +67,7 @@ test('the default route is the Pitch Room, with the guard console still reachabl
     assert.match(page.body, /The Pitch Room/);
     assert.match(page.body, /BAIT is the gate before an AI agent copies a wallet\./);
     assert.match(page.body, /It asks Nansen who funded the wallet, reads the owner&rsquo;s other wallets, and refuses when the owner lost\./);
-    assert.match(page.body, /Built for teams that let AI agents allocate capital/);
+    assert.match(page.body, /5 of the top 200 wallets are the winning face of an owner/);
     assert.match(page.body, /talk the AI into backing/);
     assert.match(page.body, /What BAIT will check/);
     assert.doesNotMatch(page.body, /Sell them anyway/);
@@ -268,6 +268,12 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     const health = await s.call('/api/health');
     assert.equal(health.body.live_guard.route, 'POST /api/guard');
     assert.equal(health.body.live_guard.enabled, true);
+    // One cost figure for a v5 check, the one the Proof page and docs state (judge 3: health said 9).
+    const cost = health.body.live_guard.credits_per_check;
+    assert.equal(cost.min, blocked.body.creditsCharged, 'the refused check above cost the stated minimum');
+    assert.deepEqual([cost.min, cost.owner_read.min, cost.owner_read.max, cost.max], [1, 10, 21, 21]);
+    const figures = JSON.parse(fs.readFileSync(new URL('../bench/FIGURES.json', import.meta.url), 'utf8'));
+    assert.equal(cost.max, figures.gate.cliMaxCredits, 'health and FIGURES.json give the same most');
   } finally { await s.stop(); }
 
   const profitable = await startServer({ HOSTED: '', GUARD_CALL_MODULE: GUARD_STUB, GUARD_STUB_PNL: '2450809.47', GUARD_STUB_WIN_RATE: '0.55' });
@@ -277,6 +283,7 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     assert.equal(allowed.body.decision, 'allow');
     assert.equal(allowed.body.allocation, 5000);
     assert.equal(allowed.body.evidence.realized_pnl_usd, 2450809.47);
+    assert.equal(allowed.body.creditsCharged, (await profitable.call('/api/health')).body.live_guard.credits_per_check.owner_read.min, 'the cheapest check that reaches the owner read');
     assert.equal(allowed.body.creditsCharged, 10, 'an allow read both windows, the open positions, the v4 leaderboard record (no open position, so no screener) and v5 related-wallets on two chains (the stub names no funder)');
     assert.ok(allowed.body.checks.some(c => c.id === 'independent_record'), 'the v4 row is on the table');
     assert.equal(allowed.body.checks.find(c => c.id === 'operator_record').result, 'not_assessed', 'the v5 row is on the table');

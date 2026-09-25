@@ -46,13 +46,12 @@ const el = {
   sealedLabel: $('sealed-label'), premiseName: $('premise-name'), premiseSlot: $('premise-slot'),
   revealStamp: $('reveal-stamp'), revealTitle: $('reveal-title'), revealSub: $('reveal-sub'), revealScore: $('reveal-score'),
   revealQuote: $('reveal-quote'), hypeLabel: $('hype-label'), recordLabel: $('record-label'),
-  ladderModel: $('ladder-model'),
   composer: $('composer'), line: $('line'), go: $('go'), count: $('count'), status: $('status'),
   stopped: $('stopped'), stoppedSub: $('stopped-sub'),
   intercept: $('intercept'), icptN: $('icpt-n'), icptTo: $('icpt-to'), icptAmt: $('icpt-amt'),
   icptStamp: $('icpt-stamp'), icptWhy: $('icpt-why'),
   wireKind: $('wire-kind'), wireStopped: $('wire-stopped'), finalTrail: $('final-trail'), wireLog: $('wire-log'),
-  ladder: $('ladder'), ladderHead: $('ladder-head'), frontBoard: $('front-board'),
+  frontBoard: $('front-board'),
   wireWho: $('wire-who'), wireAmount: $('wire-amount'), stamp: $('stamp'),
   finalHead: $('final-head'), finalSub: $('final-sub'), agentLine: $('agent-line'), finalReport: $('final-report'), finalGate: $('final-gate'),
   initials: $('initials'), submitScore: $('submit-score'), scoreStatus: $('score-status'),
@@ -151,6 +150,8 @@ function renderRoster(tiles) {
     chip.className = 'venue-chip';
     chip.textContent = p.venueLabel;
     art.append(chip);
+    // The owner card is first and focused on load; this says why a judge should pick it.
+    if (p.start) { const start = document.createElement('span'); start.className = 'tile-start'; start.textContent = 'Start here'; art.append(start); }
 
     const info = document.createElement('span');
     info.className = 'tile-info';
@@ -393,7 +394,7 @@ const CHECK_NAME = {
   realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
   low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month', open_book: 'Open positions not deep underwater',
   smart_money_side: 'Smart money not against the open book', independent_record: 'Leaderboard record agrees',
-  operator_record: 'Operator behind the wallet not losing',
+  operator_record: 'Owner behind the wallet not losing',
   tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
   fills_drawdown: 'Drawdown in the newest fills', fills_worst_trade: 'Worst trade in the newest fills',
 };
@@ -1201,36 +1202,6 @@ function renderWireLog(list) {
   }
 }
 
-/** The recorded ladder under the roster, read from the exported results file. */
-async function renderLadder() {
-  try {
-    const results = await api('/recorded-results.json');
-    // The multi-wallet result: six losing wallets and a profitable control.
-    const w = results.wallets;
-    const label = {
-      unarmed: 'The AI alone backed a losing trader',
-      armedBasic: 'With Nansen tools in hand, it still did',
-      guarded: "Behind the BAIT check, no money reached a loser",
-    };
-    el.ladder.replaceChildren();
-    for (const key of ['unarmed', 'armedBasic', 'guarded']) {
-      const [funded, runs] = w.losing[key];
-      const li = document.createElement('li');
-      li.className = key === 'guarded' ? 'held' : 'baited';
-      const n = document.createElement('b');
-      n.textContent = `${funded}/${runs}`;
-      const sp = document.createElement('span');
-      sp.textContent = label[key];
-      li.append(n, sp);
-      el.ladder.append(li);
-    }
-    const cases = Object.values(w.losing.cases ?? {}).reduce((a, b) => a + b, 0);
-    text(el.ladderHead, `${w.losing.wallets} losing wallets, ${cases} attacks, 3 runs each, true facts only`);
-    const model = w.model === 'deepseek-chat' ? 'DeepSeek (deepseek-chat)' : w.model;
-    text(el.ladderModel, `Model tested: ${model} · on profitable traders the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} funding decisions`);
-  } catch { el.ladder.closest('.ladder-strip').hidden = true; }
-}
-
 function renderTranscript() {
   el.transcript.replaceChildren();
   for (const shot of shots) {
@@ -1455,7 +1426,7 @@ async function boot() {
     // The cold open is read-only and costs nothing, so it is fetched alongside the room
     // config rather than behind it. A failure here is fatal: the screen it draws is the
     // first thing a stranger sees and a blank one is worse than an error.
-    // The roster is the only fetch the front door waits on; the ladder and board fill in behind.
+    // The roster is the only fetch the front door waits on; the board fills in behind.
     const config = await api('/api/room');
     renderRoster(config.roster);
     // Not awaited: the roster is usable while the live line loads.
@@ -1463,7 +1434,6 @@ async function boot() {
     boardEntries = config.leaderboard ?? [];
     renderBoard(boardEntries);
     renderBoard(boardEntries, null, el.frontBoard, 3);
-    renderLadder();
     // Before a pick nothing on screen is live. The badge says whether a Hyperliquid pick
     // would buy a live read; once a round starts it names the round's own evidence.
     liveReady = !!config.evidence.liveReady;

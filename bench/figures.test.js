@@ -30,6 +30,7 @@ test('figure drift: the headline figures are the published ones', () => {
   assert.deepEqual([F.heldout.losing, F.heldout.behindBait], [12, [0, 36]]);
   assert.deepEqual(F.cost.all, { decisions: 53, blocked: 6, capped: 9, fullAmount: 38 });
   assert.equal(F.gate.endpointCount, 7);
+  assert.deepEqual([F.gate.ownerReadCredits, F.gate.cliMaxCredits], [[10, 21], 21]);
   assert.equal(F.gate.default, 'v5');
   assert.deepEqual([F.operator.attacks, F.operator.pnlRule, F.operator.v4, F.operator.bait], [12, [12, 12], [11, 12], [0, 12]]);
   assert.deepEqual([F.operator.controls.count, F.operator.controls.addedBlocks], [26, 0]);
@@ -55,7 +56,14 @@ test('figure drift: the checker catches a stale figure, a v3 default, a mixed be
   assert.equal(caught('6 of 53 good-trader decisions blocked, 8 capped').length, 1);
   assert.equal(caught('38 of 52 good-trader transfers went through in full').length, 1);
   assert.equal(caught('BAIT reads four Nansen endpoints').length, 1);
+  assert.equal(caught('costs 9 to 21 credits once the wallet reaches the owner read').length, 1);
+  assert.deepEqual(caught('1 credit if the month refuses, 10 to 21 with the owner read'), []);
   assert.equal(caught('of 200 top leaderboard wallets, 6 are funded by an operator').length, 1);
+  assert.equal(caught('of 200 top leaderboard wallets, 6 are funded by an owner').length, 1);
+  assert.deepEqual(caught('of 200 top leaderboard wallets, 5 are funded by an owner'), []);
+  assert.equal(caught('BAIT funds 1 of 12 owner attacks').length, 1);
+  assert.equal(caught('BAIT funds 1 of 12 operator attacks').length, 1);
+  assert.deepEqual(caught('BAIT funds 0 of 12 owner attacks'), []);
   assert.equal(caught('smart money held 81% of its $47.8M in SOL').length, 1);
   assert.equal(caught('- **0x8923...1bac** capped: $1,300 allowed, $3,700 held').length, 3);
   assert.equal(caught('The default policy,\n`wallet-copy-risk-v3` reads').length, 1);
@@ -63,6 +71,17 @@ test('figure drift: the checker catches a stale figure, a v3 default, a mixed be
   assert.deepEqual(caught('## `wallet-copy-risk-v3` (default until 23 Sep 2026)'), []);
   assert.deepEqual(caught('63 of 78, 19 of 78, 0 of 78; 49 of 67; 6 of 53 good-trader decisions blocked, 9 capped'), []);
   assert.equal(checkLinks('docs/x.md', '[gone](missing.md) [ok](DETAILS.md) [anchor](../README.md#no-such-heading)').length, 2);
+});
+
+test('figure drift: the README endpoint table names every endpoint the gate count includes', () => {
+  const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+  const table = readme.split('## How BAIT uses Nansen')[1]?.split(/\r?\n## /)[0] ?? '';
+  const rows = table.split(/\r?\n/).filter(l => l.startsWith('| `'));
+  const F = loadFigures();
+  for (const e of F.gate.endpoints) {
+    const last = e.split('/').pop();
+    assert.ok(rows.some(r => r.includes(`\`${e}\``) || r.includes(`\`${last}\``)), `README "How BAIT uses Nansen" does not name ${e}`);
+  }
 });
 
 test('figure drift: docs/EVIDENCE.md explains every denominator once, in "The numbers"', () => {

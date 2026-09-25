@@ -774,7 +774,7 @@ export async function guardAllocation({
   if (policy.operatorCheck) {
     const before = t.firstFailure();
     if (!before) await operatorRecord(t, executor, wallet, policy, raw, evidence);
-    else if (showAll) t.skip('operator_record', `Not read: the "${before.id}" check already refused this request, so the operator's other wallets could not change it.`);
+    else if (showAll) t.skip('operator_record', `Not read: the "${before.id}" check already refused this request, so the owner's other wallets could not change it.`);
   }
 
   const failure = t.firstFailure();
@@ -799,7 +799,7 @@ export async function guardAllocation({
       paper_headline: 'blocked: most of the headline PnL is unsold paper',
       concentration: `blocked: one market carries more than ${Math.round(policy.maxTopCoinPnlShare * 100)}% of the ${policy.windowDays}-day realised PnL`,
       independent_record: `blocked: the ${policy.windowDays}-day summary claims more realised PnL than Nansen's perp-leaderboard records for the same days`,
-      operator_record: `blocked: the operator behind this wallet lost money over the same ${policy.windowDays} days across the wallets its first funder paid for`,
+      operator_record: `blocked: the owner behind this wallet (its first funder) lost money over the same ${policy.windowDays} days across the wallets its first funder paid for`,
     }[failure.id];
     return result({ attempted, policy, evidence, code, reason, checks: t.finish() });
   }
@@ -960,7 +960,7 @@ async function operatorRecord(t, executor, wallet, policy, raw, evidence) {
   try { op = await executor.execute('get_operator', { wallet, days, window: range }); } catch (err) { op = { error: String(err?.message ?? err) }; }
   if (op?.error === 'not_read' && op.message) return t.skip('operator_record', op.message, null, bar);
   if (!op || op.error) return skip('the first-funder read could not be made.');
-  if (String(op.wallet ?? '').toLowerCase() !== wallet.toLowerCase()) return skip('the operator read that came back is for a different wallet.');
+  if (String(op.wallet ?? '').toLowerCase() !== wallet.toLowerCase()) return skip('the owner read that came back is for a different wallet.');
   const funders = Array.isArray(op.funders) ? op.funders : [];
   const shortAddr = a => `${String(a).slice(0, 6)}...${String(a).slice(-4)}`;
   if (!funders.length) return skip('Nansen names no first funder for this wallet on Ethereum or Arbitrum.');
@@ -973,7 +973,7 @@ async function operatorRecord(t, executor, wallet, policy, raw, evidence) {
             : 'not counted';
       return `${f.chain} ${shortAddr(f.funder)}: ${reason}`;
     }).join('; ');
-    return skip(`no first funder counts as an operator (${why}).`);
+    return skip(`no first funder counts as an owner (${why}).`);
   }
   const siblings = (Array.isArray(op.siblings) ? op.siblings : []).filter(s => s && String(s.wallet ?? '').toLowerCase() !== wallet.toLowerCase());
   if (!siblings.length) return skip('no other indexed Hyperliquid wallet shares its first funder.');
@@ -995,7 +995,7 @@ async function operatorRecord(t, executor, wallet, policy, raw, evidence) {
   const value = `this wallet ${money(own)} + ${n} sibling${plural} ${money(sum)} = ${money(combined)}`;
   if (combined < -policy.operatorMaxCombinedLossUsd) {
     t.fail('operator_record', value, bar,
-      `The wallet's first funder, ${funderText}, also paid for ${n} other Hyperliquid wallet${plural} BAIT has indexed. Over the same ${days} days they made ${money(sum)}; with this wallet the operator is at ${money(combined)}. The profitable wallet is the survivor being shown, so the gate refuses.`);
+      `The wallet's first funder, ${funderText}, also paid for ${n} other Hyperliquid wallet${plural} BAIT has indexed. Over the same ${days} days they made ${money(sum)}; with this wallet the owner is at ${money(combined)}. The profitable wallet is the survivor being shown, so the gate refuses.`);
   } else {
     t.pass('operator_record', value, bar,
       `The wallet's first funder, ${funderText}, also paid for ${n} other indexed Hyperliquid wallet${plural}; together with this one they made ${money(combined)} over the same ${days} days.`);

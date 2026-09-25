@@ -17,7 +17,7 @@
  */
 
 import { loadEnv, call as nansenCall, refreshAccountBalance } from '../validation/nansen.js';
-import { runLiveGuard } from '../validation/guard-live.js';
+import { runLiveGuard, liveCheckCredits } from '../validation/guard-live.js';
 import {
   DEFAULT_GUARD_TIMEOUT_MS,
   GUARD_WINDOW_DAYS,
@@ -27,7 +27,6 @@ import {
   PRODUCTION_GUARD_POLICY_V4,
   PRODUCTION_GUARD_POLICY_V5,
 } from '../validation/guard.js';
-import { OPERATOR_CHAINS, MAX_SIBLINGS_READ } from '../validation/v5-evidence.js';
 
 export const USAGE =
   'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2|v3|v4|v5] [--json] [--timeout <ms>]';
@@ -150,14 +149,12 @@ export async function main({
     }
   }
 
-  // Round 17: v3 revision 3 also reads the open positions (one credit) when the summaries pass.
-  // v4 adds perp-screener (1) and perp-leaderboard (5), both only when nothing has refused.
+  // What the check can cost: validation/guard-live.js liveCheckCredits, the figure /healthz states.
   const positions = policy.openBookCheck ? 1 : 0;
-  const v4 = (policy.smartMoneyCheck ? 1 : 0) + (policy.independentRecordCheck ? 5 : 0);
-  // v5 adds the operator: related-wallets per chain, one funding read per counted funder, one summary per sibling.
-  const v5 = policy.operatorCheck ? OPERATOR_CHAINS.length * 2 + MAX_SIBLINGS_READ : 0;
-  const most = windows.length + positions + v4 + v5;
-  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary${positions ? ' and open positions' : ''}${v4 ? ', then smart money (perp-screener) and a second record (perp-leaderboard)' : ''}${v5 ? ', then the operator behind the wallet (related-wallets, transactions, sibling summaries)' : ''}, at most ${most} credit${most === 1 ? '' : 's'}...\n`);
+  const v4 = policy.smartMoneyCheck || policy.independentRecordCheck;
+  const v5 = policy.operatorCheck;
+  const most = liveCheckCredits(policy).max;
+  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary${positions ? ' and open positions' : ''}${v4 ? ', then smart money (perp-screener) and a second record (perp-leaderboard)' : ''}${v5 ? ', then the owner behind the wallet (its first funder: related-wallets, transactions, sibling summaries)' : ''}, at most ${most} credit${most === 1 ? '' : 's'}...\n`);
 
   let decision;
   try {

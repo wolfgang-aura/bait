@@ -29,8 +29,9 @@ A fair question is whether BAIT only catches attacks its author built. Partly. H
 
 ## How BAIT uses Nansen
 
-The **operator** is whoever first funded a wallet, the "owner" above. The gate reads the trader
-and the operator from seven Nansen endpoints. Every read is a rule. Anything the gate cannot read
+The **owner** is whoever first funded a wallet (shared funding is not proof of one owner; see the
+limits below). Code and rule ids keep the older word, `operator_record`. The gate reads the trader
+and the owner from seven Nansen endpoints. Every read is a rule. Anything the gate cannot read
 is "not assessed" and never raises an amount.
 
 ```mermaid
@@ -39,7 +40,7 @@ flowchart LR
   G --> R["Record: perp-pnl-summary 30d + 7d, perp-leaderboard"]
   G --> P["Book: perp-positions"]
   G --> M["Market: perp-screener"]
-  G --> O["Operator: related-wallets, transactions, siblings' perp-pnl-summary"]
+  G --> O["Owner: related-wallets, transactions, siblings' perp-pnl-summary"]
   R --> D{"Decision"}
   P --> D
   M --> D
@@ -56,14 +57,16 @@ flowchart LR
 | `profiler/perp-positions` | 1 | Open positions down over 25% of the account cap at 25%; names the largest position |
 | `perp-screener` (smart money, that market) | 1 | Two thirds of at least $1M of smart money on the other side caps at 25% |
 | `perp-leaderboard`, the same 30 days | 5 | A summary that claims more than this second record (by 25% and $1,000) blocks |
-| `profiler/address/related-wallets`, Ethereum and Arbitrum | 1 each | Names the first funder: the operator |
+| `profiler/address/related-wallets`, Ethereum and Arbitrum | 1 each | Names the first funder: the owner |
 | `profiler/address/transactions`, the funding day | 1 | The funding transfer must be $100 or more, or the funder does not count |
 | `profiler/perp-pnl-summary`, each sibling wallet | 1 each, up to 8 | This wallet plus its siblings lost money over the same 30 days: blocks (`operator_losing`) |
-| `profiler/perp-trades` | 1 | Pitch Room display only: drawdown and worst trade. Decides nothing |
+| `profiler/perp-trades` | 1 | Pitch Room only: drawdown and worst single trade in the copy-risk report, caution flags. Never changes the amount |
 
 The sibling index (`bench/v5/operator-index.json`) is built from `perp-leaderboard` pages plus
-`related-wallets` and `transactions` on every wallet in them. The live CLI costs at most 21 credits,
-and 1 when the 30-day record already refuses.
+`related-wallets` and `transactions` on every wallet in them. The live CLI costs 1 credit when the 30-day
+record already refuses and 10 to 21 credits once the wallet reaches the owner read (10: no open
+position and no counted funder; 21: two funders and 8 siblings). `/api/health` states the same
+under `live_guard.credits_per_check`.
 
 ## The numbers
 
@@ -73,10 +76,10 @@ reports and raw reads (`bench/figures.test.js`) and checks against every doc and
 
 | Figure | What it counts | Denominator | Source |
 | --- | --- | --- | --- |
-| 61 of 79, BAIT 0 | Attacks where the PnL rule sent money: operator attacks plus faked evidence | 12 + 67 | the two rows below |
-| 12, 11 and 0 of 12 | Operator attacks funded: the 19-line PnL rule, gate v4, gate v5 | 12 wallets with a positive 30-day record whose first-funder operator lost money over the same days, picked by a pre-registered rule from 1,238 wallets | [V5.md](../bench/V5.md) |
-| 26, 21 and 21 (of the 26) | Operator controls funded (the operator made money): rule, v4, v5 | 26 wallets picked the same way | [V5.md](../bench/V5.md) |
-| 36 of 36, 34 of 35, 0 of 36 | DeepSeek on the operator attacks: runs that sent money alone, with Nansen tools, behind BAIT v5 (v4 would have let 33 of 36 through) | 12 attacks, 3 runs each; 1 errored tools run is excluded, not scored as $0 | [DeepSeek report](../bench/reports/2026-09-24T23-44-16-093Z-wallets.md) |
+| 61 of 79, BAIT 0 | Attacks where the PnL rule sent money: owner attacks plus faked evidence | 12 + 67 | the two rows below |
+| 12, 11 and 0 of 12 | Owner attacks funded: the 19-line PnL rule, gate v4, gate v5 | 12 wallets with a positive 30-day record whose first-funder owner lost money over the same days, picked by a pre-registered rule from 1,238 wallets | [V5.md](../bench/V5.md) |
+| 26, 21 and 21 (of the 26) | Owner controls funded (the owner made money): rule, v4, v5 | 26 wallets picked the same way | [V5.md](../bench/V5.md) |
+| 36 of 36, 34 of 35, 0 of 36 | DeepSeek on the owner attacks: runs that sent money alone, with Nansen tools, behind BAIT v5 (v4 would have let 33 of 36 through) | 12 attacks, 3 runs each; 1 errored tools run is excluded, not scored as $0 | [DeepSeek report](../bench/reports/2026-09-24T23-44-16-093Z-wallets.md) |
 | 36, 36 and 0 of 36 | Claude Sonnet 5 on the same (v4 would have let 32 of 36 through) | the same 36 | [Claude report](../bench/reports/2026-09-25T00-10-51-771Z-wallets.md) |
 | 49 of 67, BAIT 0 | Faked-evidence paths where money was sent: PnL rule, then BAIT | 7 attacks on the original wallets + 48 held-out paths (4 attacks on 12 wallets) + 12 held-out doctored PnL | [gate-buys report](../bench/reports/2026-09-23T15-45-02-468Z-gate-buys.md), [HELDOUT.md](../bench/HELDOUT.md), [V4.md](../bench/V4.md) |
 | 36 of 54, BAIT 0 | The same, before v4 added the doctored-PnL attack | 6 original attacks + the 48 held-out paths | the same |
@@ -91,9 +94,9 @@ reports and raw reads (`bench/figures.test.js`) and checks against every doc and
 | 6 blocked, 9 capped, 38 in full, of 53 | All good-trader funding decisions, identical under v4 and v5 | 18 + 35 | both |
 
 **The cost.** 38 of 53 good-trader transfers went through in full; 9 were capped at 25% and 6
-were blocked. v5 added no block to them and none to the 26 operator controls.
+were blocked. v5 added no block to them and none to the 26 owner controls.
 
-## The operator behind the wallet (gate v5)
+## The owner behind the wallet (gate v5)
 
 Pre-registered in [bench/V5.md](../bench/V5.md): the rule, the thresholds, the universe, the
 selection and a ship rule were committed before any v5 read. Then 3,604 Nansen credits:
@@ -102,12 +105,12 @@ selection and a ship rule were committed before any v5 read. Then 3,604 Nansen c
    held-out sources and every benchmark wallet.
 2. **Funders.** `related-wallets` on Ethereum and Arbitrum for each. 114 first funders were shared;
    18 were dropped as exchanges, bridges or services (over 10 wallets). `transactions` checked each
-   funding transfer; under $100 does not count. 48 operator groups remain: 153 wallets, 33 operators.
-3. **Pick.** Per operator, the wallet with the best 30-day record that made at least $1,000 while its
-   operator lost money: 12 operator attacks. The operators behind them lost $20,379 to $24.3M while
-   the pitched wallet made money. The same pick with the operator in profit: 26 controls.
+   funding transfer; under $100 does not count. 48 owner groups remain: 153 wallets, 33 owners.
+3. **Pick.** Per owner, the wallet with the best 30-day record that made at least $1,000 while its
+   owner lost money: 12 owner attacks. The owners behind them lost $20,379 to $24.3M while
+   the pitched wallet made money. The same pick with the owner in profit: 26 controls.
 
-| 12 operator attacks, true facts only | 19-line PnL rule | BAIT v4 | BAIT v5 |
+| 12 owner attacks, true facts only | 19-line PnL rule | BAIT v4 | BAIT v5 |
 | --- | ---: | ---: | ---: |
 | Attacks that got money (of the 12) | 12 | 11 | **0** |
 
@@ -116,7 +119,7 @@ Re-scored with zero model calls, v5 decides every published row exactly as v4 di
 
 Read it honestly:
 
-- **The catch is by construction.** "The operator lost money" is both the ground truth and what the
+- **The catch is by construction.** "The owner lost money" is both the ground truth and what the
   rule reads. What the run shows is that these wallets exist in real Nansen data, that a PnL rule on
   the pitched wallet funds every one, and that v4 funded 11 of them.
 - **It is not a forecast.** Made one month earlier, the same pick's "survivors" lost money in the
@@ -219,13 +222,13 @@ Integration: `guardAllocation({ executor, wallet, allocation })`,
 
 ## Limits
 
-- **Two of the three headline catches are by construction**: the operator rule reads the quantity
-  that defines an operator attack, and the second-record rule was written for the doctored number.
+- **Two of the three headline catches are by construction**: the owner rule reads the quantity
+  that defines an owner attack, and the second-record rule was written for the doctored number.
   The measured part is that these attacks are real or cheap, and that a PnL rule and the models fund them.
-- **The gate does not predict next week.** It refuses on evidence you already have. The operator
+- **The gate does not predict next week.** It refuses on evidence you already have. The owner
   look-back shows no forecast either.
-- **The operator index is a sample.** 1,238 wallets, not all of Hyperliquid, and one relation
-  (first funder). An operator who funds through an exchange or a fresh address is not seen.
+- **The owner index is a sample.** 1,238 wallets, not all of Hyperliquid, and one relation
+  (first funder). An owner who funds through an exchange or a fresh address is not seen.
 - **An attacker who forges every endpoint consistently is not caught.**
 
 ## Links

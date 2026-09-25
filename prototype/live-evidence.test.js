@@ -699,7 +699,7 @@ test('v5 live round: the operator behind the wallet lost money, so the operator 
   assert.equal(final.verdict, 'block');
   assert.equal(final.gate.policyId, 'wallet-copy-risk-room-live-v5');
   assert.equal(final.gate.operatorLive, true);
-  assert.equal(row.plain, 'First funder 0x1111...1111 also paid for 1 indexed wallet; with this one the operator made -$488,000 over 30 days, so this wallet is the survivor.');
+  assert.equal(row.plain, 'First funder 0x1111...1111 also paid for 1 indexed wallet; with this one the owner made -$488,000 over 30 days, so this wallet is the survivor.');
   assert.equal(row.source, 'related-wallets first funder, transactions, sibling perp-pnl-summary');
   assert.doesNotMatch(JSON.stringify(final), /Some Fund/, 'no Nansen label reaches the page');
   assert.deepEqual(final.gate.calls.at(-1), { endpoint: 'operator: related-wallets, transactions, sibling perp-pnl-summary', credits: 4, at: final.gate.calls.at(-1).at, cached: false, decided: 'BLOCK' });
@@ -719,7 +719,7 @@ test('v5 live round: an exchange funder is not an operator; the row says why and
   const { final } = await service.finish(round.id, { wire: true });
   const row = final.gate.checks.find(c => c.id === 'operator_record');
   assert.equal(row.result, 'not_assessed');
-  assert.equal(row.plain, 'Not assessed: no first funder counts as an operator (arbitrum 0x1111...1111: label: exchange, bridge, router or service).');
+  assert.equal(row.plain, 'Not assessed: no first funder counts as an owner (arbitrum 0x1111...1111: label: exchange, bridge, router or service).');
   assert.doesNotMatch(JSON.stringify(final), /Binance/);
 });
 

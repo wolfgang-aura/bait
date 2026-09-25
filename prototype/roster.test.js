@@ -77,6 +77,23 @@ test('every brag is backed by a number that is actually in the loaded record', (
   }
 });
 
+test('THE GRINDER brags about a dated week, because a live read found it idle since', () => {
+  // Judge 3: the tile said "424 trades last week" beside a live strip reading 0 trades in 7 days.
+  const raw = JSON.parse(fs.readFileSync(path.join(ROOT, 'bench', 'live-reads', '20260925T122635Z-0xc26cbb64.json'), 'utf8'));
+  assert.equal(raw.wallet, by('grinder').wallet);
+  assert.equal(raw.responses['7d'].body.data.closed_trade_count, 0, 'no closed trade in the 7 days to 25 Sep 12:26 UTC');
+  assert.ok(raw.responses.fills[0].body.data.every(f => f.timestamp < '2026-09-18'), 'the newest fill is older than a week');
+  const p = by('grinder');
+  assert.doesNotMatch(p.voice, /last week|this week|lately|right now/i);
+  assert.equal(p.hype.caption, 'week to 15 Sep');
+  assert.equal(p.hype.source, 'Nansen 7-day window to 2026-09-15 UTC');
+  assert.equal(p.snapshot.windows['7d'].to, '2026-09-15T10:40:31Z', 'the week the tile names is the capture it reads');
+  // Every other Nansen-sourced brag that says "this week" is read within a day of the capture date it shows.
+  for (const q of ROSTER.filter(x => /this week|last week/i.test(x.voice))) {
+    assert.equal(q.hype.caption, '7 days', `${q.id} says a recent week`);
+  }
+});
+
 test('a real Nansen capture wins over the placeholder, with no code change', () => {
   for (const p of ROSTER.filter(x => x.venue === 'hyperliquid')) {
     assert.equal(p.truthAvailable, 'capture', `${p.id} is served from a real capture`);

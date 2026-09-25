@@ -32,9 +32,30 @@ import {
   creditCostFor,
 } from './nansen.js';
 import { leaderboardRequest, screenerRequest, recordFromLeaderboard, smartMoneyFromScreener, LEADERBOARD_ENDPOINT, SCREENER_ENDPOINT } from './v4-evidence.js';
-import { createOperatorReader } from './v5-evidence.js';
+import { createOperatorReader, OPERATOR_CHAINS, MAX_SIBLINGS_READ, RELATED_ENDPOINT, TRANSACTIONS_ENDPOINT, SUMMARY_ENDPOINT } from './v5-evidence.js';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
+/**
+ * What one live gate check costs in Nansen credits under `policy`, from the endpoints it reads.
+ * The one figure /healthz, the guard CLI and the docs state.
+ *   min: the 30-day summary already refuses, nothing else is bought.
+ *   ownerRead: the wallet reaches the owner read (gate v5). Its low end has no open position (no
+ *     perp-screener) and no counted funder (related-wallets on each chain only); its high end
+ *     reads a funding transfer per chain and MAX_SIBLINGS_READ sibling summaries.
+ *   max: the most any check can cost.
+ */
+export function liveCheckCredits(policy) {
+  const summary = creditCostFor(GUARD_ENDPOINT);
+  const windows = policy.shortWindowDays ? 2 : 1;
+  const base = windows * summary + (policy.openBookCheck ? creditCostFor('profiler/perp-positions') : 0)
+    + (policy.independentRecordCheck ? creditCostFor(LEADERBOARD_ENDPOINT) : 0);
+  const screener = policy.smartMoneyCheck ? creditCostFor(SCREENER_ENDPOINT) : 0;
+  const related = OPERATOR_CHAINS.length * creditCostFor(RELATED_ENDPOINT);
+  const ownerMax = related + OPERATOR_CHAINS.length * creditCostFor(TRANSACTIONS_ENDPOINT) + MAX_SIBLINGS_READ * creditCostFor(SUMMARY_ENDPOINT);
+  const ownerRead = policy.operatorCheck ? { min: base + related, max: base + screener + ownerMax } : null;
+  return { min: summary, ownerRead, max: base + screener + (policy.operatorCheck ? ownerMax : 0) };
+}
 
 /** Gate v5's operator index (bench/V5.md), built from Nansen reads by `node bench/v5.js --collect`. */
 export const OPERATOR_INDEX_FILE = fileURLToPath(new URL('../bench/v5/operator-index.json', import.meta.url));

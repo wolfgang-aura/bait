@@ -49,6 +49,7 @@ Every read drives a rule.
 | `perp-leaderboard` | A summary that claims more than this second record blocks (catches faked evidence) |
 | `profiler/perp-positions`, `perp-screener` | Deep open losses, or smart money on the other side, cap at 25% |
 | `profiler/address/related-wallets`, `transactions`, then each sibling's `perp-pnl-summary` | Finds the owner who funded the wallet; if the owner's wallets lost money together, blocks |
+| `profiler/perp-trades` (Pitch Room) | The newest fills: a drawdown or one trade too large for the book raises a caution flag in the copy-risk report; it never changes the amount |
 
 The full table, with credits per call, is in [docs/EVIDENCE.md](docs/EVIDENCE.md#how-bait-uses-nansen).
 

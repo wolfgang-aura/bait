@@ -62,6 +62,25 @@ test('the card is a real field-test wallet: the PnL rule and v4 fund it in full,
   assert.equal(v5.decision, 'block');
   assert.equal(v5.code, 'operator_losing');
   assert.equal(v5.checks.filter(c => c.result === 'fail').map(c => c.id).join(), 'operator_record', 'the owner is the only refusal');
+  // One word on screen (judge 3): the reason says owner; the rule id keeps its name.
+  const row = v5.checks.find(c => c.id === 'operator_record');
+  assert.match(row.plain, /with this wallet the owner is at -\$869,807\./);
+  assert.doesNotMatch(JSON.stringify(v5.checks.map(c => c.plain)), /operator/i);
+  assert.doesNotMatch(v5.reason ?? '', /operator/i);
+});
+
+test('user-facing prose says owner, never operator, outside code, rule ids and file names (judge 3)', () => {
+  const prose = text => text.split(/\r?\n/).map(l => l.replace(/`[^`]*`/g, '')).join('\n')
+    .replace(/operator_(record|losing)|operator-index\.json|operator-flagged|operatorLive|operatorRead|get_operator|gate\.operator|\.operator\b/g, '');
+  const files = ['JUDGE.md', 'docs/EVIDENCE.md', 'prototype/public/replay.html', 'prototype/public/room.html'];
+  for (const f of files) assert.doesNotMatch(prose(fs.readFileSync(path.join(ROOT, f), 'utf8')), /\boperators?\b/i, f);
+  // FIELD.md: the results; the pre-registration above them and the pre-registered headline keep their words.
+  const field = fs.readFileSync(path.join(ROOT, 'bench', 'FIELD.md'), 'utf8').split('## Results')[1]
+    .split(/\r?\n/).filter(l => !l.startsWith('**Of 200 top leaderboard wallets')).join('\n');
+  assert.doesNotMatch(prose(field), /\boperators?\b/i, 'bench/FIELD.md results');
+  // The checkpoint row title in the game.
+  const roomJs = fs.readFileSync(path.join(ROOT, 'prototype', 'public', 'room.js'), 'utf8');
+  assert.match(roomJs, /operator_record: 'Owner behind the wallet not losing'/);
 });
 
 test('only a capture frozen from a live read carries operator reads into a frozen round', () => {
@@ -124,4 +143,29 @@ test('the page draws the tree under the owner row on the checkpoint and in place
   assert.match(js, /el\.ownerTree\.innerHTML = owner \? ownerTreeHtml\(owner\) : '';/);
   assert.match(js, /text\(el\.truthPnl, owner\.combinedLabel\);/);
   assert.match(html, /<div id="owner-tree" hidden><\/div>/);
+});
+
+test('the proof page and FIELD.md state both reads of this wallet, each with its time, from the raw reads', () => {
+  const money = n => `${n < 0 ? '-' : '+'}$${Math.round(Math.abs(n)).toLocaleString('en-US')}`;
+  const sum = xs => xs.reduce((a, b) => a + b, 0);
+  // The field read (30 days to 06:04 UTC): the operator answer and the wallet's own summary.
+  const fieldOp = fs.readFileSync(path.join(ROOT, 'bench', 'field', 'reads', 'operator.jsonl'), 'utf8')
+    .split('\n').filter(Boolean).map(l => JSON.parse(l)).find(r => r.wallet === WALLET);
+  const fieldSiblings = sum(fieldOp.answer.siblings.map(s => s.realized_pnl_usd));
+  // The game's live read (11:31 UTC), the raw file the frozen card replays.
+  const raw = JSON.parse(fs.readFileSync(path.join(ROOT, committed.frozen_from.file), 'utf8'));
+  const liveSiblings = sum(raw.responses.operator.filter(c => c.endpoint === 'profiler/perp-pnl-summary')
+    .map(c => c.body.data.realized_pnl_usd));
+  const own = raw.responses['30d'].body.data;
+  assert.equal(money(own.realized_pnl_usd), '+$358,593');
+  assert.equal(own.closed_trade_count, 2661);
+  assert.equal(money(fieldSiblings), '-$1,234,554');
+  assert.equal(money(liveSiblings), '-$1,228,400');
+  assert.equal(money(own.realized_pnl_usd + liveSiblings), '-$869,807');
+
+  const page = fs.readFileSync(path.join(ROOT, 'prototype', 'public', 'replay.html'), 'utf8');
+  assert.match(page, /0x2043\.\.\.e79d \(195\)<\/td><td[^>]*>\+\$358,593<\/td><td[^>]*>4 wallets, -\$1,234,554<sup>\*<\/sup>/);
+  assert.match(page, /<sup>\*<\/sup> Field read, 30 days to 06:04 UTC\. [^<]*re-read live at 11:31 UTC: its own \+\$358,593 is unchanged, its owner&rsquo;s 4 other wallets -\$1,228,400/);
+  const field = fs.readFileSync(path.join(ROOT, 'bench', 'FIELD.md'), 'utf8');
+  assert.match(field, /re-read it live at 11:31 UTC[\s\S]{0,120}\+\$358,593 \(same 2,661 closed trades\), 4 siblings -\$1,228,400, owner -\$869,807/);
 });

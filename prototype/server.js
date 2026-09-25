@@ -23,7 +23,7 @@ import { providerByName, modelCallsUsed, CAPS, CapExceeded } from '../validation
 import { deskStatus } from './desk-status.js';
 import { loadEnv, ledgerStats, refreshAccountBalance, accountCreditsRemaining, creditsUsed, CREDIT_BUDGET, QUOTA_WINDOW_START } from '../validation/nansen.js';
 import { createDataSource, MAX_REFRESH_CREDITS } from '../validation/live.js';
-import { runLiveGuard } from '../validation/guard-live.js';
+import { runLiveGuard, liveCheckCredits } from '../validation/guard-live.js';
 import { PRODUCTION_GUARD_POLICY } from '../validation/guard.js';
 import { call as nansenCall } from '../validation/nansen.js';
 import { createEncounterService } from './encounter.js';
@@ -227,6 +227,12 @@ const dataSource = createDataSource({
  * Tests point ROOM_NANSEN_CALL_MODULE at a stub, and only when BAIT_TEST_STUBS=1.
  */
 const NANSEN_KEY = keyFingerprint();
+// What one live gate check costs, derived from the endpoints it reads (validation/guard-live.js).
+const GUARD_CHECK_CREDITS = (() => {
+  const c = liveCheckCredits(PRODUCTION_GUARD_POLICY);
+  return { min: c.min, owner_read: c.ownerRead, max: c.max,
+    note: 'min: the 30-day summary already refuses. owner_read: the wallet reaches the owner read; the low end has no open position and no counted funder, the high end two funders and 8 siblings. max: the most one check costs.' };
+})();
 const ROOM_STUB = process.env.BAIT_TEST_STUBS === '1' && process.env.ROOM_NANSEN_CALL_MODULE
   ? (await import(pathToFileURL(path.resolve(process.env.ROOM_NANSEN_CALL_MODULE)).href)).call
   : null;
@@ -371,15 +377,16 @@ function health() {
     runs_loaded: loadRuns().length,
     control_wallet: control?.wallet ?? null,
     default_rule: DEFAULT_RULE,
-    // The product itself, pointed at live Nansen evidence. One credit per check.
+    // The product itself, pointed at live Nansen evidence.
     live_guard: {
       route: HOSTED ? null : GUARD_ROUTE,
       page: '/replay.html#how',
       cli: 'npm run guard -- --wallet 0x... --allocation 5000',
       enabled: !HOSTED,
-      // v4: two windows (2), open positions (1), smart money (1) and a second record (5) when nothing
-      // has refused; a wallet the 30-day evidence already refuses costs one.
-      credits_per_check: 9,
+      // v5: 1 when the 30-day summary already refuses; 10 to 21 once the wallet reaches the owner read
+      // (two summaries, positions, perp-leaderboard 5, perp-screener 1 when a position is open,
+      // related-wallets on 2 chains, up to 2 funding transfers and 8 sibling summaries).
+      credits_per_check: GUARD_CHECK_CREDITS,
       policy_id: PRODUCTION_GUARD_POLICY.id,
     },
   };
@@ -922,7 +929,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  model calls     ${JSON.stringify(h.model_calls_used)} of ${JSON.stringify(h.model_call_caps)}`);
   console.log(`  live refresh    ${LIVE_ENABLED && !HOSTED ? `enabled for the card encounter (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED ? 'disabled for the card encounter (hosted spends only through the room live read)' : 'disabled (NANSEN_LIVE=0)'}`);
   console.log(`  nansen quota    ${h.nansen_quota.calls_since} calls since ${h.nansen_quota.since}, ${h.nansen_quota.credits_used_local}/${h.nansen_quota.credit_budget} credits`);
-  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} (${PRODUCTION_GUARD_POLICY.id}: 1 credit if the month refuses, at most 21)` : 'disabled (HOSTED=1)'}`);
+  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} (${PRODUCTION_GUARD_POLICY.id}: ${GUARD_CHECK_CREDITS.min} credit if the month refuses, ${GUARD_CHECK_CREDITS.owner_read.min} to ${GUARD_CHECK_CREDITS.max} with the owner read)` : 'disabled (HOSTED=1)'}`);
   console.log(`  default rule    ${h.default_rule}`);
   console.log(`  control wallet  ${h.control_wallet ?? 'none'}`);
   console.log(`  runs loaded     ${h.runs_loaded}`);

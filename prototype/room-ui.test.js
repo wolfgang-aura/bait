@@ -131,7 +131,7 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
   const rjs = read('replay.js');
   assert.doesNotMatch(page, /10 recorded attacks|One Nansen call|one credit per check|Five wallets, with evidence|-\$847,025\.38/);
   assert.match(page, /26 attacks on 6 losing wallets, 6 profitable controls and 7 attacks on the evidence itself/);
-  assert.match(page, /A Pitch Room live read also takes the newest page of fills: 5 credits when the record refuses, 10 when the gate clears or caps, plus 2 to 12 for the operator read when nothing earlier refuses \(22 at most\)\./);
+  assert.match(page, /A Pitch Room live read also takes the newest page of fills: 5 credits when the record refuses, 10 when the gate clears or caps, plus 2 to 12 for the owner read when nothing earlier refuses \(22 at most\)\./);
   // Gate v4's five endpoints and both findings are static text, so the Pages copy carries them.
   for (const e of ['perp-pnl-summary', 'perp-trades', 'perp-positions', 'perp-screener', 'perp-leaderboard']) assert.match(page, new RegExp(e));
   assert.match(page, /the AI alone backed one in 63 of 78 runs\. Behind BAIT: <strong>0 of 78<\/strong>/);
@@ -186,4 +186,25 @@ test('round 17: Wire it never sits where Pitch was, and ignores clicks for 700 m
   assert.match(js, /export const WIRE_ARM_MS = 700;/);
   assert.match(js, /if \(performance\.now\(\) - wireArmedAt < WIRE_ARM_MS\) return;/);
   assert.match(js, /if \(wireShown && \(el\.wire\.hidden \|\| wireAmount !== state\.funded\)\) wireArmedAt = performance\.now\(\);/);
+});
+
+test('the front door leads with the live-market finding, the benchmark is one line below, and the owner card is marked (judge 3)', () => {
+  const roster = html.slice(html.indexOf('id="roster-screen"'), html.indexOf('</section>', html.indexOf('id="roster-screen"')));
+  const lead = roster.slice(0, roster.indexOf('id="roster-grid"'));
+  assert.match(lead, /5 of the top 200 wallets are the winning face of an owner whose other wallets lost more than it made\./);
+  assert.match(lead, /rule funds all five\. BAIT blocks all five: four on the owner, one for too few trades\./);
+  assert.doesNotMatch(lead, /of 78|26 attacks|6 losing wallets/, 'no benchmark above the grid');
+  assert.doesNotMatch(roster, /id="ladder"|26 attacks|6 losing wallets/);
+  assert.equal((roster.match(/of 78/g) ?? []).length, 2, 'one benchmark line: 63 of 78 and 0 of 78');
+  assert.ok(roster.indexOf('owners-list') > roster.indexOf('id="roster-grid"'), 'the five sit below the grid');
+  // The five rows are the Proof page's owners table, figure for figure.
+  const page = read('replay.html');
+  const proofRows = [...page.matchAll(/<tr><td[^>]*>(0x[0-9a-f]{4}\.\.\.[0-9a-f]{4}) \(\d+\)<\/td><td[^>]*>([^<]+)<\/td><td[^>]*>([^<]+?)(?:<sup>\*<\/sup>)?<\/td><td[^>]*><strong>blocks: ([^<]+)<\/strong>/g)]
+    .map(m => [m[1], m[2], m[3], m[4] === 'fewer than 20 trades' ? 'too few trades' : m[4]]);
+  const roomRows = [...roster.matchAll(/<li><b>([^<]+)<\/b><span class="pos">([^<]+)<\/span><span class="neg">([^<]+)<\/span><em>([^<]+)<\/em><\/li>/g)].map(m => m.slice(1));
+  assert.equal(roomRows.length, 5);
+  assert.deepEqual(roomRows, proofRows);
+  assert.equal(roomRows.filter(r => r[3] === 'owner lost').length, 4);
+  assert.match(js, /if \(p\.start\) \{ const start = document\.createElement\('span'\); start\.className = 'tile-start'; start\.textContent = 'Start here';/);
+  assert.doesNotMatch(js, /renderLadder|ladderHead/);
 });

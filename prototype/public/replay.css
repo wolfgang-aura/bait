@@ -269,6 +269,7 @@ h1 {
 .owners-table td { font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .owners-table td.pos { color: var(--ink); }
 .owners-table td.neg { color: var(--loss); }
+.owners-table sup { line-height: 0; font-size: .8em; }
 .owners-table td strong { color: var(--accent); font-weight: 700; }
 .owners-table + .model-note { margin: 0 0 28px; }
 @media (max-width: 760px) {

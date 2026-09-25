@@ -1,6 +1,26 @@
 # BAIT public page, version B
 
-## Version T: the owner reveal, 25 September 2026 (current)
+## Version U: the live-market lead, 25 September 2026 (current)
+
+Judge 3: the first screen led with the old benchmark and THE GRINDER's tile claimed a week the live
+strip beside it contradicted. Same tokens, fonts and golden viewports.
+
+- **The front door leads with the field test**: an amber mono lab line, then the finding (5 of the
+  top 200 are the winning face of an owner who lost more; the PnL rule funds all five, BAIT blocks
+  all five, four on the owner, one for too few trades), then the product sentence in the dim mono.
+  Below the grid the true-facts ladder is replaced by the five rows of the Proof page's owners table
+  and one benchmark line (63 of 78, 0 of 78). Phone: each row is two lines, address and verdict over
+  the two figures.
+- **THE STEADY HAND is first and focused on load**, with an amber "Start here" chip opposite the venue
+  chip, so a first round lands on the owner reveal. Nothing else reads roster order (the server's
+  default prospect is named; record.cjs finds tiles by id).
+- **THE GRINDER brags about a dated week**: "+$35,723, week to 15 Sep", voice "My best week: ...".
+  A live read at 12:26 UTC (`bench/live-reads/20260925T122635Z-0xc26cbb64.json`, 12 credits) found 0
+  closed trades in 7 days and its newest fill on 17 Sep; its 30 days now read +$159,041 with a HYPE
+  short $374,746 under water, so it is kept on its 15 Sep capture (the -$4,745,429 month the card is
+  about) and the tile says which week it means instead of being refreshed into a second capped card.
+
+## Version T: the owner reveal, 25 September 2026
 
 A blind judge: every round ends BLOCKED, so the big moment should be the funding-owner graph.
 Same tokens, fonts and golden viewports (1280 x 800, 375 x 812). No new colour.

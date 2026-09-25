@@ -4,7 +4,7 @@ BAIT is a gate between an AI trading desk and its money. A seller pitches the AI
 copy. Before any transfer, BAIT reads the wallet, and whoever funded it, from Nansen, then
 blocks, caps at 25%, or clears the amount.
 
-On the live market: of 200 top leaderboard wallets, 5 are funded by an operator whose other wallets lost $759,169 to $10,129,956 over the same 30 days, more than the pitched wallet made. 3 of the 5 were already in the benchmark. [bench/FIELD.md](bench/FIELD.md)
+On the live market: of 200 top leaderboard wallets, 5 are funded by an owner whose other wallets lost $759,169 to $10,129,956 over the same 30 days, more than the pitched wallet made. 3 of the 5 were already in the benchmark. [bench/FIELD.md](bench/FIELD.md)
 
 ## 1. Look (1 minute)
 

@@ -20,6 +20,10 @@
       "clearedOrCapped": 10
     },
     "cliMaxCredits": 21,
+    "ownerReadCredits": [
+      10,
+      21
+    ],
     "capShare": 0.25
   },
   "operator": {

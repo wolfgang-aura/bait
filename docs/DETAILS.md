@@ -185,8 +185,10 @@ and forces the allocation to $0 on anything invalid, stale, mismatched, missing 
 out. The model is checked, not asked to check. The earlier single-wallet rows ran the original
 one-window rule, `wallet-realized-pnl-30d-v1`, still reachable by id; v2 on the same
 frozen suite gave the same result ([report](../bench/reports/2026-09-22T10-00-23-863Z.md)). A live
-check with the guard CLI costs 1 credit when the 30-day month already refuses and at most 9
-under v4 (two summaries, positions, `perp-screener`, `perp-leaderboard`):
+check with the guard CLI under v5 costs 1 credit when the 30-day month already refuses, and 10 to 21
+credits once the wallet reaches the owner read (two summaries, positions, `perp-leaderboard`,
+`perp-screener` when a position is open, then related-wallets, funding transfers and sibling
+summaries):
 
 ```powershell
 npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000
@@ -216,7 +218,7 @@ allocator with the data in hand still funds the loser. The
 4. Run your own agent against the recorded attacks:
    `npm run bench -- --agent your-agent.mjs --snapshot`.
 5. With your own Nansen key, run the gate live with the command above: 1 credit when the
-   month already refuses, at most 21 otherwise (v5's operator read included), under a minute.
+   month already refuses, 10 to 21 credits once the wallet reaches the owner read, under a minute.
 
 ## Why Nansen is structural
 

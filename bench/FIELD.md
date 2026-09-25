@@ -100,6 +100,9 @@ Spend: 2,398 Nansen credits (ledger 5,521 to 7,919; account balance 15,442 befor
 
 **Of 200 top leaderboard wallets, 5 are funded by an operator whose other wallets lost $759,169 to $10,129,956 over the same 30 days, more than the pitched wallet made.**
 
+(The headline keeps its pre-registered wording. Everywhere else BAIT calls the first funder the
+owner; the rule ids keep `operator_record` and `operator_losing`.)
+
 That is exactly the pre-registered bar of 5, and 3 of the 5 are wallets V5.md had already found
 (see "Overlap" below). Read it as: the pattern exists at the top of the live leaderboard, in about
 1 wallet in 40, not as a new population of hidden-owner attacks.
@@ -115,35 +118,38 @@ and succeeded on the pre-registered retry; the failed lines stay in `cases.jsonl
 | Gate v5 | 129 full, 46 capped, 25 blocked |
 | v4 blocked by | regime_disagreement 11, low_win_rate 9, thin_sample 1 |
 | v5 blocked by | regime_disagreement 11, low_win_rate 9, operator_losing 4, thin_sample 1 |
-| v5's operator row | blocked 4, passed 21, not assessed 154, not reached 21 (an earlier row refused) |
+| v5's owner row | blocked 4, passed 21, not assessed 154, not reached 21 (an earlier row refused) |
 
-| Operator read on every wallet, whatever the gate order | wallets (of 200) |
+| Owner read on every wallet, whatever the gate order | wallets (of 200) |
 | --- | ---: |
-| first funder counts as an operator, with at least one indexed sibling that has a 30-day record | 30 |
+| first funder counts as an owner, with at least one indexed sibling that has a 30-day record | 30 |
 | siblings' 30-day sum below $0 | 12 |
 | wallet plus siblings below $0 (operator-flagged) | 5 |
 
 v5 differs from v4 on 4 wallets, each an `operator_losing` block of a wallet v4 funded in full. The
 fifth flagged wallet (0x2e2b...2fab) is refused by both gates earlier, for fewer than 20 closed
-trades, so the operator row is never reached. For 154 wallets the row is not assessed: no counted
+trades, so the owner row is never reached. For 154 wallets the row is not assessed: no counted
 first funder with an indexed sibling.
 
 **Overlap.** 140 of the 200 were in the v5 universe (it included an earlier read of the same
-leaderboard request). Of the 5 flagged: 3 are among V5.md's operator attacks (0x615a...69d5,
+leaderboard request). Of the 5 flagged: 3 are among V5.md's owner attacks (0x615a...69d5,
 0x153c...319a, 0xaac0...245b), 1 was in the universe but not picked (0x2e2b...2fab), and 1 was not
 in the universe at all (0x2043...e79d, found through an indexed funder).
 
-**Case receipts** (30-day realised PnL over 26 Aug 06:04 to 25 Sep 06:04 UTC; operator read time
+**Case receipts** (30-day realised PnL over 26 Aug 06:04 to 25 Sep 06:04 UTC; owner read time
 in UTC):
 
 - **0x2043...e79d**, leaderboard rank 195, not in the v5 universe. Own +$358,593. Its Ethereum
   first funder (a $4,307 funding transfer) paid for 4 indexed wallets that made -$1,234,554
-  together; operator -$875,962.
-  v4 funds it in full; v5 blocks it (`operator_losing`). Read 06:46:22.
-- **0x153c...319a**, rank 68, a V5.md operator attack a day earlier. Own +$812,498; 7 siblings
-  -$2,650,967; operator -$1,838,469. v4 full, v5 blocks. Read 06:19:26.
+  together; owner -$875,962.
+  v4 funds it in full; v5 blocks it (`operator_losing`). Read 06:46:22. The game's THE STEADY HAND
+  card re-read it live at 11:31 UTC (`bench/live-reads/20260925T113130Z-0x20438cfd.json`): own
+  +$358,593 (same 2,661 closed trades), 4 siblings -$1,228,400, owner -$869,807. One sibling had 18
+  fewer closed trades in the moved window; live figures move with it.
+- **0x153c...319a**, rank 68, a V5.md owner attack a day earlier. Own +$812,498; 7 siblings
+  -$2,650,967; owner -$1,838,469. v4 full, v5 blocks. Read 06:19:26.
 - **0x2e2b...2fab**, rank 73, in the universe but not a V5.md pick. Own +$743,510; 8 siblings
-  -$759,169; operator -$15,659. Both gates refuse it first for a thin sample. Read 06:20:35.
+  -$759,169; owner -$15,659. Both gates refuse it first for a thin sample. Read 06:20:35.
 
 The other two: 0x615a...69d5 (rank 11, own +$2,854,381, 3 siblings -$2,996,395) and 0xaac0...245b
 (rank 151, own +$432,831, 2 siblings -$10,129,956), both blocked by v5 only.
@@ -157,5 +163,5 @@ wallets, and v5 adds 4 blocks.
 
 **Changes after the pre-registration** (none changes a rule, a threshold, the population or a
 decision): `bench/field.test.js` was added after the reads; one of its assertions assumed every
-v5 decision carries an operator row, which is not so when an earlier row refuses, and was
+v5 decision carries an owner row, which is not so when an earlier row refuses, and was
 corrected. `bench/figures.js` and `scripts/verify.mjs` gained the field figures.
