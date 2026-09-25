@@ -482,11 +482,12 @@ export function loadRoster({
       all_time: `The public Hyperliquid leaderboard row for this address, ${readLabel.replace('Hyperliquid leaderboard ', '')}, shows ${headline.value} PnL ${headline.caption}.`,
       best_week: `Nansen's 7-day realised PnL for this address over the ${headline.caption}, ${readLabel.replace('Nansen ', '')}, was ${headline.value}.`,
     }[p.hypeKind];
-    const published = [{
-      value: headline.value, window: headline.caption, source: readLabel, claim: said,
-      span: { best_week: '7d', week: '7d', month: '30d', all_time: 'all' }[p.hypeKind],
-      from: fromNansen ? 'Nansen' : 'Hyperliquid leaderboard',
-    }];
+    // Judge 9: every figure the tile prints, not only its headline (THE GRINDER's "100% win rate"
+    // sub-line was struck as "not in the record"). Derived from the tile's own text.
+    const published = tilePublished(headline, {
+      readLabel, from: fromNansen ? 'Nansen' : 'Hyperliquid leaderboard',
+      span: { best_week: '7d', week: '7d', month: '30d', all_time: 'all' }[p.hypeKind], claim: said,
+    });
 
     const loaded = {
       ...base,
@@ -543,6 +544,38 @@ export function loadRoster({
   });
 }
 
+/** A figure as a tile prints it: money, a percent, or a trade count. */
+export const TILE_FIGURE = /[+-]?\$\d[\d,]*(?:\.\d+)?|\d[\d,]*(?:\.\d+)?%|\d[\d,]*\s+(?:closed\s+)?trades?\b/g;
+
+/**
+ * Judge 9: the tile's published facts, read off exactly what the tile prints (the headline figure
+ * and every figure on its sub-line: "100% win rate", "+$428,058 all time", "$69,023,422 account").
+ * The lobby says every tile number is what the trader publishes, so each is a fact of the round
+ * with its window and its read. A sub-line figure takes its window from its own words ("all time",
+ * "account"); otherwise it shares the headline's window. The headline comes first.
+ */
+export function tilePublished(tile, { readLabel, from, span, claim = null }) {
+  const to = String(tile.caption ?? '').match(/\bto (\d{1,2} [A-Z][a-z]{2})\b/)?.[1] ?? null;
+  const read = from === 'Nansen' ? readLabel.replace(/^Nansen /, '') : readLabel.replace(/^Hyperliquid leaderboard /, '');
+  const out = [];
+  const add = (text, head) => {
+    for (const m of String(text ?? '').matchAll(TILE_FIGURE)) {
+      const value = m[0].trim();
+      const own = head ? span : /\ball[- ]time\b/i.test(text) ? 'all' : /\baccount\b/i.test(text) ? 'now' : span;
+      const what = /%$/.test(value) ? 'win rate' : /trades?$/.test(value) ? 'trade count' : own === 'now' ? 'account value' : 'PnL';
+      const window = head || own === span ? tile.caption : own === 'all' ? `all time${to ? ` to ${to}` : ''}` : `account value at the leaderboard ${read}`;
+      const said = head && claim ? claim
+        : from === 'Nansen'
+          ? `Nansen's ${span === '30d' ? '30-day' : '7-day'} summary for this address over the ${tile.caption}, ${read}, reported ${what === 'win rate' ? `a ${value} win rate` : what === 'trade count' ? value : `${value} realised PnL`}.`
+          : `The public Hyperliquid leaderboard row for this address, ${read}, shows ${what === 'account value' ? `an account value of ${value}` : `${value} ${what}${own === 'all' ? ' all time' : ` over the ${window}`}`}.`;
+      out.push({ value, window, source: readLabel, claim: said, span: own, from, what });
+    }
+  };
+  add(tile.value, true);
+  add(tile.sub, false);
+  return out;
+}
+
 /**
  * Rebuild one Hyperliquid prospect against a different snapshot, so a round played on
  * a live refresh shows the refreshed numbers rather than the numbers on disk at boot.
@@ -590,6 +623,8 @@ export function walletProspect(walletInput, snapshot) {
     venue: 'hyperliquid', venueLabel: VENUES.hyperliquid.label, chain: VENUES.hyperliquid.chain,
     accent: '#9AA2AD', portrait: 'nicecat', voice: null,
     hypeRow: null,
+    // Judge 9: the pasted wallet's tile figure is published the same way as the roster's.
+    published: tilePublished(hype, { readLabel: `Nansen ${readOf(declared).label}`, from: 'Nansen', span: hype.caption === '7 days' ? '7d' : '30d' }),
     hype: { ...hype, source: `Nansen live read, ${stamp(declared.retrieved_at)}`,
       hypeDate: day(declared.retrieved_at), recordDate: day(declared.retrieved_at), hypeFrom: 'Nansen' },
     truth: hyperliquidTruth(declared, 'live'),

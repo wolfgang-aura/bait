@@ -158,7 +158,8 @@ test('a round moves the meters; a commitment raises the meter and the player wir
   assert.equal(final.final.executed, 0, 'BAIT forces the wire to zero');
   assert.equal(final.final.gate.code, 'pnl_below_minimum');
   assert.equal(final.final.gate.pnlLabel, '-$4,745,429');
-  assert.equal(final.final.headline, 'PENNY agreed to send $6,250 without checking who funds the wallet.');
+  // Judge 9: the headline names the row that decided (the 30-day record), not the owner.
+  assert.equal(final.final.headline, 'PENNY agreed to send $6,250 without asking for the 30-day record.');
   assert.equal(final.final.subline, "BAIT's Nansen read blocked it: $6,250 held, $0 reached THE GRINDER.");
   assert.match(final.final.because, /-\$4,745,429/);
   assert.equal(final.final.checkedRecord, 'Nansen');
@@ -446,7 +447,8 @@ test('a profitable month carried by one market is capped, not blocked: a quarter
   assert.equal(final.final.executed, 1875);
   assert.equal(final.final.stamp, 'CAPPED');
   assert.equal(final.final.subline, "BAIT's Nansen read capped it: $7,500 requested, $1,875 allowed, $5,625 held.");
-  assert.equal(final.final.headline, 'PENNY agreed to send $7,500 without checking who funds the wallet.');
+  // Judge 9: capped on one market, so the headline names that, not the owner.
+  assert.equal(final.final.headline, 'PENNY agreed to send $7,500 without asking how much of the month came from one market.');
   assert.equal(final.leaderboard[0].prospect, 'THE REAL DEAL');
 });
 
@@ -488,7 +490,9 @@ test('the wired commitment is the one wire: the gate decides it once, when the p
   assert.equal(final.executed, 0);
   assert.equal(final.stamp, 'BLOCKED');
   assert.equal(final.gate.attempted, 4000, 'the card\'s gate table is the decision on the one wire');
-  assert.equal(final.headline, 'PENNY agreed to send $4,000 without checking who funds the wallet.', '"The thirty day is down" is a remark, not a request');
+  // Judge 9: "The thirty day is down" is a remark, not a request; it did raise the 30-day record,
+  // which decided this round, so the headline says so in PENNY's terms.
+  assert.equal(final.headline, 'PENNY raised the 30-day record, then agreed to send $4,000 anyway.', '"The thirty day is down" is a remark, not a request');
   assert.equal(final.trail, null);
   assert.equal(final.wiresAttempted, 1);
   assert.equal(final.wiresBlocked, 1);
@@ -549,7 +553,7 @@ test('a caught lie sends no wire; a commitment is judged when it is wired', asyn
   assert.equal(shots[0].wire.stopped, 5625);
   assert.equal(final.stamp, 'CAPPED');
   assert.equal(final.executed, 1875);
-  assert.equal(final.headline, 'PENNY agreed to send $7,500 without checking who funds the wallet.');
+  assert.equal(final.headline, 'PENNY agreed to send $7,500 without asking how much of the month came from one market.');
 });
 
 test('the room gate table is complete: the week is read even after the month refuses, each check names its Nansen read', async () => {
@@ -590,7 +594,7 @@ test('the ending is worded from the round\'s own transcript: asked, then agreed 
   start = await blind.service.start();
   await pitch(blind.service, start.id, 0, '+$35,723 realised over the last 7 days.');
   ({ final } = await blind.service.finish(start.id, {}));
-  assert.equal(final.headline, 'PENNY agreed to send $2,500 without checking who funds the wallet.');
+  assert.equal(final.headline, 'PENNY agreed to send $2,500 without asking for the 30-day record.');
   assert.equal(final.quotes.asked, null);
   assert.doesNotMatch(JSON.stringify(final), /never looked/);
 });
@@ -855,6 +859,8 @@ test('judge 5: the result headline is true in every case: "without checking who 
   // PENNY said nothing about the record: the always-true sentence. PENNY has no tools, so it
   // never reads the owner.
   assert.deepEqual(ROOM_DESK.tools, []);
-  const silent = endingCopy({ s: s([shot(1, 'Deal. Sending it.', { wire: { attempted: 5000 } })]), peak: 5000, executed: 0, verdict: 'block' });
+  // Judge 9: the funding sentence only when the owner row decided the block.
+  const ownerGate = { decided: [{ id: 'operator_record' }], failed: 'operator_record' };
+  const silent = endingCopy({ s: s([shot(1, 'Deal. Sending it.', { wire: { attempted: 5000 } })]), peak: 5000, executed: 0, verdict: 'block', gate: ownerGate });
   assert.equal(silent.headline, 'PENNY agreed to send $5,000 without checking who funds the wallet.');
 });

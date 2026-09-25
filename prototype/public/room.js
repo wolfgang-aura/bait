@@ -493,8 +493,8 @@ function renderCalls(calls, read = null) {
   const total = calls.reduce((a, c) => a + (c.credits || 0), 0);
   const foot = document.createElement('li');
   const link = document.createElement('a');
-  link.href = '/api/health';
-  // Judge 8: the link opens the server's health JSON; the label says so.
+  link.href = '/api/usage';
+  // Judge 9: the label says usage, so it opens the usage ledger (/api/usage), not the health JSON.
   link.textContent = 'raw usage JSON';
   foot.append(`${total} Nansen credit${total === 1 ? '' : 's'} this round · `, link);
   el.cpCalls.append(foot);
@@ -537,11 +537,13 @@ function showReveal(p, final) {
   // Round 22: the reveal says three things once. The headline (what PENNY did), one BAIT
   // line with the figure that decided it, and the score. The old "agreed to send" tag and
   // the amber sentence repeated the headline, so they are gone.
+  // Judge 9: a clear says, where the cleared amount is shown, why the whole amount went.
   const why = decidingFigure(final);
-  if (why) {
+  const shown = why || (final.verdict === 'allow' ? final.agentLine ?? '' : '');
+  if (shown) {
     const span = document.createElement('span');
     span.className = 'reveal-why';
-    span.textContent = ` ${why}`;
+    span.textContent = ` ${shown}`;
     el.revealSub.append(span);
   }
   // At most one of PENNY's lines, the one that backs the headline's claim (where it asked
@@ -683,8 +685,12 @@ function showTruth(p) {
  * (drawdown, worst trade) and the positions (account value) when this round's read holds them.
  */
 function reportSource(risk, gate) {
-  const used = (gate?.reads ?? []).filter(r => /^perp-(pnl-summary|trades|positions)/.test(r));
-  return `Nansen ${(used.length ? used : ['perp-pnl-summary']).join(', ')}`;
+  const reads = gate?.reads ?? [];
+  const used = reads.filter(r => /^perp-(pnl-summary|trades|positions)/.test(r));
+  const list = `Nansen ${(used.length ? used : ['perp-pnl-summary']).join(', ')}`;
+  // Judge 9: said against the round's own reads, so a round that read seven endpoints does not look
+  // like it read three: the report uses these; the check above read the rest.
+  return reads.length > used.length ? `${list} (this report's share of the round's ${reads.length} reads: ${reads.join(', ')})` : list;
 }
 
 /**
@@ -738,7 +744,12 @@ function tapeLine(gate) {
   const t = gate.tape;
   const day = String(t.capturedAt).slice(0, 10);
   if (!gate.live) return `Summaries and trade fills: the same ${day} capture.`;
-  if (t.live) return `Live: both perp-pnl-summary windows and ${t.complete ? `all ${t.fills.toLocaleString('en-US')} perp fills in the window` : `the newest ${t.fills.toLocaleString('en-US')} perp fills`}, read ${String(t.capturedAt).slice(11, 16)} UTC.`;
+  if (t.live) {
+    // Judge 9: every read this round made, from the round's own list (gate.reads), not two of them.
+    const fills = t.complete ? `perp-trades (all ${t.fills.toLocaleString('en-US')} fills in the window)` : `perp-trades (the newest ${t.fills.toLocaleString('en-US')} fills)`;
+    const reads = (gate.reads?.length ? gate.reads : ['perp-pnl-summary (30 and 7 days)', 'perp-trades']).map(r => (/^perp-trades$/.test(r) ? fills : r));
+    return `Live: ${reads.join(', ')}, read ${String(t.capturedAt).slice(11, 16)} UTC.`;
+  }
   const age = t.ageMs === null ? 'age unknown' : `${(t.ageMs / 86_400_000).toFixed(1)} days older than the live read`;
   return t.stale
     ? `Summaries read live; trade fills from the ${day} capture, ${age}: shown, not used by any check.`
@@ -749,7 +760,10 @@ function renderGate(host, gate, verdict = null) {
   host.replaceChildren();
   const label = { pass: 'pass', fail: 'block', not_assessed: 'n/a', cap: 'cap', caution: 'watch' };
   // Freshness is always shown: on a frozen snapshot it reads n/a rather than pass.
-  const shown = c => c.result !== 'not_assessed' || c.id === 'evidence_freshness' || c.id.startsWith('fills_');
+  // Judge 9: a row the gate assessed and could not judge says why, as a row ('Headline is realised',
+  // an owner with no counting funder). Only a row the gate did not read this round ("Not read: ...")
+  // is named in the footer, and the footer says exactly that.
+  const shown = c => c.result !== 'not_assessed' || !/^Not read\b/.test(String(c.plain ?? '')) || c.id === 'evidence_freshness' || c.id.startsWith('fills_');
   // Rows the gate could not look at are named once in the footer, so the table stays
   // the length of what was actually decided.
   const skipped = (gate.checks ?? []).filter(c => !shown(c));
@@ -777,10 +791,11 @@ function renderGate(host, gate, verdict = null) {
   foot.className = 'report-foot';
   const windows = gate.shortWindowDays ? `${gate.shortWindowDays}-day and ${gate.windowDays}-day` : `${gate.windowDays}-day`;
   foot.textContent = [
-    `The BAIT check · ${windows} · ${gate.source}${gate.live && gate.evidenceAt ? ` · live read ${String(gate.evidenceAt).slice(11, 16)} UTC` : ''} · ${gate.reason}`,
+    // Judge 9: every endpoint this round's check read, not the summary endpoint alone.
+    `The BAIT check · ${windows} · ${gate.reads?.length ? `Nansen ${gate.reads.join(', ')}` : gate.source}${gate.live && gate.evidenceAt ? ` · live read ${String(gate.evidenceAt).slice(11, 16)} UTC` : ''} · ${gate.reason}`,
     gate.tape && gate.tape.capturedAt ? tapeLine(gate) : '',
     (gate.checks ?? []).some(c => shown(c) && c.result === 'caution') ? WATCH_NOTE : '',
-    skipped.length ? `Not decided by the gate (not reached after the block, or needs the trade fills the report below reads): ${skipped.map(c => checkName(c.id)).join(', ')}.` : '',
+    skipped.length ? `Not read this round (an earlier row already refused, or a saved capture holds no live read of it): ${skipped.map(c => checkName(c.id)).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
 }
@@ -1092,7 +1107,8 @@ async function pitch() {
     updateCount();
     const last = state.shots[state.shots.length - 1];
     // The referee, not PENNY, calls a false figure. PENNY has no data, so it cannot.
-    if (last?.caught) { text(el.status, last.referee ?? 'Referee: the line does not match the record as stated. The line is spent.'); el.status.classList.add('referee'); }
+    // Judge 9: the referee's own line, which always names what is wrong; never a generic strike.
+    if (last?.caught && last.referee) { text(el.status, last.referee); el.status.classList.add('referee'); }
     else el.status.classList.remove('referee');
     // Hold on the transfer card long enough to read it, then the reveal.
     // The agreed beat and the checkpoint are paced in finish(); no extra wait here.
@@ -1254,7 +1270,8 @@ function renderWireLog(list) {
     const w = shot.wire;
     row.className = shot.caught ? 'caught' : !w ? 'none' : w.decision === 'block' ? 'blocked' : w.verdict === 'capped' ? 'capped' : 'cleared';
     row.textContent = shot.caught
-      ? `Line ${shot.n} · caught lie, no wire`
+      // Judge 9: every strike names its reason, so the row says who struck it, not "lie".
+      ? `Line ${shot.n} · struck by the referee, no wire`
       : !w
         ? `Line ${shot.n} · desk committed $0, no wire`
         : `Line ${shot.n} · ${w.attemptedLabel} · ${w.stamp}${w.decision === 'block' ? ` · ${w.stoppedLabel} stopped` : ''}`;
@@ -1336,6 +1353,7 @@ async function fixture(name, prospectId) {
   // `&verdict=allow` is layout only: no roster record clears, so a CLEAR reveal is drawn on
   // this record's figures with the verdict forced (local fixture route only).
   const cleared = new URLSearchParams(location.search).get('verdict') === 'allow';
+  const silent = new URLSearchParams(location.search).get('penny') === 'silent';
   const block = !cleared && frozen.gate.decision === 'block';
   const capped = !cleared && frozen.gate.code === 'capped';
   const amount = 2500;
@@ -1356,15 +1374,19 @@ async function fixture(name, prospectId) {
     prospect: { id: p.id, name: p.name, handle: p.handle, venueLabel: p.venueLabel },
     // Same sentences the server's endingCopy writes; the gate table is the gate's real
     // decision on the frozen record, run by the fixture route for this $2,500.
-    headline: `PENNY asked for the record, was never shown it, and agreed to send ${dollars(amount)}.`,
-    quotes: { asked: { n: 1, line: 'Fixture reply: show me the 30-day record.' }, agreed: { n: 2, line: 'Fixture reply: fine, a small probe.', amount } },
+    // `&penny=silent`: PENNY never asked, so the headline is the server's silentHeadline (judge 9).
+    headline: silent ? (cleared ? frozen.silentHeadlineAllow : frozen.silentHeadline) : `PENNY asked for the record, was never shown it, and agreed to send ${dollars(amount)}.`,
+    quotes: silent ? { agreed: { n: 2, line: 'Fixture reply: fine, a small probe.', amount } }
+      : { asked: { n: 1, line: 'Fixture reply: show me the 30-day record.' }, agreed: { n: 2, line: 'Fixture reply: fine, a small probe.', amount } },
+    // A replayed saved read shows its raw file and hash, as a live round does.
+    evidence: frozen.raw ? { raw: frozen.raw } : undefined,
     subline: block
       ? `BAIT's Nansen read blocked it: ${dollars(amount)} held, $0 reached ${p.name}.`
       : capped ? `BAIT's Nansen read capped it: ${dollars(amount)} requested, ${dollars(sent)} allowed, ${dollars(amount - sent)} held.`
       : `BAIT's Nansen read cleared it: ${dollars(sent)} reached ${p.name}.`,
     because: frozen.gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null,
     trail: null,
-    agentLine: assessed?.agent_line ?? '',
+    agentLine: cleared ? frozen.clearedLine : frozen.agentLine ?? assessed?.agent_line ?? '',
     gate: frozen.gate,
     risk: p.risk,
     // The fixture lines quote the first fact card, so that is what was pitched, from this read

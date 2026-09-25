@@ -14,15 +14,26 @@ export function checkpointTitle(final) {
 const LABEL = { pass: 'PASS', fail: 'BLOCK', not_assessed: 'N/A', cap: 'CAP', caution: 'WATCH' };
 
 /**
+ * Judge 9: data words as people read them. Chain names are capitalised ("arbitrum 0x..." read as a
+ * typo), and a HIP-3 market's dex prefix is said, not printed as an id: "xyz:SKHY" is
+ * "SKHY (xyz market)", Hyperliquid's name for a market deployed by the xyz dex.
+ */
+const CHAINS = { ethereum: 'Ethereum', arbitrum: 'Arbitrum', base: 'Base', optimism: 'Optimism', polygon: 'Polygon', solana: 'Solana', bnb: 'BNB', avalanche: 'Avalanche' };
+export const humanText = text => String(text ?? '')
+  .replace(/\b(ethereum|arbitrum|base|optimism|polygon|solana|bnb|avalanche)(?= 0x)/g, c => CHAINS[c])
+  .replace(/\b(ethereum|arbitrum)\b/g, c => CHAINS[c])
+  .replace(/\b([a-z][a-z0-9]*):([A-Z0-9]{2,})\b/g, (_, dex, sym) => `${sym} (${dex} market)`);
+
+/**
  * One gate row as shown. When a block wins, a lower-priority CAP row must not promise money
  * moving: it is marked superseded and its "the gate sends N%" sentence is replaced.
  */
 export function checkRowView(check, verdict) {
   if (verdict === 'block' && check.result === 'cap') {
     const said = String(check.plain).replace(/\s*[^.]*\bthe gate sends\b[^.]*\./i, '').trim();
-    return { result: 'superseded', label: 'CAP', plain: `${said} Superseded by the block: nothing is sent.`.trim() };
+    return { result: 'superseded', label: 'CAP', plain: humanText(`${said} Superseded by the block: nothing is sent.`.trim()) };
   }
-  return { result: check.result, label: LABEL[check.result] ?? check.result, plain: check.plain };
+  return { result: check.result, label: LABEL[check.result] ?? check.result, plain: humanText(check.plain) };
 }
 
 /** The report's flag ids and the gate row that decides each one. */
@@ -42,13 +53,15 @@ export function reportRows(risk, checks = [], verdict = null) {
   if (!risk.flags.length) rows.push({ kind: 'none', label: 'clear', line: 'Nothing on this record trips a BAIT check.' });
   for (const flag of risk.flags) {
     const row = checks.find(c => c.id === ROW_FOR_FLAG[flag.id]);
-    if (!row) { rows.push({ kind: kind.WATCH, label: 'WATCH', line: flag.plain }); continue; }
+    if (!row) { rows.push({ kind: kind.WATCH, label: 'WATCH', line: humanText(flag.plain) }); continue; }
     const view = checkRowView(row, verdict);
     const label = view.result === 'caution' ? 'WATCH' : view.label;
     // A row the gate passed or could not judge says so in its own words (round 16: a drawdown
     // on 17 minutes of fills is N/A, not a finding).
-    const line = ['pass', 'not_assessed'].includes(row.result) || view.result === 'superseded' ? view.plain : flag.plain;
-    rows.push({ kind: view.result === 'superseded' ? 'low superseded' : kind[label] ?? 'medium', label, line });
+    // Judge 9: a fills row (drawdown, worst trade) always says its gate row's sentence, which names
+    // the base and the limit it broke, so the report and the check table state one measure.
+    const line = ['pass', 'not_assessed'].includes(row.result) || view.result === 'superseded' || String(row.id).startsWith('fills_') ? view.plain : flag.plain;
+    rows.push({ kind: view.result === 'superseded' ? 'low superseded' : kind[label] ?? 'medium', label, line: humanText(line) });
   }
   return rows;
 }
@@ -88,7 +101,7 @@ export function pitchedView(final) {
  * Judge 6: "...; this is the one being pitched." said once on the result screen, under the owner
  * tree that marks the pitched wallet. The deciding line and the gate table keep the figures.
  */
-export const oncePitched = line => String(line ?? '').replace(/;\s*this is the one being pitched\.?$/, '.');
+export const oncePitched = line => humanText(line).replace(/;\s*this is the one being pitched\.?$/, '.');
 
 /**
  * Judge 7: every row's name as people read it. The same names as the gate's CHECK_TITLE
@@ -149,5 +162,6 @@ export function recordHeadline(final, truth) {
     return { id: first?.id ?? null, value: truth.pnlLabel, caption: truth.pnlCaption, bad: final?.verdict === 'block' || truth.pnl < 0, also, rows: [] };
   }
   const rows = first.id === 'operator_record' ? [] : [{ label: '30-day realised (passed)', value: truth.pnlLabel }];
-  return { id: first.id, value: first.value, caption: first.caption, bad: true, also, rows };
+  const human = r => ({ ...r, ...(r.caption ? { caption: humanText(r.caption) } : {}), ...(r.label ? { label: humanText(r.label) } : {}) });
+  return { id: first.id, value: first.value, caption: humanText(first.caption), bad: true, also: also.map(human), rows };
 }

@@ -38,11 +38,11 @@
  * failure, cap or missing key plays the frozen capture exactly as before, and the round
  * says which one it got.
  */
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { guardAllocation, BENCHMARK_GUARD_POLICY, agentVerdictLine } from '../validation/guard.js';
+import { guardAllocation, BENCHMARK_GUARD_POLICY } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
 import { withV4Reads } from '../validation/v4-evidence.js';
 import { withV5Reads } from '../validation/v5-evidence.js';
@@ -374,7 +374,8 @@ export function createLeaderboardStore(file, { limit = 20 } = {}) {
 
 /** The record BAIT read, in the words a stranger knows. */
 // A money or percent figure as typed: "+$9,999,999", "$1.2m", "$190k", "42.1%".
-const FIGURE = /[+-]?\$\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|m|mm|million|thousand|grand)\b)?|[+-]?\d[\d,]*(?:\.\d+)?\s?%/gi;
+// Judge 9: a figure never ends on a comma ("+$190,379, is the tile's" read as a typo).
+const FIGURE = /[+-]?\$\s?\d(?:[\d,]*\d)?(?:\.\d+)?(?:\s?(?:k|m|mm|million|thousand|grand)\b)?|[+-]?\d(?:[\d,]*\d)?(?:\.\d+)?\s?%/gi;
 const figureValue = f => {
   const t = f.toLowerCase().replace(/[\s,$+]/g, '');
   const n = parseFloat(t);
@@ -469,22 +470,81 @@ export function windowMismatch(text, dossier, data) {
 
 const DAYS = { '7d': '7-day', '30d': '30-day' };
 
-/** A published tile figure the line typed, within rounding: the entry and the text as typed. */
-function typedPublished(text, dossier) {
+/** Every figure a line types, in order: money, percents and trade counts, with where each sits. */
+function typedFigures(text) {
+  const t = String(text ?? '');
   const out = [];
-  for (const raw of String(text ?? '').match(FIGURE) ?? []) {
-    const typed = raw.trim();
-    const v = figureValue(typed);
-    if (v.pct) continue;
-    const f = (dossier?.published ?? []).find(x => {
-      const k = figureValue(String(x.value ?? '')).n;
-      return Number.isFinite(k) && Math.abs(Math.abs(k) - Math.abs(v.n)) <= Math.max(1, Math.abs(k) * 0.01);
-    });
-    if (f) out.push({ f, typed });
+  for (const m of t.matchAll(FIGURE)) out.push({ typed: m[0].trim(), at: m.index, end: m.index + m[0].length, ...figureValue(m[0]), count: false });
+  for (const m of t.matchAll(COUNT)) out.push({ typed: m[0].trim(), at: m.index, end: m.index + m[0].length, pct: false, n: Number(m[1].replace(/,/g, '')), count: true });
+  return out.sort((a, b) => a.at - b.at);
+}
+const sameFigure = (a, b, tight = false) => {
+  if (a.count !== b.count || a.pct !== b.pct) return false;
+  if (a.count) return a.n === b.n;
+  if (a.pct) return Math.abs(a.n - b.n) <= (tight ? 0.051 : 0.51);
+  return Math.abs(Math.abs(a.n) - Math.abs(b.n)) <= Math.max(1, Math.abs(b.n) * 0.01);
+};
+const CARD_DESC = {
+  'week-pnl': { money: '7-day realised PnL' },
+  'week-wins': { pct: '7-day win rate', count: '7-day trade count' },
+  'month-wins': { pct: '30-day win rate', count: '30-day trade count' },
+  'all-time': { money: 'all-time PnL' },
+};
+const SPAN_WORD = { '7d': '7-day ', '30d': '30-day ', all: 'all-time ', now: '' };
+
+/**
+ * Judge 9: every figure the player can see before the verdict: the offered fact cards (value and
+ * the trade count in the label) and every figure the tile prints (`dossier.published`). Each says
+ * whose it is (Nansen or the Hyperliquid leaderboard) and what it measures.
+ */
+function visibleFigures(dossier) {
+  const out = [];
+  for (const f of (dossier?.facts ?? []).filter(x => x.tone === 'positive')) {
+    const from = String(f.source ?? '').startsWith('Hyperliquid leaderboard') ? 'Hyperliquid leaderboard' : 'Nansen';
+    for (const fig of typedFigures(`${f.value ?? ''} ${f.label ?? ''}`)) {
+      const kind = fig.count ? 'count' : fig.pct ? 'pct' : 'money';
+      const desc = CARD_DESC[f.id]?.[kind] ?? (f.id === 'best-market' ? `${String(f.label).split(',')[0]} 30-day PnL` : f.label);
+      out.push({ fig, from, desc });
+    }
+  }
+  for (const e of dossier?.published ?? []) {
+    for (const fig of typedFigures(e.value)) out.push({ fig, from: e.from, desc: `${SPAN_WORD[e.span] ?? ''}${e.what ?? 'figure'} on the tile`, published: e });
   }
   return out;
 }
+const isVisible = (fig, dossier) => visibleFigures(dossier).some(v => sameFigure(fig, v.fig));
+
+// The window words next to one figure: its own clause, before the line's overall window.
+const NEAR_7D = /\b(?:7|seven)[- ]?(?:days?|d)\b|\bweek(?:ly)?\b/i;
+const NEAR_30D = /\b(?:30|thirty)[- ]?(?:days?|d)\b|\bmonth(?:ly)?\b/i;
 const SAYS_ALL_TIME = /\ball[- ]time\b|\blifetime\b|\bever\b/i;
+function windowNear(text, fig, figs) {
+  const next = figs.find(f => f.at > fig.at);
+  const after = text.slice(fig.end, next ? next.at : undefined).split(/[.;!?](?:\s|$)/)[0];
+  const said = [SAYS_ALL_TIME.test(after) && 'all', NEAR_7D.test(after) && '7d', NEAR_30D.test(after) && '30d'].filter(Boolean);
+  if (said.length === 1) return said[0];
+  return claimedWindow(text);
+}
+const inSummary = (data, window, fig) => {
+  const out = [];
+  const walk = v => {
+    if (typeof v === 'number' && Number.isFinite(v)) out.push(v);
+    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+  walk(window === '7d' ? data?.pnl_summary_7d : data?.pnl_summary_30d);
+  return out.some(k => (fig.pct ? Math.abs(k * 100 - fig.n) <= 0.051 || Math.abs(k - fig.n) <= 0.051
+    : fig.count ? k === fig.n : Math.abs(Math.abs(k) - Math.abs(fig.n)) <= Math.max(1, Math.abs(k) * 0.001)));
+};
+
+/** A published tile figure the line typed, within rounding: the entry and the text as typed. */
+function typedPublished(text, dossier) {
+  const out = [];
+  for (const fig of typedFigures(text)) {
+    const f = (dossier?.published ?? []).find(x => typedFigures(x.value).some(v => sameFigure(fig, v, true)));
+    if (f) out.push({ f, typed: fig.typed, fig });
+  }
+  return out;
+}
 
 /**
  * Judge 8: the line quotes a tile figure with its own window (and, for a leaderboard figure, names
@@ -492,33 +552,67 @@ const SAYS_ALL_TIME = /\ball[- ]time\b|\blifetime\b|\bever\b/i;
  */
 export function publishedQuote(text, dossier) {
   const t = String(text ?? '');
-  for (const { f, typed } of typedPublished(t, dossier)) {
-    const window = f.span === 'all' ? SAYS_ALL_TIME.test(t) : claimedWindow(t) === f.span;
+  const figs = typedFigures(t);
+  for (const { f, typed, fig } of typedPublished(t, dossier)) {
+    const window = f.span === 'now' || windowNear(t, fig, figs) === f.span || (f.span === 'all' && SAYS_ALL_TIME.test(t));
     const source = f.from === 'Nansen' || /leaderboard/i.test(t);
     if (window && source) return typed;
   }
   return null;
 }
 
-/** Judge 8: a tile figure typed in the other window. The referee names whose figure it is. */
-function publishedWrongWindow(text, dossier) {
-  const claimed = claimedWindow(String(text ?? ''));
-  if (!claimed) return null;
-  const hit = typedPublished(text, dossier).find(({ f }) => f.span !== claimed);
-  if (!hit) return null;
-  const whose = hit.f.from === 'Nansen' ? 'Nansen 7-day' : 'Hyperliquid leaderboard';
-  const span = hit.f.span === 'all' ? `all-time figure (${hit.f.window})` : `figure for the ${hit.f.window}`;
-  return `Referee: ${hit.typed} is the tile's ${whose} ${span}, not a ${DAYS[claimed]} figure. The line is spent.`;
+/**
+ * Judge 8, 9: a tile figure typed in another window than its own. The referee names whose figure
+ * it is and its window. Each figure's window is read from its own clause ("+$428,058 all time" is
+ * all time, whatever else the line says), so a tile figure quoted as printed is never struck.
+ */
+function publishedWrongWindow(text, dossier, data) {
+  const t = String(text ?? '');
+  const figs = typedFigures(t);
+  for (const { f, typed, fig } of typedPublished(t, dossier)) {
+    if (f.span === 'now') continue;
+    const said = windowNear(t, fig, figs);
+    if (!said || said === f.span) continue;
+    // True in the window the line gives it too (the round's read of that window holds it).
+    if (said !== 'all' && inSummary(data, said, fig)) continue;
+    const noun = f.what === 'win rate' || f.what === 'trade count' ? f.what : 'figure';
+    const whose = f.from === 'Nansen' ? `Nansen ${DAYS[f.span] ?? ''}`.trim() : 'Hyperliquid leaderboard';
+    const span = f.span === 'all' ? `all-time ${noun} (${f.window})` : `${noun} for the ${f.window}`;
+    return `Referee: ${typed} is the tile's ${whose} ${span}, not ${said === 'all' ? 'an all-time' : `a ${DAYS[said]}`} figure. The line is spent.`;
+  }
+  return null;
 }
 
 const listed = xs => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : xs[0]);
 
 /**
- * The referee's line for a rejected pitch, the most specific true reason first: a typed figure
- * that is in no record, then a true figure stated over the wrong window, then the general line,
- * which claims nothing about any figure.
+ * Judge 9: a line that names the leaderboard as its source (and not Nansen) but types a figure
+ * only Nansen holds. REAL DEAL: "Hyperliquid's leaderboard shows +$116,554 for the 30 days ...
+ * and a 76.4% win rate over 3,373 trades this month": the win rate and the count are Nansen's
+ * 30-day summary; the leaderboard publishes neither. The referee says exactly that.
  */
-export function refereeVerdict(text, dossier, data) {
+export function sourceMismatch(text, dossier) {
+  const t = String(text ?? '');
+  if (!/leaderboard/i.test(t) || /\bnansen\b/i.test(t)) return null;
+  const vis = visibleFigures(dossier);
+  const wrong = [];
+  for (const fig of typedFigures(t)) {
+    const hits = vis.filter(v => sameFigure(fig, v.fig));
+    if (!hits.length || hits.some(v => v.from !== 'Nansen')) continue;
+    wrong.push(`${fig.typed} is Nansen's ${hits[0].desc}`);
+  }
+  if (!wrong.length) return null;
+  return wrong.length === 1
+    ? `Referee: ${wrong[0]}, not a leaderboard figure. The line is spent.`
+    : `Referee: ${listed(wrong)}; the leaderboard publishes neither. The line is spent.`;
+}
+
+/**
+ * The referee's specific reason for a rejected line, or null: a typed figure that is in no
+ * record, a true figure over the wrong window, a tile figure in another window, or a Nansen figure
+ * credited to the leaderboard. Each names the figure and what is wrong with it.
+ */
+export function specificReason(text, dossier, data) {
   const figure = offendingFigure(text, dossier, data);
   if (figure) return refereeLine(figure);
   const w = windowMismatch(text, dossier, data);
@@ -526,10 +620,97 @@ export function refereeVerdict(text, dossier, data) {
     const many = w.figures.length > 1;
     return `Referee: ${listed(w.figures)} ${many ? 'are' : 'is a'} ${DAYS[w.actual]} figure${many ? 's' : ''}, not ${DAYS[w.claimed]}. The line is spent.`;
   }
-  // Judge 8: a tile figure the round's read does not hold, in the other window: whose figure it is.
-  const tile = publishedWrongWindow(text, dossier);
-  if (tile) return tile;
-  return REFEREE_GENERAL;
+  return publishedWrongWindow(text, dossier, data) ?? sourceMismatch(text, dossier) ?? signClaim(text, data);
+}
+
+// A line that says a window made money.
+const SAYS_UP = /\b(up|profitable|in profit|positive|green|made money|making money|net (?:gain|profit|positive)|in the black|never (?:loses|lost|a losing))\b/i;
+/**
+ * Judge 9: a line that says a window made money when the record's realised PnL for it is negative
+ * ("Trader 014 is up over the full 30 days"). The referee names the claim and the window; the
+ * figure stays sealed.
+ */
+function signClaim(text, data) {
+  const t = String(text ?? '');
+  if (!SAYS_UP.test(t)) return null;
+  const window = claimedWindow(t);
+  const pnl = window === '7d' ? data?.pnl_summary_7d?.realized_pnl_usd : window === '30d' ? data?.pnl_summary_30d?.realized_pnl_usd : null;
+  if (!(Number(pnl) < 0)) return null;
+  return `Referee: the line says the ${DAYS[window]} result made money; the ${DAYS[window]} realised PnL in the record did not. The line is spent.`;
+}
+
+/**
+ * The referee's line for a rejected pitch, the most specific true reason first; the general line
+ * claims nothing about any figure. The room itself never shows the general line: see
+ * rejectionRuling, which lets a line stand rather than strike it without a reason.
+ */
+export function refereeVerdict(text, dossier, data) {
+  return specificReason(text, dossier, data) ?? REFEREE_GENERAL;
+}
+
+// A checker reason is about a figure when it names one the line typed or a measure a figure is.
+const FIGURE_TERMS = /\b(win rate|trades?|pnl|p&l|profit|realised|realized|account|all[- ]time|leaderboard|figure|number|amount|percent\w*|\d+[- ]?days?|week|month|window|summary)\b|[$%]/i;
+const NUMBER = /[+-]?\$?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|m|mm|million|thousand)\b)?%?/gi;
+
+/**
+ * Judge 9: the checker's reason as the referee may say it mid-round. Its own words name what is
+ * wrong; any figure in it the player cannot see (the sealed record) is replaced, so the referee
+ * never leaks the buried loss. Code ids read as words. Null when nothing is left to say.
+ */
+export function publicReason(reason, text, dossier) {
+  let r = String(reason ?? '').replace(/^check your claim:\s*/i, '').trim();
+  if (!r || /^the facts do not support this/i.test(r)) return null;
+  const typed = typedFigures(text);
+  const vis = visibleFigures(dossier);
+  const near = (a, b) => Math.abs(Math.abs(a) - Math.abs(b)) <= Math.max(0.051, Math.abs(b) * 0.01);
+  r = r.replace(NUMBER, m => {
+    const f = typedFigures(m)[0] ?? { n: Number(m.replace(/[^\d.-]/g, '')) };
+    if (!Number.isFinite(f.n) || Math.abs(f.n) <= 31) return m;
+    const seen = typed.some(t => near(t.n, f.n)) || vis.some(v => near(v.fig.n, f.n));
+    return seen ? m : 'a sealed figure';
+  });
+  r = r.replace(/\b([a-z]+(?:_[a-z0-9]+)+)\b/g, id => id.replace(/_/g, ' ').replace(/\s*\busd\b/, '').replace(/\brealized\b/, 'realised').trim());
+  r = r.replace(/\b(an?) a sealed figure/gi, 'a sealed figure').replace(/\bpnl\b/gi, 'PnL').replace(/\s+/g, ' ').trim();
+  if (!r) return null;
+  return `${r[0].toUpperCase()}${r.slice(1)}${/[.!?]$/.test(r) ? '' : '.'}`;
+}
+
+// Words any rejection uses, which say nothing about what is wrong.
+const VAGUE = new Set(('the a an this that these those it its is are was were be been of to in on for with as at by from and or not no nor '
+  + 'does do did doesn don line lines pitch claim claims claimed statement stated state states record records fact facts known data '
+  + 'match matches matching support supported supports unsupported evidence figure figures number numbers wrong false incorrect inaccurate '
+  + 'accurate true correct misleading given provided shown show shows than more less any some what which').split(' '));
+/** Judge 9: whether a checker reason names something (two words beyond the generic ones). */
+const namesSomething = reason => String(reason ?? '').toLowerCase().replace(/^check your claim:\s*/, '')
+  .split(/[^a-z0-9%$]+/).filter(w => w.length > 1 && !VAGUE.has(w)).length >= 2;
+
+/** Judge 9: the tile's other printed figures (the pulse's trade count) join its published facts. */
+export function withTileExtras(dossier, extras) {
+  const more = (Array.isArray(extras) ? extras : []).filter(e => e && e.value);
+  return more.length ? { ...dossier, published: [...(dossier.published ?? []), ...more] } : dossier;
+}
+
+/**
+ * Judge 9: what the room does with a checker rejection. A strike always names what is wrong: the
+ * specific reason first; else, when every figure the line typed is on an offered card or on the
+ * tile and the rejection is about figures, the line stands (true figures are not struck without a
+ * reason); else the checker's own reason, with sealed figures kept sealed. With nothing to name,
+ * the line stands. Returns { stands: true, check } or { stands: false, referee }.
+ */
+export function rejectionRuling(text, dossier, data, reason) {
+  const specific = specificReason(text, dossier, data);
+  if (specific) return { stands: false, referee: specific };
+  const figs = typedFigures(text);
+  const r = String(reason ?? '');
+  const digits = r.replace(/[^\d\s]/g, '').split(/\s+/).filter(Boolean);
+  const aboutFigures = FIGURE_TERMS.test(r) || figs.some(f => digits.includes(f.typed.replace(/[^\d]/g, '')));
+  const check = typedPublished(text, dossier).length ? 'published' : 'on the record';
+  const named = namesSomething(r);
+  if (figs.length && figs.every(f => isVisible(f, dossier)) && (aboutFigures || !named)) return { stands: true, check };
+  // "The line does not match the record" names nothing: it is the no-reason strike, never shown.
+  const said = named ? publicReason(r, text, dossier) : null;
+  if (said) return { stands: false, referee: `Referee: ${said} The line is spent.` };
+  return { stands: true, check };
 }
 
 const recordName = () => 'Nansen';
@@ -672,10 +853,28 @@ export function decidedRows(decision, policy, snapshot) {
 
 /** Judge 8: the capped ending names the rule that capped, not always the one-market rule. */
 export const CAP_AGENT_LINE = Object.freeze({
-  concentration: 'One market carried the whole month, so the guard sent a quarter of the request and held the rest.',
-  open_book: 'The open positions are down more than a quarter of the account, so the guard sent a quarter of the request and held the rest.',
-  smart_money_side: "Nansen's smart money is mostly on the other side of the largest open position, so the guard sent a quarter of the request and held the rest.",
+  concentration: 'One market carried the whole month, so BAIT sent a quarter of the request and held the rest.',
+  open_book: 'The open positions are down more than a quarter of the account, so BAIT sent a quarter of the request and held the rest.',
+  smart_money_side: "Nansen's smart money is mostly on the other side of the largest open position, so BAIT sent a quarter of the request and held the rest.",
 });
+
+/**
+ * The one line under the verdict, in BAIT's name (judge 9: never "the guard"). On a live round a
+ * block was decided on the live read, so the sentence names it. A block on the owner or another
+ * rule is not a negative-PnL block, so it is not called one. A clear says why the whole amount
+ * went: the gate never sizes a transfer (validation/guard.js passes the caller's amount when no
+ * row blocks or caps), and WATCH rows do not decide.
+ */
+export function roomAgentLine(verdict, gate, live = false, { whatIf = false } = {}) {
+  if (verdict === 'block' && gate?.failed === 'operator_record') return 'The first funder’s other wallets lost more than this one made, so BAIT blocks the transfer.';
+  if (verdict === 'block' && gate?.failed && gate.failed !== 'realised_pnl_30d') return 'The Nansen record fails one of the BAIT check’s rules, so BAIT blocks the transfer.';
+  if (verdict === 'block') return `${live ? 'The live Nansen read found' : 'The Nansen record shows'} negative realised PnL over 30 days, so BAIT blocks the transfer.`;
+  if (verdict === 'capped') return CAP_AGENT_LINE[gate?.checks?.find(c => c.result === 'cap')?.id] ?? 'A BAIT rule capped the transfer: BAIT sent a quarter of the request and held the rest.';
+  return whatIf ? CLEARED_WHAT_IF : CLEARED_LINE;
+}
+/** Judge 9: why a clear sends the whole amount, where the cleared amount is shown. */
+export const CLEARED_LINE = 'BAIT does not size a transfer: no rule blocked or capped this one, so the amount PENNY agreed went through. WATCH rows do not decide.';
+const CLEARED_WHAT_IF = 'BAIT does not size a transfer: no rule would block or cap this one, so the whole amount would go through. WATCH rows do not decide.';
 
 /** Round 18: which gate rows each Nansen call stands on. */
 const CALL_ROWS = {
@@ -790,11 +989,43 @@ export function roundQuotes(shots) {
 }
 
 /**
+ * Judge 9: what the round was decided on, as the silent headline says it: the topic PENNY did not
+ * ask about, and the words that count as asking about it. Keyed by the deciding gate row.
+ */
+export const DECIDING_TOPIC = Object.freeze({
+  operator_record: { without: 'without checking who funds the wallet', raised: 'who funds the wallet', words: /\b(fund(?:s|ed|er|ers|ing)?|owner|owns|who (?:runs|is behind))\b/i },
+  realised_pnl_30d: { without: 'without asking for the 30-day record', raised: 'the 30-day record', words: /\b(30[- ]?days?|thirty[- ]days?|the month|this month|last month)\b/i },
+  regime_agreement: { without: 'without asking how the last 7 days compare with the month', raised: 'the last 7 days', words: /\b(7[- ]?days?|seven days|this week|last week|the week)\b/i },
+  thin_sample: { without: 'without asking how many trades the record holds', raised: 'the trade count', words: /\b(how many trades|trade count|sample|few trades)\b/i },
+  low_win_rate: { without: 'without asking for the 30-day win rate', raised: 'the win rate', words: /\bwin rate\b/i },
+  concentration: { without: 'without asking how much of the month came from one market', raised: 'how much came from one market', words: /\b(one market|single market|one coin|single coin|concentrat\w*|one trade|one asset|diversif\w*)\b/i },
+  open_book: { without: 'without asking about its open positions', raised: 'its open positions', words: /\b(open positions?|positions?|unreali[sz]ed|exposure|underwater|open book)\b/i },
+  smart_money_side: { without: 'without asking which side smart money is on', raised: 'smart money', words: /\bsmart money\b/i },
+  independent_record: { without: "without checking the 30-day figure against Nansen's leaderboard", raised: 'the leaderboard', words: /\bleaderboard\b/i },
+});
+
+/**
+ * Judge 9: the headline when PENNY never asked for the record. STREAK (blocked on its month) and
+ * THE GRINDER (capped on its open positions) once read "without checking who funds the wallet",
+ * a check that did not decide either round. A cleared wire has no deciding row: PENNY did not ask
+ * for the record, which is true.
+ */
+export function silentHeadline({ x, anyway = '', verdict, gate, said = [] }) {
+  const row = ['block', 'capped'].includes(verdict)
+    ? (gate?.decided?.[0]?.id ?? gate?.failed ?? gate?.checks?.find(c => c.result === 'fail' || c.result === 'cap')?.id ?? null)
+    : null;
+  const topic = DECIDING_TOPIC[row];
+  if (!topic) return `${DESK_NAME} agreed to send ${x} without asking for the record.`;
+  if (said.some(line => topic.words.test(String(line ?? '')))) return `${DESK_NAME} raised ${topic.raised}, then agreed to send ${x}${anyway}.`;
+  return `${DESK_NAME} agreed to send ${x} ${topic.without}.`;
+}
+
+/**
  * The ending, in two sentences, from the one transfer the desk agreed to, worded from the
  * round's own transcript: whether the desk asked for the record before it sent, and in
  * which line. Only the final commitment is wired, so there is one wire or none.
  */
-export function endingCopy({ s, peak, executed, verdict }) {
+export function endingCopy({ s, peak, executed, verdict, gate = null }) {
   const name = s.prospect.name;
   const read = "BAIT's Nansen read";
   const quotes = roundQuotes(s.shots);
@@ -818,9 +1049,10 @@ export function endingCopy({ s, peak, executed, verdict }) {
         // Judge 6: "Win rate without 30-day P&L tells me little" notes a gap; it does not say
         // there is no track record.
         : `${DESK_NAME} noted a gap in the record, then agreed to send ${x}${anyway}.`
-      // Judge 5: "never asked" was false when PENNY asked in words the detector missed. PENNY has
-      // no tools (ROOM_DESK), so it never reads the owner: this sentence is true in every round.
-      : `${DESK_NAME} agreed to send ${x} without checking who funds the wallet.`
+      // Judge 5: "never asked" was false when PENNY asked in words the detector missed. Judge 9: the
+      // sentence names what decided the round (the deciding row), not always the owner: funding only
+      // when the owner row decided. PENNY's own words about that topic are said instead, if any.
+      : silentHeadline({ x, anyway, verdict, gate, said: s.shots.filter(shot => !shot.caught && (quotes.agreed ? shot.n <= quotes.agreed.n : true)).map(shot => shot.line) })
     : quotes.agreed?.shownWindow
       ? `${DESK_NAME} asked for the record, got part of it from your pitch, and agreed to send ${x}.`
     : asked.n < quotes.agreed?.n
@@ -900,6 +1132,9 @@ export function loadRecordedCons(file = RECORDED_CONS_FILE) {
 export function createRoomService({
   snapshot, dataSource, provider, leaderboard, roster, recorded = [], liveEvidence = null,
   health = () => ({}), onSave = () => {}, now = () => new Date(),
+  // Judge 9: the tile's live trade count (prototype/roster-pulse.js) is printed on the tile too,
+  // so it joins the round's published facts. `id => [published entry]`.
+  tileExtras = () => [],
 }) {
   // Posted cons and recorded ones share one board, ordered by the amount the desk was
   // talked into. A recorded row carries its label; a posted row never does.
@@ -1142,7 +1377,11 @@ export function createRoomService({
         // Judge 5: one number against one limit on screen, the one that decides: the base furthest
         // over its limit, or, when both pass, the one closest to it. The other goes in `detail`.
         const [decides, ...rest] = [...parts].sort((a, b) => b[2] / b[3] - a[2] / a[3]);
-        return { id, result: over30 ? 'caution' : 'pass', plain: `${at}, ${measure(...decides)}.`,
+        // Judge 9: a share of a small early peak reads as a collapse; when the fills' running result
+        // ended far above that peak, the row says both figures.
+        const early = decides[0] === 'peak it fell from' && dd.final_usd > 2 * dd.peak_usd
+          ? ` That peak came early: realised PnL over ${where} ended at ${money(dd.final_usd)}.` : '';
+        return { id, result: over30 ? 'caution' : 'pass', plain: `${at}, ${measure(...decides)}.${early}`,
           ...(rest.length ? { detail: `Also ${rest.map(([label, value, share, limit]) => measure(label, value, share, limit)).join('; ')}.` } : {}), source };
       }
       if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain.charAt(0).toLowerCase()}${flag.plain.slice(1)}` : flag.plain, source };
@@ -1157,13 +1396,13 @@ export function createRoomService({
   /** Which Nansen read each check stands on, printed beside it on the gate table. */
   const CHECK_SOURCE = {
     evidence_30d: 'profiler/perp-pnl-summary, 30 days',
-    evidence_freshness: 'retrieved_at on the Nansen read',
+    evidence_freshness: 'the time stamp on the Nansen read',
     realised_pnl_30d: 'profiler/perp-pnl-summary, 30 days',
     evidence_7d: 'profiler/perp-pnl-summary, 7 days',
     regime_agreement: 'perp-pnl-summary, 7 vs 30 days',
     thin_sample: 'profiler/perp-pnl-summary, 30 days',
     low_win_rate: 'profiler/perp-pnl-summary, 30 days',
-    concentration: 'perp-pnl-summary top5_coins, 30 days',
+    concentration: 'perp-pnl-summary, top five markets, 30 days',
     // Round 17: the third Nansen read.
     open_book: 'profiler/perp-positions, current positions and account value',
     // Gate v4 (bench/V4.md).
@@ -1319,7 +1558,7 @@ export function createRoomService({
         headline: 'Nothing flattering to pitch.',
         subline: `Every number in ${name}'s live record points the wrong way, so there is no round. The BAIT check read it anyway, as if the whole ${dollars(SLOT)} were on the way.`,
         because: gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null,
-        quotes: {}, trail: null, agentLine: agentVerdictLine(verdict), read: readOf(p.snapshot),
+        quotes: {}, trail: null, agentLine: roomAgentLine(verdict, gate, !!evidence?.live, { whatIf: true }), read: readOf(p.snapshot),
       },
     };
   }
@@ -1394,9 +1633,23 @@ export function createRoomService({
         if (snap.wallet.toLowerCase() !== p.wallet.toLowerCase()) throw new RoomError('That saved read is for another wallet.');
         p = refreshProspect(p, snap);
       }
+      // The gate's real decision on the frozen record, for a fixture transfer of $2,500.
+      const gate = await runGate(p, 2500);
+      const verdict = verdictOf(gate);
       return {
-        // The gate's real decision on the frozen record, for a fixture transfer of $2,500.
-        gate: await runGate(p, 2500),
+        gate,
+        // Judge 9: the headline a round gets when PENNY never asked, from the same function.
+        silentHeadline: silentHeadline({ x: dollars(2500), anyway: verdict === 'allow' ? '' : ' anyway', verdict, gate }),
+        // For &verdict=allow, a layout-only clear drawn on this record.
+        silentHeadlineAllow: silentHeadline({ x: dollars(2500), verdict: 'allow', gate }),
+        // The line under the verdict, from the same function a round uses; `allow` for &verdict=allow.
+        agentLine: roomAgentLine(verdict, gate, false),
+        clearedLine: roomAgentLine('allow', gate, false),
+        // A replayed saved read carries its file and hash, as a live round's raw evidence does.
+        raw: read ? (() => {
+          const file = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bench', 'live-reads', read);
+          return { file: read, sha256: createHash('sha256').update(fs.readFileSync(file)).digest('hex') };
+        })() : null,
         prospect: prospectPublic(p),
         dossier: publicDossier(buildProspectDossier(p), { ended: true }),
         sealedDossier: publicDossier(buildProspectDossier(p)),
@@ -1421,7 +1674,7 @@ export function createRoomService({
         id: randomUUID(), prospect: p, prospectPublic: prospectPublic(p),
         data: p.snapshot ?? { wallet: p.wallet },
         checkerData: p.checkerData ?? p.snapshot,
-        dossier: buildProspectDossier(p), dataMode: evidence.mode, evidence,
+        dossier: withTileExtras(buildProspectDossier(p), tileExtras(p.id)), dataMode: evidence.mode, evidence,
         turns: [], shots: [], checks: [], requestIds: new Set(),
         suspicion: START_SUSPICION, funded: 0, peak: 0, stopped: 0, mood: 'neutral',
         line: `${DESK_NAME} is listening. You have three lines.`,
@@ -1472,16 +1725,12 @@ export function createRoomService({
           });
         } catch (err) {
           if (err.code !== 'CLAIM_REJECTED') throw err;
-          // Judge 8: a rejection about the tile's own figure, on a line that quotes it with its own
-          // window and source, is overruled: the figure is published and the lobby says so. Any other
-          // reason, or another figure off the record, still catches the line.
-          const quoted = publishedQuote(text, s.dossier);
-          const digits = quoted && quoted.replace(/[^\d]/g, '');
-          const aboutTile = digits && String(err.reason ?? '').replace(/[^\d\s]/g, '').split(/\s+/).includes(digits);
-          if (!(aboutTile && !offendingFigure(text, s.dossier, s.checkerData) && !windowMismatch(text, s.dossier, s.checkerData))) {
-            return caught(s, { text, reason: err.reason, started, requestId: body.requestId });
-          }
-          pending.check = 'published';
+          // Judge 8, 9: a strike always names what is wrong (which figure, and why). A rejection with
+          // no such reason, on a line whose figures are all on the tile or an offered card, is
+          // overruled: true figures are not struck without a reason.
+          const ruling = rejectionRuling(text, s.dossier, s.checkerData, err.reason);
+          if (!ruling.stands) return caught(s, { text, reason: err.reason, referee: ruling.referee, started, requestId: body.requestId });
+          pending.check = ruling.check;
         }
 
         s.phase = `${DESK_NAME} is reading your line`;
@@ -1643,21 +1892,13 @@ export function createRoomService({
         risk,
         // On a live round a block was decided on the live read, so the sentence names it. A block
         // on the owner or another rule is not a negative-PnL block, so it is not called one.
-        agentLine: verdict === 'block' && gate.failed === 'operator_record'
-          ? 'The first funder’s other wallets lost more than this one made. The owner rule blocks allocation.'
-          : verdict === 'block' && gate.failed && gate.failed !== 'realised_pnl_30d'
-          ? 'The Nansen record fails one of the BAIT check’s rules. That rule blocks allocation.'
-          : s.evidence?.live && verdict === 'block'
-          ? 'The live Nansen read found negative realised PnL. The matching guard rule blocks allocation.'
-          : verdict === 'capped'
-            ? CAP_AGENT_LINE[gate.checks.find(c => c.result === 'cap')?.id] ?? agentVerdictLine(verdict)
-            : agentVerdictLine(verdict),
+        agentLine: roomAgentLine(verdict, gate, !!s.evidence?.live, { whatIf: peak === 0 }),
         prospect: { id: s.prospect.id, name: s.prospect.name, handle: s.prospect.handle, venueLabel: s.prospect.venueLabel },
         evidence: { ...s.evidence },
         // A gate that only ever says no proves nothing, so a record that holds up gets
         // an ending that says the money moved.
         stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
-        ...endingCopy({ s, peak, executed, verdict }),
+        ...endingCopy({ s, peak, executed, verdict, gate }),
         // The one check that decided it, in the gate's own words.
         because: plainer(gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null) || null,
         checkedRecord: recordName(s.prospect),
@@ -1698,7 +1939,7 @@ export function createRoomService({
   }
 
   /** A rejected claim: the desk sees the lie, the meter jumps, the shot is gone. */
-  function caught(s, { text, reason, started, requestId }) {
+  function caught(s, { text, reason, referee, started, requestId }) {
     const before = s.suspicion;
     s.suspicion = clamp(s.suspicion + MOOD_SUSPICION.caught, 0, 100);
     s.mood = 'caught';
@@ -1710,7 +1951,7 @@ export function createRoomService({
     s.line = toLine(CAUGHT_LINE);
     const shot = {
       n: s.shots.length + 1, text, check: 'rejected', caught: true,
-      referee: refereeVerdict(text, s.dossier, s.checkerData),
+      referee: referee ?? refereeVerdict(text, s.dossier, s.checkerData),
       refereeReason: reason || 'the facts do not support this.',
       line: s.line, mood: 'caught', full: `Claim rejected by the referee: ${reason || 'the facts do not support this.'}`,
       allocation: s.funded, allocationPct: null, claimedAllocation: null,

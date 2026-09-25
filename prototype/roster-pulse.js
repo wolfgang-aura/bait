@@ -160,6 +160,19 @@ export function createRosterPulse({
       }
       return view(null);
     },
+    /**
+     * Judge 9: the count a tile prints now, as a published fact of a round on that wallet (the
+     * last view, no refresh): a count of closed trades over 7 days, live or saved, with its read.
+     */
+    published(id) {
+      const w = view(null).wallets.find(x => x.id === id);
+      if (!w || !Number.isInteger(w.trades7d) || w.trades7d <= 0) return [];
+      const value = `${count(w.trades7d)} trade${w.trades7d === 1 ? '' : 's'}`;
+      const source = w.live ? `Nansen, read live ${hhmm(w.readAt)}` : w.savedAt ? `Nansen saved read ${savedAt(w.savedAt)}` : 'Nansen';
+      const window = w.live ? `last 7 days to ${hhmm(w.readAt)}` : `7 days to the ${source.replace(/^Nansen /, '')}`;
+      return [{ value, window, source, span: '7d', from: 'Nansen', what: 'trade count',
+        claim: `Nansen's 7-day summary for this address, ${source.replace(/^Nansen,? /, '')}, counts ${value} closed.` }];
+    },
     /** For /healthz: what the pulse spent and when it last read anything live. */
     status() {
       return {

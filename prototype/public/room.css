@@ -1145,3 +1145,21 @@ html[data-frozen="true"] .cp-owner { animation: none; }
   .lead .for-whom, .roster-head .truth-credit { display: none; }
   .premise .premise-how, .premise .premise-data, .premise .premise-score { display: none; }
 }
+
+/* Judge 9: the every-check page never runs past the viewport. A grid track's default minimum is
+   its widest unbreakable word (a sha256, a file name, an endpoint), which pushed .final-col to
+   419px on a 375 phone. Every track and row may shrink, and long tokens wrap. */
+.final-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); }
+.final-col, .final-col > *, .report, .report > *, .flagline > *, .verdict-body, .verdict-body > * { min-width: 0; }
+.flagline span, .flagline b, .report-foot, .report-note, .check-src, .final-head, .final-sub, .agent-line, .wire-log li, .transcript { overflow-wrap: anywhere; }
+@media (max-width: 900px) {
+  .final-grid { grid-template-columns: minmax(0, 1fr); }
+  .verdict { grid-template-columns: minmax(0, 1fr); }
+}
+/* At 320 the stamp ("BLOCKED" and the badge, one line) was 340px wide; it shrinks to fit. */
+@media (max-width: 420px) {
+  .stamp { font-size: 26px; padding: 5px 12px; max-width: 100%; }
+}
+@media (max-width: 560px) {
+  .flagline.check { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+}

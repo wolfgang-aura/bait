@@ -588,6 +588,8 @@ const roomService = createRoomService({
   // Real cons from recorded rounds, each labelled with its date and source file.
   recorded: loadRecordedCons(),
   health: () => gameHealth(4),
+  // Judge 9: the tile's trade count is printed on the tile, so a round can quote it.
+  tileExtras: id => rosterPulse.published(id),
   onSave: round => {
     const dir = path.resolve(HERE, '..', 'scratch', 'rooms');
     fs.mkdirSync(dir, { recursive: true });

@@ -649,7 +649,7 @@ export async function guardAllocation({
       `Closed trades over ${policy.windowDays} days came to ${money(pnl30)}, under the policy minimum of ${policy.minimumRealizedPnlUsd === 0 ? '$0' : money(policy.minimumRealizedPnlUsd)}.`);
   } else {
     t.pass('realised_pnl_30d', pnl30, policy.minimumRealizedPnlUsd,
-      `Closed trades over ${policy.windowDays} days came to ${money(pnl30)}, at or above the policy minimum.`);
+      `Closed trades over ${policy.windowDays} days came to ${money(pnl30)}, at or above the ${policy.minimumRealizedPnlUsd === 0 ? '$0' : money(policy.minimumRealizedPnlUsd)} minimum.`);
   }
 
   if (!twoWindow) {

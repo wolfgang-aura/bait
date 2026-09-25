@@ -1,6 +1,25 @@
 # BAIT public page, version B
 
-## Version W: one rule for tile figures, 26 September 2026 (current)
+## Version X: every tile figure, every strike named, 26 September 2026 (current)
+
+Judge 9 (live build 389ca34, six rounds). Same tokens, fonts and golden viewports (1440 x 900, 375 x 812).
+
+- **Every figure a tile prints is published.** The published facts are read off the tile's own
+  text (headline and sub-line: "100% win rate", "+$428,058 all time", "$69,023,422 account"), plus
+  the pulse's trade count on a server round. A sub-line figure's window comes from its own words.
+- **A strike names what is wrong.** Which figure and why: not in the record, the wrong window, a
+  tile figure in another window, a Nansen figure credited to the leaderboard, a losing window said
+  to make money, or the checker's own reason with sealed figures sealed. A rejection that names
+  nothing does not strike; the general line is never shown.
+- **The silent headline names the deciding row.** "without asking for the 30-day record",
+  "without asking about its open positions"; "without checking who funds the wallet" only when the
+  owner decided. A clear says BAIT does not size a transfer.
+- **Nothing runs past 320.** Grid tracks are minmax(0, ...), children min-width 0, long tokens
+  (sha256, file names) wrap, the stamp shrinks under 420 px.
+- **Small truths.** No code ids, chain names capitalised, "xyz:SKHY" is "SKHY (xyz market)", one
+  name (BAIT), footers list the round's own reads, N/A rows with a reason are rows.
+
+## Version W: one rule for tile figures, 26 September 2026
 
 Judge 8 (live build, four rounds). Same tokens, fonts and golden viewports (1440 x 900, 375 x 812).
 
