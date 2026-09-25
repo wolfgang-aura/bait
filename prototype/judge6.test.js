@@ -95,7 +95,7 @@ test('judge 6: one rule for every wallet: the tile figure is linked to the same 
   const m = movedSince(realdeal);
   assert.equal(m.window, '30-day');
   assert.equal(m.delta, Math.round(read30 - tile30));
-  assert.equal(m.line, `30-day: the tile's +$116,554 is the 21 Sep 21:56 leaderboard read; this read's realised is +$35,083, ${m.deltaLabel} apart`);
+  assert.equal(m.line, `30-day: the tile's +$116,554 is the 21 Sep 21:56 leaderboard read; this read's realised is +$35,083, ${m.deltaLabel.slice(1)} lower`);
   // THE STREAK: the tile's leaderboard week against the round's 7-day realised.
   assert.equal(movedSince(by('streak')).window, '7-day');
   // An all-time tile has no window on the round's read; a frozen Nansen tile is the round's read.

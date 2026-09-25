@@ -19,7 +19,7 @@
  */
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
-import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE } from '/verdict-view.js';
+import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE, WATCH_NOTE_SHORT, recordHeadline } from '/verdict-view.js';
 import { ownerTreeHtml } from '/owner-tree.js';
 
 const $ = id => document.getElementById(id);
@@ -494,7 +494,8 @@ function renderCalls(calls, read = null) {
   const foot = document.createElement('li');
   const link = document.createElement('a');
   link.href = '/api/health';
-  link.textContent = 'all Nansen usage';
+  // Judge 8: the link opens the server's health JSON; the label says so.
+  link.textContent = 'raw usage JSON';
   foot.append(`${total} Nansen credit${total === 1 ? '' : 's'} this round · `, link);
   el.cpCalls.append(foot);
   el.cpCalls.hidden = calls.length === 0;
@@ -570,6 +571,30 @@ function showReveal(p, final) {
     text(el.truthHypeSource, pitched.source);
   }
   if (final.read) text(el.truthCaptured, `Nansen, ${final.read.label}`);
+  // Judge 8: every endpoint this round's check read, named as the checkpoint names them.
+  if (final.gate?.reads?.length) text(el.truthEndpoint, `Nansen ${final.gate.reads.join(', ')}`);
+  // Judge 8: a block or a cap headlines the figure of the row that decided it (THE GRINDER's cap
+  // once headlined its passing 30 days); the record's figure stays below as a row.
+  const head = recordHeadline(final, p.truth);
+  if (head.id && head.id !== 'realised_pnl_30d') {
+    text(el.truthPnl, head.value);
+    text(el.truthPnlCaption, head.caption);
+    el.recordHalf.classList.add('bad'); el.recordHalf.classList.remove('good');
+    // The deciding figure's own row leaves the list (the 7-day week of a reversal block).
+    if (head.id === 'regime_agreement') {
+      for (const dt of [...el.truthRows.querySelectorAll('dt')]) {
+        if (/^7-day realised/i.test(dt.textContent)) { dt.nextElementSibling.remove(); dt.remove(); }
+      }
+    }
+    const lead = [...head.also.map(a => ({ label: a.label ?? a.caption, value: a.value })), ...head.rows];
+    for (const row of lead.reverse()) {
+      const dt = document.createElement('dt');
+      dt.textContent = row.label;
+      const dd = document.createElement('dd');
+      dd.textContent = row.value;
+      el.truthRows.prepend(dt, dd);
+    }
+  }
   // A block on a reversal was decided by the losing week, so that is what the player left
   // out: the week goes in the big number, the month in the rows.
   // A block on the owner was decided by the wallets the player never saw: the owner's figure
@@ -581,24 +606,14 @@ function showReveal(p, final) {
   if (owner) {
     text(el.recordLabel, 'What you left out: who funds it');
     text(el.truthPnl, owner.combinedLabel);
-    text(el.truthPnlCaption, `The owner's ${owner.days} days: this wallet plus ${owner.siblings.length} it funds`);
+    // Judge 8: "it funds" read as this wallet funding the others; it is the first funder.
+    text(el.truthPnlCaption, `The owner's ${owner.days} days: this wallet plus ${owner.siblings.length} others its first funder also funds`);
     el.recordHalf.classList.add('bad'); el.recordHalf.classList.remove('good');
     text(el.truthEndpoint, 'Nansen related-wallets, transactions, perp-pnl-summary');
     text(el.truthScope, `First funder on Ethereum or Arbitrum; its other wallets in BAIT's index; ${owner.days}-day realised PnL each`);
   }
   // Judge 7: stacked under 900 px, the VS is in flow on its own row between the halves
   // (room.css), so no script places it and no line of either half runs under it.
-  if (final.verdict === 'block' && final.gate?.failed === 'regime_agreement') {
-    const week = (p.truth.rows ?? []).find(r => /^7-day realised/i.test(r.label));
-    if (week) {
-      text(el.truthPnl, week.value);
-      text(el.truthPnlCaption, '7-day realised PnL, the window that decided it');
-      el.recordHalf.classList.add('bad'); el.recordHalf.classList.remove('good');
-      for (const dt of el.truthRows.querySelectorAll('dt')) {
-        if (/^7-day realised/i.test(dt.textContent)) { dt.textContent = '30-day realised'; dt.nextElementSibling.textContent = p.truth.pnlLabel; }
-      }
-    }
-  }
   window.scrollTo(0, 0);
   if (final.verdict === 'block' && final.peak > 0 && !reduced) {
     body.classList.remove('shake');
@@ -664,6 +679,15 @@ function showTruth(p) {
 }
 
 /**
+ * Judge 8: the report's endpoints, named as the checkpoint names them: the 30-day summary, the fills
+ * (drawdown, worst trade) and the positions (account value) when this round's read holds them.
+ */
+function reportSource(risk, gate) {
+  const used = (gate?.reads ?? []).filter(r => /^perp-(pnl-summary|trades|positions)/.test(r));
+  return `Nansen ${(used.length ? used : ['perp-pnl-summary']).join(', ')}`;
+}
+
+/**
  * BAIT's copy-risk report, in the words the server wrote. A check that could not run
  * says so; it is never quietly counted as a pass.
  */
@@ -682,13 +706,24 @@ function renderReport(host, risk) {
   // One gate result: each flag carries its gate row's word, and a passed row its own sentence.
   for (const r of reportRows(risk, reportGate?.checks ?? [], reportVerdict)) add(r.kind, r.label, r.line);
 
+  // Judge 8: a WATCH row's line is the fills report's, and the gate never reads the fills.
+  if (host.querySelector('.flagline b') && [...host.querySelectorAll('.flagline b')].some(b => b.textContent === 'WATCH')) {
+    const note = document.createElement('p');
+    note.className = 'report-note';
+    note.textContent = WATCH_NOTE_SHORT;
+    host.append(note);
+  }
   const foot = document.createElement('p');
   foot.className = 'report-foot';
+  // Judge 8: the coverage line already names drawdown and worst trade when they were not measured;
+  // the list does not say it again.
+  const said = [/drawdown/i.test(risk.coverage ?? '') && 'max_drawdown', /worst single trade/i.test(risk.coverage ?? '') && 'tail_loss'].filter(Boolean);
+  const unsaid = risk.not_assessed.filter(n => !said.includes(n.id));
   foot.textContent = [
-    `${risk.source}, captured ${risk.capturedLabel}`,
+    `${reportSource(risk, reportGate)}, captured ${risk.capturedLabel}`,
     risk.basis,
     risk.coverage,
-    risk.not_assessed.length ? `Not assessed: ${risk.not_assessed.map(n => PLAIN_CHECK[n.id] ?? checkName(n.id).toLowerCase()).join(', ')}.` : '',
+    unsaid.length ? `Not assessed: ${unsaid.map(n => PLAIN_CHECK[n.id] ?? checkName(n.id).toLowerCase()).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
 }
@@ -769,7 +804,7 @@ function renderScene(d) {
   el.clientPortrait.innerHTML = portraitSvg(d.portrait, { mood: 'confident', accent: NEUTRAL_ACCENT, title: d.name, crop: 'face' });
   text(el.clientName, d.name);
   text(el.clientSub, [d.venueLabel, d.trader].filter(Boolean).join(' · '));
-  text(el.ticker.firstElementChild, `${d.name}   ${d.endpoints.join('   ')}   ${d.evidenceLabel ?? `captured ${String(d.capturedAt).slice(0, 10)}`}   `.repeat(3).toUpperCase());
+  text(el.ticker.firstElementChild, `${d.name}   ${(d.reads ?? d.endpoints).join('   ')}   ${d.evidenceLabel ?? `captured ${String(d.capturedAt).slice(0, 10)}`}   `.repeat(3).toUpperCase());
   updateCount();
 }
 
@@ -1292,7 +1327,8 @@ async function fixture(name, prospectId) {
     .catch(() => null);
   // The frozen record behind this tile, from the local-only fixture route. A played
   // round gets the same objects from the server when BAIT has checked the transfer.
-  const frozen = await api(`/api/room/fixture?prospect=${encodeURIComponent(target.id)}`);
+  const savedRead = new URLSearchParams(location.search).get('read');
+  const frozen = await api(`/api/room/fixture?prospect=${encodeURIComponent(target.id)}${savedRead ? `&read=${encodeURIComponent(savedRead)}` : ''}`);
   const state = await api('/api/room/start', { method: 'POST', body: { prospect: target.id } });
   adopt(state);
   const p = frozen.prospect;
@@ -1331,11 +1367,12 @@ async function fixture(name, prospectId) {
     agentLine: assessed?.agent_line ?? '',
     gate: frozen.gate,
     risk: p.risk,
-    // The fixture lines quote the first fact card, so that is what was pitched, from this read.
-    read: state.dossier.read,
-    pitched: { used: true, read: state.dossier.read, moved: frozen.dossier?.moved ?? null,
-      facts: [state.dossier.facts[0]].map(f => ({ id: f.id, value: f.value, label: f.label,
-        source: f.source ?? `Nansen, ${state.dossier.read.label}` })) },
+    // The fixture lines quote the first fact card, so that is what was pitched, from this read
+    // (the fixture's own dossier, so a replayed saved read shows its own cards).
+    read: (frozen.dossier ?? state.dossier).read,
+    pitched: { used: true, read: (frozen.dossier ?? state.dossier).read, moved: frozen.dossier?.moved ?? null,
+      facts: [(frozen.dossier ?? state.dossier).facts[0]].map(f => ({ id: f.id, value: f.value, label: f.label,
+        source: f.source ?? `Nansen, ${(frozen.dossier ?? state.dossier).read.label}` })) },
   };
   const fixtureShots = [
     { n: 1, text: state.dossier.facts[0].insert, full: 'Fixture reply.', line: 'Fixture reply.', mood: 'neutral', allocation: 0,

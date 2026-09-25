@@ -51,6 +51,7 @@ import { buildCase, checkPitchClaims, EncounterError } from './encounter.js';
 import { runDesk, SLOT } from './desk.js';
 import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect, tapeRecency, walletProspect, WALLET_PATTERN, spanText, readOf, movedSince } from './roster.js';
 import { ROOM_LIVE_GUARD_POLICY, liveSnapshot, hhmm } from './live-evidence.js';
+import { loadOperatorIndex } from '../validation/guard-live.js';
 
 export { SLOT, loadRoster, findProspect };
 export const SHOTS = 3;
@@ -140,6 +141,8 @@ export function buildProspectDossier(p) {
     loss: truth.pnl,
     lossLabel: truth.pnlLabel,
     endpoints: p.desk.nansen.endpoints,
+    // Judge 8: what this round's read holds, for the ticker (the desk's tool list differed per trader).
+    reads: roundReads(p.snapshot),
     checkerNote: p.checkerNote,
     // `insert` is what a click drops into the text box. Short on purpose: the box holds
     // 200 characters and a player needs room for the argument around the fact.
@@ -156,6 +159,9 @@ export function buildProspectDossier(p) {
     // Before the round nobody knows which window will decide it, so a record with no
     // buried loss names both numbers the BAIT check reads.
     hiddenLabel: p.dossier.buried?.label ?? '7-day and 30-day realised PnL',
+    // Judge 8: the tile's figure, its window and its read. Published by the trader, so a line that
+    // quotes it with that window is not a lie, whatever this round's read says for the same days.
+    published: (p.published ?? []).map(({ value, window, source, claim, span, from }) => ({ value, window, source, claim, span, from })),
     // Carried so the claim checker sees exactly the fact set the dossier shows.
     cards: p.dossier.facts.map(({ id, label, value, claim }) => ({ id, label, value, claim })),
   };
@@ -392,6 +398,8 @@ export function offendingFigure(text, dossier, data) {
   };
   walk(data?.pnl_summary_7d); walk(data?.pnl_summary_30d);
   for (const f of dossier?.facts ?? []) for (const m of `${f.value ?? ''} ${f.insert ?? ''}`.match(FIGURE) ?? []) known.push(figureValue(m).n);
+  // Judge 8: the tile's own figure is published; the referee never calls it "not in the record".
+  for (const f of dossier?.published ?? []) for (const m of String(f.value ?? '').match(FIGURE) ?? []) known.push(figureValue(m).n);
   const inRecord = ({ pct, n }) => known.some(k => {
     const vals = pct ? [k, k * 100] : [k];
     return vals.some(v => (pct ? Math.abs(Math.abs(v) - Math.abs(n)) <= 0.51 : Math.abs(Math.abs(v) - Math.abs(n)) <= Math.max(1, Math.abs(v) * 0.01)));
@@ -460,6 +468,49 @@ export function windowMismatch(text, dossier, data) {
 }
 
 const DAYS = { '7d': '7-day', '30d': '30-day' };
+
+/** A published tile figure the line typed, within rounding: the entry and the text as typed. */
+function typedPublished(text, dossier) {
+  const out = [];
+  for (const raw of String(text ?? '').match(FIGURE) ?? []) {
+    const typed = raw.trim();
+    const v = figureValue(typed);
+    if (v.pct) continue;
+    const f = (dossier?.published ?? []).find(x => {
+      const k = figureValue(String(x.value ?? '')).n;
+      return Number.isFinite(k) && Math.abs(Math.abs(k) - Math.abs(v.n)) <= Math.max(1, Math.abs(k) * 0.01);
+    });
+    if (f) out.push({ f, typed });
+  }
+  return out;
+}
+const SAYS_ALL_TIME = /\ball[- ]time\b|\blifetime\b|\bever\b/i;
+
+/**
+ * Judge 8: the line quotes a tile figure with its own window (and, for a leaderboard figure, names
+ * the leaderboard). Such a line states a published fact. Returns the typed figure, or null.
+ */
+export function publishedQuote(text, dossier) {
+  const t = String(text ?? '');
+  for (const { f, typed } of typedPublished(t, dossier)) {
+    const window = f.span === 'all' ? SAYS_ALL_TIME.test(t) : claimedWindow(t) === f.span;
+    const source = f.from === 'Nansen' || /leaderboard/i.test(t);
+    if (window && source) return typed;
+  }
+  return null;
+}
+
+/** Judge 8: a tile figure typed in the other window. The referee names whose figure it is. */
+function publishedWrongWindow(text, dossier) {
+  const claimed = claimedWindow(String(text ?? ''));
+  if (!claimed) return null;
+  const hit = typedPublished(text, dossier).find(({ f }) => f.span !== claimed);
+  if (!hit) return null;
+  const whose = hit.f.from === 'Nansen' ? 'Nansen 7-day' : 'Hyperliquid leaderboard';
+  const span = hit.f.span === 'all' ? `all-time figure (${hit.f.window})` : `figure for the ${hit.f.window}`;
+  return `Referee: ${hit.typed} is the tile's ${whose} ${span}, not a ${DAYS[claimed]} figure. The line is spent.`;
+}
+
 const listed = xs => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : xs[0]);
 
 /**
@@ -475,6 +526,9 @@ export function refereeVerdict(text, dossier, data) {
     const many = w.figures.length > 1;
     return `Referee: ${listed(w.figures)} ${many ? 'are' : 'is a'} ${DAYS[w.actual]} figure${many ? 's' : ''}, not ${DAYS[w.claimed]}. The line is spent.`;
   }
+  // Judge 8: a tile figure the round's read does not hold, in the other window: whose figure it is.
+  const tile = publishedWrongWindow(text, dossier);
+  if (tile) return tile;
   return REFEREE_GENERAL;
 }
 
@@ -544,6 +598,83 @@ export const FROZEN_V4_READS = Object.freeze({
   record: { error: 'not_read', message: 'Not read: this round plays a frozen capture; perp-leaderboard is read live only.' },
   smartMoney: {},
   smartMoneyNote: 'Not read: this round plays a frozen capture; perp-screener is read live only.',
+});
+
+/**
+ * Judge 8: how many wallets BAIT's own owner index holds (bench/v5/operator-index.json, the
+ * leaderboard universe it was built from), so the owner row says whose index "indexed" means.
+ */
+const INDEX_WALLETS = (() => { const n = Number(loadOperatorIndex()?.universe); return Number.isFinite(n) && n > 0 ? n : null; })();
+export const OWNER_INDEX_PHRASE = INDEX_WALLETS
+  ? `in BAIT's own index of ${INDEX_WALLETS.toLocaleString('en-US')} Hyperliquid wallets`
+  : "in BAIT's own index";
+
+/**
+ * Judge 8: the figure each deciding row stands on, for the result's "why" card. A block is decided by
+ * its first failing row; a cap by every cap row, in the gate's order. Every figure is the gate's
+ * own evidence or the round's read; a row with no figure of its own is left out and the card keeps
+ * the record's figure. THE GRINDER capped on its open book once headlined its passing 30 days.
+ */
+export function decidedRows(decision, policy, snapshot) {
+  const checks = decision?.checks ?? [];
+  const fail = checks.find(c => c.result === 'fail');
+  const rows = fail ? [fail] : checks.filter(c => c.result === 'cap');
+  const ev = decision?.evidence ?? {};
+  const days = policy?.windowDays ?? 30;
+  const share = (n, d = 1) => `${(n * 100).toFixed(d)}%`;
+  const count = n => Math.round(n).toLocaleString('en-US');
+  const pnl30 = Number.isFinite(ev.realized_pnl_30d_usd) ? ev.realized_pnl_30d_usd : ev.realized_pnl_usd;
+  const view = c => {
+    switch (c.id) {
+      case 'realised_pnl_30d':
+        return Number.isFinite(pnl30) ? { value: money(pnl30), caption: `${days}-day realised PnL` } : null;
+      case 'regime_agreement':
+        return Number.isFinite(ev.realized_pnl_7d_usd) ? { value: money(ev.realized_pnl_7d_usd), caption: '7-day realised PnL, the window that decided it' } : null;
+      case 'thin_sample':
+        return Number.isFinite(ev.closed_trade_count_30d) ? { value: count(ev.closed_trade_count_30d), caption: `closed trades in ${days} days, under the ${policy.minClosedTrades} minimum` } : null;
+      case 'low_win_rate':
+        return Number.isFinite(ev.win_rate_30d) ? { value: share(ev.win_rate_30d), caption: `${days}-day win rate, under the ${share(policy.minWinRate, 0)} minimum` } : null;
+      case 'concentration': {
+        const coins = (snapshot?.pnl_summary_30d?.top5_coins ?? []).filter(x => Number.isFinite(x?.realized_pnl_usd));
+        if (!coins.length || !(pnl30 > 0)) return null;
+        const best = coins.reduce((a, x) => (x.realized_pnl_usd > a.realized_pnl_usd ? x : a));
+        return { value: money(best.realized_pnl_usd), caption: `${best.coin} alone, ${share(best.realized_pnl_usd / pnl30)} of the ${days}-day ${money(pnl30)}; the rest of the book ${money(pnl30 - best.realized_pnl_usd)}` };
+      }
+      case 'open_book': {
+        const open = ev.open_unrealized_pnl_usd;
+        const acct = ev.account_value_usd;
+        if (!Number.isFinite(open) || !(acct > 0)) return null;
+        return { value: money(open), caption: `open positions, ${share(Math.max(0, -open) / acct)} of the ${dollars(acct)} account (limit ${share(policy.maxOpenLossShareOfAccount, 0)})`,
+          label: `Open positions, ${share(Math.max(0, -open) / acct)} of the account (limit ${share(policy.maxOpenLossShareOfAccount, 0)})` };
+      }
+      case 'smart_money_side': {
+        const sm = ev.smart_money;
+        if (!sm || !Number.isFinite(sm.opposite_share)) return null;
+        const total = (sm.longs_usd ?? 0) + (sm.shorts_usd ?? 0);
+        return { value: share(sm.opposite_share, 0), caption: `of smart money's $${(total / 1e6).toFixed(1)}M in ${sm.token_symbol} is on the other side of its ${sm.wallet_side}`,
+          // The same figure as a row under another headline: the label reads before the value.
+          label: `Smart money against its ${sm.token_symbol} ${sm.wallet_side} ($${(total / 1e6).toFixed(1)}M, limit ${share(policy.smartMoneyMinOppositeShare, 1)})` };
+      }
+      case 'operator_record': {
+        const op = ev.operator;
+        if (!op || !Number.isFinite(op.combined_pnl_30d_usd)) return null;
+        const n = op.siblings?.length ?? 0;
+        return { value: money(op.combined_pnl_30d_usd), caption: `The owner's ${days} days: this wallet plus ${n} other${n === 1 ? '' : 's'} its first funder also funds` };
+      }
+      case 'independent_record':
+        return Number.isFinite(pnl30) ? { value: money(pnl30), caption: `${days}-day summary, more than Nansen's perp-leaderboard record for the same days` } : null;
+      default:
+        return null;
+    }
+  };
+  return rows.map(c => ({ id: c.id, result: c.result, ...(view(c) ?? {}) })).filter(r => r.value);
+}
+
+/** Judge 8: the capped ending names the rule that capped, not always the one-market rule. */
+export const CAP_AGENT_LINE = Object.freeze({
+  concentration: 'One market carried the whole month, so the guard sent a quarter of the request and held the rest.',
+  open_book: 'The open positions are down more than a quarter of the account, so the guard sent a quarter of the request and held the rest.',
+  smart_money_side: "Nansen's smart money is mostly on the other side of the largest open position, so the guard sent a quarter of the request and held the rest.",
 });
 
 /** Round 18: which gate rows each Nansen call stands on. */
@@ -1052,12 +1183,13 @@ export function createRoomService({
     const shortAddr = a => `${String(a).slice(0, 6)}...${String(a).slice(-4)}`;
     if (op && (c.result === 'fail' || c.result === 'pass')) {
       const n = op.siblings.length;
-      const who = `First funder ${op.funders.map(f => shortAddr(f.funder)).join(' and ')} also funds ${n} indexed wallet${n === 1 ? '' : 's'}`;
+      // Judge 8: "indexed" says whose index: BAIT's own, with its size.
+      const who = `First funder ${op.funders.map(f => shortAddr(f.funder)).join(' and ')} also funds ${n} other wallet${n === 1 ? '' : 's'} ${OWNER_INDEX_PHRASE}`;
       // Judge 5: shared funding is not proof of one owner, so the row says what the funder
       // funds and what those wallets did, not that this wallet "is the survivor".
       if (c.result === 'fail') {
         return op.siblings_pnl_30d_usd < 0
-          ? `${who} that lost ${dollars(Math.abs(op.siblings_pnl_30d_usd))} over ${days} days; this is the one being pitched.`
+          ? `${who}; ${n === 1 ? 'it' : 'they'} lost ${dollars(Math.abs(op.siblings_pnl_30d_usd))} over ${days} days; this is the one being pitched.`
           : `${who}; with this one they made ${money(op.combined_pnl_30d_usd)} over ${days} days; this is the one being pitched.`;
       }
       return `${who}; together they made ${money(op.combined_pnl_30d_usd)} over ${days} days.`;
@@ -1106,15 +1238,16 @@ export function createRoomService({
   }
 
   async function runGate(p, allocation) {
+    // The benchmark family of the prospect's policy, because the room always plays a
+    // frozen record. The freshness clause is the only difference; the checks are identical.
+    // Both summaries are already in the round's record, so the gate reads the week
+    // too and the table shows every check; the decision is the first failure, as ever.
+    const policy = { ...(p.guardPolicy ?? BENCHMARK_GUARD_POLICY), readAllWindows: true };
     const decision = await guardAllocation({
       executor: evidenceFor(p),
       wallet: p.wallet,
       allocation,
-      // The benchmark family of the prospect's policy, because the room always plays a
-      // frozen record. The freshness clause is the only difference; the checks are identical.
-      // Both summaries are already in the round's record, so the gate reads the week
-      // too and the table shows every check; the decision is the first failure, as ever.
-      policy: { ...(p.guardPolicy ?? BENCHMARK_GUARD_POLICY), readAllWindows: true },
+      policy,
       now,
     });
     const checks = [
@@ -1152,6 +1285,8 @@ export function createRoomService({
       // Gate v5: whether this round read the operator behind the wallet live.
       operatorLive: !!p.snapshot?.v5_reads?.operatorRead,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
+      // Judge 8: the figure behind each row that decided a block or a cap, for the "why" card.
+      decided: decidedRows(decision, policy, p.snapshot),
       // Gate v5: who is behind the wallet, when the operator row read one.
       operator: await ownerView(p, decision),
       // The fill tape's age against the summaries the gate read. The gate never reads the
@@ -1248,8 +1383,17 @@ export function createRoomService({
     roster: () => lineup.map(rosterTile),
 
     /** The frozen record and the unsealed dossier behind one tile, for capture fixtures. */
-    async fixture(id) {
-      const p = lineup.find(x => x.id === id) ?? fallback;
+    async fixture(id, { read = null } = {}) {
+      let p = lineup.find(x => x.id === id) ?? fallback;
+      // Judge 8, local captures only: a saved live read of this wallet, replayed with no call.
+      if (read) {
+        if (!/^[0-9TZ]+-0x[0-9a-f]{8}\.json$/.test(read)) throw new RoomError('Unknown saved read.');
+        const file = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bench', 'live-reads', read);
+        const { frozenSnapshot } = await import('./frozen-read.js');
+        const snap = await frozenSnapshot(file);
+        if (snap.wallet.toLowerCase() !== p.wallet.toLowerCase()) throw new RoomError('That saved read is for another wallet.');
+        p = refreshProspect(p, snap);
+      }
       return {
         // The gate's real decision on the frozen record, for a fixture transfer of $2,500.
         gate: await runGate(p, 2500),
@@ -1328,7 +1472,16 @@ export function createRoomService({
           });
         } catch (err) {
           if (err.code !== 'CLAIM_REJECTED') throw err;
-          return caught(s, { text, reason: err.reason, started, requestId: body.requestId });
+          // Judge 8: a rejection about the tile's own figure, on a line that quotes it with its own
+          // window and source, is overruled: the figure is published and the lobby says so. Any other
+          // reason, or another figure off the record, still catches the line.
+          const quoted = publishedQuote(text, s.dossier);
+          const digits = quoted && quoted.replace(/[^\d]/g, '');
+          const aboutTile = digits && String(err.reason ?? '').replace(/[^\d\s]/g, '').split(/\s+/).includes(digits);
+          if (!(aboutTile && !offendingFigure(text, s.dossier, s.checkerData) && !windowMismatch(text, s.dossier, s.checkerData))) {
+            return caught(s, { text, reason: err.reason, started, requestId: body.requestId });
+          }
+          pending.check = 'published';
         }
 
         s.phase = `${DESK_NAME} is reading your line`;
@@ -1497,7 +1650,7 @@ export function createRoomService({
           : s.evidence?.live && verdict === 'block'
           ? 'The live Nansen read found negative realised PnL. The matching guard rule blocks allocation.'
           : verdict === 'capped'
-            ? 'One market carried the whole month, so the guard sent a quarter of the request and held the rest.'
+            ? CAP_AGENT_LINE[gate.checks.find(c => c.result === 'cap')?.id] ?? agentVerdictLine(verdict)
             : agentVerdictLine(verdict),
         prospect: { id: s.prospect.id, name: s.prospect.name, handle: s.prospect.handle, venueLabel: s.prospect.venueLabel },
         evidence: { ...s.evidence },

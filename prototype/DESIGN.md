@@ -1,6 +1,32 @@
 # BAIT public page, version B
 
-## Version V: dated tiles, 25 September 2026 (current)
+## Version W: one rule for tile figures, 26 September 2026 (current)
+
+Judge 8 (live build, four rounds). Same tokens, fonts and golden viewports (1440 x 900, 375 x 812).
+
+- **A tile figure is a published fact.** The lobby says every tile number is what the trader
+  publishes, so the round treats it that way: quoted with its own window (and "leaderboard" for a
+  leaderboard figure) it is checked, not struck, and the claim checker is told it is published.
+  In the other window the referee names whose figure it is: "Referee: +$594,869 is the tile's
+  Hyperliquid leaderboard figure for the week to 21 Sep, not a 30-day figure." It is not a fact
+  card; the cards stay the round's read.
+- **The "why" card headlines the row that decided.** BLOCKED on the owner: the owner's figure;
+  on a reversal: the week; CAPPED: the first cap row's figure (THE GRINDER: "-$374,746 open
+  positions, 64.0% of the account (limit 25%)"), other cap rows and "30-day realised (passed)"
+  as rows under it. Never a passing figure as the headline.
+- **Rows state what was measured**: "The 7-day +$0 does not reverse the 30-day +$159,041 by 10% or
+  more"; a block is the figure and its limit ("under the 40.0% minimum"), never what copying
+  "would" do.
+- **Owner copy**: "this wallet plus 4 others its first funder also funds"; the result's tree says
+  once "Shared funding is not proof of one owner."; the row says "in BAIT's own index of 1,238
+  Hyperliquid wallets".
+- **Small truths**: a week that rounds to $0 is not a card; the live pulse zero is "No trades
+  closed in the last 7 days"; a tile and a read differ by "$81,471 lower", not a signed "apart";
+  the ticker and the report footer name the round's endpoints; the usage link says "raw usage
+  JSON"; a result with WATCH rows says once that a WATCH neither blocks nor caps; PENNY's quote
+  shows on a phone, clamped to three lines.
+
+## Version V: dated tiles, 25 September 2026
 
 Judge 4: THE STEADY HAND's tile read "+$190,379 · 7 days" beside a live strip, and the room then read
 a different live figure. Same tokens, fonts and golden viewports.
@@ -72,7 +98,7 @@ Nansen 2026-09-15"), so it read as frozen until a pick. Same tokens, fonts and g
   the stamp under it. Green dot and green stamp "Nansen · read live HH:MM UTC" when read live;
   amber dot and amber stamp "live read failed HH:MM UTC · Nansen YYYY-MM-DD capture" (or "live
   reads paused: daily credit cap ·", "live reads off ·") over the saved figure. Grey while loading.
-- **Activity only**: "N trades closed in the last 7 days" (a live zero reads "Quiet now: no trades closed in the last 7 days", so it does not deny a dated brag) from `profiler/perp-pnl-summary` over 7 days.
+- **Activity only**: "N trades closed in the last 7 days" (a live zero reads "No trades closed in the last 7 days", so it does not deny a dated brag; judge 8 dropped "Quiet now") from `profiler/perp-pnl-summary` over 7 days.
   Never realised PnL or win rate: the tile stays hype only and the 30-day figure stays the reveal.
 - **Server side, shared** (`prototype/roster-pulse.js`, `GET /api/room/pulse`): refreshed at
   most every 15 minutes (ROSTER_PULSE_TTL_MIN), 1 credit per wallet, under the room's caps with
@@ -123,7 +149,7 @@ a flat striped wall) read as amateur, with most of the screen empty.
   closed gate still for 1.2 s.
 - **Under the checkpoint**, one small line per Nansen call the verdict stands on: endpoint,
   credits, time, and the word it decided (PASS, WATCH, CAP, BLOCK), then the round's total
-  and a link to all Nansen usage.
+  and a link to the raw usage JSON.
 - **Replay mode** (no model key, local only) is said in a dashed amber note above the page.
 
 ## Version P: nothing before the gate, 23 September 2026

@@ -93,7 +93,7 @@ test('each check fires on its own threshold and nowhere else', () => {
 
   const negative = fires({ realized_pnl_usd: -1 }, 'realised_negative');
   assert.equal(negative.severity, 'high');
-  assert.match(negative.plain, /Copying this wallet would have lost money too/);
+  assert.equal(negative.plain, 'Closed trades over this window came to -$1, below $0.');
 
   // Unrealised above 80% of the headline, and above 80% of realised plus unrealised.
   const paper = fires({ unrealized_pnl_usd: 9_000, headline_pnl_usd: 10_000, realized_pnl_usd: 1_000 }, 'paper_headline');
@@ -105,15 +105,15 @@ test('each check fires on its own threshold and nowhere else', () => {
   assert.equal(assessCopyRisk({ ...clean(), closed_trade_count: COPY_RISK_THRESHOLDS.minClosedTrades })
     .flags.some(f => f.id === 'thin_sample'), false, 'the threshold itself passes');
 
-  assert.match(fires({ win_rate: 0.39 }, 'low_win_rate').plain, /the winners carry it/);
+  assert.equal(fires({ win_rate: 0.39 }, 'low_win_rate').plain, '39.0% of closed trades were profitable, under the 40.0% minimum.');
   assert.match(fires({ early_entry_share: 0.21 }, 'uncopyable_entries').plain, /cannot copy with any lag/);
   assert.match(fires({ top_position_share: 0.51 }, 'concentration').plain, /One market carried the result/);
   assert.match(fires({ top_coin_pnl_share: 0.61 }, 'concentration').plain, /One market carried the result/);
-  assert.match(fires({ worst_trade_usd: -600_000, account_value_usd: 1_000_000 }, 'tail_loss').plain, /quarter of the book/);
+  assert.match(fires({ worst_trade_usd: -600_000, account_value_usd: 1_000_000 }, 'tail_loss').plain, /^The worst single closed trade here was -\$600,000, 60\.0% of the \$1,000,000 account value, over the 25\.0% limit\.$/);
 
   // A drawdown over 30% of the peak, on a series whose arithmetic is obvious.
   const drop = fires({ realised_series: [1_000, -400], account_value_usd: null, volume_usd: null }, 'max_drawdown');
-  assert.match(drop.plain, /you would have been down \$400 from the top of this window\./);
+  assert.match(drop.plain, /At its worst, realised PnL fell \$400 from the top of this window\./);
   assert.equal(drop.evidence.max_drawdown_usd, 400);
   assert.equal(drop.evidence.peak_usd, 1_000);
 

@@ -218,7 +218,7 @@ if (decision.decision === 'allow') {
       <button type="button" id="b-copy" class="btn-ghost">Copy the snippet</button>
       <span id="b-copy-status" class="copy-status" role="status" aria-live="polite"></span>
     </div>
-    <p class="note guard-live">Run it live with only a Nansen key: <code>npm run guard -- --wallet 0x… --allocation 5000</code> reads the two summaries, the open positions, perp-screener, perp-leaderboard and the owner behind the wallet (1 credit if the month already refuses, 10 to 21 credits once the wallet reaches the owner read). A Pitch Room live read also takes the newest page of fills: 5 credits when the record refuses, 10 when the gate clears or caps, plus 2 to 12 for the owner read when nothing earlier refuses (22 at most). Every live read's raw Nansen response is committed in <a href="https://github.com/wolfgang-aura/bait/tree/main/bench/live-reads">bench/live-reads</a> with its SHA-256.</p>
+    <p class="note guard-live">Run it live with only a Nansen key: <code>npm run guard -- --wallet 0x… --allocation 5000</code> reads the two summaries, the open positions, perp-screener, perp-leaderboard and the owner behind the wallet (1 credit if the month already refuses, 10 to 21 credits once the wallet reaches the owner read). A Pitch Room live read also takes the newest page of fills: 5 credits when the record refuses, 10 when the gate clears or caps, plus 1 to 12 for the owner read when nothing earlier refuses (22 at most). Every live read's raw Nansen response is committed in <a href="https://github.com/wolfgang-aura/bait/tree/main/bench/live-reads">bench/live-reads</a> with its SHA-256.</p>
 
     <details class="audit" id="audit">
       <summary>Audit: prompt-only rule, paired policy test, sources, hashes</summary>

@@ -8,7 +8,8 @@
  *
  * `compact` is the checkpoint's version: siblings flow as chips so the stamp stays in view, and the
  * owner sentence is left to the row above it (judge 7: said once). The pitched wallet is tagged
- * "this wallet", true whichever figure the player pitched.
+ * "this wallet", true whichever figure the player pitched. Judge 8: the full tree (the result screen)
+ * says once that shared funding is not proof of one owner.
  */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const CHAIN = { ethereum: 'Ethereum', arbitrum: 'Arbitrum' };
@@ -36,6 +37,7 @@ export function ownerTreeHtml(op, { compact = false } = {}) {
     <dt>The owner, all ${n + 1}</dt><dd class="${op.combined < 0 ? 'loss' : 'gain'}">${esc(op.combinedLabel)}</dd>
   </dl>
   ${op.line && !compact ? `<p class="ot-line">${esc(op.line)}</p>` : ''}
+  ${!compact ? '<p class="ot-hedge">Shared funding is not proof of one owner.</p>' : ''}
   ${compact ? `<p class="ot-src">${esc(source)}</p>` : ''}
 </figure>`;
 }

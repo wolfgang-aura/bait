@@ -35,8 +35,9 @@ const count = n => Math.round(n).toLocaleString('en-US');
 export function pulseFigure(trades, { live = false } = {}) {
   if (!Number.isInteger(trades)) return null;
   // A live zero sits under a tile bragging about a dated busy week (THE GRINDER, judge 4): say it
-  // is the current week that is quiet, so the strip does not read as a denial of the tile.
-  if (trades === 0) return live ? 'Quiet now: no trades closed in the last 7 days' : 'No trades closed in 7 days';
+  // is the last 7 days. Judge 8: only what it counts, closed trades; "Quiet now" read as false while
+  // fills and a large open position were live.
+  if (trades === 0) return live ? 'No trades closed in the last 7 days' : 'No trades closed in 7 days';
   return `${count(trades)} trade${trades === 1 ? '' : 's'} closed in ${live ? 'the last ' : ''}7 days`;
 }
 

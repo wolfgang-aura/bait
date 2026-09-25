@@ -232,6 +232,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .flagline.none b { color: var(--green); }
 .flagline span { font: 400 13px/1.55 var(--display); color: var(--text); }
 .report-foot { margin: 2px 0 0; font: 400 10.5px/1.6 var(--mono); color: var(--faint); }
+.report-note { margin: 8px 0 0; font: 400 12px/1.5 var(--display); color: var(--dim); }
 .flagline.check { grid-template-columns: 150px 1fr; padding: 6px 12px; }
 .flagline.check span { font-size: 12px; }
 .check-src { display: block; margin-top: 2px; font: 400 10.5px/1.3 var(--mono); font-style: normal; color: var(--faint); }
@@ -764,7 +765,8 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .tile-info b { font-size: 15px; }
   .caller { min-height: 64px; }
 
-  .reveal-quote { display: none; }
+  /* Judge 8: PENNY's line shows on a phone too, wrapped and clamped to three lines. */
+  .reveal-quote:not([hidden]) { white-space: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; font-size: 13px; }
   .hype-half { grid-template-rows: auto auto auto; }
   .hype-half .half-art { grid-row: 3; }
   .hype-half .half-text { grid-row: 3; }
@@ -992,6 +994,8 @@ html[data-frozen="true"] .cp-card, html[data-frozen="true"] .cp-row, html[data-f
 }
 .hype-half .half-text { min-width: 0; }
 @media (min-width: 901px) and (max-width: 1200px) { .hype-half { padding-right: 60px; } }
+/* Judge 8: above 1200 px a long source line (a live read's moved figure) ran under the VS. */
+@media (min-width: 1201px) { .hype-half .half-source { padding-right: 48px; } }
 
 /* round 12: the stamp never lands on the last row */
 .cp-stamp { margin-top: 24px; transform: rotate(-2deg); }
@@ -1109,6 +1113,7 @@ html[data-frozen="true"] .barrier.run, html[data-frozen="true"] .barrier.run * {
 .ot-sums dd.loss { color: var(--red); } .ot-sums dd.gain { color: var(--green); }
 .ot-line { margin: 10px 0 0; font: 600 14px/1.4 var(--display); color: var(--text); }
 .ot-src { margin: 8px 0 0; font-size: 10.5px; color: var(--faint); }
+.ot-hedge { margin: 6px 0 0; font: 400 12px/1.4 var(--display); color: var(--dim); }
 /* The checkpoint's version: siblings as chips, so the stamp stays in view. */
 .cp-owner { list-style: none; padding: 8px 10px 10px 13px; background: rgba(255, 107, 107, .06); border-left: 3px solid var(--red); animation: cp-row 200ms ease-out both; }
 .owner-tree.compact { margin: 0; font-size: 11px; }

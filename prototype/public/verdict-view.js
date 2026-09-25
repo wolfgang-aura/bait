@@ -131,3 +131,23 @@ export function factGroups(facts = []) {
   }
   return groups;
 }
+
+/** Judge 8: the result screen's short form of WATCH_NOTE, said once under the report when a WATCH row shows. */
+export const WATCH_NOTE_SHORT = 'WATCH rows come from the trade fills, which the gate does not read, so a WATCH neither blocks nor caps.';
+
+/**
+ * Judge 8: the big figure on the result's record card. A block or a cap headlines the figure of
+ * the row that decided it (the server's `gate.decided`, every cap row for a cap); THE GRINDER's
+ * capped card once headlined its passing 30 days under "Why BAIT capped it". The record's own
+ * figure then stays on the card as a row, labelled as the one that passed. A clear, or a row with
+ * no figure of its own, keeps the record's figure.
+ */
+export function recordHeadline(final, truth) {
+  const decided = ['block', 'capped'].includes(final?.verdict) ? (final?.gate?.decided ?? []) : [];
+  const [first, ...also] = decided;
+  if (!first || first.id === 'realised_pnl_30d') {
+    return { id: first?.id ?? null, value: truth.pnlLabel, caption: truth.pnlCaption, bad: final?.verdict === 'block' || truth.pnl < 0, also, rows: [] };
+  }
+  const rows = first.id === 'operator_record' ? [] : [{ label: '30-day realised (passed)', value: truth.pnlLabel }];
+  return { id: first.id, value: first.value, caption: first.caption, bad: true, also, rows };
+}

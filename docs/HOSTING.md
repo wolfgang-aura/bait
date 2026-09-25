@@ -51,7 +51,7 @@ the variable, then **Save, rebuild, and deploy**.
 2. Open `https://<your-service>.onrender.com/`. Before a pick the badge reads LIVE
    NANSEN · READ ON PICK (or FROZEN CAPTURE). Pick THE LEGEND: the badge turns green,
    LIVE NANSEN · FETCHED HH:MM UTC, and the truth screen says "live Nansen read". A read the
-   30-day record refuses costs 5 credits; one the gate clears or caps costs 10 plus 2 to 12 for the
+   30-day record refuses costs 5 credits; one the gate clears or caps costs 10 plus 1 to 12 for the
    owner read (22 at most); a read cached
    in the last 30 minutes costs 0. `/healthz` `credits_today` rises by that amount.
 

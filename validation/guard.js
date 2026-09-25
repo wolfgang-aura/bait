@@ -646,7 +646,7 @@ export async function guardAllocation({
   const pnl30 = evidence.realized_pnl_30d_usd;
   if (pnl30 < policy.minimumRealizedPnlUsd) {
     t.fail('realised_pnl_30d', pnl30, policy.minimumRealizedPnlUsd,
-      `Closed trades over ${policy.windowDays} days came to ${money(pnl30)}. Copying this wallet would have lost money.`);
+      `Closed trades over ${policy.windowDays} days came to ${money(pnl30)}, under the policy minimum of ${policy.minimumRealizedPnlUsd === 0 ? '$0' : money(policy.minimumRealizedPnlUsd)}.`);
   } else {
     t.pass('realised_pnl_30d', pnl30, policy.minimumRealizedPnlUsd,
       `Closed trades over ${policy.windowDays} days came to ${money(pnl30)}, at or above the policy minimum.`);
@@ -674,7 +674,7 @@ export async function guardAllocation({
       t.skip('low_win_rate', 'Not assessed. The summary carried no win rate.', null, policy.minWinRate);
     } else if (winRate < policy.minWinRate) {
       t.fail('low_win_rate', winRate, policy.minWinRate,
-        `${pct(winRate)} of closed trades were profitable. Copying this means sitting through long losing runs.`);
+        `${pct(winRate)} of closed trades were profitable, under the ${pct(policy.minWinRate)} minimum.`);
     } else {
       t.pass('low_win_rate', winRate, policy.minWinRate, `${pct(winRate)} of closed trades were profitable.`);
     }
@@ -766,8 +766,11 @@ export async function guardAllocation({
         `The two windows tell opposite stories: ${money(shortPnl)} over ${policy.shortWindowDays} days against ${money(pnl30)} over ${policy.windowDays}. `
         + `Across 840 saved summaries the two verdicts disagreed on ${REGIME_DISAGREEMENT_RATE} of matched wallet-dates, which is why one window is not enough.`);
     } else {
-      t.pass('regime_agreement', pair, bar,
-        `Both windows point the same way, so this is not a ${policy.windowDays}-day verdict the last week already contradicts.`);
+      // Judge 8: the row says what was tested. A +$0 week has no direction of its own; it does not
+      // reverse the month, which is all this check refuses.
+      t.pass('regime_agreement', pair, bar, noiseShare > 0
+        ? `The ${policy.shortWindowDays}-day ${money(shortPnl)} does not reverse the ${policy.windowDays}-day ${money(pnl30)} by ${noisePct} or more.`
+        : `The ${policy.shortWindowDays}-day ${money(shortPnl)} does not reverse the ${policy.windowDays}-day ${money(pnl30)}.`);
     }
   }
 
@@ -1132,7 +1135,7 @@ export function assessCopyRisk(evidence = {}) {
   if (realized === null) skip('realised_negative', 'no realised PnL in the evidence');
   else if (realized < 0) {
     add('realised_negative', 'high',
-      `Closed trades lost money over this window: ${signedUsd(realized)}. Copying this wallet would have lost money too.`,
+      `Closed trades over this window came to ${signedUsd(realized)}, below $0.`,
       { realized_pnl_usd: realized });
   }
 
@@ -1160,7 +1163,7 @@ export function assessCopyRisk(evidence = {}) {
   if (winRate === null) skip('low_win_rate', 'no win rate in the evidence');
   else if (winRate < t.minWinRate) {
     add('low_win_rate', 'medium',
-      `Most trades lose and the winners carry it: ${asShare(winRate)} of closed trades were profitable. Copying this means sitting through long losing runs.`,
+      `${asShare(winRate)} of closed trades were profitable, under the ${asShare(t.minWinRate)} minimum.`,
       { win_rate: winRate, minimum: t.minWinRate });
   }
 
@@ -1192,8 +1195,11 @@ export function assessCopyRisk(evidence = {}) {
   else {
     const worstShare = Math.max(...tailBase.map(base => Math.abs(worstTrade) / base));
     if (worstShare > t.maxTailLossShare) {
+      // Judge 8: the figure, its base and the limit; nothing about what one trade "can take".
+      const base = account !== null && account > 0 && Math.abs(worstTrade) / account === worstShare
+        ? `${usd(account)} account value` : `${usd(volume)} traded volume`;
       add('tail_loss', 'medium',
-        `One trade can take a quarter of the book: the worst single closed trade here was ${signedUsd(worstTrade)}.`,
+        `The worst single closed trade here was ${signedUsd(worstTrade)}, ${asShare(worstShare)} of the ${base}, over the ${asShare(t.maxTailLossShare)} limit.`,
         { worst_trade_usd: worstTrade, share_of_base: worstShare, maximum: t.maxTailLossShare });
     }
   }
@@ -1206,7 +1212,7 @@ export function assessCopyRisk(evidence = {}) {
     const ofAccount = account && account > 0 ? drawdown.max_drawdown_usd / account : null;
     if ((ofPeak !== null && ofPeak > t.maxDrawdownShareOfPeak) || (ofAccount !== null && ofAccount > t.maxDrawdownShareOfAccount)) {
       add('max_drawdown', 'high',
-        `At the worst point you would have been down ${usd(drawdown.max_drawdown_usd)} from the top of this window.`,
+        `At its worst, realised PnL fell ${usd(drawdown.max_drawdown_usd)} from the top of this window.`,
         { ...drawdown, share_of_account: ofAccount });
     }
   }

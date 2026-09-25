@@ -735,7 +735,9 @@ const server = http.createServer(async (req, res) => {
       // It spends nothing and is closed when hosted, so the reveal is not a URL away.
       if (url.pathname === '/api/room/fixture' && req.method === 'GET') {
         if (HOSTED) return send(404, { error: 'Unknown room route.' });
-        return send(200, await roomService.fixture(url.searchParams.get('prospect')));
+        // Judge 8: `read=<file>` replays a saved live read from bench/live-reads (no call), so a
+        // capture can show a round the frozen record does not play (THE GRINDER capped on 25 Sep).
+        return send(200, await roomService.fixture(url.searchParams.get('prospect'), { read: url.searchParams.get('read') }));
       }
       // The front door's live read: activity only (7-day closed trades), never a realised
       // figure. Shared and cached server side, so a page load spends at most the refresh.

@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { stubProvider } from '../validation/providers.js';
 import { createLiveEvidence, liveSnapshot, LIVE_READ_CREDITS, ROOM_LIVE_GUARD_POLICY } from './live-evidence.js';
-import { createRoomService, createLeaderboardStore, loadRoster, SHOTS, SLOT } from './room.js';
+import { createRoomService, createLeaderboardStore, loadRoster, SHOTS, SLOT, OWNER_INDEX_PHRASE } from './room.js';
 
 const T0 = new Date('2026-09-23T10:15:00Z');
 const GRINDER = '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4';
@@ -702,7 +702,7 @@ test('v5 live round: the operator behind the wallet lost money, so the operator 
   assert.equal(final.verdict, 'block');
   assert.equal(final.gate.policyId, 'wallet-copy-risk-room-live-v5');
   assert.equal(final.gate.operatorLive, true);
-  assert.equal(row.plain, 'First funder 0x1111...1111 also funds 1 indexed wallet that lost $500,000 over 30 days; this is the one being pitched.');
+  assert.equal(row.plain, `First funder 0x1111...1111 also funds 1 other wallet ${OWNER_INDEX_PHRASE}; it lost $500,000 over 30 days; this is the one being pitched.`);
   assert.equal(row.source, 'related-wallets first funder, transactions, sibling perp-pnl-summary');
   assert.doesNotMatch(JSON.stringify(final), /Some Fund/, 'no Nansen label reaches the page');
   assert.deepEqual(final.gate.calls.at(-1), { endpoint: 'owner: related-wallets, transactions, sibling perp-pnl-summary', credits: 4, at: final.gate.calls.at(-1).at, cached: false, decided: 'BLOCK' });

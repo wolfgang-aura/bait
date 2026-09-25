@@ -105,9 +105,10 @@ test('live reads off or no key: nothing is read and every tile says so', async (
   }
 });
 
-test('a live zero says the current week is quiet, so it does not deny a tile bragging about a dated week', () => {
+test('a live zero says what it counts, the last 7 days, so it does not deny a tile bragging about a dated week', () => {
   // Judge 4: THE GRINDER's "week to 15 Sep" tile sat over a live strip "0 trades closed in 7 days".
-  assert.equal(pulseFigure(0, { live: true }), 'Quiet now: no trades closed in the last 7 days');
+  // Judge 8: no "Quiet now": fills and a large open position were live; the strip counts closed trades only.
+  assert.equal(pulseFigure(0, { live: true }), 'No trades closed in the last 7 days');
   assert.equal(pulseFigure(0), 'No trades closed in 7 days');
   assert.equal(pulseFigure(1, { live: true }), '1 trade closed in the last 7 days');
   assert.equal(pulseFigure(424), '424 trades closed in 7 days');
