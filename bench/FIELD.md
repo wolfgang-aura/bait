@@ -143,9 +143,10 @@ in UTC):
   first funder (a $4,307 funding transfer) paid for 4 indexed wallets that made -$1,234,554
   together; owner -$875,962.
   v4 funds it in full; v5 blocks it (`operator_losing`). Read 06:46:22. The game's THE STEADY HAND
-  card re-read it live at 11:31 UTC (`bench/live-reads/20260925T113130Z-0x20438cfd.json`): own
-  +$358,593 (same 2,661 closed trades), 4 siblings -$1,228,400, owner -$869,807. One sibling had 18
-  fewer closed trades in the moved window; live figures move with it.
+  card read it again, 30 days to 11:31 UTC (`bench/live-reads/20260925T113130Z-0x20438cfd.json`):
+  own +$358,593 (2,661 closed trades in both windows), 4 siblings -$1,228,400, owner -$869,807. One
+  sibling had 18 fewer closed trades in the moved window. Each figure is as of its read; live figures
+  move after every trade.
 - **0x153c...319a**, rank 68, a V5.md owner attack a day earlier. Own +$812,498; 7 siblings
   -$2,650,967; owner -$1,838,469. v4 full, v5 blocks. Read 06:19:26.
 - **0x2e2b...2fab**, rank 73, in the universe but not a V5.md pick. Own +$743,510; 8 siblings

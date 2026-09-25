@@ -36,7 +36,7 @@ test('first load reads each roster wallet once, live and dated to the minute, ch
   assert.equal(view.live, ROSTER.length);
   for (const w of view.wallets) {
     assert.equal(w.live, true);
-    assert.equal(w.figure, '1,087 trades closed in 7 days');
+    assert.equal(w.figure, '1,087 trades closed in the last 7 days');
     assert.equal(w.stamp, 'Nansen · read live 12:41 UTC');
   }
   assert.equal(live.status().credits_today, ROSTER.length, 'the pulse spends under the same counter as the rounds');
@@ -101,4 +101,13 @@ test('live reads off or no key: nothing is read and every tile says so', async (
     assert.equal(calls.length, 0);
     assert.ok(view.wallets.every(w => !w.live && w.stamp.startsWith(`${words} · Nansen `)));
   }
+});
+
+test('a live zero says the current week is quiet, so it does not deny a tile bragging about a dated week', () => {
+  // Judge 4: THE GRINDER's "week to 15 Sep" tile sat over a live strip "0 trades closed in 7 days".
+  assert.equal(pulseFigure(0, { live: true }), 'Quiet now: no trades closed in the last 7 days');
+  assert.equal(pulseFigure(0), 'No trades closed in 7 days');
+  assert.equal(pulseFigure(1, { live: true }), '1 trade closed in the last 7 days');
+  assert.equal(pulseFigure(424), '424 trades closed in 7 days');
+  assert.equal(pulseFigure(null), null);
 });

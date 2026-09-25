@@ -76,8 +76,10 @@ export const PROSPECTS = [
   {
     id: 'steadyhand', venue: 'hyperliquid', wallet: '0x20438cfdd36d75e185d6601697eb1973f4aee79d',
     name: 'THE STEADY HAND', handle: null, accent: '#B9A3E3', portrait: 'monk',
-    hypeKind: 'week_streak', live: true, start: true,
-    voice: 'A hundred and ninety grand this week. Nothing flashy, just steady.',
+    // Its brag is the saved read's week (to 25 Sep 11:31 UTC), named on the tile, never "this week":
+    // judge 4 saw the tile's +$190,379 beside a live strip, then a different live figure in the room.
+    hypeKind: 'best_week', live: true, start: true,
+    voice: 'A hundred and ninety grand in one week. Nothing flashy, just steady.',
   },
   {
     id: 'legend', venue: 'hyperliquid', wallet: '0x7fdafde5cfb5465924316eced2d3715494c517d1',
@@ -89,13 +91,13 @@ export const PROSPECTS = [
     id: 'streak', venue: 'hyperliquid', wallet: '0xa312114b5795dff9b8db50474dd57701aa78ad1e',
     name: 'THE STREAK', handle: 'NAKED SHORTS ONLY', accent: '#FF4D6D', portrait: 'streak',
     hypeKind: 'week',
-    voice: 'Up most of six hundred grand this week. Shorts pay.',
+    voice: 'Up most of six hundred grand in one week. Shorts pay.',
   },
   {
     id: 'realdeal', venue: 'hyperliquid', wallet: '0xfe47c8f29f65830d7990e85852cc2c5cee1c0085',
     name: 'THE REAL DEAL', handle: null, accent: '#62D49A', portrait: 'realdeal',
     hypeKind: 'month', tools: ['check_pnl'],
-    voice: 'A hundred and sixteen thousand this month. Small book, real print.',
+    voice: 'A hundred and sixteen thousand in thirty days. Small book, real print.',
   },
   {
     id: 'grinder', venue: 'hyperliquid', wallet: '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4',
@@ -402,13 +404,14 @@ export function loadRoster({
 
     // Built for the prospect's own kind only: a Nansen-only brag has no leaderboard row.
     const headline = {
-      all_time: () => ({ value: money(hype.all_time_pnl_usd), caption: 'all time', sub: `${plain(hype.account_value_usd)} account` }),
-      month: () => ({ value: money(hype.month_pnl_usd), caption: '30 days', sub: `${money(hype.all_time_pnl_usd)} all time` }),
-      week: () => ({ value: money(hype.week_pnl_usd), caption: '7 days', sub: `${money(hype.all_time_pnl_usd)} all time` }),
-      week_streak: () => ({ value: money(week.realized_pnl_usd), caption: '7 days', sub: `${pct(week.win_rate)} win rate` }),
+      // Every caption names the day its figure was read to (judge 4): the tile sits beside a live
+      // strip, so an undated "7 days" reads as the current week.
+      all_time: () => ({ value: money(hype.all_time_pnl_usd), caption: `all time to ${dayMonth(hype.capturedAt)}`, sub: `${plain(hype.account_value_usd)} account` }),
+      month: () => ({ value: money(hype.month_pnl_usd), caption: `30 days to ${dayMonth(hype.capturedAt)}`, sub: `${money(hype.all_time_pnl_usd)} all time` }),
+      week: () => ({ value: money(hype.week_pnl_usd), caption: `week to ${dayMonth(hype.capturedAt)}`, sub: `${money(hype.all_time_pnl_usd)} all time` }),
       best_week: () => ({ value: money(week.realized_pnl_usd), caption: `week to ${dayMonth(snapshot.windows['7d'].to)}`, sub: `${pct(week.win_rate)} win rate` }),
     }[p.hypeKind]();
-    const fromNansen = p.hypeKind === 'week_streak' || p.hypeKind === 'best_week';
+    const fromNansen = p.hypeKind === 'best_week';
 
     const loaded = {
       ...base,
@@ -416,7 +419,7 @@ export function loadRoster({
       hype: {
         ...headline,
         source: fromNansen
-          ? `Nansen 7-day window${p.hypeKind === 'best_week' ? ' to' : ','} ${stamp(snapshot.retrieved_at)}`
+          ? `Nansen 7-day window to ${stamp(snapshot.retrieved_at)}`
           : `Public Hyperliquid leaderboard, ${stamp(hype.capturedAt)}`,
         // The tile's figure and the record behind it are dated apart, because they are
         // read on different days: the leaderboard row and the Nansen capture.

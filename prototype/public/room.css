@@ -1120,3 +1120,11 @@ html[data-frozen="true"] .cp-owner { animation: none; }
 @media (max-width: 640px) {
   .owner-tree.compact .ot-kids { display: none; }
 }
+
+/* Judge 4: at 375 the first screen was all text. Below 600px the explainer and the truth-source line
+   go, so the finding headline and the first card's face share the first screen; the job panel is its
+   one "Your job" line, and PENNY's first line follows it. */
+@media (max-width: 599px) {
+  .lead .for-whom, .roster-head .truth-credit { display: none; }
+  .premise .premise-how, .premise .premise-data, .premise .premise-score { display: none; }
+}

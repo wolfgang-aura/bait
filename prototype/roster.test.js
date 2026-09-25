@@ -88,9 +88,21 @@ test('THE GRINDER brags about a dated week, because a live read found it idle si
   assert.equal(p.hype.caption, 'week to 15 Sep');
   assert.equal(p.hype.source, 'Nansen 7-day window to 2026-09-15 UTC');
   assert.equal(p.snapshot.windows['7d'].to, '2026-09-15T10:40:31Z', 'the week the tile names is the capture it reads');
-  // Every other Nansen-sourced brag that says "this week" is read within a day of the capture date it shows.
-  for (const q of ROSTER.filter(x => /this week|last week/i.test(x.voice))) {
-    assert.equal(q.hype.caption, '7 days', `${q.id} says a recent week`);
+});
+
+test('no tile presents a saved figure as current: every caption names the day it was read to', () => {
+  // Judge 4: THE STEADY HAND's "+$190,379 · 7 days" sat beside a live strip, then the room read a different live figure.
+  const steady = by('steadyhand');
+  assert.equal(steady.snapshot.windows['7d'].to, '2026-09-25T11:31:30Z', 'the saved read the tile figure comes from');
+  assert.equal(steady.hype.value, '+$190,379');
+  assert.equal(steady.hype.caption, 'week to 25 Sep');
+  assert.equal(steady.hype.source, 'Nansen 7-day window to 2026-09-25 UTC');
+  assert.equal(by('streak').hype.caption, 'week to 21 Sep');
+  assert.equal(by('realdeal').hype.caption, '30 days to 21 Sep');
+  assert.equal(by('legend').hype.caption, 'all time to 21 Sep');
+  for (const p of ROSTER) {
+    assert.match(p.hype.caption, / to \d{1,2} [A-Z][a-z]{2}$/, `${p.id} dates its figure`);
+    assert.doesNotMatch(p.voice, /this week|last week|this month|lately|right now/i, `${p.id} claims a current window`);
   }
 });
 
@@ -264,7 +276,7 @@ test('every figure a prospect brags about is in the loaded record', () => {
     ['streak', /six hundred grand/, p => p.hypeRow.week_pnl_usd, 600_000],
     ['realdeal', /hundred and sixteen thousand/, p => p.hypeRow.month_pnl_usd, 116_000],
     ['grinder', /four hundred and twenty four trades/i, p => p.snapshot.pnl_summary_7d.closed_trade_count, 424],
-    ['steadyhand', /hundred and ninety grand this week/i, p => p.snapshot.pnl_summary_7d.realized_pnl_usd, 190_000],
+    ['steadyhand', /hundred and ninety grand in one week/i, p => p.snapshot.pnl_summary_7d.realized_pnl_usd, 190_000],
   ];
   for (const [id, said, read, spoken] of brags) {
     const p = by(id);

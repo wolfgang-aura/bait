@@ -1,6 +1,21 @@
 # BAIT public page, version B
 
-## Version U: the live-market lead, 25 September 2026 (current)
+## Version V: dated tiles, 25 September 2026 (current)
+
+Judge 4: THE STEADY HAND's tile read "+$190,379 · 7 days" beside a live strip, and the room then read
+a different live figure. Same tokens, fonts and golden viewports.
+
+- **Every tile caption names the day its figure was read to**: "week to 25 Sep" (THE STEADY HAND,
+  its saved 11:31 UTC read), "week to 21 Sep" and "30 days to 21 Sep" and "all time to 21 Sep" (the
+  leaderboard capture), "week to 15 Sep" (THE GRINDER). No voice line says "this week" or "this month".
+- **Phone (< 600px) first screen**: the grey explainer and the truth-source line are hidden, so the
+  finding headline, the call to pick and the first row of card faces fit 375 x 812. After a pick the
+  job panel is its one "Your job" line and PENNY's bubble follows it.
+- **The referee names the figure**: "Referee: +$9,999,999 is not in the record. The line is spent."
+  It quotes only a figure the player typed that is on no card and within rounding of no number in the
+  record; otherwise it keeps the general line. The checker's reason is still never shown mid-round.
+
+## Version U: the live-market lead, 25 September 2026
 
 Judge 3: the first screen led with the old benchmark and THE GRINDER's tile claimed a week the live
 strip beside it contradicted. Same tokens, fonts and golden viewports.
@@ -52,7 +67,7 @@ Nansen 2026-09-15"), so it read as frozen until a pick. Same tokens, fonts and g
   the stamp under it. Green dot and green stamp "Nansen · read live HH:MM UTC" when read live;
   amber dot and amber stamp "live read failed HH:MM UTC · Nansen YYYY-MM-DD capture" (or "live
   reads paused: daily credit cap ·", "live reads off ·") over the saved figure. Grey while loading.
-- **Activity only**: "N trades closed in 7 days" from `profiler/perp-pnl-summary` over 7 days.
+- **Activity only**: "N trades closed in the last 7 days" (a live zero reads "Quiet now: no trades closed in the last 7 days", so it does not deny a dated brag) from `profiler/perp-pnl-summary` over 7 days.
   Never realised PnL or win rate: the tile stays hype only and the 30-day figure stays the reveal.
 - **Server side, shared** (`prototype/roster-pulse.js`, `GET /api/room/pulse`): refreshed at
   most every 15 minutes (ROSTER_PULSE_TTL_MIN), 1 credit per wallet, under the room's caps with

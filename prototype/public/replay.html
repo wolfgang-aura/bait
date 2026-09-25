@@ -52,7 +52,7 @@
         </tbody>
       </table>
     </div>
-    <p class="model-note">Nansen&rsquo;s 30-day Hyperliquid leaderboard, read 25 Sep 2026 06:04 UTC, each gate asked for $5,000. The simple PnL rule funds all five. The owner is the wallet&rsquo;s first funder (related-wallets, then the funding transfer); its other wallets are those in BAIT&rsquo;s index of 1,238, so five is a floor. Pre-registered before the read; 2,398 credits; every result published in <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/FIELD.md">bench/FIELD.md</a>. 3 of the 5 were already in the benchmark below. Shared funding is not proof of one owner.<br><sup>*</sup> Field read, 30 days to 06:04 UTC. The game&rsquo;s THE STEADY HAND card is this wallet, re-read live at 11:31 UTC: its own +$358,593 is unchanged, its owner&rsquo;s 4 other wallets -$1,228,400 (one of them had 18 fewer closed trades in the moved 30-day window). Live figures move with the window.</p>
+    <p class="model-note">Nansen&rsquo;s 30-day Hyperliquid leaderboard, read 25 Sep 2026 06:04 UTC, each gate asked for $5,000. The simple PnL rule funds all five. The owner is the wallet&rsquo;s first funder (related-wallets, then the funding transfer); its other wallets are those in BAIT&rsquo;s index of 1,238, so five is a floor. Pre-registered before the read; 2,398 credits; every result published in <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/FIELD.md">bench/FIELD.md</a>. 3 of the 5 were already in the benchmark below. Shared funding is not proof of one owner.<br><sup>*</sup> Field read, 30 days to 06:04 UTC: own +$358,593, owner&rsquo;s 4 other wallets -$1,234,554. Game read (THE STEADY HAND card is this wallet), 30 days to 11:31 UTC: own +$358,593 (2,661 closed trades in both windows), 4 other wallets -$1,228,400 (one had 18 fewer closed trades in the moved window). Each figure is as of its read; live figures move after every trade.</p>
 
     <ul class="findings" aria-label="The benchmark">
       <li><span>Benchmark</span><p><strong>A simple PnL rule sends the money in 61 of 79 attacks; BAIT in 0 of 79.</strong> 12 are real owner wallets, picked by a rule written before any read: the PnL rule funds 12 of 12, gate v4 11, BAIT <strong>0 of 12 owner attacks</strong>. DeepSeek and Claude Sonnet 5 on their own backed them in 36 of 36 runs each. The other 67 are faked evidence.</p></li>
@@ -269,10 +269,10 @@ if (decision.decision === 'allow') {
 
   <section id="wallets" class="wallets sec" aria-labelledby="wallets-title" hidden>
     <div class="sec-head">
-      <h2 id="wallets-title"><span class="sec-num">4</span>Dated examples: five wallets read on 20 Sep 2026</h2>
-      <p class="sec-meta">5 dated Hyperliquid examples · the BAIT check's decision on each</p>
+      <h2 id="wallets-title"><span class="sec-num">4</span>The 20 Sep 2026 run: five wallets under gate v1</h2>
+      <p class="sec-meta">5 dated Hyperliquid examples · recorded under gate v1, the 30-day realised-PnL rule · not re-run</p>
     </div>
-    <p class="wallets-lead">Each card is one dated Nansen read and the decision the BAIT check made on it, with links to the profile and the chain explorer. To check a wallet of your own, <a href="/#any-wallet" data-host-link>paste it on the Play page</a>: one live Nansen read, then the same round.</p>
+    <p class="wallets-lead">This run is kept as recorded: gate v1 read one thing, the wallet&rsquo;s own 30-day realised PnL, so it allowed any wallet that was up, however it traded. The current gate, v5, also reads the owner: who funded the wallet and how the owner&rsquo;s other wallets did. Each card is one dated Nansen read and the decision gate v1 made on it, with links to the profile and the chain explorer. To check a wallet of your own, <a href="/#any-wallet" data-host-link>paste it on the Play page</a>: one live Nansen read, then the same round.</p>
     <div class="wallet-controls" aria-label="Wallet filters">
       <label for="b-venue-filter">Venue<select id="b-venue-filter"><option value="all">All venues</option><option value="hyperliquid">Hyperliquid</option></select></label>
       <label for="b-decision-filter">Decision<select id="b-decision-filter"><option value="all">Allow + block</option><option value="allow">Allow</option><option value="block">Block</option></select></label>
@@ -287,7 +287,7 @@ if (decision.decision === 'allow') {
   <div class="foot-inner">
     <p>Recorded proof for one product path: AI allocation to perpetual-trading wallets.</p>
     <nav class="foot-links" aria-label="Repository">
-      <a class="foot-link" href="#wallets">Dated examples</a>
+      <a class="foot-link" href="#wallets">20 Sep run (gate v1)</a>
       <a class="foot-link" href="/" data-host-link>Play it live</a>
       <a class="foot-link" href="https://github.com/wolfgang-aura/bait">GitHub</a>
     </nav>

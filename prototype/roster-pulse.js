@@ -31,9 +31,12 @@ const day = value => new Date(value).toISOString().slice(0, 10);
 const count = n => Math.round(n).toLocaleString('en-US');
 
 /** The figure a tile prints, from a live read or the saved capture. One short line. */
-export function pulseFigure(trades) {
+export function pulseFigure(trades, { live = false } = {}) {
   if (!Number.isInteger(trades)) return null;
-  return `${count(trades)} trade${trades === 1 ? '' : 's'} closed in 7 days`;
+  // A live zero sits under a tile bragging about a dated busy week (THE GRINDER, judge 4): say it
+  // is the current week that is quiet, so the strip does not read as a denial of the tile.
+  if (trades === 0) return live ? 'Quiet now: no trades closed in the last 7 days' : 'No trades closed in 7 days';
+  return `${count(trades)} trade${trades === 1 ? '' : 's'} closed in ${live ? 'the last ' : ''}7 days`;
 }
 
 const PAUSE_WORDS = {
@@ -121,7 +124,7 @@ export function createRosterPulse({
       const savedLabel = s.at ? `Nansen ${day(s.at)} capture` : 'no saved capture';
       if (r?.ok) {
         return { id: p.id, live: true, status: 'live', trades7d: r.trades, coins7d: r.coins, readAt,
-          figure: pulseFigure(r.trades), stamp: `Nansen · read live ${hhmm(readAt)}` };
+          figure: pulseFigure(r.trades, { live: true }), stamp: `Nansen · read live ${hhmm(readAt)}` };
       }
       const status = pause ? 'paused' : 'failed';
       const why = pause ? (PAUSE_WORDS[pause.code] ?? `live reads paused: ${pause.reason}`)

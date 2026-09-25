@@ -14,7 +14,7 @@ import { stubProvider } from '../validation/providers.js';
 import {
   createRoomService, createLeaderboardStore, buildDossier, parseScene, toLine,
   FORMAT_SUFFIX, ROOM_DESK, SHOTS, SLOT, MAX_PITCH, loadRoster, roundQuotes, endingCopy,
-  loadRecordedCons, RECORDED_CONS_FILE,
+  loadRecordedCons, RECORDED_CONS_FILE, offendingFigure, refereeLine, buildProspectDossier,
 } from './room.js';
 
 const SNAPSHOT = JSON.parse(fs.readFileSync(
@@ -718,6 +718,8 @@ test('an omission-only complaint is overruled on free text too; a false figure i
   const shot = two.shots[1];
   assert.equal(shot.caught, true);
   assert.match(shot.referee, /^Referee: /);
+  // Judge 4: the referee names the figure the player typed that is not in the record.
+  assert.equal(shot.referee, 'Referee: +$9,999,999 is not in the record. The line is spent.');
   assert.equal('refereeReason' in shot, false, 'the checker reason (which can quote the sealed loss) is not sent mid-round');
   assert.doesNotMatch(JSON.stringify(two), /-\$30,120,116|fabricated/);
   assert.doesNotMatch(two.line, /record|fabricat/i, 'PENNY does not speak the referee');
@@ -824,4 +826,20 @@ test('round 20: PENNY calling a 100% win rate "a red flag" questioned the record
   assert.equal(roundQuotes([{ ...shots[0], line: 'Win rate alone says nothing about sizing.' }]).agreed.doubted, true);
   // A plain line with no doubt stays "never asked".
   assert.equal(roundQuotes([{ ...shots[0], line: 'Great week. Funded.' }]).noticed, null);
+});
+
+test('the referee names only a figure the player typed that is not in the record, never a sealed one', () => {
+  const steady = loadRoster().find(p => p.id === 'steadyhand');
+  const round = { dossier: buildProspectDossier(steady), data: steady.checkerData };
+  // THE STEADY HAND's saved 7-day figure is +$190,379: typed as is or rounded, it is in the record.
+  assert.equal(offendingFigure('Made $190,379 this week and $209,987 on ZEC.', round.dossier, round.data), '$209,987');
+  assert.equal(offendingFigure('About $190k in a week.', round.dossier, round.data), null);
+  assert.equal(offendingFigure('A 42.1% win rate over 7 days.', round.dossier, round.data), null);
+  assert.equal(offendingFigure('A 99% win rate.', round.dossier, round.data), '99%');
+  assert.equal(offendingFigure('Best trader on the board, last month.', round.dossier, round.data), null);
+  // Its sealed 30-day figure is in the record: typing it is never called "not in the record".
+  const sealed = steady.checkerData.pnl_summary_30d.realized_pnl_usd;
+  assert.equal(offendingFigure(`It made $${Math.round(sealed).toLocaleString('en-US')} in 30 days.`, round.dossier, round.data), null);
+  assert.equal(refereeLine('$209,987'), 'Referee: $209,987 is not in the record. The line is spent.');
+  assert.equal(refereeLine(null), 'Referee: a figure in that line is not in the record. The line is spent.');
 });

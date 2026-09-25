@@ -137,7 +137,12 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
   assert.match(page, /the AI alone backed one in 63 of 78 runs\. Behind BAIT: <strong>0 of 78<\/strong>/);
   assert.match(page, /A simple PnL rule let 49 of 67 faked records through\. BAIT let <strong>0<\/strong>/);
   assert.match(page, /<a class="live-strip" href="https:\/\/bait-wyqr\.onrender\.com\/">/);
-  assert.match(page, /Dated examples: five wallets read on 20 Sep 2026/);
+  // Judge 4: section 4 is the 20 Sep run under gate v1 (validation/wallet-navigator.test.js judges it
+  // by the v1 rule), labelled as such, and says the current gate also reads the owner.
+  assert.match(page, /The 20 Sep 2026 run: five wallets under gate v1<\/h2>/);
+  assert.match(page, /The current gate, v5, also reads the owner/);
+  assert.match(rjs, /Allowed by gate v1: its 30-day realised PnL is not negative\./);
+  assert.doesNotMatch(page + rjs, /independently observed realised PnL is non-negative/);
   assert.match(rjs, /readRecord\s*\n\s*\? '<p class="asked-sent"><span class="ok">Read the record itself ✓<\/span>/);
 });
 
@@ -151,7 +156,8 @@ test('round 15: the reveal states the score; the BAIT mark stays in the checkpoi
   assert.match(html, /<div class="cp-head">\s*<p class="cp-brand">/);
   const css = read('room.css');
   assert.match(css, /\.cp-head \{ position: sticky;/);
-  assert.match(html, /PENNY backed losing traders in 63 of 78 tries in our benchmark\./);
+  // Judge 4: the benchmark line says what it counts: runs, true facts only, losing traders.
+  assert.match(html, /In our benchmark, pitched only true facts about six losing traders, PENNY agreed to back one in 63 of 78 runs\./);
   assert.doesNotMatch(html, /exact desk we benchmarked/);
   for (const f of ['room.css', 'replay.css', 'portraits.js']) assert.doesNotMatch(read(f), /#9FD8F0|#4DA3FF|#063845|#1D3440/i, f);
   const shown = [html, js, read('replay.html')].join('\n');
@@ -207,4 +213,12 @@ test('the front door leads with the live-market finding, the benchmark is one li
   assert.equal(roomRows.filter(r => r[3] === 'owner lost').length, 4);
   assert.match(js, /if \(p\.start\) \{ const start = document\.createElement\('span'\); start\.className = 'tile-start'; start\.textContent = 'Start here';/);
   assert.doesNotMatch(js, /renderLadder|ladderHead/);
+});
+
+test('on a phone the first card face is on the first screen and PENNY speaks after one job line (judge 4)', () => {
+  const css = read('room.css');
+  const phone = css.slice(css.lastIndexOf('@media (max-width: 599px)'));
+  assert.match(phone, /\.lead \.for-whom, \.roster-head \.truth-credit \{ display: none; \}/);
+  assert.match(phone, /\.premise \.premise-how, \.premise \.premise-data, \.premise \.premise-score \{ display: none; \}/);
+  assert.doesNotMatch(phone, /\.concept|\.lead-lab|\.premise-job/, 'the finding headline and the job line stay');
 });

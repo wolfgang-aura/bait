@@ -520,7 +520,7 @@ test('roster pulse: the first screen gets a shared live read, the config call sp
     const pulse = await s.call('/api/room/pulse');
     assert.equal(pulse.status, 200);
     assert.equal(pulse.body.live, 5);
-    assert.ok(pulse.body.wallets.every(w => w.live && /^Nansen · read live \d\d:\d\d UTC$/.test(w.stamp) && w.figure === '400 trades closed in 7 days'));
+    assert.ok(pulse.body.wallets.every(w => w.live && /^Nansen · read live \d\d:\d\d UTC$/.test(w.stamp) && w.figure === '400 trades closed in the last 7 days'));
     assert.doesNotMatch(JSON.stringify(pulse.body), /realized|realised|win_rate|1,?234,?567/i, 'activity only, never the reveal figure');
     await s.call('/api/room/pulse');
     const health = await s.call('/healthz');

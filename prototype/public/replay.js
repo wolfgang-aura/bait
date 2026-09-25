@@ -302,7 +302,7 @@ function walletCard(venue, wallet) {
     <p class="wallet-pnl" data-state="${escape(wallet.expected)}">${signedMoney(evidence.realized_pnl_usd)}</p>
     <p class="wallet-pnl-label">30-day realised PnL · ${evidence.closed_trade_count.toLocaleString('en-US')} closed trades · ${(evidence.win_rate * 100).toFixed(1)}% win rate</p>
     ${venue.id === 'fomo' ? `<p class="headline-compare" data-warning="${disagreement}">Fomo headline ${signedMoney(wallet.headline_pnl_usd)}${disagreement ? `, but observed realised ${signedMoney(evidence.realized_pnl_usd)}` : ''}</p>` : ''}
-    <p class="wallet-reason">${wallet.expected === 'allow' ? 'Eligible: independently observed realised PnL is non-negative.' : 'Blocked: independently observed realised PnL is negative.'}</p>
+    <p class="wallet-reason">${wallet.expected === 'allow' ? 'Allowed by gate v1: its 30-day realised PnL is not negative.' : 'Blocked by gate v1: its 30-day realised PnL is negative.'}</p>
     <nav class="wallet-links" aria-label="Open ${escape(walletName(wallet))}">${links}</nav>
   </article>`;
 }

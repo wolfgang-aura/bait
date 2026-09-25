@@ -165,7 +165,9 @@ test('the proof page and FIELD.md state both reads of this wallet, each with its
 
   const page = fs.readFileSync(path.join(ROOT, 'prototype', 'public', 'replay.html'), 'utf8');
   assert.match(page, /0x2043\.\.\.e79d \(195\)<\/td><td[^>]*>\+\$358,593<\/td><td[^>]*>4 wallets, -\$1,234,554<sup>\*<\/sup>/);
-  assert.match(page, /<sup>\*<\/sup> Field read, 30 days to 06:04 UTC\. [^<]*re-read live at 11:31 UTC: its own \+\$358,593 is unchanged, its owner&rsquo;s 4 other wallets -\$1,228,400/);
+  // Judge 4: "unchanged" read as current after a later live read; each figure is tied to its read.
+  assert.match(page, /<sup>\*<\/sup> Field read, 30 days to 06:04 UTC: own \+\$358,593, owner&rsquo;s 4 other wallets -\$1,234,554\. Game read [^<]*30 days to 11:31 UTC: own \+\$358,593 \(2,661 closed trades in both windows\), 4 other wallets -\$1,228,400[^<]*Each figure is as of its read; live figures move after every trade\./);
+  assert.doesNotMatch(page, /unchanged/);
   const field = fs.readFileSync(path.join(ROOT, 'bench', 'FIELD.md'), 'utf8');
-  assert.match(field, /re-read it live at 11:31 UTC[\s\S]{0,120}\+\$358,593 \(same 2,661 closed trades\), 4 siblings -\$1,228,400, owner -\$869,807/);
+  assert.match(field, /30 days to 11:31 UTC[\s\S]{0,120}\+\$358,593 \(2,661 closed trades in both windows\), 4 siblings -\$1,228,400, owner -\$869,807[\s\S]{0,120}Each figure is as of its read/);
 });

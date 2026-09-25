@@ -357,6 +357,42 @@ export function createLeaderboardStore(file, { limit = 20 } = {}) {
 // ----------------------------------------------------------------- ending
 
 /** The record BAIT read, in the words a stranger knows. */
+// A money or percent figure as typed: "+$9,999,999", "$1.2m", "$190k", "42.1%".
+const FIGURE = /[+-]?\$\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|m|mm|million|thousand|grand)\b)?|[+-]?\d[\d,]*(?:\.\d+)?\s?%/gi;
+const figureValue = f => {
+  const t = f.toLowerCase().replace(/[\s,$+]/g, '');
+  const n = parseFloat(t);
+  if (t.endsWith('%')) return { pct: true, n };
+  const mult = /(?:m|mm|million)$/.test(t) ? 1e6 : /(?:k|thousand|grand)$/.test(t) ? 1e3 : 1;
+  return { pct: false, n: n * mult };
+};
+
+/**
+ * The figure the referee names when it rejects a line: the first one the player typed that is
+ * neither on an offered fact card nor within rounding of any number in the record the checker
+ * read. Only the player's own words are quoted, never the checker's reason, which can quote the
+ * sealed loss. Null when every typed figure is in the record (the falsehood is a window, coin or
+ * claim), and the referee stays general.
+ */
+export function offendingFigure(text, dossier, data) {
+  const known = [];
+  const walk = v => {
+    if (typeof v === 'number' && Number.isFinite(v)) known.push(v);
+    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+  walk(data?.pnl_summary_7d); walk(data?.pnl_summary_30d);
+  for (const f of dossier?.facts ?? []) for (const m of `${f.value ?? ''} ${f.insert ?? ''}`.match(FIGURE) ?? []) known.push(figureValue(m).n);
+  const inRecord = ({ pct, n }) => known.some(k => {
+    const vals = pct ? [k, k * 100] : [k];
+    return vals.some(v => (pct ? Math.abs(Math.abs(v) - Math.abs(n)) <= 0.51 : Math.abs(Math.abs(v) - Math.abs(n)) <= Math.max(1, Math.abs(v) * 0.01)));
+  });
+  const typed = String(text ?? '').match(FIGURE) ?? [];
+  return typed.map(f => f.trim()).find(f => !inRecord(figureValue(f))) ?? null;
+}
+
+const REFEREE_GENERAL = 'Referee: a figure in that line is not in the record. The line is spent.';
+export const refereeLine = figure => (figure ? `Referee: ${figure} is not in the record. The line is spent.` : REFEREE_GENERAL);
+
 const recordName = () => 'Nansen';
 
 /**
@@ -1346,7 +1382,7 @@ export function createRoomService({
     s.line = toLine('Hm. Go on.');
     const shot = {
       n: s.shots.length + 1, text, check: 'rejected', caught: true,
-      referee: 'Referee: a figure in that line is not in the record. The line is spent.',
+      referee: refereeLine(offendingFigure(text, s.dossier, s.checkerData)),
       refereeReason: reason || 'the facts do not support this.',
       line: s.line, mood: 'caught', full: `Claim rejected by the referee: ${reason || 'the facts do not support this.'}`,
       allocation: s.funded, allocationPct: null, claimedAllocation: null,
