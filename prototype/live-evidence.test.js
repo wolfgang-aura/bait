@@ -702,7 +702,7 @@ test('v5 live round: the operator behind the wallet lost money, so the operator 
   assert.equal(row.plain, 'First funder 0x1111...1111 also paid for 1 indexed wallet; with this one the owner made -$488,000 over 30 days, so this wallet is the survivor.');
   assert.equal(row.source, 'related-wallets first funder, transactions, sibling perp-pnl-summary');
   assert.doesNotMatch(JSON.stringify(final), /Some Fund/, 'no Nansen label reaches the page');
-  assert.deepEqual(final.gate.calls.at(-1), { endpoint: 'operator: related-wallets, transactions, sibling perp-pnl-summary', credits: 4, at: final.gate.calls.at(-1).at, cached: false, decided: 'BLOCK' });
+  assert.deepEqual(final.gate.calls.at(-1), { endpoint: 'owner: related-wallets, transactions, sibling perp-pnl-summary', credits: 4, at: final.gate.calls.at(-1).at, cached: false, decided: 'BLOCK' });
   const { listRawReads } = await import('./live-evidence.js');
   const text = fs.readFileSync(path.join(rawDir, listRawReads(rawDir)[0].file), 'utf8');
   assert.doesNotMatch(text, /Some Fund|address_label/, 'the saved raw read is label-free');
@@ -740,7 +740,7 @@ test('v5 live round: a wallet an earlier row refuses never buys the operator rea
   const row = final.gate.checks.find(c => c.id === 'operator_record');
   assert.equal(row.result, 'not_assessed');
   assert.match(row.plain, /^Not read: the "realised_pnl_30d" check already refused this request/);
-  assert.equal(final.gate.calls.find(c => c.endpoint.startsWith('operator')).skipped, true);
+  assert.equal(final.gate.calls.find(c => c.endpoint.startsWith('owner:')).skipped, true);
 });
 
 test('a frozen round shows the operator row as not read, never as could not be read', async () => {

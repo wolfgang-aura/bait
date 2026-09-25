@@ -468,8 +468,8 @@ export function nansenCalls(snapshot, checks) {
   // Gate v5: first funder, funding transfer and sibling summaries, one line for the operator read.
   const v5 = snapshot.v5_reads;
   const short = e => ({ 'profiler/address/related-wallets': 'related-wallets', 'profiler/address/transactions': 'transactions', 'profiler/perp-pnl-summary': 'sibling perp-pnl-summary' }[e] ?? e);
-  if (v5?.operatorRead) calls.push({ endpoint: `operator: ${v5.endpoints.map(short).join(', ')}`, credits: cost(v5.credits ?? 0), at, cached, decided: word(CALL_ROWS.operator) });
-  else if (v5?.operator?.skipped) calls.push({ endpoint: 'operator: related-wallets', credits: 0, at, cached, skipped: true, decided: 'N/A' });
+  if (v5?.operatorRead) calls.push({ endpoint: `owner: ${v5.endpoints.map(short).join(', ')}`, credits: cost(v5.credits ?? 0), at, cached, decided: word(CALL_ROWS.operator) });
+  else if (v5?.operator?.skipped) calls.push({ endpoint: 'owner: related-wallets', credits: 0, at, cached, skipped: true, decided: 'N/A' });
   return calls;
 }
 
