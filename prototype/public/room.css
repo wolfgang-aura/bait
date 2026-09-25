@@ -682,6 +682,10 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
 .intercept.pending .icpt-stamp { color: var(--amber); transform: none; font-size: 15px; border-width: 2px; animation: blink 900ms steps(2, jump-none) infinite; }
 .intercept.pending .icpt-why { font-size: 13.5px; color: var(--text); }
 @keyframes blink { 50% { opacity: .35; } }
+/* Judge 10: PENNY withdrew its commitment: the card says so, in grey, with $0. */
+.intercept.withdrawn { border-color: var(--line); border-left-color: var(--faint); background: transparent; }
+.intercept.withdrawn .icpt-amt { color: var(--dim); font-size: 36px; }
+.intercept.withdrawn .icpt-why { font-size: 13.5px; color: var(--text); }
 
 /* ========================================== the premise, in the room == */
 .premise { margin: 12px 0 0; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--raised); border-radius: var(--r); }
@@ -802,7 +806,7 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .final-grid { grid-template-columns: 1fr; gap: 18px; }
   .final-actions { flex-wrap: wrap; }
   .final-actions .transcript { margin-left: 0; }
-  .board-list li { grid-template-columns: 20px 38px 80px; }
+  .board-list li { grid-template-columns: 20px 38px minmax(0, 1fr); /* judge 10: the last track takes the row, so a span to -1 is the full width */ }
   .board-list .sold, .board-list .said, .board-list .tag { grid-column: 1 / -1; white-space: normal; }
   .front-proof { grid-template-columns: 1fr; gap: 18px; }
   .owners-list li { grid-template-columns: auto minmax(0, 1fr); gap: 1px 10px; font-size: 11.5px; }
@@ -999,6 +1003,10 @@ html[data-frozen="true"] .cp-card, html[data-frozen="true"] .cp-row, html[data-f
 
 /* round 12: the stamp never lands on the last row */
 .cp-stamp { margin-top: 24px; transform: rotate(-2deg); }
+/* Judge 10: the stamp's animation lands at its own -2deg, not the page stamp's -7deg, so a long
+   "WOULD BE BLOCKED BY BAIT" no longer tilts down over the button under it. */
+.cp-stamp { animation-name: cp-stamp; }
+@keyframes cp-stamp { from { opacity: 0; transform: rotate(-2deg) scale(2.4); } to { opacity: 1; transform: rotate(-2deg) scale(1); } }
 .agreed-card .agreed-quote, .agreed-card .agreed-marks { text-align: left; }
 
 /* ---------------------------------------------- round 13 */

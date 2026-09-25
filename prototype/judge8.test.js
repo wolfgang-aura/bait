@@ -179,7 +179,7 @@ test('judge 8: owner copy: the subhead names the first funder, the result hedges
   assert.doesNotMatch(ownerTreeHtml(gate.operator, { compact: true }), /Shared funding/);
   const index = JSON.parse(read('../bench/v5/operator-index.json'));
   const row = gate.checks.find(c => c.id === 'operator_record');
-  assert.match(row.plain, new RegExp(`^First funder 0x[0-9a-f]{4}\\.\\.\\.[0-9a-f]{4} also funds 4 other wallets in BAIT's own index of ${index.universe.toLocaleString('en-US')} Hyperliquid wallets; they lost \\$[\\d,]+ over 30 days; this is the one being pitched\\.$`));
+  assert.match(row.plain, new RegExp(`^First funder 0x[0-9a-f]{4}\\.\\.\\.[0-9a-f]{4} also funds 4 other wallets in BAIT's own index of ${index.universe.toLocaleString('en-US')} Hyperliquid wallets; they lost \\$[\\d,]+ over 30 days; the wallet you pitched has the same first funder\\.$`));
 });
 
 test('judge 8: BLOCK and WATCH rows say what was measured, not what copying "would" do', async () => {

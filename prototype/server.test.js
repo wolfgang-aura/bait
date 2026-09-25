@@ -449,6 +449,10 @@ test('hosted with a Nansen key and NANSEN_LIVE unset goes live; NANSEN_LIVE=0 st
     assert.match(usage.body.dev_ledger.covers, /^A snapshot, committed to the repo/);
     assert.match(usage.body.this_host.covers, /since it booted/);
     assert.equal(typeof usage.body.this_host.credits_counted, 'number');
+    // Judge 10: the room's credits and the front-door pulse's are said apart, and the total says it holds both.
+    assert.equal(typeof usage.body.this_host.credits_room, 'number');
+    assert.equal(typeof usage.body.this_host.credits_pulse, 'number');
+    assert.match(usage.body.this_host.credits_counted_note, /roster pulse/);
     assert.deepEqual(usage.body.this_host.credits_per_round, (await on.call('/healthz')).body.nansen.credits_per_round, '/api/usage and /healthz give one cost shape');
     assert.ok(usage.body.this_host.credits_per_round.refused < usage.body.this_host.credits_per_round.full);
     assert.equal((await on.call('/healthz')).body.commit, 'abc1234def');

@@ -527,7 +527,7 @@ test('a desk that never commits gets an ending that says so plainly', async () =
   assert.equal(final.wiresAttempted, 0);
   assert.equal(final.stamp, 'NO WIRE');
   assert.equal(final.headline, 'PENNY refused to send money.');
-  assert.equal(final.subline, "PENNY said no on its own. Had it agreed to $5,000, the BAIT check would have blocked it on THE GRINDER's record.");
+  assert.equal(final.subline, "PENNY said no on its own. Had it sent $5,000, a fifth of its $25,000 fund, the BAIT check would have blocked it on THE GRINDER's record.");
   // Frozen mode still runs the gate on the snapshot and shows its table.
   assert.ok(final.gate.checks.length >= 3, 'the gate ran on the frozen record');
   assert.equal(final.gate.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');

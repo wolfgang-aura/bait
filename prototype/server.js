@@ -659,6 +659,11 @@ const server = http.createServer(async (req, res) => {
           covers: "This server's own live Nansen reads (the Pitch Room) since it booted. The free host restarts when idle, so this count starts again then.",
           booted_at: BOOTED_AT,
           live_reads: live.reads_this_process ?? 0,
+          // Judge 10: "live_reads 1, credits_counted 22" after a 17-credit round read as a miscount:
+          // the front door's roster pulse shares the same caps. Each reader's credits, said apart.
+          credits_room: live.credits_room_this_process ?? 0,
+          credits_pulse: rosterPulse.status().credits_this_process ?? 0,
+          credits_counted_note: 'credits_counted is every live Nansen credit on this host’s caps (Pitch Room rounds and the front-door roster pulse), kept across restarts when the disk allows; credits_room and credits_pulse are this process only.',
           credits_counted: live.credits_total ?? 0,
           credits_today: live.credits_today ?? 0,
           credits_per_round: live.credits_per_round ?? null,

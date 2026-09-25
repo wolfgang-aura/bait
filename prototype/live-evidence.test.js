@@ -60,6 +60,11 @@ test('one read is two summaries, and a second pick inside 30 minutes is a cache 
   assert.equal(status.credits_today, LIVE_READ_CREDITS);
   assert.equal(status.credits_total, LIVE_READ_CREDITS);
   assert.equal(status.last_live_success_at !== null, true);
+  // Judge 10: a round's credits are counted apart from the shared pulse's.
+  assert.equal(status.credits_room_this_process, LIVE_READ_CREDITS);
+  const r = live.reserve(3); r.settle({ used: 2, unused: 0 });
+  assert.equal(live.status().credits_shared_this_process, 2);
+  assert.equal(live.status().credits_room_this_process, LIVE_READ_CREDITS);
 });
 
 test('the cache expires after 30 minutes and buys a fresh read', async () => {
@@ -702,7 +707,7 @@ test('v5 live round: the operator behind the wallet lost money, so the operator 
   assert.equal(final.verdict, 'block');
   assert.equal(final.gate.policyId, 'wallet-copy-risk-room-live-v5');
   assert.equal(final.gate.operatorLive, true);
-  assert.equal(row.plain, `First funder 0x1111...1111 also funds 1 other wallet ${OWNER_INDEX_PHRASE}; it lost $500,000 over 30 days; this is the one being pitched.`);
+  assert.equal(row.plain, `First funder 0x1111...1111 also funds 1 other wallet ${OWNER_INDEX_PHRASE}; it lost $500,000 over 30 days; the wallet you pitched has the same first funder.`);
   assert.equal(row.source, 'related-wallets first funder, transactions, sibling perp-pnl-summary');
   assert.doesNotMatch(JSON.stringify(final), /Some Fund/, 'no Nansen label reaches the page');
   assert.deepEqual(final.gate.calls.at(-1), { endpoint: 'owner: related-wallets, transactions, sibling perp-pnl-summary', credits: 4, at: final.gate.calls.at(-1).at, cached: false, decided: 'BLOCK' });

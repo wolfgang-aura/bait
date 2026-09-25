@@ -108,7 +108,7 @@ test('the gate hands the reveal the funder and every sibling, each figure from t
   assert.equal(op.frozenFrom, committed.frozen_from.fetched_at);
   assert.equal(op.live, false);
   // Judge 5: hedged like the home and proof pages; shared funding is not proof of one owner.
-  assert.equal(op.line, `Its first funder also funds ${read.siblings.length} wallets that lost $${Math.round(Math.abs(sum)).toLocaleString('en-US')}; this is the one being pitched.`);
+  assert.equal(op.line, `Its first funder also funds ${read.siblings.length} other wallets, which lost $${Math.round(Math.abs(sum)).toLocaleString('en-US')}.`);
   assert.doesNotMatch(JSON.stringify(gate), /survivor|showing you/);
   // A wallet the operator row never read has no owner block.
   assert.equal((await service.fixture('grinder')).gate.operator, null);
@@ -125,7 +125,7 @@ test('the owner tree draws the funder, the pitched wallet, every sibling, both s
   }
   assert.ok(html.includes(`${op.siblings.length} other wallets, 30 days</dt><dd class="loss">${op.siblingsLabel}</dd>`));
   assert.ok(html.includes(`The owner, all ${op.siblings.length + 1}</dt><dd class="loss">${op.combinedLabel}</dd>`));
-  assert.ok(html.includes('; this is the one being pitched.'));
+  assert.ok(html.includes(`${op.siblings.length} other wallets, which lost`));
   // The losses come first; the reveal names no read time the checkpoint also prints.
   const order = [...html.matchAll(/<li class="ot-node (?:loss|gain)"><b>[^<]+<\/b><em>([^<]+)<\/em>/g)].map(m => Number(m[1].replace(/[$,+]/g, '')));
   assert.deepEqual(order, [...order].sort((a, b) => a - b));

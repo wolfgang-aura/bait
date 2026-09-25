@@ -1,6 +1,24 @@
 # BAIT public page, version B
 
-## Version X: every tile figure, every strike named, 26 September 2026 (current)
+## Version Y: the referee rules first, commitments go down too, 26 September 2026 (current)
+
+Judge 10 (live build 686f4ff). Same tokens, fonts and golden viewports (1440 x 900, 375 x 812).
+
+- **The referee is deterministic and runs first.** Every figure a line types is checked against
+  the round's facts (cards, every tile figure, both Nansen summaries, the leaderboard row) by value,
+  measure, window, source, coin and wallet, before the model is asked (prototype/referee.js). A
+  struck line never reaches PENNY; the model can add a claim-level strike, never undo one. The
+  strike says whose figure it is ("the tile's Hyperliquid leaderboard figure for the week to 21
+  Sep, not Nansen's"; "THE REAL DEAL's ..., not this trader's") and never places a sealed figure.
+- **A commitment can go down, and the screen says so.** The in-play card follows the meter
+  ("PENNY withdrew its $3,000 commitment", grey, $0); the result headlines the withdrawal; the
+  what-if runs on the amount the player saw; every wire-log row has a true label. A what-if says
+  BAIT "would" block.
+- **Small truths.** Drawdown rows are named by base and limit; /api/usage splits room and pulse
+  credits; the owner line says "the wallet you pitched has the same first funder"; no "desk" in
+  player copy; best-cons cards span the card at 375; the checkpoint stamp keeps its -2deg tilt.
+
+## Version X: every tile figure, every strike named, 26 September 2026
 
 Judge 9 (live build 389ca34, six rounds). Same tokens, fonts and golden viewports (1440 x 900, 375 x 812).
 

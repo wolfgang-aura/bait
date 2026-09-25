@@ -142,7 +142,7 @@ test('judge 6: the headline says what PENNY said and "anyway" only when BAIT sto
 
 test('judge 6: the owner sentence is said once on the result screen; phone rows keep the sentence', async () => {
   const { oncePitched } = await import('./public/verdict-view.js');
-  assert.equal(oncePitched('First funder 0xeb26...d4cf also funds 4 indexed wallets that lost $1,228,400 over 30 days; this is the one being pitched.'),
+  assert.equal(oncePitched('First funder 0xeb26...d4cf also funds 4 indexed wallets that lost $1,228,400 over 30 days; the wallet you pitched has the same first funder.'),
     'First funder 0xeb26...d4cf also funds 4 indexed wallets that lost $1,228,400 over 30 days.');
   assert.equal(oncePitched('Closed trades over 30 days came to -$1.'), 'Closed trades over 30 days came to -$1.');
   const css = fs.readFileSync(new URL('./public/room.css', import.meta.url), 'utf8');

@@ -19,7 +19,7 @@
  */
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
-import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE, WATCH_NOTE_SHORT, recordHeadline } from '/verdict-view.js';
+import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE, WATCH_NOTE_SHORT, recordHeadline, wireLogRows, commitmentCard } from '/verdict-view.js';
 import { ownerTreeHtml } from '/owner-tree.js';
 
 const $ = id => document.getElementById(id);
@@ -405,7 +405,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   const gate = final.gate ?? { checks: [] };
   // A what-if (PENNY refused, so nothing reached BAIT) says so above the title.
   el.cpWhatif.hidden = !final.whatIfOf;
-  text(el.cpWhatif, final.whatIfOf ? `PENNY said no on its own. Here's what the BAIT check would have done with ${final.peakLabel}:` : '');
+  text(el.cpWhatif, final.whatIfOf ? (final.whatIfIntro ?? `PENNY said no on its own. Here's what the BAIT check would have done with ${final.peakLabel}:`) : '');
   text(el.cpTitle, checkpointTitle(final));
   const who = p?.short ?? chosen?.short ?? '';
   text(el.cpMove, final.whatIfOf
@@ -432,9 +432,9 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     const b = document.createElement('b');
     b.textContent = v.label;
     const name = document.createElement('strong');
-    name.textContent = checkName(c.id);
+    name.textContent = c.name ?? checkName(c.id);
     const why = document.createElement('span');
-    // The owner tree under this row says "this is the one being pitched"; the row says it once there.
+    // The owner tree under this row says "the wallet you pitched has the same first funder"; the row says it once there.
     why.textContent = c.id === 'operator_record' && c.result === 'fail' && gate.operator ? oncePitched(v.plain) : v.plain;
     // Judge 5: one number and one limit on the row; a second base, when there is one, on hover.
     if (c.detail) li.title = c.detail;
@@ -772,7 +772,7 @@ function renderGate(host, gate, verdict = null) {
     const row = document.createElement('div');
     row.className = `flagline check ${v.result}`;
     const b = document.createElement('b');
-    b.textContent = `${v.result === 'superseded' ? 'cap' : label[check.result] ?? check.result} · ${checkName(check.id)}`;
+    b.textContent = `${v.result === 'superseded' ? 'cap' : label[check.result] ?? check.result} · ${check.name ?? checkName(check.id)}`;
     const span = document.createElement('span');
     span.textContent = oncePitched(v.plain);
     if (check.detail) row.title = check.detail;
@@ -815,7 +815,7 @@ function renderScene(d) {
   text(el.slotSub, dollars(d.slot));
   text(el.premiseSlot, dollars(d.slot));
   text(el.premiseName, d.name);
-  el.meridian.innerHTML = portraitSvg('meridian', { mood: 'neutral', accent: NEUTRAL_ACCENT, title: 'PENNY, the AI allocation desk' });
+  el.meridian.innerHTML = portraitSvg('meridian', { mood: 'neutral', accent: NEUTRAL_ACCENT, title: 'PENNY, the AI allocation agent' });
   el.clientPortrait.innerHTML = portraitSvg(d.portrait, { mood: 'confident', accent: NEUTRAL_ACCENT, title: d.name, crop: 'face' });
   text(el.clientName, d.name);
   text(el.clientSub, [d.venueLabel, d.trader].filter(Boolean).join(' · '));
@@ -1032,7 +1032,10 @@ function renderState(state) {
   const latest = shots[shots.length - 1];
   if (shots.length > wiresShown) {
     wiresShown = shots.length;
-    if (latest?.wire) showIntercept(latest);
+    // Judge 10: the card follows PENNY's commitment down as well as up: lowered, or withdrawn.
+    const card = commitmentCard(latest, shots[shots.length - 2]?.allocation ?? 0, {
+      to: chosen?.name ?? dossier?.name ?? 'this trader', slot: dossier?.slot ?? 25000, linesLeft: state.shotsLeft ?? 0 });
+    if (card) showIntercept(latest, card);
   }
   el.go.textContent = state.finished ? 'See what BAIT did' : `Pitch (${state.shotsLeft} left)`;
   el.line.disabled = state.finished;
@@ -1062,19 +1065,15 @@ function renderStopped(state) {
  * The transfer. The desk has just agreed to send money, and this card says how much of
  * its fund and to whom. It is sent to BAIT before it leaves; the decision is the reveal.
  */
-function showIntercept(shot) {
-  const w = shot.wire;
-  el.intercept.className = 'intercept pending';
+function showIntercept(shot, card) {
+  el.intercept.className = `intercept ${card.kind}`;
   el.intercept.hidden = false;
-  const to = chosen?.name ?? dossier?.name ?? 'this trader';
-  text(el.icptN, `Line ${shot.n} · PENNY has committed ${w.attemptedLabel} to ${to}`);
+  text(el.icptN, card.title);
   text(el.icptTo, '');
-  text(el.icptAmt, w.attemptedLabel);
+  text(el.icptAmt, card.amount);
   text(el.icptStamp, '');
   el.icptStamp.hidden = true;
-  text(el.icptWhy, round?.shotsLeft > 0
-    ? `Committed from PENNY's ${dollars(dossier?.slot ?? 25000)} fund on your pitch alone. Pitch again to raise it, or press Wire it.`
-    : `Committed from PENNY's ${dollars(dossier?.slot ?? 25000)} fund on your pitch alone. That was your last line: it is wired.`);
+  text(el.icptWhy, card.why);
   if (!reduced) { el.intercept.style.animation = 'none'; void el.intercept.offsetWidth; el.intercept.style.animation = ''; }
 }
 
@@ -1168,7 +1167,7 @@ function finish() {
         // PENNY refused on its own. BAIT still shows its work, as a labelled what-if.
         const w = result.final.whatIf;
         await playCheckpoint(result.prospect, { ...result.final, whatIfOf: true, gate: w.gate, verdict: w.verdict,
-          peakLabel: w.amountLabel, checkOnly: false });
+          peakLabel: w.amountLabel, whatIfIntro: w.intro, checkOnly: false });
       }
       showReveal(result.prospect, result.final);
       renderTranscript();
@@ -1262,19 +1261,13 @@ function renderBoard(entries, mineAt = null, host = el.boardList, limit = Infini
   });
 }
 
-/** Every wire the desk tried, one row each, straight off the round's shots. */
+/** Every line, one row each, straight off the round's shots (judge 10: every row has a true label). */
 function renderWireLog(list) {
   el.wireLog.replaceChildren();
-  for (const shot of list) {
+  for (const r of wireLogRows(list)) {
     const row = document.createElement('li');
-    const w = shot.wire;
-    row.className = shot.caught ? 'caught' : !w ? 'none' : w.decision === 'block' ? 'blocked' : w.verdict === 'capped' ? 'capped' : 'cleared';
-    row.textContent = shot.caught
-      // Judge 9: every strike names its reason, so the row says who struck it, not "lie".
-      ? `Line ${shot.n} · struck by the referee, no wire`
-      : !w
-        ? `Line ${shot.n} · desk committed $0, no wire`
-        : `Line ${shot.n} · ${w.attemptedLabel} · ${w.stamp}${w.decision === 'block' ? ` · ${w.stoppedLabel} stopped` : ''}`;
+    row.className = r.cls;
+    row.textContent = r.text;
     el.wireLog.append(row);
   }
 }
@@ -1432,7 +1425,8 @@ async function fixture(name, prospectId) {
     enterRoom();
     renderState({ ...state, shotsUsed: 3, shotsLeft: 0, finished: true, funded: 0, suspicion: 70, mood: 'suspicious',
       peak: 0, stopped: 0, shots: fixtureShots.slice(0, 1), line: 'Fixture reply: no.', checks: [] });
-    await playCheckpoint({ ...p, short: target.short }, { ...fixtureFinal, whatIfOf: true, peak: 0, peakLabel: dollars(5000) }, { hold: false });
+    await playCheckpoint({ ...p, short: target.short }, { ...fixtureFinal, whatIfOf: true, peak: 0, peakLabel: dollars(5000),
+      whatIfIntro: `PENNY said no on its own. Here's what the BAIT check would have done with ${dollars(5000)}, a fifth of its ${dollars(25000)} fund:` }, { hold: false });
     return;
   }
 
@@ -1539,7 +1533,7 @@ async function boot() {
     }
     if (config.health && config.health.ready === false) {
       // The server names the stop: a missing key, the hosted daily cap or a spent local budget.
-      fail(config.health.message ?? (config.health.capReached ? 'Today’s live rounds are used up.' : 'The desk cannot take a pitch right now.'));
+      fail(config.health.message ?? (config.health.capReached ? 'Today’s live rounds are used up.' : 'PENNY cannot take a pitch right now.'));
       // A missing key is a setup fact, so it is said at the front door, before a pick,
       // inline in the page flow. The fixed toast is for load failures only: over the
       // front door it covered the stats block.

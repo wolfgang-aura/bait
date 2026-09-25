@@ -1135,7 +1135,7 @@ export function assessCopyRisk(evidence = {}) {
   if (realized === null) skip('realised_negative', 'no realised PnL in the evidence');
   else if (realized < 0) {
     add('realised_negative', 'high',
-      `Closed trades over this window came to ${signedUsd(realized)}, below $0.`,
+      `Closed trades over this window came to ${signedUsd(realized)}, under the policy minimum of $0.`,
       { realized_pnl_usd: realized });
   }
 

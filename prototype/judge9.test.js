@@ -225,7 +225,8 @@ test('judge 9: BAIT is one name in the verdict lines; a struck line is labelled 
   }
   const js = read('./public/room.js');
   assert.doesNotMatch(js, /caught lie, no wire/);
-  assert.match(js, /struck by the referee, no wire/);
+  // Judge 10: the wire log's labels moved to verdict-view.js (wireLogRows), where they are tested.
+  assert.match(read('./public/verdict-view.js'), /struck by the referee, no wire/);
 });
 
 test('judge 9: footers come from the round\'s own reads; the usage link opens the usage ledger', () => {
@@ -240,7 +241,9 @@ test('judge 9: footers come from the round\'s own reads; the usage link opens th
 test('judge 9: a drawdown row states the limit it broke, the same sentence in the report, and an early small peak says where the fills ended', async () => {
   const { gate } = await room().fixture('steadyhand');
   const dd = gate.checks.find(c => c.id === 'fills_drawdown');
-  assert.equal(dd.plain, 'Worst peak-to-trough over the 1,000 fills held: $19,779, 16.0% of the $123,268 peak it fell from, under the 30% limit. That peak came early: realised PnL over the 1,000 fills held ended at +$333,536.');
+  assert.equal(dd.plain, 'Worst peak-to-trough over the 1,000 fills held: $19,779, 16.0% of the $123,268 peak it fell from, under the 30% limit. That peak came early: realised PnL over those fills ended at +$333,536.');
+  // Judge 10: the fills named once, and the row's name says its base and limit.
+  assert.equal(dd.name, 'Drawdown from peak (limit 30%)');
   const caution = { id: 'fills_drawdown', result: 'caution', plain: 'Worst peak-to-trough over the 650 fills held: $23,554, 119.7% of the $19,685 account value (Nansen positions), over the 15% limit.' };
   const rows = reportRows({ flags: [{ id: 'max_drawdown', plain: 'At its worst, realised PnL fell $23,554 from the top of this window.' }] }, [caution], 'allow');
   assert.equal(rows[0].label, 'WATCH');

@@ -133,7 +133,8 @@ test('judge 7: the owner tree tags the pitched wallet "this wallet"; the checkpo
   const full = ownerTreeHtml(gate.operator);
   assert.match(full, /<span class="ot-tag">this wallet<\/span>/);
   assert.doesNotMatch(full, /you pitched/);
-  assert.ok(full.includes('; this is the one being pitched.'), 'the result screen keeps the line');
+  // Judge 10: the line says "other wallets"; the tree's tag already marks the pitched one.
+  assert.ok(full.includes('other wallets, which lost'), 'the result screen keeps the line');
   const compact = ownerTreeHtml(gate.operator, { compact: true });
   assert.doesNotMatch(compact, /ot-line/, 'the checkpoint row above the tree already says it');
 });

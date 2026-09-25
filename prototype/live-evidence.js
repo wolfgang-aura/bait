@@ -172,7 +172,9 @@ export function createLiveEvidence({
   // Round 20: creditsToday/Total count only reads that succeeded and were used. Credits a failed or
   // timed-out read may have been billed for are kept apart (unusedToday/Total), still counted
   // against the caps so a flaky provider can never overspend, and reported under their own name.
-  const counter = { day: utcDay(now()), creditsToday: 0, creditsTotal: 0, unusedToday: 0, unusedTotal: 0, lastSuccessAt: null, lastFailure: null, reads: 0, retries: 0 };
+  const counter = { day: utcDay(now()), creditsToday: 0, creditsTotal: 0, unusedToday: 0, unusedTotal: 0, lastSuccessAt: null, lastFailure: null, reads: 0, retries: 0,
+    // Judge 10: this process's credits split by reader, so /api/usage never folds the pulse into a round.
+    roomCreditsProcess: 0, sharedCreditsProcess: 0 };
 
   if (stateFile) {
     try {
@@ -476,6 +478,7 @@ export function createLiveEvidence({
           counter.creditsTotal = Math.max(0, counter.creditsTotal - refund - unused);
           counter.unusedToday += unused;
           counter.unusedTotal += unused;
+          counter.sharedCreditsProcess += Math.max(0, used);
           persist();
         },
       };
@@ -507,6 +510,7 @@ export function createLiveEvidence({
           counter.lastSuccessAt = new Date().toISOString();
           counter.lastFailure = null;
           counter.reads += 1;
+          counter.roomCreditsProcess += Number(read.credits) || 0;
           log(`live read ok wallet=${wallet.slice(0, 10)} fetched=${read.fetchedAt} credits_today=${counter.creditsToday}/${dailyCap} total=${counter.creditsTotal}/${totalCap}`);
           return { ...read, cached: false };
         } catch (err) {
@@ -559,6 +563,8 @@ export function createLiveEvidence({
         total_cap: totalCap,
         day_utc: counter.day,
         reads_this_process: counter.reads,
+        credits_room_this_process: counter.roomCreditsProcess,
+        credits_shared_this_process: counter.sharedCreditsProcess,
         last_live_success_at: counter.lastSuccessAt,
         last_live_failure: counter.lastFailure,
         cache_ttl_minutes: Math.round(ttlMs / 60_000),

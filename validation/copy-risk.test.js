@@ -93,7 +93,7 @@ test('each check fires on its own threshold and nowhere else', () => {
 
   const negative = fires({ realized_pnl_usd: -1 }, 'realised_negative');
   assert.equal(negative.severity, 'high');
-  assert.equal(negative.plain, 'Closed trades over this window came to -$1, below $0.');
+  assert.equal(negative.plain, 'Closed trades over this window came to -$1, under the policy minimum of $0.');
 
   // Unrealised above 80% of the headline, and above 80% of realised plus unrealised.
   const paper = fires({ unrealized_pnl_usd: 9_000, headline_pnl_usd: 10_000, realized_pnl_usd: 1_000 }, 'paper_headline');

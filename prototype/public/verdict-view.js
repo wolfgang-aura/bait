@@ -98,10 +98,10 @@ export function pitchedView(final) {
 }
 
 /**
- * Judge 6: "...; this is the one being pitched." said once on the result screen, under the owner
+ * Judge 6: "...; the wallet you pitched has the same first funder." said once on the result screen, under the owner
  * tree that marks the pitched wallet. The deciding line and the gate table keep the figures.
  */
-export const oncePitched = line => humanText(line).replace(/;\s*this is the one being pitched\.?$/, '.');
+export const oncePitched = line => humanText(line).replace(/;\s*the wallet you pitched has the same first funder\.?$/, '.');
 
 /**
  * Judge 7: every row's name as people read it. The same names as the gate's CHECK_TITLE
@@ -164,4 +164,66 @@ export function recordHeadline(final, truth) {
   const rows = first.id === 'operator_record' ? [] : [{ label: '30-day realised (passed)', value: truth.pnlLabel }];
   const human = r => ({ ...r, ...(r.caption ? { caption: humanText(r.caption) } : {}), ...(r.label ? { label: humanText(r.label) } : {}) });
   return { id: first.id, value: first.value, caption: humanText(first.caption), bad: true, also: also.map(human), rows };
+}
+
+const usd = n => `$${Math.round(Number(n) || 0).toLocaleString('en-US')}`;
+
+/**
+ * Judge 10: the every-check page's wire log, one row per line, each with a true label. A line that
+ * committed money but was not the one wired ("Line 1 · $3,500 · undefined" on the live build) says
+ * what happened to that commitment: withdrawn, lowered, raised or restated on a later line.
+ */
+export function wireLogRows(shots = []) {
+  const said = shots.filter(s => !s.caught);
+  return shots.map(shot => {
+    const n = shot.n;
+    if (shot.caught) return { cls: 'caught', text: `Line ${n} · struck by the referee, no wire` };
+    const w = shot.wire;
+    const before = said.filter(s => s.n < n).at(-1);
+    const standing = Number(before?.allocation) || 0;
+    if (!w) {
+      return standing > 0
+        ? { cls: 'none', text: `Line ${n} · PENNY withdrew its ${usd(standing)}, no wire` }
+        : { cls: 'none', text: `Line ${n} · PENNY committed $0, no wire` };
+    }
+    const amount = w.attemptedLabel ?? usd(w.attempted ?? shot.allocation);
+    if (w.stamp) {
+      return { cls: w.decision === 'block' ? 'blocked' : w.verdict === 'capped' ? 'capped' : 'cleared',
+        text: `Line ${n} · ${amount} · ${w.stamp}${w.decision === 'block' && w.stoppedLabel ? ` · ${w.stoppedLabel} stopped` : ''}` };
+    }
+    // Committed on this line, not wired: the next line that changed it says why.
+    const later = said.find(s => s.n > n);
+    const now = Number(later?.allocation) || 0;
+    const then = Number(w.attempted ?? shot.allocation) || 0;
+    const fate = !later ? 'committed, not wired'
+      : now === 0 ? `committed, withdrawn on line ${later.n}`
+      : now < then ? `committed, lowered to ${usd(now)} on line ${later.n}`
+      : now > then ? `committed, raised to ${usd(now)} on line ${later.n}`
+      : `committed, restated on line ${later.n}`;
+    return { cls: 'none', text: `Line ${n} · ${amount} · ${fate}` };
+  });
+}
+
+/**
+ * Judge 10: the in-play card after a line, from that line and the commitment standing before it.
+ * A raise or a first commitment is the transfer card; a lower commitment says it was lowered; a
+ * drop to $0 says PENNY withdrew it (the LEGEND round kept "PENNY has committed $3,500" on screen
+ * while the meter read $0). Null when nothing is or was committed.
+ */
+export function commitmentCard(shot, standing = 0, { to = 'this trader', slot = 25000, linesLeft = 0 } = {}) {
+  if (!shot || shot.caught) return null;
+  const now = Number(shot.wire?.attempted ?? shot.allocation) || 0;
+  const prev = Number(standing) || 0;
+  const fund = usd(slot);
+  if (now === 0) {
+    if (prev <= 0) return null;
+    return { kind: 'withdrawn', title: `Line ${shot.n} · PENNY withdrew its ${usd(prev)} commitment to ${to}`, amount: '$0',
+      why: linesLeft > 0 ? `Nothing is committed now. PENNY can commit again on your next line.` : 'That was your last line: nothing is committed, so nothing is wired.' };
+  }
+  const verb = prev <= 0 ? `has committed ${usd(now)} to ${to}` : now < prev ? `lowered its commitment to ${to} from ${usd(prev)} to ${usd(now)}`
+    : now > prev ? `raised its commitment to ${to} from ${usd(prev)} to ${usd(now)}` : `still commits ${usd(now)} to ${to}`;
+  return { kind: 'pending', title: `Line ${shot.n} · PENNY ${verb}`, amount: usd(now),
+    why: linesLeft > 0
+      ? `Committed from PENNY's ${fund} fund on your pitch alone. Each line can raise or lower it; press Wire it to send it.`
+      : `Committed from PENNY's ${fund} fund on your pitch alone. That was your last line: it is wired.` };
 }

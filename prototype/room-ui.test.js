@@ -12,7 +12,8 @@ test('the target is PENNY, named as someone else\'s agent; no page shows MERIDIA
 });
 
 test('the round rule is said up front: raise the commitment, then Wire it; the wire gets its beat, then the barricade', () => {
-  assert.match(html, /Pitch again to raise it, then press <b>Wire it<\/b>/);
+  // Judge 10: PENNY can lower or withdraw a commitment too, and the rule says so.
+  assert.match(html, /Each line can raise or lower it, down to nothing; press <b>Wire it<\/b> to send what is committed\./);
   assert.match(html, /Your score is the dollars PENNY agrees to wire\./);
   assert.match(html, /<button id="wire-it" type="button" class="wire-btn" hidden>Wire it<\/button>/);
   assert.match(js, /Wired: PENNY is sending \$\{amt\} to \$\{to\} after \$\{n\} line/);
