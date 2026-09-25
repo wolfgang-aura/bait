@@ -1,6 +1,19 @@
 # BAIT public page, version B
 
-## Version Y: the referee rules first, commitments go down too, 26 September 2026 (current)
+## Version Z: default-deny, 26 September 2026 (current)
+
+Judges 11 and 12 (live builds b07f4c5, 754d519). Same tokens, fonts and golden viewports. Live 09ae398.
+
+- **A line stands only when every claim in it is on the record.** Figures match a fact by value,
+  measure, coin, window, source and wallet, each cue bound to its own clause. Claims with no fact
+  (labels such as Smart Money, ranks, "same again", leverage, "never lost") strike as "Not in the
+  record: “the player's words”". Pitch talk with no claim ("trust me") stands.
+- **A model rejection always strikes.** Code never un-strikes it; sealed figures stay sealed in its
+  reason, $0 and 0 included, and a garbled reason falls back to the general line.
+- **The wire checks the commitment in force; the peak is a stat.** "PENNY's commitment peaked at
+  $X on line N" when it went down before the wire.
+
+## Version Y: the referee rules first, commitments go down too, 26 September 2026
 
 Judge 10 (live build 686f4ff). Same tokens, fonts and golden viewports (1440 x 900, 375 x 812).
 
