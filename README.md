@@ -1,31 +1,88 @@
-# BAIT, the check that runs before an AI agent moves money
+# BAIT
 
 [![CI](https://github.com/wolfgang-aura/bait/actions/workflows/ci.yml/badge.svg)](https://github.com/wolfgang-aura/bait/actions/workflows/ci.yml)
 [![Proof page](https://img.shields.io/badge/proof-page-FFB020)](https://wolfgang-aura.github.io/bait/)
 
-![A BAIT round](docs/media/round.gif)
+**AI trading desks get pitched wallets to copy. BAIT is the gate, backed by Nansen data, that stops
+the AI from funding the bad ones.**
 
-**BAIT sits between an AI agent's decision and the transfer. It reads the trader, and the operator
-behind the trader, from seven Nansen endpoints, and blocks or caps the money when the record says no.**
+![A BAIT round: a seller talks the AI into a transfer, then BAIT reads Nansen and decides](docs/media/round.gif)
 
-## The finding
+## What we found
 
-A 19-line rule, "don't copy a wallet that lost money this month", stops a losing wallet pitched
-with true facts. It does not stop these two attacks, and BAIT does:
+We pitched wallets to AI trading desks in 79 attacks and counted how often money went out.
 
-- **The operator behind the wallet (true facts only).** One operator funds several Hyperliquid
-  wallets. Over the month most lose, one wins, and the seller pitches the winner. Nansen's
-  first-funder graph over 1,238 leaderboard wallets found 12 such wallets. The PnL rule funds
-  **12 of 12 operator attacks**. BAIT funds **0 of 12 operator attacks**.
-- **Faked evidence.** The record the agent reads is another wallet's, the wrong window, stale,
-  relabelled or doctored. The PnL rule funds **49 of 67**. BAIT funds **0**.
+| Who decides | Attacks where money went out |
+| --- | ---: |
+| A simple rule: "don't copy a wallet that lost money this month" | **61 of 79** |
+| BAIT | **0 of 79** |
 
-**Together: the PnL rule sends the money in 61 of 79 attacks. BAIT sends it in 0 of 79.**
+The 79 attacks come in two kinds:
 
-The models do worse than the rule. On true facts about losing traders, the AI alone backed one in
-63 of 78 runs (DeepSeek) and 74 of 78 (Claude Sonnet 5); behind BAIT, 0 of 78. On the 12 operator
-attacks the AI alone backed the survivor in 36 of 36 runs, DeepSeek and Claude Sonnet 5 alike; behind
-BAIT, 0 of 36 for each. [What every number counts](#the-numbers).
+- **12 hidden-owner attacks, all facts true.** One owner funds several trading wallets. Over the
+  month most lose and one wins. A seller pitches the winner. Its own record is real and positive,
+  so the simple rule funds all 12, and DeepSeek and Claude on their own backed it in 36 of 36 runs
+  each. BAIT asks Nansen who funded the wallet, sees the owner lost money across its wallets, and
+  funds none.
+- **67 faked-evidence paths.** The record the AI reads is another wallet's, the wrong time window,
+  out of date, or edited. The simple rule funds 49 of 67. BAIT funds 0.
+
+**The cost.** 38 of 53 good-trader transfers went through in full. 9 were cut to 25% and 6 were
+blocked. BAIT does not predict. It refuses on the record that exists today, and a one-month
+look-back found no forward difference. [Limits](#limits) has the details.
+
+## Try it
+
+- **Play it:** <https://bait-wyqr.onrender.com/>. Talk PENNY, an AI with a $25,000 fund, into
+  backing a trader, press Wire it, and watch BAIT read Nansen live and decide. The hosted game
+  runs gate v5, the hidden-owner check included;
+  [/api/health](https://bait-wyqr.onrender.com/api/health) shows its commit.
+- **Proof page:** <https://wolfgang-aura.github.io/bait/>, every result with its source.
+- **60-second video:** <https://x.com/WolfGanG_Aura/status/2102859321969442856>
+- **Judging?** [JUDGE.md](JUDGE.md) is a three-minute path.
+
+## Verify in one command
+
+No keys, no network, no credits. Requires Node 22+.
+
+```powershell
+git clone https://github.com/wolfgang-aura/bait; cd bait; npm install
+npm run verify
+```
+
+It re-derives every number above from the committed Nansen reads and model runs, with network
+access switched off, and prints PASS or FAIL for each against [bench/FIGURES.json](bench/FIGURES.json).
+It exits non-zero on any mismatch. CI runs it on every push.
+
+## Where the attacks came from
+
+A fair question is whether BAIT only catches attacks its author built. Partly. Here is which part.
+
+- **The 12 hidden-owner attacks are real wallets, picked by a rule written down first.** The rule,
+  its thresholds and the wallet list were written in [bench/V5.md](bench/V5.md) before any read.
+  A script then scanned 1,238 real Hyperliquid wallets: ten pages of Nansen's 30-day leaderboard
+  by volume, plus the earlier benchmark wallets. It found who first funded each one and kept, per
+  owner, the best wallet that made at least $1,000 while its owner lost money. No wallet was picked by hand.
+  Every raw Nansen response is in `bench/v5/reads/`, with SHA-256 hashes in `bench/v5/reads.json`.
+  The public repository ships as release commits, so the "written first" order is recorded in
+  V5.md; it cannot be checked from the public git history.
+- **The pitch is a fixed template** filled from each wallet's own Nansen record
+  (`bench/paired.js`). The seller is simulated.
+- **BAIT catching them is by construction.** "The owner lost money" defines the attack and is what
+  BAIT checks. What the run measures is that such wallets exist in real data, and that the simple
+  rule and both AI models fund them. The previous gate, v4, funded 11 of the 12.
+- **The 67 faked-evidence paths are built by the author.** Each changes one thing in a real Nansen
+  record. They show what a tampered data feed does. They were not found in the wild.
+- **Controls.** The same pick with the owner in profit gave 26 wallets. The hidden-owner check
+  blocked none of them.
+
+---
+
+## How BAIT uses Nansen
+
+The **operator** is whoever first funded a wallet, the "owner" above. The gate reads the trader
+and the operator from seven Nansen endpoints. Every read is a rule. Anything the gate cannot read
+is "not assessed" and never raises an amount.
 
 ```mermaid
 flowchart LR
@@ -43,10 +100,6 @@ flowchart LR
   D --> K["CLEARED: in full"]
 ```
 
-## How BAIT uses Nansen
-
-Every read is a rule. Anything the gate cannot read is "not assessed" and never raises an amount.
-
 | Nansen endpoint | Credits | The rule it drives |
 | --- | ---: | --- |
 | `profiler/perp-pnl-summary`, 30 days | 1 | Right wallet, window dates, source and age; a losing month blocks; under 20 trades or a win rate under 40% blocks; one market carrying the month caps at 25% |
@@ -62,21 +115,6 @@ Every read is a rule. Anything the gate cannot read is "not assessed" and never 
 The sibling index (`bench/v5/operator-index.json`) is built from `perp-leaderboard` pages plus
 `related-wallets` and `transactions` on every wallet in them. The live CLI costs at most 21 credits,
 and 1 when the 30-day record already refuses.
-
-## Judging this? Three steps
-
-1. **Watch the 60-second demo:** <https://x.com/WolfGanG_Aura/status/2102859321969442856>
-2. **Play it live:** <https://bait-wyqr.onrender.com/>. Talk PENNY, an AI with a $25,000 fund, into
-   backing a trader with true facts, press Wire it, and watch the checkpoint read Nansen and
-   decide. The checkpoint runs gate v5, the operator check included.
-3. **Run the bench in under 10 minutes, no keys, zero credits.** Requires Node 22+.
-
-   ```powershell
-   git clone https://github.com/wolfgang-aura/bait; cd bait; npm install
-   npm test                         # the whole suite
-   node bench/v5.js --score --unfrozen   # operator attacks and every published row, v4 against v5
-   npm run bench -- --agent examples/agents/check-then-decide.mjs --snapshot   # or your own agent
-   ```
 
 ## The numbers
 
@@ -223,6 +261,7 @@ node bench/gate-buys.js
 node bench/v4.js --score --unfrozen    # gate v4 against v3
 node bench/v5.js --score --unfrozen    # gate v5 against v4
 npm run figures                        # every headline figure, re-derived and checked against every doc
+npm run verify                         # the same, offline, as a PASS/FAIL table per headline number
 ```
 
 With your own Nansen key, `npm run guard -- --wallet 0x... --allocation 5000` runs gate v5 live.

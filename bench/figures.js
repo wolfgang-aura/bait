@@ -268,7 +268,7 @@ export const loadFigures = () => readJson(FIGURES_FILE);
 export function docFiles() {
   const md = dir => fs.readdirSync(path.join(ROOT, dir)).filter(f => f.endsWith('.md')).map(f => `${dir}/${f}`);
   return [
-    'README.md', 'SUBMISSION.md', 'RELEASE_AUDIT.md', ...md('docs'), ...md('bench'), 'bench/live-reads/README.md',
+    'README.md', 'JUDGE.md', 'SUBMISSION.md', 'RELEASE_AUDIT.md', ...md('docs'), ...md('bench'), 'bench/live-reads/README.md',
     'prototype/README.md', 'prototype/public/replay.html', 'prototype/public/room.html',
     'prototype/public/replay.js', 'prototype/public/room.js', 'prototype/desk-mode.js',
   ].filter(f => fs.existsSync(path.join(ROOT, f)));

@@ -27,3 +27,5 @@ jobs:
         run: npm run figures
       - name: Bench an agent with no keys (frozen snapshots, zero credits)
         run: npm run bench -- --agent examples/agents/check-then-decide.mjs --snapshot
+      - name: Verify every headline number offline (no keys, no network)
+        run: npm run verify
