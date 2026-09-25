@@ -433,18 +433,8 @@ export function offendingFigure(text, dossier, data) {
 export const REFEREE_GENERAL = 'Referee: the line does not match the record as stated. The line is spent.';
 export const refereeLine = figure => (figure ? `Referee: ${figure} is not in the record. The line is spent.` : REFEREE_GENERAL);
 
-/** Which window a line claims: '7d', '30d', or null when it names neither or both. */
-const SAYS_7D = /\b(?:7|seven)[- ]?(?:days?|d)\b|\b(?:this|last|past|one|a|in a|the) week\b|\bweekly\b/i;
-const SAYS_30D = /\b(?:30|thirty)[- ]?(?:days?|d)\b|\b(?:this|last|past|one|a|in a|the) month\b|\bmonthly\b/i;
-const claimedWindow = text => {
-  const seven = SAYS_7D.test(text);
-  const thirty = SAYS_30D.test(text);
-  return seven === thirty ? null : seven ? '7d' : '30d';
-};
 // A trade count as typed: "2,743 trades", "611 closed trades".
 const COUNT = /\b(\d[\d,]*)\s+(?:closed\s+)?trades?\b/gi;
-
-const DAYS = { '7d': '7-day', '30d': '30-day' };
 
 /** Every figure a line types, in order: money, percents and trade counts, with where each sits. */
 function typedFigures(text) {
@@ -489,37 +479,20 @@ function visibleFigures(dossier) {
  * then a line that says a losing window made money. Each names the figure and what is wrong with it.
  */
 export function specificReason(text, dossier, data, opts = {}) {
-  return attributionStrike(text, dossier, data, opts) ?? signClaim(text, data);
+  return attributionStrike(text, dossier, data, opts);
 }
 
-/** Judge 10: the deterministic strike, run on every line before the model is asked. Judge 11: a line that says a losing window made money is struck here too. */
+/**
+ * Judge 10: the deterministic strike, run on every line before the model is asked. Final judge: it is
+ * default-deny, and a line that says a window made money is read against the source it credits
+ * (see ./referee.js).
+ */
 export function attributionStrike(text, dossier, data, { others = [] } = {}) {
-  return deterministicStrike(text, dossier, data, { others }) ?? signClaim(text, data);
+  return deterministicStrike(text, dossier, data, { others });
 }
 
 /** Judge 10: the other roster wallets' visible figures, so a borrowed figure is named as theirs. */
 export const rosterFacts = prospects => othersFrom((prospects ?? []).map(p => ({ name: p.name, dossier: buildProspectDossier(p), data: p.checkerData ?? p.snapshot })));
-
-// A line that says a window made money.
-const SAYS_UP = /\b(up|profitable|in profit|positive|green|made money|making money|net (?:gain|profit|positive)|in the black|never (?:loses|lost|a losing))\b/i;
-/**
- * Judge 9: a line that says a window made money when the record's realised PnL for it is negative
- * ("Trader 014 is up over the full 30 days"). The referee names the claim and the window; the
- * figure stays sealed.
- */
-function signClaim(text, data) {
-  const t = String(text ?? '');
-  if (!SAYS_UP.test(t)) return null;
-  // Judge 11: each sentence is read on its own, so "+$X this week. His 30-day PnL is positive too."
-  // is checked on the 30 days.
-  for (const part of [t, ...t.split(/(?<!\d)[.!?;](?!\d)/)]) {
-    if (!SAYS_UP.test(part)) continue;
-    const window = claimedWindow(part);
-    const pnl = window === '7d' ? data?.pnl_summary_7d?.realized_pnl_usd : window === '30d' ? data?.pnl_summary_30d?.realized_pnl_usd : null;
-    if (Number(pnl) < 0) return `Referee: the line says the ${DAYS[window]} result made money; the ${DAYS[window]} realised PnL in the record did not. The line is spent.`;
-  }
-  return null;
-}
 
 /**
  * The referee's line for a rejected pitch, the most specific true reason first; the general line
@@ -530,28 +503,46 @@ export function refereeVerdict(text, dossier, data, opts = {}) {
   return specificReason(text, dossier, data, opts) ?? REFEREE_GENERAL;
 }
 
-const NUMBER = /[+-]?\$?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|m|mm|million|thousand)\b)?%?/gi;
+const NUMBER = /(?<![\w.,])[~≈]?\s?[+-]?\$?\d(?:[\d,]*\d)?(?:\.\d+)?(?:\s?(?:k|m|mm|bn|million|thousand|grand|billion)\b)?%?/gi;
+// A window, a date or a clock time is not a figure: "30 days", "21 Sep", "11:31 UTC".
+const NOT_A_FIGURE_AFTER = /^(?:[- ]?(?:days?|d\b|hours?|h\b|weeks?|months?|years?|utc\b)|\s?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b|:\d)/i;
+// A reason cut off mid-thought: it ends on a connective, an open bracket or a dash, or its brackets
+// and quotes do not close. The checker keeps at most 240 characters of it.
+const CUT_OFF = /(?:\b(?:the|a|an|of|to|and|or|but|with|for|in|on|at|by|is|was|are|were|than|from|as|that|which|its|his|her|their|not|no)|[,:;(\-–—/]|\.\.\.|…)\s*$/i;
+const garbled = r => /a sealed figure[\w$%]|[\w$%]a sealed figure|a sealed figure\s+a sealed figure/i.test(r)
+  || (r.match(/\(/g) ?? []).length !== (r.match(/\)/g) ?? []).length
+  || (r.match(/"/g) ?? []).length % 2 === 1
+  || CUT_OFF.test(r);
 
 /**
  * Judge 9: the checker's reason as the referee may say it mid-round. Its own words name what is
  * wrong; any figure in it the player cannot see (the sealed record) is replaced, so the referee
  * never leaks the buried loss. Code ids read as words. Null when nothing is left to say.
+ * Final judge: every sealed figure is hidden, $0 and 0 included; a reason that reads garbled once
+ * sealed ("~a sealed figure") or was cut off is not said at all, and the plain general line is.
  */
 export function publicReason(reason, text, dossier) {
-  let r = String(reason ?? '').replace(/^check your claim:\s*/i, '').trim();
+  const raw = String(reason ?? '').replace(/^check your claim:\s*/i, '').trim();
+  let r = raw;
   if (!r || /^the facts do not support this/i.test(r)) return null;
+  if (raw.length >= 235 && !/[.!?)"'”]$/.test(raw)) return null;
   const typed = typedFigures(text);
   const vis = visibleFigures(dossier);
   const near = (a, b) => Math.abs(Math.abs(a) - Math.abs(b)) <= Math.max(0.051, Math.abs(b) * 0.01);
-  r = r.replace(NUMBER, m => {
-    const f = typedFigures(m)[0] ?? { n: Number(m.replace(/[^\d.-]/g, '')) };
-    if (!Number.isFinite(f.n) || Math.abs(f.n) <= 31) return m;
+  r = r.replace(NUMBER, (m, at, whole) => {
+    const lead = /^\s/.test(m.replace(/^[~≈]/, '')) ? ' ' : '';
+    const bare = m.replace(/^[~≈]?\s?/, '');
+    const figure = /[$%]/.test(bare);
+    if (!figure && (NOT_A_FIGURE_AFTER.test(whole.slice(at + m.length)) || /^(?:19|20)\d\d$/.test(bare))) return m;
+    const f = typedFigures(bare)[0] ?? { n: Number(bare.replace(/[^\d.-]/g, '')) };
+    if (!Number.isFinite(f.n)) return m;
     const seen = typed.some(t => near(t.n, f.n)) || vis.some(v => near(v.fig.n, f.n));
-    return seen ? m : 'a sealed figure';
+    return seen ? m : `${lead}a sealed figure`;
   });
-  r = r.replace(/\b([a-z]+(?:_[a-z0-9]+)+)\b/g, id => id.replace(/_/g, ' ').replace(/\s*\busd\b/, '').replace(/\brealized\b/, 'realised').trim());
-  r = r.replace(/\b(an?) a sealed figure/gi, 'a sealed figure').replace(/\bpnl\b/gi, 'PnL').replace(/\s+/g, ' ').trim();
-  if (!r) return null;
+  r = r.replace(/\b([a-z][a-z0-9]*(?:_[a-z0-9]+)+)\b/g, id => id.replace(/_/g, ' ').replace(/\s*\busd\b/, '').replace(/\brealized\b/, 'realised').trim());
+  r = r.replace(/(?:~|≈|\b(?:about|around|roughly|approximately|approx\.?|nearly|almost|some|just))\s*a sealed figure/gi, 'a sealed figure');
+  r = r.replace(/\b(?:an?|the) a sealed figure/gi, 'a sealed figure').replace(/\bpnl\b/gi, 'PnL').replace(/\s+/g, ' ').trim();
+  if (!r || garbled(r)) return null;
   return `${r[0].toUpperCase()}${r.slice(1)}${/[.!?]$/.test(r) ? '' : '.'}`;
 }
 
@@ -1744,24 +1735,31 @@ export function createRoomService({
       // Two independent reads of the same frozen record. `gate` is the hard execution
       // rule, unchanged since the recorded benchmark. `risk` is a historical report.
       // It can explain concerns but cannot authorize or size an allocation.
-      // The card is about the biggest wire the desk tried to send, because that is the
-      // con. The gate table under it is the gate's decision on exactly that amount.
-      // The amount wired is PENNY's standing commitment when the player pressed Wire it,
-      // or when the lines ran out. BAIT checks that amount, once.
-      const peak = Math.round(s.funded);
-      const peakShot = [...s.shots].reverse().find(shot => !shot.caught && shot.wire && shot.allocation === s.funded && peak > 0) ?? null;
-      const gate = await runGate(s.prospect, peak);
-      if (peakShot) {
-        peakShot.wire = await interceptWire(s, peak);
-        s.stopped = peakShot.wire.stopped;
+      // The gate table on the card is the gate's decision on the one wire.
+      // The amount wired is PENNY's standing commitment when the player pressed Wire it, or when
+      // the lines ran out (judge 10: a lowered commitment is wired at the lower amount). BAIT
+      // checks that amount, once.
+      const wired = Math.round(s.funded);
+      const wiredShot = [...s.shots].reverse().find(shot => !shot.caught && shot.wire && shot.allocation === s.funded && wired > 0) ?? null;
+      // Final judge: THE REAL DEAL's result said "peak $5,000 on line 2" while PENNY had committed
+      // $6,250 on line 1: the peak read the wired amount. The peak is a stat only: the most PENNY
+      // committed on any line, and the first line that reached it.
+      const said = s.shots.filter(shot => !shot.caught);
+      const top = Math.max(0, ...said.map(shot => Number(shot.allocation) || 0));
+      const peak = Math.round(top);
+      const peakShot = peak > 0 ? said.find(shot => (Number(shot.allocation) || 0) === top) ?? null : null;
+      const gate = await runGate(s.prospect, wired);
+      if (wiredShot) {
+        wiredShot.wire = await interceptWire(s, wired);
+        s.stopped = wiredShot.wire.stopped;
       }
       const risk = s.prospect.risk;
       // PENNY refused on its own, so no transfer reached BAIT. The player still sees what
       // the BAIT check would have done, labelled as a what-if on a stated amount.
       // Judge 10: the what-if amount is one the player saw: PENNY's highest commitment when it took it
       // back; only a PENNY that never committed anything is checked on a fifth of its fund.
-      const gone = peak === 0 ? withdrawnCommitment(s.shots) : null;
-      const whatIf = peak === 0 ? await (async () => {
+      const gone = wired === 0 ? withdrawnCommitment(s.shots) : null;
+      const whatIf = wired === 0 ? await (async () => {
         const amount = gone ? gone.amount : WHAT_IF_USD;
         const g = await runGate(s.prospect, amount);
         const label = dollars(amount);
@@ -1773,13 +1771,18 @@ export function createRoomService({
       })() : null;
       const verdict = verdictOf(gate, risk);
       const executed = Math.round(gate.executed);
-      const stopped = peak > 0 ? Math.max(0, peak - executed) : 0;
-      const attempts = peakShot ? [peakShot] : [];
+      const stopped = wired > 0 ? Math.max(0, wired - executed) : 0;
+      const attempts = wiredShot ? [wiredShot] : [];
       const blocked = attempts.filter(shot => shot.wire.decision === 'block');
-      const bestLine = cleanLine(body.line ?? peakShot?.text ?? s.shots[0]?.text ?? '');
+      const bestLine = cleanLine(body.line ?? wiredShot?.text ?? s.shots[0]?.text ?? '');
       const final = {
         funded: s.funded,
         fundedLabel: dollars(s.funded),
+        // What BAIT checked: the commitment in force when the player wired.
+        wired,
+        wiredLabel: dollars(wired),
+        wiredShot: wiredShot?.n ?? null,
+        // A stat only: the most PENNY committed on any line, and where.
         peak,
         peakLabel: dollars(peak),
         peakShot: peakShot?.n ?? null,
@@ -1798,13 +1801,13 @@ export function createRoomService({
         risk,
         // On a live round a block was decided on the live read, so the sentence names it. A block
         // on the owner or another rule is not a negative-PnL block, so it is not called one.
-        agentLine: roomAgentLine(verdict, gate, !!s.evidence?.live, { whatIf: peak === 0 }),
+        agentLine: roomAgentLine(verdict, gate, !!s.evidence?.live, { whatIf: wired === 0 }),
         prospect: { id: s.prospect.id, name: s.prospect.name, handle: s.prospect.handle, venueLabel: s.prospect.venueLabel },
         evidence: { ...s.evidence },
         // A gate that only ever says no proves nothing, so a record that holds up gets
         // an ending that says the money moved.
-        stamp: peak === 0 ? 'NO WIRE' : { block: 'BLOCKED', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
-        ...endingCopy({ s, peak, executed, verdict, gate }),
+        stamp: wired === 0 ? 'NO WIRE' : { block: 'BLOCKED', allow: 'CLEARED', capped: 'CAPPED' }[verdict],
+        ...endingCopy({ s, peak: wired, executed, verdict, gate }),
         // The one check that decided it, in the gate's own words.
         because: plainer(gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null) || null,
         checkedRecord: recordName(s.prospect),
@@ -1813,6 +1816,10 @@ export function createRoomService({
         read: readOf(s.prospect.snapshot),
         pitched: pitchedFacts(s.shots, s.dossier),
       };
+      if (wired > 0 && peak > wired && peakShot) {
+        final.peakNote = `PENNY's commitment peaked at ${dollars(peak)} on line ${peakShot.n}.`;
+        final.subline = `${final.subline} ${final.peakNote}`;
+      }
       if (whatIf) {
         const word = { block: 'blocked', capped: 'capped', allow: 'cleared' }[whatIf.verdict] ?? 'checked';
         final.subline = gone
@@ -1831,11 +1838,11 @@ export function createRoomService({
     if (!s.submitted && typeof body.initials === 'string' && body.initials.trim()) {
       // The score is the con: the most the desk committed, with the line that got it.
       const row = leaderboard.add({
-        initials: body.initials, amount: s.final.peak,
+        initials: body.initials, amount: s.final.wired,
         line: cleanLine(body.line ?? s.final.bestLine), suspicion: s.suspicion,
         prospect: s.prospect.name, venue: s.prospect.venueLabel,
         stopped: s.final.stopped,
-        lines: s.final.peakShot ?? undefined,
+        lines: s.final.wiredShot ?? undefined,
       }).row;
       s.submitted = { at: new Date().toISOString(), placed: row };
     }

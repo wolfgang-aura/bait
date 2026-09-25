@@ -37,6 +37,47 @@ const PLAIN_RE = /(?<![\w$.,:+-])([+-])?(\d{4,}(?:\.\d+)?|\d+(?:\.\d+)?(?=\s?(?:
 /** A bare number followed by one of these is not a dollar figure. */
 const NOT_MONEY_AFTER = /^\s*(?:closed\s+|winning\s+)?(?:trades?|fills?|days?|hours?|minutes?|weeks?|months?|years?|wallets?|markets?|coins?|times|x\b|users?|traders?|people|accounts?|orders?|%|percent|bps)/i;
 
+// Final judge: money in words. A run of number words that ends on a scale word ("six hundred
+// grand", "a million", "half a million"), optionally followed by "dollars".
+const SMALL = { zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90 };
+const SCALE = { hundred: 100, thousand: 1e3, grand: 1e3, k: 1e3, million: 1e6, mil: 1e6, billion: 1e9 };
+const WORD_RE = new RegExp(`(?<![\\w$])((?:(?:${Object.keys(SMALL).join('|')}|half|quarter|a|an|hundred|thousand|grand|million|mil|billion)(?:[\\s-]+and)?[\\s-]+)*(?:hundred|thousand|grand|k|million|mil|billion))\\b(\\s+(?:dollars|bucks|usd[ct]?)\\b)?`, 'gi');
+function wordValue(words) {
+  const ws = words.toLowerCase().split(/[\s-]+/).filter(Boolean);
+  if (!ws.some(w => w in SMALL || w === 'half' || w === 'quarter' || w === 'a' || w === 'an')) return 0;
+  let total = 0;
+  let cur = 0;
+  for (const w of ws) {
+    if (w in SMALL) cur += SMALL[w];
+    else if (w === 'half') cur = cur || 0.5;
+    else if (w === 'quarter') cur = cur || 0.25;
+    else if (w === 'a' || w === 'an') cur = cur || 1;
+    else if (w === 'hundred') cur = (cur || 1) * 100;
+    else if (SCALE[w]) { total += (cur || 1) * SCALE[w]; cur = 0; }
+  }
+  return total + cur;
+}
+/** The precision a figure in words carries: "six hundred grand" is to the hundred thousand. */
+const wordUnit = words => {
+  const ws = words.toLowerCase().split(/[\s-]+/);
+  const big = Math.max(1, ...ws.map(w => SCALE[w] ?? 1).filter(x => x > 100));
+  return ws.includes('hundred') ? 100 * big : big;
+};
+// Spoken ranges: "six figures", "millions", "tens of millions", "hundreds of thousands".
+const RANGE_RE = /\b(?:(?:six|seven|eight|nine)[- ]figures?|(?:hundreds|tens) of (?:thousands|millions)|(?<!of )(?:millions|billions))\b/gi;
+function rangeOf(s) {
+  const x = s.toLowerCase();
+  const fig = x.match(/^(six|seven|eight|nine)[- ]figure/);
+  if (fig) { const d = { six: 6, seven: 7, eight: 8, nine: 9 }[fig[1]]; return [10 ** (d - 1), 10 ** d]; }
+  if (x === 'hundreds of thousands') return [2e5, 1e6];
+  if (x === 'tens of millions') return [2e7, 1e8];
+  if (x === 'hundreds of millions') return [2e8, 1e9];
+  if (x === 'tens of thousands') return [2e4, 1e5];
+  if (x === 'millions') return [2e6, 1e9];
+  if (x === 'billions') return [2e9, 1e12];
+  return null;
+}
+
 /** The precision a typed number carries: "594k" is to the thousand, "$594,869" to the dollar. */
 function unitOf(digits, decimals, mult, trailingZeros = true) {
   if (decimals) return 10 ** -decimals.length * mult;
@@ -95,10 +136,28 @@ export function extractFigures(text) {
     if (!m[3] && !m[1] && /^(?:19|20)\d\d$/.test(body)) continue;
     money(m, m[1], null, body, null);
   }
+  // Final judge: figures in words ("six hundred grand", "half a million", "two hundred million") and
+  // spoken ranges ("seven figures", "millions") are figures too, checked like any other.
+  for (const m of t.matchAll(WORD_RE)) {
+    const n = wordValue(m[1]);
+    if (!n) continue;
+    const after = t.slice(m.index + m[0].length);
+    if (/^\s*(?:closed\s+|winning\s+)?trades?\b/i.test(after)) {
+      add(m, { typed: m[0].trim(), kind: 'count', n, unit: n / 10, winning: false, what: 'trade count' });
+      continue;
+    }
+    if (!m[2] && NOT_MONEY_AFTER.test(after)) continue;
+    add(m, { typed: m[0].trim(), kind: 'money', n, sign: null, unit: wordUnit(m[1]) });
+  }
+  for (const m of t.matchAll(RANGE_RE)) {
+    const r = rangeOf(m[0]);
+    if (!r || NOT_MONEY_AFTER.test(t.slice(m.index + m[0].length))) continue;
+    add(m, { typed: m[0].trim(), kind: 'money', n: r[0], lo: r[0], hi: r[1], sign: null, unit: r[0], range: true });
+  }
   out.sort((a, b) => a.at - b.at);
   for (const f of out) {
     const before = t.slice(Math.max(0, f.at - 24), f.at).toLowerCase();
-    f.mode = /(?:about|around|roughly|nearly|almost|approximately|approx\.?|close to|some|~|just (?:under|over|shy of|below|above))\s*$/.test(before) ? 'approx'
+    f.mode = f.range ? 'range' : /(?:about|around|roughly|nearly|almost|approximately|approx\.?|close to|some|~|most of|the better part of|just (?:under|over|shy of|below|above))\s*$/.test(before) ? 'approx'
       : /(?:over|more than|above|north of|at least|upwards of|in excess of|>)\s*$/.test(before) ? 'ge'
       : /(?:under|less than|below|at most|south of|fewer than|<)\s*$/.test(before) ? 'le' : 'eq';
     if (f.kind === 'money' && !f.sign) {
@@ -309,10 +368,17 @@ function coinsFor(t, figs, coins) {
     if (NOT_COINS.has(tick) || known.has(tick)) continue;
     named.push({ coin: tick, at: m.index + m[0].indexOf(tick) });
   }
+  const sentence = bounds(t, false);
   return figs.map(f => {
     const [a, b] = clause(f.at);
     const here = named.filter(c => c.at >= a && c.at <= b).sort((x, y) => x.at - y.at);
-    if (!here.length) return null;
+    if (!here.length) {
+      // Final judge: a coin named in a figure-less lead-in ("HYPE carried him: +$52k") is the next figure's.
+      const [sa] = sentence(f.at);
+      const lead = named.filter(c => c.at >= sa && c.at < a && !figs.some(g => g.at >= clause(c.at)[0] && g.end <= clause(c.at)[1])).at(-1);
+      if (!lead) return null;
+      return figs.find(g => g.at > lead.at) === f ? lead.coin : null;
+    }
     const c = here[0];
     const inClause = figs.filter(g => g.at >= a && g.end <= b);
     const nearest = inClause.reduce((x, g) => (Math.abs(g.at - c.at) < Math.abs(x.at - c.at) ? g : x));
@@ -333,15 +399,20 @@ const PCT_MEASURES = [
   ['win rate', /\bwin(?:ning)?[- ]?(?:rate|ratio|%)|\bhit[- ]rate\b|\bstrike rate\b|\bwins?\b|\bwon\b/gi],
   ['return', /\broi\b|\breturns?\b|\byield\b|\bgain\b|\bup\b/gi],
 ];
-function measureOf(t, fig, clause) {
+function measureOf(t, fig, clause, figs = [fig]) {
   if (fig.kind === 'count') return fig.what;
   const table = fig.kind === 'money' ? MONEY_MEASURES : PCT_MEASURES;
   const [a, b] = clause;
+  const gap = (g, at, len) => (at >= g.end ? at - g.end : at < g.at ? g.at - (at + len) : 0);
+  // Final judge: a measure word binds to the nearest figure of its kind in its clause only: in
+  // "about $119M all time and a $69M account", "account" is the $69M's, never the $119M's.
+  const peers = figs.filter(g => g.kind === fig.kind && g.at >= a && g.end <= b);
   let best = null;
   for (const [m, re] of table) {
     for (const x of t.slice(a, b).matchAll(re)) {
       const at = a + x.index;
-      const d = at >= fig.end ? at - fig.end : at < fig.at ? fig.at - (at + x[0].length) : 0;
+      const d = gap(fig, at, x[0].length);
+      if (peers.some(g => g !== fig && gap(g, at, x[0].length) < d)) continue;
       if (!best || d < best.d) best = { m, d };
     }
   }
@@ -449,6 +520,7 @@ function sameValue(fig, fact, { flip = false } = {}) {
   const typed = signed && neg ? -fig.n : fig.n;
   const v = signed ? fact.value : Math.abs(fact.value);
   if (fig.kind === 'money' && !signed && neg) return false;
+  if (fig.mode === 'range') return (signed ? Math.sign(v) === (neg ? -1 : 1) : true) && Math.abs(v) >= fig.lo && Math.abs(v) < fig.hi;
   if (fig.mode === 'ge') return Math.sign(v) === Math.sign(typed || 1) && Math.abs(v) >= Math.abs(typed) * 0.999;
   if (fig.mode === 'le') return Math.sign(v) === Math.sign(typed || 1) && Math.abs(v) <= Math.abs(typed);
   const diff = Math.abs(v - typed);
@@ -469,17 +541,59 @@ export function othersFrom(list) {
 
 // ------------------------------------------------------------------------ claims with no figure
 
-// Judge 11: "Nansen labels this wallet a Smart Money fund" is a claim about the record's labels.
-const LABEL_CLAIM = [
-  /\b(?:label\w*|tag\w*|flag\w*|classif\w*|list(?:s|ed)|mark(?:s|ed)|call(?:s|ed)|nam(?:es|ed)|rank(?:s|ed)|counts?|recogni[sz]\w*|identif\w*)\b[^.;!?]{0,40}?\bsmart[- ]money\b/i,
-  /\b(?:is|he's|she's|it's|was|are|a|an)\s+(?:(?:a|an|the|certified|official|verified|known|labell?ed|nansen|nansen-labell?ed)\s+){0,2}smart[- ]money\b(?!\s+(?:is|was|are|has|holds|sits|went|goes|buys|sells|flows?))/i,
-  /\bsmart[- ]money\s+(?:fund|wallet|trader|whale|label|tag|address|account|entity|status|badge)\b/i,
-  /\b(?:label\w*|tag\w*|classif\w*)\b[^.;!?]{0,40}?\b(?:fund|vc|institution\w*|market maker)\b/i,
-];
-// "not a single losing trade", "never lost", "no losses this month".
-const LOSSLESS = /\b(?:not (?:a )?single|not one|no|zero|without (?:a|any))\s+(?:single\s+)?(?:losing|losses|loss|red)\b|\bnever\s+(?:\w+\s+){0,2}(?:lost|loses|losing|a loss|a losing|red)\b|\b(?:has not|hasn't|did not|didn't|does not|doesn't|have not|haven't)\s+(?:\w+\s+){0,3}(?:losing|lost|a loss|any losses)\b|\bundefeated\b|\bperfect (?:record|win rate|track record)\b|\bwins? every (?:single )?(?:trade|time)\b|\bonly (?:ever )?wins\b/i;
+// Final judge: DEFAULT-DENY. A line stands only when the referee can account for every factual
+// claim in it. A figure is accounted for by the ledger; the markers below name the claims the record
+// has no fact for (a label, a rank, a comparison, leverage, an absolute, a streak of periods). Any
+// of them strikes as "Not in the record", quoting the player's own words. Filler with no claim in it
+// ("trust me", "look at this", "he's a killer") stands, and so do adjectives ("huge", "insane").
+
+// "not a single losing trade", "never lost", "no losses this month", "every one a winner".
+const LOSSLESS = /\b(?:not (?:a )?single|not one|no|zero|without (?:a|any))\s+(?:single\s+)?(?:losing|losses|loss|red)\b|\bnever\s+(?:\w+\s+){0,2}(?:lost|loses|losing|a loss|a losing|red)\b|\b(?:has not|hasn't|did not|didn't|does not|doesn't|have not|haven't)\s+(?:\w+\s+){0,3}(?:losing|lost|a loss|any losses)\b|\bundefeated\b|\bperfect (?:record|win rate|track record)\b|\bwins? every (?:single )?(?:trade|time)\b|\bonly (?:ever )?wins\b|\balways wins\b|\bevery (?:single )?(?:one|trade|position)\b[^.;!?]{0,20}?\b(?:a winner|won|wins|winning|green|profitable)\b/gi;
 const SAYS_7D = /\b(?:7|seven)[- ]?(?:days?|d)\b|\b(?:this|last|past|one|a|in a|the) week\b|\bweekly\b/i;
 const SAYS_30D = /\b(?:30|thirty)[- ]?(?:days?|d)\b|\b(?:this|last|past|one|a|in a|the) month\b|\bmonthly\b/i;
+const claimedWindow = part => {
+  const seven = SAYS_7D.test(part);
+  const thirty = SAYS_30D.test(part);
+  return seven === thirty ? null : seven ? '7d' : '30d';
+};
+
+// Persuasion with no claim in it. Blanked before the markers are read, so it never strikes.
+const FILLER = [
+  /\btrust me\b/gi, /\blook at (?:this|that|him|these|those|the numbers)\b/gi, /\bthe numbers (?:speak(?: for themselves)?|don'?t lie|do not lie|say it all)\b/gi,
+  /\byou'?d be (?:crazy|mad|nuts|foolish|insane|silly) (?:not )?to \w+(?: \w+)?\b/gi, /\bdon'?t (?:miss|sleep on|pass on) (?:this|out|him|it)\b/gi,
+  /\bno[- ]brainer\b/gi, /\bcan'?t go wrong\b/gi, /\bonce in a lifetime\b/gi,
+  /\b(?:the )?best (?:pitch|deal|bet|chance|shot|call|move|decision|opportunity|entry|idea) (?:you'?ll|you will|you'?re going to|you) \w+(?: \w+)?\b/gi,
+  /\b(?:the )?best \w+ (?:you'?ll|you will|you'?re going to) (?:ever )?(?:see|hear|get|find|meet)\b/gi,
+  /\byou'?ll never (?:regret|forget|see|find|get|hear)\b[^.;!?]*/gi, /\b(?:i'?ve |i have )?never (?:seen|met|heard)\b[^.;!?]*/gi,
+  /\b(?:he'?s|she'?s|this is|what) (?:a |an |an absolute |a total |a real )?(?:killer|beast|monster|machine|legend|genius|pro|shark|animal|natural|wizard|madman)\b/gi,
+];
+const blank = (t, re) => t.replace(re, m => ' '.repeat(m.length));
+
+// Each marker names a claim the record holds no fact for. The first family that matches names the claim.
+const MARKERS = [
+  // Labels and categories. Nansen publishes none for any roster wallet.
+  ['label', /\b(?:(?:nansen(?:'s)?|a|an|the|his|her|their)\s+)?smart[- ]?(?:money|traders?|lps?)(?:\s+(?:funds?|wallets?|traders?|whales?|labels?|tags?|lists?|address(?:es)?|accounts?|entit(?:y|ies)|status|badges?|cohort|club|group|dashboard|page|screener|feed))?\b/gi],
+  ['label', /\b(?:(?:a|an|the)\s+)?(?:whales?|insider (?:info|information|wallets?|trader)|insiders?|vcs?|venture (?:capital(?:ists?)?|funds?)|market[- ]makers?|hedge funds?|prop (?:desks?|firms?|shops?|traders?)|institutional (?:traders?|wallets?|desks?|players?|money)|institutions?|token millionaires?|public figures?|airdrop hunters?|diamond hands|high balance|kols?|influencers?)\b/gi],
+  ['label', /\b(?:is|as|runs|run by|belongs to|owned by|backed by)\s+(?:a|an)\s+(?:[\w-]+\s+)?fund\b|\bfund(?:'s)?\s+(?:wallet|address|manager|money)\b/gi],
+  // Ranks. The record has no rank.
+  ['rank', /\b(?:smartest|greatest|most profitable|top[- ]performing)\b(?:\s+\w+)?|\btop[- ]?(?:\d+|ten|five|three|twenty|fifty|hundred)\b|\btop (?:traders?|earners?|performers?|wallets?|spot|name)\b|\btops? (?:the|all|every)\b|#\s?\d+\b|\brank(?:s|ed|ing|ings)?\b(?:\s+(?:#\s?\d+|\d+(?:st|nd|rd|th)?|first|second|third|top \d+))?|\bnumber (?:one|1|two|2|three|3)\b|\bno\.\s?\d+\b|\b(?:first|second|third|1st|2nd|3rd) (?:place|on the|in the)\b|\bbest (?:on|in|of)(?: the| all| hyperliquid| nansen)?(?: \w+)?|\bbest (?:traders?|performers?|wallets?|records?|weeks?|months?|days?|years?|runs?|streaks?|track record)\b|\bleads? (?:the|all|every|everyone|hyperliquid|nansen)\b(?: \w+)?|\bleading (?:traders?|wallets?|the)\b|\bhighest\b|\bbiggest (?:winners?|earners?|traders?|weeks?|months?)\b|\bchart[- ]topp\w*|\b(?:on )?top of the (?:board|leaderboard|charts?|list|table)\b|\bbeats? (?:everyone|everybody|all|the rest|most|the market|the field)\b/gi],
+  // Leverage. The record holds none.
+  ['leverage', /\b(?:\d+(?:\.\d+)?\s?x\s+)?(?:leverage[ds]?|levered)\b|\bon margin\b/gi],
+  // Comparisons that imply a figure the line does not give.
+  ['compare', /\b(?:more|better|higher|bigger|larger|greater|faster|worse|lower|smaller)\s+\w+(?:\s+\w+)?\s+than\s+(?![+\-~]?\$?\d)\w+(?:\s+\w+)?|\bsame (?:again|as (?:last|before)|thing again)\b|\b(?:(?:nearly|almost|about|roughly|over|more than|at least) )?(?:double[ds]?(?![- ]digits?)|doubling|twice|triple[ds]?|tripling|thrice|quadruple[ds]?|(?:two|three|four|five|ten|\d+)[- ]?fold)\b|\b\d+(?:\.\d+)?\s?x\b|\b(?:more|better|higher|bigger|larger|greater|faster|worse|lower|smaller)\s+than\s+(?![+\-~]?\$?\d)\w+(?:\s+\w+)?|\bbeat(?:s|en|ing)?\b(?:\s+\w+)?|\boutperform\w*|\boutpac\w*|\bup (?:on|from|over) (?:last|the previous|the prior)\b(?:\s+\w+)?|\b(?:even )?more (?:this|last|next) (?:week|month)\b/gi],
+  // Absolutes about trades that no win rate accounts for.
+  ['absolute', /\b(?:never|always)\b[^.;!?]{0,30}?\b(?:los(?:e|es|t|ing|ses?)|win(?:s|ning)?|won|miss(?:es|ed)?|red|green|down|profit\w*|trades?|wrong|drawdowns?|liquidat\w*|blow\w*|fail\w*|bleed\w*|stop(?:ped)? out|up)\b|\bevery (?:single )?(?:trade|position|bet|call)\b|\ball (?:of )?(?:his|her|their|the) (?:trades|positions|calls|bets)\b|\b(?:no|zero) (?:drawdowns?|liquidations?|red (?:days|weeks|months))\b|\bcan(?:not|'t|\s+not)\s+lose\b|\bunbeaten\b|\brisk[- ]free\b|\b(?:zero|no) risk\b/gi],
+  // Risk metrics the record does not publish.
+  ['metric', /\b(?:sharpe|sortino|calmar)(?: ratio)?\b|\b(?:max(?:imum)? )?drawdowns?\b|\bvolatility\b|\balpha\b/gi],
+  // A result claimed for periods the record does not hold.
+  ['time', /\b(?:every|each)\s+(?:single\s+)?(?:day|week|month|quarter|year)\b|\b(?:\d+|two|three|four|five|six|seven|eight|nine|ten|twelve)\s+(?:straight\s+)?(?:days?|weeks?|months?|years?)\s+(?:in a row|straight|running)\b|\bin a row\b|\b(?:week|month|day|year) (?:after|over|on) (?:week|month|day|year)\b|\bconsistently (?:profitable|green|up|positive|winning)\b|\bstreaks? of\b|\bwinning streak\b/gi],
+  // "Up this week too": accounted for only when the week's published result is a gain.
+  ['again', /\b(?:this|last|that|the) (?:week|month|year) (?:too|as well|again)\b|\b(?:again|too|as well) (?:this|last) (?:week|month|year)\b/gi],
+  // Being tracked, tagged or listed is a label too.
+  ['label', /\b(?:label(?:s|l?ed|l?ing)?|tag(?:s|ged|ging)?|flag(?:s|ged|ging)?|classif\w*|categori[sz]\w*|watchlists?|whitelist\w*|follows|followed by|watched by)\b|\btrack(?:ed|s)? (?:as|among|on (?:a|the|nansen's) \w+)\b|\blists? (?:him|her|them|it|this (?:wallet|trader|address)|the (?:wallet|trader))\s+(?:as|among|in|on)\b|\bon (?:nansen's|the|a|their|its) (?:[\w-]+\s+){0,2}list\b|\blisted (?:as|among|on|in)\b/gi],
+];
+// "His best market", "top coin": the wallet's own markets, which the figure judge checks.
+const OWN_MARKET = /\b(?:best|top|biggest|strongest) (?:markets?|coins?|tokens?|assets?|pairs?|tickers?)\b/gi;
 
 function labelsOf(dossier, data) {
   const out = [];
@@ -490,24 +604,103 @@ function labelsOf(dossier, data) {
   return out;
 }
 
-/** The strike for a claim with no figure the ledger can check cheaply, or null. */
-function claimStrike(t, dossier, data) {
-  if (LABEL_CLAIM.some(re => re.test(t))) {
-    const labels = labelsOf(dossier, data);
-    const smart = /smart[- ]money/i.test(t);
-    const has = labels.some(l => (smart ? /smart[- ]money/i : /fund|vc|institution|market maker/i).test(l));
-    if (!has) return smart ? 'nothing in the record labels this wallet Smart Money.' : 'nothing in the record labels this wallet a fund.';
+/** The player's words for a claim, short: at most eight words. */
+const quoteOf = s => {
+  const words = String(s).replace(/\s+/g, ' ').trim().replace(/^[,:;\-\s]+|[,:;.!?\-\s]+$/g, '').split(' ');
+  return words.length > 8 ? `${words.slice(0, 8).join(' ')}…` : words.join(' ');
+};
+export const notInRecord = quote => `Not in the record: “${quoteOf(quote)}”.`;
+
+/**
+ * A no-loss claim: accounted for only by a 100% win rate in the window it names. Returns the
+ * strike, or the spans a 100% win rate accounts for (so the absolute markers skip them).
+ */
+function losslessRuling(t, data) {
+  const spans = [];
+  const sentence = bounds(t, false);
+  for (const m of t.matchAll(LOSSLESS)) {
+    const [a, b] = sentence(m.index);
+    // A week or a month named any way ("a clean week") is the window a no-loss claim is read in.
+    const loose = x => claimedWindow(x) ?? (/\bweeks?\b/i.test(x) === /\bmonths?\b/i.test(x) ? null : /\bweeks?\b/i.test(x) ? '7d' : '30d');
+    const w = loose(t.slice(a, b)) ?? loose(t);
+    const windows = w ? [w] : ['30d', '7d'];
+    const rates = windows.map(x => data?.[x === '7d' ? 'pnl_summary_7d' : 'pnl_summary_30d']?.win_rate);
+    const below = windows.find((x, i) => Number.isFinite(rates[i]) && rates[i] < 1);
+    if (below) return { reason: `the line claims no losses, but Nansen's ${DAYS[below]} win rate is below 100%: trades were lost.` };
+    if (!rates.every(r => r === 1)) return { reason: notInRecord(m[0]) };
+    spans.push([m.index, m.index + m[0].length]);
   }
-  if (LOSSLESS.test(t)) {
-    const seven = SAYS_7D.test(t);
-    const thirty = SAYS_30D.test(t);
-    const windows = seven && !thirty ? ['7d'] : thirty && !seven ? ['30d'] : ['30d', '7d'];
-    for (const w of windows) {
-      const rate = data?.[w === '7d' ? 'pnl_summary_7d' : 'pnl_summary_30d']?.win_rate;
-      if (Number.isFinite(rate) && rate < 1) return `the line claims no losses, but Nansen's ${DAYS[w]} win rate is below 100%: trades were lost.`;
+  return { spans };
+}
+
+/** The first claim in a line that the record does not account for, in the player's words, or null. */
+function unaccounted(t, dossier, data, spans, which = () => true) {
+  let s = t;
+  for (const [a, b] of spans) s = s.slice(0, a) + ' '.repeat(b - a) + s.slice(b);
+  for (const re of FILLER) s = blank(s, re);
+  s = blank(s, OWN_MARKET);
+  // A wallet address is not a multiple ("0x7fdafde5").
+  s = blank(s, /\b0x[0-9a-f]+\b/gi);
+  const labels = labelsOf(dossier, data).map(l => l.toLowerCase()).filter(Boolean);
+  for (const [family, re] of MARKERS.filter(([f]) => which(f))) {
+    for (const m of s.matchAll(re)) {
+      const said = t.slice(m.index, m.index + m[0].length);
+      const bare = said.toLowerCase().replace(/^(?:nansen'?s?|a|an|the|his|her|their)\s+/, '');
+      if (family === 'label' && labels.some(l => l.includes(bare) || bare.includes(l))) continue;
+      // "Nansen labels him Smart Money": the quote starts at the verb that makes it a claim.
+      const lead = family === 'label' && t.slice(Math.max(0, m.index - 40), m.index)
+        .match(/\b(?:(?:nansen|hyperliquid)(?:'s)?\s+)?(?:label\w*|tag\w*|lists?|listed|flag\w*|track\w*|calls?|called|names?|named|classif\w*)\b[^.;!?,:]*$/i);
+      return lead ? t.slice(m.index - lead[0].length, m.index + m[0].length) : said;
     }
   }
   return null;
+}
+
+const SAYS_UP = /\b(up|profitable|in profit|positive|green|made money|making money|net (?:gain|profit|positive)|in the black)\b/i;
+const PNL_MEASURE = /^(?:realised PnL|PnL|all-time PnL)$/;
+
+/**
+ * A line that says a window made money. The sign is read from the fact the line's figure matched,
+ * else from the source the line credits (judge 11 compared the leaderboard's week against Nansen's),
+ * else from Nansen's realised PnL. A loss is struck by name; a gain the record does not publish is
+ * not in the record. Returns { strike } or { ok }: the sentences a published gain accounts for.
+ */
+function resultRuling(t, facts, figs) {
+  const sentence = bounds(t, false);
+  const clause = bounds(t, true);
+  const seen = new Set();
+  const ok = [];
+  for (let pos = 0; pos < t.length; pos++) {
+    const [a, b] = sentence(pos);
+    if (seen.has(a)) continue;
+    seen.add(a);
+    const part = t.slice(a, b);
+    const up = part.match(SAYS_UP);
+    if (!up) continue;
+    const [ca0, cb0] = clause(a + up.index);
+    const periods = cuesIn(part, WINDOW_CUES);
+    // "Profitable since 2021", "up this year": a period the record holds no result for.
+    if (!claimedWindow(part) && periods.some(c => c.cls.startsWith('other:')) && !figs.some(f => f.at >= a && f.end <= b)) return { strike: notInRecord(t.slice(ca0, cb0)) };
+    const W = claimedWindow(part) ?? (periods.some(c => c.cls === 'all') ? 'all' : null);
+    if (!W) continue;
+    const srcs = [...new Set(cuesIn(part, SOURCE_CUES).map(c => c.cls).filter(c => c === 'Nansen' || c === 'leaderboard'))];
+    const pnl = facts.filter(f => f.kind === 'money' && f.coin === null && f.window === W && PNL_MEASURE.test(f.measure) && (!srcs.length || srcs.includes(f.source)));
+    const partFigs = figs.filter(f => f.kind === 'money' && f.at >= a && f.end <= b);
+    let used = pnl.filter(f => partFigs.some(g => sameValue(g, f)));
+    const matched = used.length > 0;
+    if (!matched) used = srcs.length ? pnl : pnl.filter(f => f.source === 'Nansen');
+    const [ca, cb] = clause(a + up.index);
+    if (!used.length) return { strike: notInRecord(t.slice(ca, cb)) };
+    const neg = used.find(f => f.value < 0);
+    if (neg) {
+      return { strike: neg.source === 'Nansen'
+        ? `the line says the ${DAYS[W]} result made money; the ${DAYS[W]} realised PnL in the record did not.`
+        : `the line says the ${DAYS[W]} result made money; the leaderboard's ${DAYS[W]} PnL in the record did not.` };
+    }
+    if (!matched && !used.some(f => f.visible)) return { strike: notInRecord(t.slice(ca, cb)) };
+    ok.push([a, b]);
+  }
+  return { ok };
 }
 
 // ------------------------------------------------------------------------------------ the ruling
@@ -548,9 +741,22 @@ const RANK = f => (f.visible ? (f.origin === 'card' ? 0 : f.origin === 'tile' ? 
 export function attributionStrike(text, dossier, data, { others = [] } = {}) {
   const t = String(text ?? '');
   const figs = extractFigures(t);
-  const claim = claimStrike(t, dossier, data);
-  if (!figs.length) return claim ? spent(claim) : null;
   const facts = ledgerOf(dossier, data);
+  // Final judge: default-deny. Claims the record cannot account for strike first, by their own words.
+  const lossless = losslessRuling(t, data);
+  if (lossless.reason) return spent(lossless.reason);
+  const said = unaccounted(t, dossier, data, lossless.spans, f => f !== 'time' && f !== 'again');
+  if (said) return spent(notInRecord(said));
+  // Then every figure; then a result claimed for a window; then a result claimed for other periods.
+  const rest = () => {
+    const result = resultRuling(t, facts, figs);
+    if (result.strike) return spent(result.strike);
+    // "Up this week too" is accounted for when the week's published result is a gain.
+    const period = unaccounted(t, dossier, data, lossless.spans, f => f === 'time')
+      ?? unaccounted(t, dossier, data, [...lossless.spans, ...result.ok], f => f === 'again');
+    return period ? spent(notInRecord(period)) : null;
+  };
+  if (!figs.length) return rest();
   const coins = [...new Set([...facts.map(f => f.coin), ...others.flatMap(o => o.facts.map(f => f.coin))].filter(Boolean))];
   const windows = windowsFor(t, figs);
   const sources = sourcesFor(t, figs);
@@ -561,7 +767,7 @@ export function attributionStrike(text, dossier, data, { others = [] } = {}) {
   const judge = (fig, W, S, coin) => {
     const clause = clauseOf(fig.at);
     const words = t.slice(clause[0], clause[1]);
-    const M = measureOf(t, fig, clause);
+    const M = measureOf(t, fig, clause, figs);
     const pnlWord = PNL_WORDS.test(words);
     // An allocation the player asks for is not a claim about the record; nor is PENNY's own slot.
     const before = t.slice(Math.max(0, fig.at - 40), fig.at);
@@ -632,7 +838,7 @@ export function attributionStrike(text, dossier, data, { others = [] } = {}) {
       if (p) { problems.push(p); break; }
     }
   });
-  if (!problems.length) return claim ? spent(claim) : null;
+  if (!problems.length) return rest();
 
   const first = type => problems.find(p => p.type === type);
   const absent = first('absent');

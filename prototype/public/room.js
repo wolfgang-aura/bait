@@ -304,7 +304,7 @@ async function pasteWallet(event) {
  */
 function stampLabel(final) {
   if (final.whatIfOf) return `WOULD BE ${{ block: 'BLOCKED', capped: 'CAPPED', allow: 'CLEARED' }[final.verdict] ?? 'CHECKED'} BY BAIT`;
-  if (!final.peak && !final.checkOnly) return final.stamp;
+  if (!final.wired && !final.checkOnly) return final.stamp;
   return { block: 'BLOCKED BY BAIT', capped: 'CAPPED BY BAIT', allow: 'CLEARED BY BAIT' }[final.verdict] ?? final.stamp;
 }
 
@@ -324,10 +324,10 @@ function markBait(node, sentence) {
  * shows the closed gate still for 1.2 s. A different system has stepped in.
  */
 async function barricade(final) {
-  text(el.barAmt, final.peakLabel);
+  text(el.barAmt, final.wiredLabel);
   text(el.barTo, `to ${final.prospect?.name ?? 'this trader'}`);
   // The transfer is held while the gate reads Nansen, whatever the verdict turns out to be.
-  text(el.barHeld, `${final.peakLabel} HELD`);
+  text(el.barHeld, `${final.wiredLabel} HELD`);
   el.barrier.hidden = false;
   el.barrier.classList.remove('run');
   void el.barrier.offsetWidth;
@@ -362,10 +362,10 @@ function setStamp(node, final) {
 function agreedBeat(shot, final) {
   const n = shot?.n ?? shots.length;
   const to = final?.prospect?.name ?? chosen?.name ?? dossier?.name ?? 'this trader';
-  const amt = shot?.wire?.attemptedLabel ?? final?.peakLabel ?? '';
+  const amt = shot?.wire?.attemptedLabel ?? final?.wiredLabel ?? '';
   text(el.agreedLine, `Wired: PENNY is sending ${amt} to ${to} after ${n} line${n === 1 ? '' : 's'}`);
   // The meter shows the same figure as the beat, whatever the count-up animation had reached.
-  const committed = shot?.wire?.attempted ?? final?.peak;
+  const committed = shot?.wire?.attempted ?? final?.wired;
   if (committed > 0) { fundedShown = committed; text(el.funded, dollars(committed)); }
   // PENNY's own words, and what they amount to: it asked for the record and was never shown it, or noticed it missing, and
   // committed the money anyway. The amount is the allocation PENNY wrote in its reply.
@@ -405,14 +405,14 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   const gate = final.gate ?? { checks: [] };
   // A what-if (PENNY refused, so nothing reached BAIT) says so above the title.
   el.cpWhatif.hidden = !final.whatIfOf;
-  text(el.cpWhatif, final.whatIfOf ? (final.whatIfIntro ?? `PENNY said no on its own. Here's what the BAIT check would have done with ${final.peakLabel}:`) : '');
+  text(el.cpWhatif, final.whatIfOf ? (final.whatIfIntro ?? `PENNY said no on its own. Here's what the BAIT check would have done with ${final.wiredLabel}:`) : '');
   text(el.cpTitle, checkpointTitle(final));
   const who = p?.short ?? chosen?.short ?? '';
   text(el.cpMove, final.whatIfOf
-    ? `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}, if it had agreed`
+    ? `${final.wiredLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}, if it had agreed`
     : final.checkOnly
     ? `No transfer to check: nothing flattering to pitch. The BAIT check read ${final.prospect?.name ?? p?.name ?? 'this wallet'} anyway.`
-    : `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
+    : `${final.wiredLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
   text(el.cpRead, readingLine(gate, who));
   const raw = final.evidence?.raw;
   if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
@@ -510,7 +510,7 @@ const QUOTE_WORDS = 16;
  */
 function decidingFigure(final) {
   if (!final?.because || !['block', 'capped'].includes(final.verdict)) return '';
-  if (!(final.peak > 0 || final.checkOnly)) return '';
+  if (!(final.wired > 0 || final.checkOnly)) return '';
   return oncePitched(String(final.because).split(/(?<=\.)\s+(?=[A-Z])/)[0].trim());
 }
 
@@ -523,17 +523,17 @@ function showReveal(p, final) {
   revealAccent = VERDICT_ACCENT[final.verdict] ?? NEUTRAL_ACCENT;
   reportGate = final.gate ?? null;
   reportVerdict = final.verdict ?? null;
-  const kind = final.peak === 0 && !final.checkOnly ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
+  const kind = final.wired === 0 && !final.checkOnly ? 'none' : final.verdict === 'block' ? 'blocked' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : 'cleared';
   el.revealStamp.className = `stamp ${kind === 'blocked' ? '' : kind}`.trim();
   setStamp(el.revealStamp, final);
   text(el.revealTitle, final.headline);
   markBait(el.revealSub, final.subline);
   // Round 15: the score, as the board records it: the dollars PENNY wired, and in how many lines.
-  const scored = final.peak > 0 && !final.checkOnly && !final.whatIfOf;
+  const scored = final.wired > 0 && !final.checkOnly && !final.whatIfOf;
   el.revealScore.hidden = !scored;
   const lines = final.quotes?.agreed?.n;
   // Round 20: the score is what PENNY agreed to wire, not what reached the trader (BAIT decides that).
-  text(el.revealScore, scored ? `Score: ${final.peakLabel} PENNY agreed to wire${lines ? `, in ${lines} line${lines === 1 ? '' : 's'}` : ''}.` : '');
+  text(el.revealScore, scored ? `Score: ${final.wiredLabel} PENNY agreed to wire${lines ? `, in ${lines} line${lines === 1 ? '' : 's'}` : ''}.` : '');
   // Round 22: the reveal says three things once. The headline (what PENNY did), one BAIT
   // line with the figure that decided it, and the score. The old "agreed to send" tag and
   // the amber sentence repeated the headline, so they are gone.
@@ -617,7 +617,7 @@ function showReveal(p, final) {
   // Judge 7: stacked under 900 px, the VS is in flow on its own row between the halves
   // (room.css), so no script places it and no line of either half runs under it.
   window.scrollTo(0, 0);
-  if (final.verdict === 'block' && final.peak > 0 && !reduced) {
+  if (final.verdict === 'block' && final.wired > 0 && !reduced) {
     body.classList.remove('shake');
     void body.offsetWidth;
     body.classList.add('shake');
@@ -1158,7 +1158,7 @@ function finish() {
       adopt(result);
       // PENNY agreed: BAIT takes the screen before any stamp. PENNY refused on its
       // own: no checkpoint, the reveal says so.
-      if (result.final.peak > 0) {
+      if (result.final.wired > 0) {
         const committing = [...shots].reverse().find(s => s.wire) ?? shots[shots.length - 1];
         await agreedBeat(committing, result.final);
         await barricade(result.final);
@@ -1167,7 +1167,7 @@ function finish() {
         // PENNY refused on its own. BAIT still shows its work, as a labelled what-if.
         const w = result.final.whatIf;
         await playCheckpoint(result.prospect, { ...result.final, whatIfOf: true, gate: w.gate, verdict: w.verdict,
-          peakLabel: w.amountLabel, whatIfIntro: w.intro, checkOnly: false });
+          wiredLabel: w.amountLabel, whatIfIntro: w.intro, checkOnly: false });
       }
       showReveal(result.prospect, result.final);
       renderTranscript();
@@ -1185,11 +1185,11 @@ function showFinal(final, entries, mineAt = null) {
   show('final');
   window.scrollTo(0, 0);
   text(el.wireWho, final.prospect.name);
-  text(el.wireKind, final.peak > 0 ? 'Transfer' : 'No transfer');
-  text(el.wireAmount, final.peakLabel);
+  text(el.wireKind, final.wired > 0 ? 'Transfer' : 'No transfer');
+  text(el.wireAmount, final.wiredLabel);
   text(el.wireStopped, final.stoppedLabel);
   el.wireStopped.classList.toggle('zero', !final.stopped);
-  el.stamp.className = `stamp ${final.peak === 0 ? 'none' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : final.verdict === 'allow' ? 'cleared' : ''}`;
+  el.stamp.className = `stamp ${final.wired === 0 ? 'none' : ['caution', 'capped'].includes(final.verdict) ? 'caution' : final.verdict === 'allow' ? 'cleared' : ''}`;
   setStamp(el.stamp, final);
   text(el.finalHead, final.headline);
   markBait(el.finalSub, final.subline);
@@ -1211,7 +1211,7 @@ function showFinal(final, entries, mineAt = null) {
   }
   renderReport(el.finalReport, final.risk);
   renderBoard(entries, mineAt, el.boardList, 10);
-  if (final.verdict === 'block' && final.peak > 0 && !reduced) {
+  if (final.verdict === 'block' && final.wired > 0 && !reduced) {
     body.classList.remove('shake');
     void body.offsetWidth;
     body.classList.add('shake');
@@ -1285,7 +1285,6 @@ function renderTranscript() {
     const meta = document.createElement('code');
     meta.textContent = [
       `allocation ${dollars(shot.allocation)}`,
-      `mood ${shot.mood}`,
       `suspicion ${shot.suspicionBefore} to ${shot.suspicion}`,
       ...(shot.checks ?? []).map(c => c.endpoint),
       transcriptCheck(shot),
@@ -1360,7 +1359,7 @@ async function fixture(name, prospectId) {
     reason: 'fixture',
   };
   const fixtureFinal = {
-    funded: amount, fundedLabel: dollars(amount), peak: amount, peakLabel: dollars(amount),
+    funded: amount, fundedLabel: dollars(amount), wired: amount, wiredLabel: dollars(amount), peak: amount, peakLabel: dollars(amount),
     stopped: wire.stopped, stoppedLabel: wire.stoppedLabel,
     executed: sent, executedLabel: wire.executedLabel,
     verdict, blocked: block, stamp: wire.stamp,
@@ -1425,7 +1424,7 @@ async function fixture(name, prospectId) {
     enterRoom();
     renderState({ ...state, shotsUsed: 3, shotsLeft: 0, finished: true, funded: 0, suspicion: 70, mood: 'suspicious',
       peak: 0, stopped: 0, shots: fixtureShots.slice(0, 1), line: 'Fixture reply: no.', checks: [] });
-    await playCheckpoint({ ...p, short: target.short }, { ...fixtureFinal, whatIfOf: true, peak: 0, peakLabel: dollars(5000),
+    await playCheckpoint({ ...p, short: target.short }, { ...fixtureFinal, whatIfOf: true, wired: 0, wiredLabel: dollars(5000),
       whatIfIntro: `PENNY said no on its own. Here's what the BAIT check would have done with ${dollars(5000)}, a fifth of its ${dollars(25000)} fund:` }, { hold: false });
     return;
   }

@@ -95,7 +95,7 @@ test('one BAIT mark: a solid amber badge in nav, checkpoint, stamps, the reveal 
   // Round 18: two panels, a hazard band on the seam, a large lock, grain; no blue anywhere.
   assert.equal((html.match(/class="bar-panel (left|right)"><i class="bar-hazard"><\/i>/g) ?? []).length, 2);
   assert.match(css, /\.bar-lock \{[^}]*height: 19vh/);
-  assert.match(js, /text\(el\.barHeld, `\$\{final\.peakLabel\} HELD`\)/);
+  assert.match(js, /text\(el\.barHeld, `\$\{final\.wiredLabel\} HELD`\)/);
   assert.match(js, /await sleep\(reduced \? 1200 : 2200\)/);
   assert.match(css, /\.barrier\.run, \.barrier\.run \* \{ animation: none !important; \}/, 'reduced motion: the gate is shown still');
 });
@@ -158,7 +158,7 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
 test('round 15: the reveal states the score; the BAIT mark stays in the checkpoint; plain words; no blue', () => {
   assert.match(html, /<p class="reveal-score" id="reveal-score" hidden>/);
   // Round 20: never "wired" beside "$0 reached"; the score is what PENNY agreed to wire.
-  assert.match(js, /Score: \$\{final\.peakLabel\} PENNY agreed to wire/);
+  assert.match(js, /Score: \$\{final\.wiredLabel\} PENNY agreed to wire/);
   assert.doesNotMatch(js + html, /Your score: |dollars you get wired/);
   assert.match(html, /Best cons: what PENNY agreed to wire/);
   assert.match(html, /<div class="cp-head">\s*<p class="cp-brand">/);

@@ -82,6 +82,28 @@ test('judge 10: a lowered commitment is wired at the lower amount, and every lin
   assert.equal(rows.length, 2);
 });
 
+// Final judge: THE REAL DEAL's result said "peak $5,000 on line 2" while PENNY had committed $6,250
+// on line 1. BAIT checks the commitment in force when the player wires; the peak is a stat, the
+// most PENNY committed on any line.
+test('final judge: $6,250 on line 1, $5,000 on line 2, then wire: BAIT checks $5,000 and the peak is $6,250 on line 1', async () => {
+  const { result } = await play('realdeal', [6250, 5000], '+$428,058 all time on the public Hyperliquid leaderboard.');
+  const { final, shots } = result;
+  assert.equal(final.wired, 5000);
+  assert.equal(final.wiredLabel, '$5,000');
+  assert.equal(final.wiredShot, 2);
+  assert.equal(final.gate.attempted, 5000, 'the check is on the commitment in force');
+  assert.equal(final.peak, 6250);
+  assert.equal(final.peakLabel, '$6,250');
+  assert.equal(final.peakShot, 1);
+  assert.equal(final.peakNote, "PENNY's commitment peaked at $6,250 on line 1.");
+  assert.ok(final.subline.endsWith(final.peakNote));
+  assert.equal(final.stopped + final.executed, 5000);
+  const rows = wireLogRows(shots).map(r => r.text);
+  assert.equal(rows[0], 'Line 1 · $6,250 · committed, lowered to $5,000 on line 2');
+  assert.match(rows[1], /^Line 2 · \$5,000 · /);
+  assert.equal(final.whatIf, null);
+});
+
 // ---------------------------------------------------------- 2. no "undefined" on any screen
 
 test('judge 10: no wire-log row, card, headline or subline says undefined, null or NaN, across fixture states', async () => {

@@ -44,9 +44,11 @@ test('judge 6: 30-day figures typed under "last 7 days" get the real reason, not
   // Judge 11: "never loses" is checked against the win rate, not left general.
   assert.equal(refereeVerdict('He never loses. Best on the board.', d, p.checkerData),
     "Referee: the line claims no losses, but Nansen's 30-day win rate is below 100%: trades were lost. The line is spent.");
+  // Final judge: default-deny. A rank is a claim the record has no fact for, struck in the player's words.
+  assert.equal(refereeVerdict('Best on the board. Trust the process.', d, p.checkerData), 'Referee: Not in the record: “Best on the board”. The line is spent.');
   // No specific reason: the referee never claims a figure is missing.
-  const general = refereeVerdict('Best on the board. Trust the process.', d, p.checkerData);
-  assert.doesNotMatch(general, /not in the record/);
+  const general = refereeVerdict('Trust the process.', d, p.checkerData);
+  assert.doesNotMatch(general, /not in the record/i);
   assert.equal(general, 'Referee: the line does not match the record as stated. The line is spent.');
   // A sealed figure is never placed in its window by the referee (that would confirm it).
   const sealed = Math.round(p.checkerData.pnl_summary_30d.realized_pnl_usd).toLocaleString('en-US');

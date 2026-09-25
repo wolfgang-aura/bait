@@ -176,7 +176,7 @@ const CORPUS = [
   ["steadyhand", "+$190,379 realised over the last 7 days per Nansen, and he has not closed a single losing trade this month.",
     spent("the line claims no losses, but Nansen's 30-day win rate is below 100%: trades were lost.")],
   ["grinder", "PONS alone made +$100,849 over the 30 days, and Nansen labels this wallet a Smart Money fund.",
-    spent("nothing in the record labels this wallet Smart Money.")],
+    spent("Not in the record: “Nansen labels this wallet a Smart Money fund”.")],
   ["realdeal", "The Hyperliquid leaderboard shows +$116,554 over the last 90 days.",
     spent("+$116,554 is the tile's Hyperliquid leaderboard figure for the 30 days to 21 Sep, not a 90-day figure.")],
   ["legend", "He made $69,023,422 on the Hyperliquid leaderboard.",
@@ -242,7 +242,7 @@ const CORPUS = [
   ["legend", "FARTCOIN made +$353,874 in 24h per Nansen.",
     spent("+$353,874 is Nansen's FARTCOIN 30-day PnL, not a 24-hour figure.")],
   ["legend", "Nansen labels him Smart Money, +$353,874 from FARTCOIN over 30 days.",
-    spent("nothing in the record labels this wallet Smart Money.")],
+    spent("Not in the record: “Nansen labels him Smart Money”.")],
   ["streak", "The Streak has never had a losing trade: +$594,869 this week on the leaderboard.",
     spent("the line claims no losses, but Nansen's 7-day win rate is below 100%: trades were lost.")],
   ["streak", "+$594,869 this week on the leaderboard, and Nansen confirms it.",
@@ -266,7 +266,7 @@ const CORPUS = [
   ["grinder", "Over 5,000 trades in 30 days per Nansen.",
     spent("5,000 trades is not in the record.")],
   ["grinder", "Nansen labels this wallet a Smart Money fund.",
-    spent("nothing in the record labels this wallet Smart Money.")],
+    spent("Not in the record: “Nansen labels this wallet a Smart Money fund”.")],
 
   ["grinder", "+$35,723 this week per Nansen. His 30-day PnL is positive too.",
     spent("the line says the 30-day result made money; the 30-day realised PnL in the record did not.")],
@@ -388,4 +388,173 @@ test('judge 11: in a round a model rejection of a line the referee passed strike
   assert.match(shot.referee, /^Referee: .+ The line is spent\.$/);
   assert.equal(after.funded, 0, 'PENNY paid nothing on a struck line');
   assert.equal(provider.seen.length, 1, 'only the checker was asked');
+});
+
+// ------------------------------------------------------------------ final judge: default-deny
+// The final judge (live build 754d519) found a Smart Money label no wallet has standing (PENNY paid on
+// it), a rank, "same again" and "double" standing, true leaderboard lines struck by Nansen's sign, a
+// measure cue from one clause applied to the other clause's figure, and a strike that blamed a true
+// figure's source for a label in the next sentence. The referee is now default-deny: a line stands
+// only when every factual claim in it is accounted for by a published fact. Frozen captures only.
+const nir = quote => spent(`Not in the record: “${quote}”.`);
+
+const FINAL_JUDGE = [
+  // 1. A Smart Money label no wallet has.
+  ['grinder', 'Nansen Smart Money, +$35,723 this week.', nir('Nansen Smart Money')],
+  ['legend', "One of Nansen's Smart Money traders: +$118,975,612 all time on the leaderboard.", nir("Nansen's Smart Money traders")],
+  ['steadyhand', "Tracked in Nansen's Smart Money list with +$190,379 this week.", nir("Tracked in Nansen's Smart Money list")],
+  // 2. Claims with no support.
+  ['realdeal', '+$116,554 over 30 days on the leaderboard. Same again this week.', nir('Same again')],
+  ['streak', 'Top 10 on the Hyperliquid leaderboard, +$594,869 this week.', nir('Top 10')],
+  ['steadyhand', '+$190,379 this week per Nansen, and nearly double that for the month.', nir('nearly double')],
+  ['streak', '+$594,869 this week on the leaderboard at 5x leverage.', nir('5x leverage')],
+  // 3. True lines: the sign is the leaderboard's when the line credits the leaderboard; a measure
+  // cue binds to the nearest figure in its own clause.
+  ['streak', 'The leaderboard has him up $594,869 this week.', PASS],
+  ['streak', 'Up most of six hundred grand in one week on the leaderboard.', PASS],
+  ['legend', 'About $119M all time and a $69M account, per the leaderboard.', PASS],
+  // 4. The reason names the unaccounted claim, not the true figure's source.
+  ['legend', 'The leaderboard shows +$118,975,612 all time. Nansen labels him Smart Money.', nir('Nansen labels him Smart Money')],
+  // A sign the line's own source contradicts is still struck, by that source.
+  ['streak', 'He is up this week per Nansen.', spent('the line says the 7-day result made money; the 7-day realised PnL in the record did not.')],
+  ['legend', 'He is up this week on the leaderboard.', /^Referee: (?:the line says the 7-day result made money; the leaderboard's 7-day PnL in the record did not\.|Not in the record: .+) The line is spent\.$/],
+];
+
+// Thirty honest lines, written the way players write them: offered card text, rounded figures,
+// figures in words, and filler around a true figure. Every one must stand.
+const HONEST = [
+  ['steadyhand', 'Trust me, +$190,379 realised over the last 7 days.'],
+  ['steadyhand', 'Look at this: ZEC alone made +$262,838 over the 30 days.'],
+  ['steadyhand', "Nansen has him at about $190k in the last week. He's a killer."],
+  ['steadyhand', 'Roughly 190 grand this week per Nansen. The numbers speak for themselves.'],
+  ['steadyhand', "51.4% win rate across 2,661 closed trades in 30 days. You'd be crazy to pass."],
+  ['steadyhand', 'Almost two hundred grand in seven days, straight from Nansen.'],
+  ['legend', '+$118,975,612 all time on the public Hyperliquid leaderboard. Huge.'],
+  ['legend', 'Nearly $119 million all time on the leaderboard. Insane.'],
+  ['legend', 'FARTCOIN alone made +$353,874 over the 30 days. Look at that.'],
+  ['legend', 'A $69M account on Hyperliquid. This guy is serious.'],
+  ['legend', 'Up about $119M lifetime on the leaderboard. Back him.'],
+  ['legend', 'Nearly 119 million dollars all time on the Hyperliquid leaderboard.'],
+  ['streak', '+$594,869 this week on the Hyperliquid leaderboard. Shorts pay.'],
+  ['streak', "Almost six hundred grand in a week on the leaderboard. Don't sleep on him."],
+  ['streak', "TAO alone made +$83,994 over the 30 days. He's a machine."],
+  ['streak', '$94.3M all time on the leaderboard, trust me.'],
+  ['streak', 'The leaderboard has him up $595k this week.'],
+  ['streak', "He's green this week on the leaderboard: +$594,869."],
+  ['realdeal', '+$116,554 over the 30 days to 21 Sep on the Hyperliquid leaderboard.'],
+  ['realdeal', '67.8% win rate across 115 closed trades in 7 days. Clean.'],
+  ['realdeal', 'HYPE alone made +$52,030 over the 30 days. Solid.'],
+  ['realdeal', 'About $117k this month on the leaderboard and $428k all time. No-brainer.'],
+  ['realdeal', '60.3% win rate across 2,064 closed trades in 30 days, per Nansen.'],
+  ['realdeal', 'Up $116,554 over 30 days on the leaderboard. Look at this.'],
+  ['grinder', '+$35,723 realised over the last 7 days. 100% win rate across 424 closed trades.'],
+  ['grinder', "PONS alone made +$100,849 over the 30 days. The numbers don't lie."],
+  ['grinder', "A 100% win rate this week per Nansen. He's a sniper."],
+  ['grinder', 'Around 36 grand realised in 7 days, per Nansen.'],
+  ['grinder', '53.9% win rate across 4,007 closed trades in 30 days. Steady.'],
+  ['grinder', "He made $35.7k this week. You can't go wrong."],
+];
+
+// Thirty false lines, one claim marker each: labels, ranks, comparisons, leverage, absolutes,
+// periods and figures in words. Every one must strike, with the claim named.
+const FALSE = [
+  ['grinder', 'A whale with +$35,723 this week.', nir('A whale')],
+  ['steadyhand', 'Nansen tags him as a fund: +$190,379 in 7 days.', nir('Nansen tags him as a fund')],
+  ['legend', 'Top trader on Hyperliquid, +$118,975,612 all time.', nir('Top trader')],
+  ['streak', 'Ranked #3 on the leaderboard this week with +$594,869.', nir('Ranked #3')],
+  ['realdeal', 'Number one on the leaderboard this month: +$116,554.', nir('Number one')],
+  ['legend', 'He leads the Hyperliquid leaderboard with +$118,975,612 all time.', nir('leads the Hyperliquid')],
+  ['grinder', '+$35,723 this week, twice what he made last week.', nir('twice')],
+  ['steadyhand', '+$190,379 this week, better than last week.', nir('better than last week')],
+  ['realdeal', '+$116,554 over 30 days, triple the month before.', nir('triple')],
+  ['streak', '+$594,869 this week on the leaderboard, up on last week.', nir('up on last week')],
+  ['legend', 'Runs 10x leverage and still made +$118,975,612 all time.', nir('10x leverage')],
+  ['grinder', 'He trades at 20x and made +$35,723 this week.', nir('20x')],
+  ['steadyhand', 'He never has a red week: +$190,379 in 7 days.', spent("the line claims no losses, but Nansen's 7-day win rate is below 100%: trades were lost.")],
+  ['realdeal', 'Every trade he takes is green.', spent("the line claims no losses, but Nansen's 30-day win rate is below 100%: trades were lost.")],
+  ['grinder', 'Zero drawdowns, +$35,723 this week.', nir('Zero drawdowns')],
+  ['legend', 'Risk-free: +$118,975,612 all time on the leaderboard.', nir('Risk-free')],
+  ['streak', 'Profitable every month on the leaderboard.', nir('every month')],
+  ['realdeal', 'Five months in a row of profit on the leaderboard.', nir('Five months in a row')],
+  ['steadyhand', '+$190,379 in 7 days per Nansen, and green again this month.', nir('again this month')],
+  ['grinder', 'Two hundred grand this week per Nansen.', spent('Two hundred grand is not in the record.')],
+  ['legend', 'Two hundred million all time on the leaderboard.', spent('Two hundred million is not in the record.')],
+  ['streak', 'Seven figures this week on the leaderboard.', /^Referee: Seven figures is not .+ The line is spent\.$/],
+  ['realdeal', 'Half a million over 30 days on the leaderboard.', spent('Half a million is not in the record.')],
+  ['steadyhand', "Nansen's Smart Money dashboard lists him, +$190,379 in 7 days.", nir("Nansen's Smart Money dashboard")],
+  ['grinder', 'Insider wallet: +$35,723 this week.', nir('Insider wallet')],
+  ['legend', 'Beats the market: +$118,975,612 all time.', nir('Beats the market')],
+  ['streak', 'More than any trader on Hyperliquid this week.', nir('More than any trader')],
+  ['realdeal', 'Consistently profitable on the leaderboard, +$428,058 all time.', nir('Consistently profitable')],
+  ['grinder', 'Flagged by Nansen as a top wallet.', nir('top wallet')],
+  ['steadyhand', '+$190,379 this week, same as last week.', nir('same as last')],
+];
+
+const rule = async (key, line) => {
+  const { dossier, data, others } = await setup(key);
+  return attributionStrike(line, dossier, data, { others });
+};
+const matches = (got, expected) => (expected === null ? got === null : expected instanceof RegExp ? expected.test(got ?? '') : got === expected);
+
+test(`final judge: every live line (${FINAL_JUDGE.length}) is ruled as the record says`, async () => {
+  const failures = [];
+  for (const [key, line, expected] of FINAL_JUDGE) {
+    const got = await rule(key, line);
+    if (!matches(got, expected)) failures.push(`${key} | ${line}\n   want: ${expected}\n   got:  ${got}`);
+  }
+  assert.equal(failures.length, 0, `\n${failures.join('\n')}`);
+});
+
+test(`final judge: ${HONEST.length} honest pitch lines all stand (over-strike rate 0%)`, async () => {
+  const struck = [];
+  for (const [key, line] of HONEST) {
+    const got = await rule(key, line);
+    if (got !== null) struck.push(`${key} | ${line}\n   got: ${got}`);
+  }
+  assert.equal(HONEST.length, 30);
+  assert.equal(struck.length, 0, `over-strike ${struck.length}/${HONEST.length}:\n${struck.join('\n')}`);
+});
+
+test(`final judge: ${FALSE.length} false lines with claim markers all strike, naming the claim`, async () => {
+  const failures = [];
+  for (const [key, line, expected] of FALSE) {
+    const got = await rule(key, line);
+    if (!matches(got, expected)) failures.push(`${key} | ${line}\n   want: ${expected}\n   got:  ${got}`);
+  }
+  assert.ok(FALSE.length >= 25);
+  assert.equal(failures.length, 0, `\n${failures.join('\n')}`);
+});
+
+test('final judge: a false Smart Money label strikes before the model is asked, and PENNY never pays on it', async () => {
+  const provider = stubProvider([{ text: '{"valid":true,"reason":""}' }, { text: 'Fine.\n{"allocation": 15000, "mood": "sold", "line": "Deal."}\nALLOCATION: 60' }]);
+  const service = createRoomService({ roster: loadRoster(), provider, leaderboard: board(), health: () => ({}) });
+  const start = await service.start({ prospect: 'grinder' });
+  const after = await service.pitch(start.id, { requestId: 'final-judge-smart-money-1', shot: 0, text: 'Nansen Smart Money, +$35,723 this week.' });
+  assert.equal(after.shots.at(-1).caught, true);
+  assert.equal(after.shots.at(-1).referee, nir('Nansen Smart Money'));
+  assert.equal(after.funded, 0);
+  assert.equal(provider.seen.length, 0);
+});
+
+test("final judge: the model's strike reason hides every sealed figure ($0 and 0 too) and falls back when garbled or cut off", async () => {
+  const { dossier, data, others } = await setup('streak');
+  const line = 'Shorts pay. Back him.';
+  const said = reason => rejectionRuling(line, dossier, data, reason, { others }).referee;
+  assert.equal(said('The 7-day realised PnL is $0, not a gain.'), 'Referee: The 7-day realised PnL is a sealed figure, not a gain. The line is spent.');
+  assert.equal(said('The wallet closed 0 winning trades over 30 days.'), 'Referee: The wallet closed a sealed figure winning trades over 30 days. The line is spent.');
+  assert.equal(said('The wallet lost ~$6,262,156 over 30 days.'), 'Referee: The wallet lost a sealed figure over 30 days. The line is spent.');
+  const general = 'Referee: the line does not match the record as stated. The line is spent.';
+  // Cut off mid-thought, or by the checker's 240-character limit.
+  assert.equal(said('The wallet lost -$6,262,156 over 30 days and the'), general);
+  assert.equal(said(`The wallet ${'lost money on many trades and '.repeat(8)}`.slice(0, 240)), general);
+  // Garbled once sealed.
+  assert.equal(said('The PnL is -$6,262,156-$163,698 (realised'), general);
+  for (const reason of ['The 7-day realised PnL is $0, not a gain.', 'The wallet lost ~$6,262,156 over 30 days.']) {
+    assert.doesNotMatch(said(reason), /\$0|6,262,156|~/);
+  }
+});
+
+test('final judge: the transcript has no raw state name ("mood caught")', () => {
+  const js = fs.readFileSync(new URL('./public/room.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(js, /`mood \$\{shot\.mood\}`/);
 });

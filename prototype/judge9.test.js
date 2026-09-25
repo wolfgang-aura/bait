@@ -126,7 +126,10 @@ test('judge 9: a claim-level reason is said with sealed figures sealed; judge 11
   const p = loadRoster().find(x => x.id === 'streak');
   const d = buildProspectDossier(p);
   const sealed = Math.round(Math.abs(p.checkerData.pnl_summary_30d.realized_pnl_usd)).toLocaleString('en-US');
-  const r = rejectionRuling('He is the best trader on the board.', d, p.checkerData, `The wallet lost -$${sealed} over 30 days (realized_pnl_usd), so "best on the board" is false.`);
+  // Final judge: default-deny. The rank is the referee's own strike, in the player's words; a line the
+  // referee passes still carries the checker's reason, with sealed figures sealed.
+  assert.equal(rejectionRuling('He is the best trader on the board.', d, p.checkerData, 'Not true.').referee, 'Referee: Not in the record: “best trader”. The line is spent.');
+  const r = rejectionRuling('Shorts pay. Back him.', d, p.checkerData,`The wallet lost -$${sealed} over 30 days (realized_pnl_usd), so "best on the board" is false.`);
   assert.equal(r.stands, false);
   assert.notEqual(r.referee, REFEREE_GENERAL);
   assert.doesNotMatch(r.referee, new RegExp(sealed.replace(/,/g, ',')));
