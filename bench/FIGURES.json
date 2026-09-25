@@ -331,6 +331,46 @@
     "heldUsd": 3750,
     "credits": 10
   },
+  "field": {
+    "T": "2026-09-25T06:04:09Z",
+    "scored": 200,
+    "unread": 0,
+    "askUsd": 5000,
+    "pnlRule": [
+      200,
+      200
+    ],
+    "v4": {
+      "full": 133,
+      "capped": 46,
+      "blocked": 21
+    },
+    "v5": {
+      "full": 129,
+      "capped": 46,
+      "blocked": 25,
+      "operatorBlocks": 4
+    },
+    "operator": {
+      "read": 200,
+      "funderCounts": 30,
+      "withIndexedSibling": 30,
+      "withSiblingRecord": 30,
+      "siblingsNegative": 12,
+      "flagged": 5,
+      "flaggedSiblingsLossUsd": {
+        "min": 759169,
+        "max": 10129956
+      }
+    },
+    "overlap": {
+      "inV5Universe": 140,
+      "flaggedInV5Attacks": 3,
+      "flaggedInV5Universe": 4
+    },
+    "headline": "Of 200 top leaderboard wallets, 5 are funded by an operator whose other wallets lost $759,169 to $10,129,956 over the same 30 days, more than the pitched wallet made.",
+    "source": "bench/field/reads (bench/FIELD.md)"
+  },
   "benchCommand": "npm run bench -- --agent your-agent.mjs --snapshot",
   "recorded": {
     "liveRoundAsk": {

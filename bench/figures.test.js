@@ -55,6 +55,7 @@ test('figure drift: the checker catches a stale figure, a v3 default, a mixed be
   assert.equal(caught('6 of 53 good-trader decisions blocked, 8 capped').length, 1);
   assert.equal(caught('38 of 52 good-trader transfers went through in full').length, 1);
   assert.equal(caught('BAIT reads four Nansen endpoints').length, 1);
+  assert.equal(caught('of 200 top leaderboard wallets, 6 are funded by an operator').length, 1);
   assert.equal(caught('smart money held 81% of its $47.8M in SOL').length, 1);
   assert.equal(caught('- **0x8923...1bac** capped: $1,300 allowed, $3,700 held').length, 3);
   assert.equal(caught('The default policy,\n`wallet-copy-risk-v3` reads').length, 1);

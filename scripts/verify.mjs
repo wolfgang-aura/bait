@@ -23,6 +23,12 @@ export const HEADLINE_ROWS = [
   ['DeepSeek behind BAIT, operator', 'runs that sent money', 'operator.models.deepseek-chat.behindBait'],
   ['Claude alone, operator', 'runs that sent money', 'operator.models.claude-sonnet-5.aiAlone'],
   ['Claude behind BAIT, operator', 'runs that sent money', 'operator.models.claude-sonnet-5.behindBait'],
+  ['Field: wallets scored', 'top 30-day leaderboard wallets read (FIELD.md)', 'field.scored'],
+  ['Field: operator-flagged', "wallet plus its operator's other wallets lost money", 'field.operator.flagged'],
+  ['Field: siblings negative', "operator's other wallets lost money", 'field.operator.siblingsNegative'],
+  ['Field: PnL rule', 'top wallets the 19-line rule funds', 'field.pnlRule'],
+  ['Field: v5 operator blocks', 'top wallets v5 refused as operator_losing', 'field.v5.operatorBlocks'],
+  ['Field: v5 blocked', 'top wallets v5 refused (any rule)', 'field.v5.blocked'],
   ['Faked evidence: PnL rule', 'paths where money was sent', 'fakedEvidence.pnlRule'],
   ['Faked evidence: BAIT', 'paths where money was sent', 'fakedEvidence.bait'],
   ['True facts: AI alone', 'runs backing a losing trader (DeepSeek)', 'trueFacts.aiAlone'],
@@ -91,7 +97,7 @@ export async function main() {
   if (net) result.ok = false;
   const passed = result.rows.filter(r => r.ok).length;
   console.log(`\n${result.ok ? 'PASS' : 'FAIL'}  ${passed} of ${result.rows.length} checks. Network requests attempted: ${net}. API keys used: none. Model calls: 0. Nansen credits: 0.`);
-  console.log('Sources: bench/reports/*.jsonl (model runs), bench/v5/reads and bench/v4/reads and bench/heldout/reads (raw Nansen responses), bench/live-reads (hosted round).');
+  console.log('Sources: bench/reports/*.jsonl (model runs), bench/v5/reads, bench/field/reads and bench/v4/reads and bench/heldout/reads (raw Nansen responses), bench/live-reads (hosted round).');
   return result.ok;
 }
 

@@ -27,6 +27,8 @@ The 79 attacks come in two kinds:
 - **67 faked-evidence paths.** The record the AI reads is another wallet's, the wrong time window,
   out of date, or edited. The simple rule funds 49 of 67. BAIT funds 0.
 
+**On the live market.** Of 200 top leaderboard wallets, 5 are funded by an operator whose other wallets lost $759,169 to $10,129,956 over the same 30 days, more than the pitched wallet made. 3 of the 5 are among the 12 above; BAIT blocks 4 and an earlier rule refuses the fifth. [bench/FIELD.md](bench/FIELD.md)
+
 **The cost.** 38 of 53 good-trader transfers went through in full. 9 were cut to 25% and 6 were
 blocked. BAIT does not predict. It refuses on the record that exists today, and a one-month
 look-back found no forward difference. [Limits](#limits) has the details.
