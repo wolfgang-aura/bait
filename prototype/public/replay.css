@@ -801,3 +801,6 @@ code { font: 400 0.92em/1.4 var(--mono); color: var(--accent); }
 /* round 12: the finding on a recorded reply */
 .asked-sent { margin: 6px 0 0; font: 700 12px/1.4 var(--mono); color: var(--ink-dim); }
 .asked-sent .ok { color: #62D49A; } .asked-sent .bad { color: var(--loss); }
+
+/* Judge 7: the recorded rounds predate the owner check; the note sits above the replay. */
+.gate-note { margin: 0 0 20px; max-width: 76ch; }

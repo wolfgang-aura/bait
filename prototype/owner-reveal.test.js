@@ -64,7 +64,7 @@ test('the card is a real field-test wallet: the PnL rule and v4 fund it in full,
   assert.equal(v5.checks.filter(c => c.result === 'fail').map(c => c.id).join(), 'operator_record', 'the owner is the only refusal');
   // One word on screen (judge 3): the reason says owner; the rule id keeps its name.
   const row = v5.checks.find(c => c.id === 'operator_record');
-  assert.match(row.plain, /with this wallet the owner is at -\$869,807\./);
+  assert.match(row.plain, /with this wallet the owner is at -\$869,807, so the gate refuses\./);
   assert.doesNotMatch(JSON.stringify(v5.checks.map(c => c.plain)), /operator/i);
   assert.doesNotMatch(v5.reason ?? '', /operator/i);
 });
@@ -79,8 +79,9 @@ test('user-facing prose says owner, never operator, outside code, rule ids and f
     .split(/\r?\n/).filter(l => !l.startsWith('**Of 200 top leaderboard wallets')).join('\n');
   assert.doesNotMatch(prose(field), /\boperators?\b/i, 'bench/FIELD.md results');
   // The checkpoint row title in the game.
-  const roomJs = fs.readFileSync(path.join(ROOT, 'prototype', 'public', 'room.js'), 'utf8');
-  assert.match(roomJs, /operator_record: 'Owner behind the wallet not losing'/);
+  // Judge 7: the row names live in verdict-view.js, shared by every screen.
+  const names = fs.readFileSync(path.join(ROOT, 'prototype', 'public', 'verdict-view.js'), 'utf8');
+  assert.match(names, /operator_record: 'Owner behind the wallet not losing'/);
 });
 
 test('only a capture frozen from a live read carries operator reads into a frozen round', () => {
@@ -118,7 +119,7 @@ test('the owner tree draws the funder, the pitched wallet, every sibling, both s
   const op = gate.operator;
   const html = ownerTreeHtml(op);
   assert.match(html, /First funder<\/span> <b>0xeb26\.\.\.d4cf<\/b> <span class="ot-meta">Ethereum · sent it \$4,307 to start<\/span>/);
-  assert.match(html, /<li class="ot-node pitched"><b>0x2043\.\.\.e79d<\/b><span class="ot-tag">you pitched<\/span><em>\+\$358,593<\/em><\/li>/);
+  assert.match(html, /<li class="ot-node pitched"><b>0x2043\.\.\.e79d<\/b><span class="ot-tag">this wallet<\/span><em>\+\$358,593<\/em><\/li>/);
   for (const s of op.siblings) {
     assert.ok(html.includes(`<li class="ot-node ${s.pnl < 0 ? 'loss' : 'gain'}"><b>${s.short}</b><em>${s.pnlLabel}</em></li>`), s.short);
   }

@@ -19,7 +19,7 @@
  */
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
-import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched } from '/verdict-view.js';
+import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE } from '/verdict-view.js';
 import { ownerTreeHtml } from '/owner-tree.js';
 
 const $ = id => document.getElementById(id);
@@ -391,15 +391,7 @@ function agreedBeat(shot, final) {
   });
 }
 
-const CHECK_NAME = {
-  evidence_30d: '30-day record is this wallet\u2019s', evidence_freshness: 'Read is fresh', evidence_7d: '7-day record is this wallet\u2019s',
-  realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
-  low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'Profitable without its best market', open_book: 'Open positions not deep underwater',
-  smart_money_side: 'Smart money not against the open book', independent_record: 'Leaderboard record agrees',
-  operator_record: 'Owner behind the wallet not losing',
-  tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
-  fills_drawdown: 'Drawdown in the newest fills', fills_worst_trade: 'Worst trade in the newest fills',
-};
+// Judge 7: row names live in verdict-view.js (CHECK_NAME), the same names the gate's sentences use.
 // Gate v4's two rows and v5's operator row always show, N/A included.
 const V4_ROWS = ['smart_money_side', 'independent_record', 'operator_record'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -440,7 +432,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     const b = document.createElement('b');
     b.textContent = v.label;
     const name = document.createElement('strong');
-    name.textContent = CHECK_NAME[c.id] ?? c.id.replace(/_/g, ' ');
+    name.textContent = checkName(c.id);
     const why = document.createElement('span');
     // The owner tree under this row says "this is the one being pitched"; the row says it once there.
     why.textContent = c.id === 'operator_record' && c.result === 'fail' && gate.operator ? oncePitched(v.plain) : v.plain;
@@ -456,6 +448,13 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
       el.cpRows.append(tree);
     }
     if (!reduced) await sleep(260);
+  }
+  // Judge 7: a WATCH row beside a cleared or capped stamp says why it did not block.
+  if (rows.some(c => c.result === 'caution')) {
+    const note = document.createElement('li');
+    note.className = 'cp-note';
+    note.textContent = WATCH_NOTE;
+    el.cpRows.append(note);
   }
   if (!reduced) await sleep(250);
   renderCalls(gate.calls ?? [], gate.read);
@@ -587,14 +586,8 @@ function showReveal(p, final) {
     text(el.truthEndpoint, 'Nansen related-wallets, transactions, perp-pnl-summary');
     text(el.truthScope, `First funder on Ethereum or Arbitrum; its other wallets in BAIT's index; ${owner.days}-day realised PnL each`);
   }
-  // Stacked under 900 px, the VS sits on the seam between the halves. The owner's tree makes
-  // the record half taller than the pitch half, so 50% would land on the tree: pin it to the seam.
-  const vs = el.truthScreen.querySelector('.vs');
-  if (vs) {
-    vs.style.top = '';
-    // Judge 6: every verdict, not only the owner's: a long source line (the tile link) ran under a VS at 50%.
-    if (matchMedia('(max-width: 900px)').matches) requestAnimationFrame(() => { vs.style.top = `${el.recordHalf.offsetTop}px`; });
-  }
+  // Judge 7: stacked under 900 px, the VS is in flow on its own row between the halves
+  // (room.css), so no script places it and no line of either half runs under it.
   if (final.verdict === 'block' && final.gate?.failed === 'regime_agreement') {
     const week = (p.truth.rows ?? []).find(r => /^7-day realised/i.test(r.label));
     if (week) {
@@ -695,7 +688,7 @@ function renderReport(host, risk) {
     `${risk.source}, captured ${risk.capturedLabel}`,
     risk.basis,
     risk.coverage,
-    risk.not_assessed.length ? `Not assessed: ${risk.not_assessed.map(n => PLAIN_CHECK[n.id] ?? n.id.replace(/_/g, ' ')).join(', ')}.` : '',
+    risk.not_assessed.length ? `Not assessed: ${risk.not_assessed.map(n => PLAIN_CHECK[n.id] ?? checkName(n.id).toLowerCase()).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
 }
@@ -710,7 +703,7 @@ function tapeLine(gate) {
   const t = gate.tape;
   const day = String(t.capturedAt).slice(0, 10);
   if (!gate.live) return `Summaries and trade fills: the same ${day} capture.`;
-  if (t.live) return `Live: both perp-pnl-summary windows and the newest ${t.fills.toLocaleString('en-US')} perp fills, read ${String(t.capturedAt).slice(11, 16)} UTC.`;
+  if (t.live) return `Live: both perp-pnl-summary windows and ${t.complete ? `all ${t.fills.toLocaleString('en-US')} perp fills in the window` : `the newest ${t.fills.toLocaleString('en-US')} perp fills`}, read ${String(t.capturedAt).slice(11, 16)} UTC.`;
   const age = t.ageMs === null ? 'age unknown' : `${(t.ageMs / 86_400_000).toFixed(1)} days older than the live read`;
   return t.stale
     ? `Summaries read live; trade fills from the ${day} capture, ${age}: shown, not used by any check.`
@@ -730,7 +723,7 @@ function renderGate(host, gate, verdict = null) {
     const row = document.createElement('div');
     row.className = `flagline check ${v.result}`;
     const b = document.createElement('b');
-    b.textContent = `${v.result === 'superseded' ? 'cap' : label[check.result] ?? check.result} · ${check.id.replace(/_/g, ' ')}`;
+    b.textContent = `${v.result === 'superseded' ? 'cap' : label[check.result] ?? check.result} · ${checkName(check.id)}`;
     const span = document.createElement('span');
     span.textContent = oncePitched(v.plain);
     if (check.detail) row.title = check.detail;
@@ -751,7 +744,8 @@ function renderGate(host, gate, verdict = null) {
   foot.textContent = [
     `The BAIT check · ${windows} · ${gate.source}${gate.live && gate.evidenceAt ? ` · live read ${String(gate.evidenceAt).slice(11, 16)} UTC` : ''} · ${gate.reason}`,
     gate.tape && gate.tape.capturedAt ? tapeLine(gate) : '',
-    skipped.length ? `Not decided by the gate (not reached after the block, or needs the trade fills the report below reads): ${skipped.map(c => c.id.replace(/_/g, ' ')).join(', ')}.` : '',
+    (gate.checks ?? []).some(c => shown(c) && c.result === 'caution') ? WATCH_NOTE : '',
+    skipped.length ? `Not decided by the gate (not reached after the block, or needs the trade fills the report below reads): ${skipped.map(c => checkName(c.id)).join(', ')}.` : '',
   ].filter(Boolean).join('  ·  ');
   host.append(foot);
 }
@@ -784,27 +778,42 @@ function renderScene(d) {
  * sealed card whose value was never sent. A card is used once per line (fact-cards.js).
  */
 function renderFacts(d) {
-  const before = new Set([...el.facts.children].map(chip => chip.dataset.id));
+  const before = new Set([...el.facts.querySelectorAll('.fact')].map(chip => chip.dataset.id));
   el.facts.replaceChildren();
-  for (const fact of d.facts) {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'fact';
-    chip.dataset.id = fact.id;
-    if (before.size && !before.has(fact.id) && !reduced) chip.classList.add('fresh');
-    const value = document.createElement('strong');
-    value.textContent = fact.value;
-    const label = document.createElement('span');
-    label.textContent = fact.label;
-    chip.append(value, label);
-    chip.dataset.insert = fact.insert;
-    chip.addEventListener('click', () => insertFact(fact.insert));
-    el.facts.append(chip);
+  // Judge 7: each card sits under the read it came from ("Nansen, read live 17:23 UTC",
+  // "Hyperliquid leaderboard read 21 Sep 21:56 UTC"), so no figure borrows another read's time.
+  const groups = factGroups(d.facts);
+  const headed = groups.length > 1 || groups.some(g => g.source && g.source !== `Nansen, ${d.read?.label}`);
+  for (const group of groups) {
+    if (headed && group.source) {
+      const head = document.createElement('p');
+      head.className = 'facts-src';
+      head.textContent = group.source;
+      el.facts.append(head);
+    }
+    for (const fact of group.facts) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'fact';
+      chip.dataset.id = fact.id;
+      if (before.size && !before.has(fact.id) && !reduced) chip.classList.add('fresh');
+      const value = document.createElement('strong');
+      value.textContent = fact.value;
+      const label = document.createElement('span');
+      label.textContent = fact.label;
+      chip.append(value, label);
+      chip.dataset.insert = fact.insert;
+      chip.addEventListener('click', () => insertFact(fact.insert));
+      el.facts.append(chip);
+    }
   }
-  // Judge 5: every card is a figure from this round's one read, and the line says which. When a
-  // live read moved the tile's saved 7-day figure, the same line says by how much.
-  el.dossierRead.hidden = !d.read;
-  text(el.dossierRead, d.read ? [`Nansen, ${d.read.label}`, d.moved ? d.moved.panel ?? d.moved.line : ''].filter(Boolean).join(' · ') : '');
+  // Judge 5: the round's one read, and how far a live read moved the tile's saved figure. With
+  // more than one read on the cards, each group carries its own heading and this line keeps only
+  // the moved figure.
+  const readLine = headed ? '' : d.read ? `Nansen, ${d.read.label}` : '';
+  const movedLine = d.moved ? d.moved.panel ?? d.moved.line : '';
+  el.dossierRead.hidden = !(readLine || movedLine);
+  text(el.dossierRead, [readLine, movedLine].filter(Boolean).join(' · '));
   // Round 9: no unlock drip. Every flattering fact is on the table from the start.
   el.nextFact.hidden = true;
   text(el.nextFact, '');
@@ -827,7 +836,7 @@ function insertFact(sentence) {
 
 /** A card whose sentence is in the line is spent; delete the sentence and it is free. */
 function refreshFactCards() {
-  for (const chip of el.facts.children) {
+  for (const chip of el.facts.querySelectorAll('.fact')) {
     const used = isUsed(el.line.value, chip.dataset.insert);
     chip.disabled = used;
     chip.classList.toggle('used', used);
@@ -1326,7 +1335,7 @@ async function fixture(name, prospectId) {
     read: state.dossier.read,
     pitched: { used: true, read: state.dossier.read, moved: frozen.dossier?.moved ?? null,
       facts: [state.dossier.facts[0]].map(f => ({ id: f.id, value: f.value, label: f.label,
-        source: f.id === 'all-time' ? 'public Hyperliquid leaderboard' : `Nansen, ${state.dossier.read.label}` })) },
+        source: f.source ?? `Nansen, ${state.dossier.read.label}` })) },
   };
   const fixtureShots = [
     { n: 1, text: state.dossier.facts[0].insert, full: 'Fixture reply.', line: 'Fixture reply.', mood: 'neutral', allocation: 0,

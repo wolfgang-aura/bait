@@ -145,8 +145,10 @@ export function buildProspectDossier(p) {
     // 200 characters and a player needs room for the argument around the fact.
     // Flattering facts first, the one the trader brags about at the front, so the reveal
     // order in `publicDossier` is a slice of this list.
-    facts: revealOrder(p.dossier.facts.map(({ id, value, label, insert }) => ({
-      id, value, label, insert, tone: factTone(value),
+    // Judge 7: every card carries the read it came from: the round's Nansen read, or its own
+    // (the all-time card's Hyperliquid leaderboard read).
+    facts: revealOrder(p.dossier.facts.map(({ id, value, label, insert, source }) => ({
+      id, value, label, insert, tone: factTone(value), source: source ?? `Nansen, ${read.label}`,
     }))),
     buried: p.dossier.buried,
     clean: p.dossier.clean,
@@ -734,11 +736,11 @@ export function pitchedFacts(shots, dossier) {
     || (String(f.value).match(FIGURE) ?? []).map(figureValue).some(v => typed.some(t => t.pct === v.pct && near(t, v)));
   const used = facts.filter(usedFact);
   const read = dossier?.read ?? null;
-  const source = f => (f.id === 'all-time' ? 'public Hyperliquid leaderboard' : `Nansen, ${read?.label ?? 'saved read'}`);
+  const source = f => f.source ?? `Nansen, ${read?.label ?? 'saved read'}`;
   const pick = used.length ? used : facts.slice(0, 1);
   return {
     used: used.length > 0,
-    facts: pick.map(({ id, value, label }) => ({ id, value, label, source: source({ id }) })),
+    facts: pick.map(f => ({ id: f.id, value: f.value, label: f.label, source: source(f) })),
     read,
     // Judge 6: the result screen links the tile's figure to this round's read whatever was pitched;
     // the line names its own window and both figures.
@@ -981,10 +983,12 @@ export function createRoomService({
     const bases = [[accountLabel, account], ['30-day volume', Number(p.hypeRow?.month_volume_usd)]].filter(([, v]) => Number.isFinite(v) && v > 0);
     const measure = (label, value, share, limit) => `${pct(share)} of the ${dollars(value)} ${label}, ${share > limit ? 'over' : 'under'} the ${limitOf(limit)} limit`;
     const row = (id, flagId, name) => {
+      if (!fills.length) return { id, result: 'not_assessed', plain: 'This read holds no trade fills, so there is nothing to measure.', source };
       if (tooShort) return { id, result: 'not_assessed', plain: `The newest ${n} fills cover only ${span}, too short to judge.`, source };
       const flag = (risk.flags ?? []).find(f => f.id === flagId);
       const na = (risk.not_assessed ?? []).find(x => x.id === flagId);
-      const where = liveTape ? over : 'the fills held';
+      // Judge 7: both rows name the same fills the same way, and the coverage line agrees.
+      const where = liveTape ? over : `the ${n} fills held`;
       if (id === 'fills_worst_trade' && worst !== null) {
         const limit = risk.thresholds?.maxTailLossShare ?? 0.25;
         const base = bases.map(([label, v]) => ({ label, v, share: Math.abs(worst) / v })).sort((a, b) => b.share - a.share)[0];
@@ -1001,7 +1005,7 @@ export function createRoomService({
         const acct = bases.find(([label]) => label.startsWith('account value'));
         if (acct) parts.push([acct[0], acct[1], dd.max_drawdown_usd / acct[1], risk.thresholds?.maxDrawdownShareOfAccount ?? 0.15]);
         if (dd.share_of_peak !== null && dd.peak_usd > 0 && dd.share_of_peak <= 1) parts.push(['peak it fell from', dd.peak_usd, dd.share_of_peak, risk.thresholds?.maxDrawdownShareOfPeak ?? 0.3]);
-        const at = `Worst peak-to-trough over ${liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`}: ${dollars(dd.max_drawdown_usd)}`;
+        const at = `Worst peak-to-trough over ${where}: ${dollars(dd.max_drawdown_usd)}`;
         if (!parts.length) return { id, result: 'not_assessed', plain: `${at}. No limit applied: the running result never rose above zero and no account value is held, so there is no base to measure it against.`, source };
         const over30 = parts.some(([, , share, limit]) => share > limit);
         // Judge 5: one number against one limit on screen, the one that decides: the base furthest
@@ -1153,7 +1157,7 @@ export function createRoomService({
       // The fill tape's age against the summaries the gate read. The gate never reads the
       // tape; the table says how old it is and that nothing on it decided this wire.
       tape: { ...(({ capturedAt, ageMs, maxAgeMs, stale }) => ({ capturedAt, ageMs, maxAgeMs, stale }))(tapeRecency(p.snapshot)),
-        live: !!p.snapshot?.live_read?.fills_live, fills: p.snapshot?.trades_30d?.length ?? 0 },
+        live: !!p.snapshot?.live_read?.fills_live, fills: p.snapshot?.trades_30d?.length ?? 0, complete: !!p.snapshot?.fills_coverage?.complete },
     };
   }
 

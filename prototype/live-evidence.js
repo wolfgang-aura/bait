@@ -79,6 +79,8 @@ const PRECHECK_POLICY = Object.freeze({ ...PRODUCTION_GUARD_POLICY_V3, id: 'room
  */
 const V5_PRECHECK_POLICY = Object.freeze({ ...PRODUCTION_GUARD_POLICY_V4, id: 'room-v5-precheck', maxEvidenceAgeMs: 60 * 60_000 });
 export const OPERATOR_ENDPOINTS = Object.freeze([RELATED_ENDPOINT, TRANSACTIONS_ENDPOINT, SUMMARY_ENDPOINT]);
+/** Judge 7: every distinct endpoint gate v5 reads, once each (the proof page lists these seven). */
+export const GATE_V5_ENDPOINTS = Object.freeze([...new Set([LIVE_ENDPOINT, FILLS_ENDPOINT, POSITIONS_ENDPOINT, SMART_MONEY_ENDPOINT, RECORD_ENDPOINT, ...OPERATOR_ENDPOINTS])]);
 export const V5_MAX_CREDITS = OPERATOR_CHAINS.length * (creditCostFor(RELATED_ENDPOINT) + creditCostFor(TRANSACTIONS_ENDPOINT)) + MAX_SIBLINGS_READ * creditCostFor(SUMMARY_ENDPOINT);
 
 const iso = d => d.toISOString().replace(/\.\d{3}Z$/, 'Z');

@@ -334,6 +334,21 @@ export const SMART_MONEY_SOURCE = 'Nansen /api/v1/perp-screener';
 export const RECORD_SOURCE = 'Nansen /api/v1/perp-leaderboard';
 
 /** Checks the guard's own evidence path cannot reach: they need per-fill history. */
+/**
+ * Judge 7: each check's name as people read it, for any sentence that names another row. The
+ * Pitch Room's rows carry the same names (prototype/public/verdict-view.js CHECK_NAME); a rule id
+ * never reaches a sentence.
+ */
+export const CHECK_TITLE = Object.freeze({
+  evidence_30d: '30-day record is this wallet’s', evidence_freshness: 'Read is fresh', evidence_7d: '7-day record is this wallet’s',
+  realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
+  low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'Profitable without its best market',
+  open_book: 'Open positions not deep underwater', smart_money_side: 'Smart money not against the open book',
+  independent_record: 'Leaderboard record agrees', operator_record: 'Owner behind the wallet not losing',
+  tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
+});
+const titleOf = id => CHECK_TITLE[id] ?? 'an earlier';
+
 const FILL_ONLY_CHECKS = {
   tail_loss: 'Not assessed. The worst single closed trade needs the individual trade fills, which this gate does not fetch. The copy-risk report covers it.',
   max_drawdown: 'Not assessed. Peak-to-trough drawdown needs the time-ordered trade fills, which this gate does not fetch. The copy-risk report covers it.',
@@ -651,7 +666,7 @@ export async function guardAllocation({
         `Only ${closed.toLocaleString('en-US')} closed trades in ${policy.windowDays} days. A handful of round trips is luck or skill and the record cannot tell you which.`);
     } else {
       t.pass('thin_sample', closed, policy.minClosedTrades,
-        `${closed.toLocaleString('en-US')} closed trades in ${policy.windowDays} days, enough of a record to judge.`);
+        `${closed.toLocaleString('en-US')} closed trades in ${policy.windowDays} days, at or above the ${policy.minClosedTrades} minimum.`);
     }
 
     const winRate = evidence.win_rate_30d;
@@ -678,7 +693,9 @@ export async function guardAllocation({
         t.fail('paper_headline', share, policy.maxPaperShareOfHeadline,
           `${pct(share)} of the headline is unsold: it sits in open positions and can move or vanish before anyone realises it.`);
       } else {
-        t.pass('paper_headline', share, policy.maxPaperShareOfHeadline, 'Most of the headline is money already taken off the table.');
+        t.pass('paper_headline', share, policy.maxPaperShareOfHeadline, share === null
+          ? 'The headline is zero, so no unsold share of it could be measured.'
+          : `${pct(share)} of the headline is unsold, at or under the ${Math.round(policy.maxPaperShareOfHeadline * 100)}% limit.`);
       }
     }
 
@@ -693,7 +710,7 @@ export async function guardAllocation({
   } else if (already && policy.readAllWindows !== true) {
     // Refused already. Buying the second window would spend a credit to decorate a
     // decision that is made, so the table says plainly that it was not bought.
-    const note = `Not assessed. The ${policy.windowDays}-day evidence already refused this request at "${already.id}", so the second window was not fetched.`;
+    const note = `Not assessed. The ${policy.windowDays}-day evidence already refused this request at the "${titleOf(already.id)}" check, so the second window was not fetched.`;
     t.skip('evidence_7d', note);
     t.skip('regime_agreement', note);
   } else {
@@ -743,7 +760,7 @@ export async function guardAllocation({
     const opposite = signOf(shortPnl) !== signOf(pnl30);
     if (opposite && giveback < noiseShare) {
       t.pass('regime_agreement', pair, bar,
-        `The week (${money(shortPnl)}) is small against the month: ${givebackPct} of the ${policy.windowDays}-day ${money(pnl30)}, under ${noisePct}, so the two agree.`);
+        `The week (${money(shortPnl)}) is small against the month: ${givebackPct} of the ${policy.windowDays}-day ${money(pnl30)}, under ${noisePct}, so the gate counts the two as agreeing.`);
     } else if (opposite) {
       t.fail('regime_agreement', pair, bar,
         `The two windows tell opposite stories: ${money(shortPnl)} over ${policy.shortWindowDays} days against ${money(pnl30)} over ${policy.windowDays}. `
@@ -767,14 +784,14 @@ export async function guardAllocation({
     const before = t.firstFailure();
     if (!before) await independentRecord(t, executor, wallet, policy, raw, evidence);
     else if (showAll) {
-      const what = before.id === 'realised_pnl_30d' ? `the ${policy.windowDays}-day record` : `the "${before.id}" check`;
+      const what = before.id === 'realised_pnl_30d' ? `the ${policy.windowDays}-day record` : `the "${titleOf(before.id)}" check`;
       t.skip('independent_record', `Not read: ${what} already refused this request, so a second record (5 credits) could not change it.`);
     }
   }
   if (policy.operatorCheck) {
     const before = t.firstFailure();
     if (!before) await operatorRecord(t, executor, wallet, policy, raw, evidence);
-    else if (showAll) t.skip('operator_record', `Not read: the "${before.id}" check already refused this request, so the owner's other wallets could not change it.`);
+    else if (showAll) t.skip('operator_record', `Not read: the "${titleOf(before.id)}" check already refused this request, so the owner's other wallets could not change it.`);
   }
 
   const failure = t.firstFailure();
@@ -939,9 +956,14 @@ async function independentRecord(t, executor, wallet, policy, raw, evidence) {
   if (over > allowed) {
     t.fail('independent_record', value, bar,
       `The ${policy.windowDays}-day summary says ${money(summary)}; Nansen's perp-leaderboard records ${money(record)} for this wallet over the same days. The evidence claims ${money(over).slice(1)} more than the record, so it cannot be trusted.`);
+  } else if (over > 0) {
+    // Judge 7: the row says what was tested (the summary claims no more than the record allows),
+    // never that the two agree: a summary far under the record passes too.
+    t.pass('independent_record', value, bar,
+      `The ${policy.windowDays}-day summary's ${money(summary)} claims ${money(over).slice(1)} more than Nansen's perp-leaderboard record of ${money(record)} for the same days, within the ${money(allowed).slice(1)} allowed. This check refuses only a summary that claims more than that.`);
   } else {
     t.pass('independent_record', value, bar,
-      `Nansen's perp-leaderboard records ${money(record)} for this wallet over the same ${policy.windowDays} days, in line with the summary.`);
+      `The ${policy.windowDays}-day summary's ${money(summary)} claims no more than Nansen's perp-leaderboard record of ${money(record)} for the same days. This check refuses only a summary that claims more.`);
   }
   return undefined;
 }
@@ -995,7 +1017,7 @@ async function operatorRecord(t, executor, wallet, policy, raw, evidence) {
   const value = `this wallet ${money(own)} + ${n} sibling${plural} ${money(sum)} = ${money(combined)}`;
   if (combined < -policy.operatorMaxCombinedLossUsd) {
     t.fail('operator_record', value, bar,
-      `The wallet's first funder, ${funderText}, also paid for ${n} other Hyperliquid wallet${plural} BAIT has indexed. Over the same ${days} days they made ${money(sum)}; with this wallet the owner is at ${money(combined)}. The profitable wallet is the survivor being shown, so the gate refuses.`);
+      `The wallet's first funder, ${funderText}, also paid for ${n} other Hyperliquid wallet${plural} BAIT has indexed. Over the same ${days} days they made ${money(sum)}; with this wallet the owner is at ${money(combined)}, so the gate refuses.`);
   } else {
     t.pass('operator_record', value, bar,
       `The wallet's first funder, ${funderText}, also paid for ${n} other indexed Hyperliquid wallet${plural}; together with this one they made ${money(combined)} over the same ${days} days.`);

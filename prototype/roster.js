@@ -227,6 +227,8 @@ function hyperliquidDossier(snapshot, hype) {
   // number the player would have to hide, so it never enters the dossier.
   if (hype && hype.all_time_pnl_usd > 0) {
     facts.push({ id: 'all-time', value: money(hype.all_time_pnl_usd), label: 'all time, public leaderboard',
+      // Judge 7: its own read, never the round's Nansen read (the room shows it under this heading).
+      source: `Hyperliquid leaderboard read ${dayMonth(hype.capturedAt)} ${hm(hype.capturedAt)} UTC`,
       insert: `${money(hype.all_time_pnl_usd)} all time on the public Hyperliquid leaderboard.`,
       claim: `The free public Hyperliquid leaderboard row captured on ${day(hype.capturedAt)} reports ${money(hype.all_time_pnl_usd)} all-time PnL and an account value of ${plain(hype.account_value_usd)} for this address.` });
   }
@@ -254,7 +256,7 @@ function hyperliquidTruth(snapshot, availability) {
   const live = snapshot.source === 'live' && snapshot.live_read;
   const coverage = live
     ? snapshot.live_read.fills_live
-      ? (fillsHeld ? `; summaries and ${count(fillsHeld)} newest fills read live` : '; summaries read live; no closed fills in the window')
+      ? (fillsHeld ? (snapshot.fills_coverage?.complete ? `; summaries and all ${count(fillsHeld)} fills in the window read live` : `; summaries and the newest ${count(fillsHeld)} fills read live`) : '; summaries read live; no closed fills in the window')
       : `; summaries read live, ${fillsHeld ? `trade fills from the ${stamp(snapshot.live_read.fills_from_capture)} capture` : 'no trade fills held'}`
     : !partial ? ''
     : fillsHeld === 0

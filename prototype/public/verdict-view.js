@@ -89,3 +89,45 @@ export function pitchedView(final) {
  * tree that marks the pitched wallet. The deciding line and the gate table keep the figures.
  */
 export const oncePitched = line => String(line ?? '').replace(/;\s*this is the one being pitched\.?$/, '.');
+
+/**
+ * Judge 7: every row's name as people read it. The same names as the gate's CHECK_TITLE
+ * (validation/guard.js), so a sentence naming another row and the row itself agree. A rule id
+ * never reaches the screen: an id with no name reads as "BAIT check".
+ */
+export const CHECK_NAME = Object.freeze({
+  evidence_30d: '30-day record is this wallet’s', evidence_freshness: 'Read is fresh', evidence_7d: '7-day record is this wallet’s',
+  realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
+  low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'Profitable without its best market', open_book: 'Open positions not deep underwater',
+  smart_money_side: 'Smart money not against the open book', independent_record: 'Leaderboard record agrees',
+  operator_record: 'Owner behind the wallet not losing',
+  tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
+  // The text says which fills: all of them in the window, the newest N over a span, or the N held.
+  fills_drawdown: 'Drawdown in the fills read', fills_worst_trade: 'Worst trade in the fills read',
+});
+export const checkName = id => CHECK_NAME[id] ?? 'BAIT check';
+
+/**
+ * Judge 7: the one line under WATCH rows, true to the gate. Drawdown and worst trade come from
+ * the copy-risk report on the fills; guardAllocation never reads the fills (FILL_ONLY_CHECKS), and
+ * the round's verdict is the gate's alone, so a WATCH never blocks or caps.
+ */
+export const WATCH_NOTE = 'WATCH rows are measured on the trade fills by BAIT’s copy-risk report. The gate does not read the fills, so a WATCH neither blocks nor caps the transfer.';
+
+/**
+ * Judge 7: the fact cards grouped under the read each came from, in the cards' order. The
+ * all-time card is a Hyperliquid leaderboard read, so it never sits under the Nansen heading.
+ */
+export function factGroups(facts = []) {
+  const groups = [];
+  for (const f of facts) {
+    const source = f.source ?? '';
+    const last = groups.at(-1);
+    if (last && last.source === source) last.facts.push(f);
+    else {
+      const earlier = groups.find(g => g.source === source);
+      if (earlier) earlier.facts.push(f); else groups.push({ source, facts: [f] });
+    }
+  }
+  return groups;
+}

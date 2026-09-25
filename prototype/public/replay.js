@@ -68,6 +68,13 @@ function renderHero() {
     </tr>`).join('');
 }
 
+/**
+ * Judge 7: the endpoints gate v5 reads, the same list as prototype/live-evidence.js
+ * GATE_V5_ENDPOINTS (pinned by prototype/judge7.test.js). perp-pnl-summary is read for the
+ * wallet's 30 and 7 days and for each sibling's 30 days.
+ */
+const GATE_ENDPOINTS = ['perp-pnl-summary', 'perp-trades', 'perp-positions', 'perp-screener', 'perp-leaderboard', 'related-wallets', 'transactions'];
+
 function renderEndpoints() {
   // Group the armed desk's research rows by endpoint, shortest window labels first.
   const bySource = new Map();
@@ -85,7 +92,8 @@ function renderEndpoints() {
   });
   const line = $('b-endpoints');
   line.classList.remove('skeleton-row');
-  line.innerHTML = `Evidence: Nansen ${parts.join(' · ')} · the replayed attack in section 1 was recorded ${escape(day(results.round.dataRetrievedAt))}; live rounds keep their raw Nansen reads at <a href="https://bait-wyqr.onrender.com/api/live-reads">/api/live-reads</a>`;
+  const gate = GATE_ENDPOINTS.map(e => `<code>${escape(e)}</code>`).join(' · ');
+  line.innerHTML = `Evidence: the gate reads ${GATE_ENDPOINTS.length === 7 ? 'seven' : GATE_ENDPOINTS.length} Nansen endpoints: ${gate} · the replayed attack in section 1 was recorded ${escape(day(results.round.dataRetrievedAt))}, before the owner check; its desk read ${parts.join(' · ')} · live rounds keep their raw Nansen reads at <a href="https://bait-wyqr.onrender.com/api/live-reads">/api/live-reads</a>`;
 }
 
 /* ---------- 1 · attack: the recorded round ---------- */

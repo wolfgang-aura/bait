@@ -369,6 +369,9 @@ body[data-mood="caught"] .bubble { border-color: #5A2B2B; }
 .dossier { margin-top: 12px; border-top: 1px solid var(--line-soft); padding-top: 10px; }
 .dossier-head { margin: 0 0 8px; font: 400 11.5px/1.4 var(--display); color: var(--dim); }
 .dossier-read { margin: -4px 0 8px; font: 400 9.5px/1.4 var(--mono); color: var(--faint); }
+/* Judge 7: the read a group of cards came from, above them. */
+.facts-src { margin: 4px 0 -2px; font: 400 9.5px/1.4 var(--mono); color: var(--faint); }
+.facts-src:first-child { margin-top: -4px; }
 .facts { display: grid; gap: 6px; }
 .fact {
   display: flex; align-items: baseline; gap: 9px; width: 100%; text-align: left;
@@ -769,7 +772,10 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .splash { grid-template-columns: 1fr; min-height: 0; }
   .record-half { clip-path: polygon(0 26px, 100% 0, 100% 100%, 0 100%); margin: -26px 0 0; padding: 34px 18px 18px; }
   /* On the horizontal split the seam runs across, so the VS sits on its right end. */
-  .vs { top: 50%; left: auto; right: 18px; transform: translateY(-50%) rotate(-8deg); font-size: 46px; }
+  /* Judge 7: in flow, its own grid row between the halves, so no line of either half can run
+     under it however long it wraps. It rises only into the pitch half's clear 44px bottom
+     padding and the record half's seam padding, on the right, away from the record's label. */
+  .vs { position: relative; top: auto; left: auto; right: auto; justify-self: end; margin: -34px 18px -12px 0; transform: rotate(-8deg); font-size: 46px; }
   .hype-half { grid-template-columns: 96px minmax(0, 1fr); gap: 10px 14px; }
   .hype-stat span { font-size: 22px; }
 
@@ -1113,6 +1119,8 @@ html[data-frozen="true"] .barrier.run, html[data-frozen="true"] .barrier.run * {
 .owner-tree.compact .ot-sums { grid-template-columns: auto auto; justify-content: start; gap: 2px 10px; }
 .owner-tree.compact .ot-sums dd { text-align: left; }
 .owner-tree.compact .ot-line { margin-top: 6px; font-size: 13px; }
+/* Judge 7: under WATCH rows, why they did not block. */
+.cp-note { list-style: none; margin: 6px 0 0; font: 400 11.5px/1.5 var(--mono); color: var(--dim); }
 @media (max-width: 640px) {
   .owner-tree.compact .ot-tag { display: none; }
   .owner-tree.compact .ot-sums { grid-template-columns: 1fr auto; }

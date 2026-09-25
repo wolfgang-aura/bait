@@ -761,7 +761,7 @@ test('v5 live round: a wallet an earlier row refuses never buys the operator rea
   const { final } = await service.finish(round.id, { wire: true });
   const row = final.gate.checks.find(c => c.id === 'operator_record');
   assert.equal(row.result, 'not_assessed');
-  assert.match(row.plain, /^Not read: the "realised_pnl_30d" check already refused this request/);
+  assert.match(row.plain, /^Not read: the "30-day realised PnL" check already refused this request/);
   assert.equal(final.gate.calls.find(c => c.endpoint.startsWith('owner:')).skipped, true);
 });
 

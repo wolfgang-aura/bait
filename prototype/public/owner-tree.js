@@ -6,7 +6,9 @@
  * operator read the gate decided on: live, or a saved live read replayed with its own time on
  * it. Nothing here computes a figure. Addresses are short forms; no Nansen label is shown.
  *
- * `compact` is the checkpoint's version: siblings flow as chips so the stamp stays in view.
+ * `compact` is the checkpoint's version: siblings flow as chips so the stamp stays in view, and the
+ * owner sentence is left to the row above it (judge 7: said once). The pitched wallet is tagged
+ * "this wallet", true whichever figure the player pitched.
  */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const CHAIN = { ethereum: 'Ethereum', arbitrum: 'Arbitrum' };
@@ -26,14 +28,14 @@ export function ownerTreeHtml(op, { compact = false } = {}) {
   return `<figure class="owner-tree${compact ? ' compact' : ''}${op.result === 'fail' ? ' losing' : ''}" aria-label="Who funds this wallet">
   <p class="ot-funder"><span class="ot-k">First funder</span> ${funders}</p>
   <ul class="ot-kids">
-    ${node(op.wallet, 'pitched', '<span class="ot-tag">you pitched</span>')}
+    ${node(op.wallet, 'pitched', '<span class="ot-tag">this wallet</span>')}
     ${kids.map(x => node(x, x.pnl < 0 ? 'loss' : 'gain')).join('\n    ')}
   </ul>
   <dl class="ot-sums">
     <dt>${n} other wallet${n === 1 ? '' : 's'}, ${esc(op.days)} days</dt><dd class="${op.siblingsPnl < 0 ? 'loss' : 'gain'}">${esc(op.siblingsLabel)}</dd>
     <dt>The owner, all ${n + 1}</dt><dd class="${op.combined < 0 ? 'loss' : 'gain'}">${esc(op.combinedLabel)}</dd>
   </dl>
-  ${op.line ? `<p class="ot-line">${esc(op.line)}</p>` : ''}
+  ${op.line && !compact ? `<p class="ot-line">${esc(op.line)}</p>` : ''}
   ${compact ? `<p class="ot-src">${esc(source)}</p>` : ''}
 </figure>`;
 }

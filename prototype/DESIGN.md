@@ -140,7 +140,9 @@ sliver of data.
   trade rows read "The newest 1,000 fills cover only 17 minutes, too short to judge." A
   measured drawdown names its base: "$X, Y% of the $Z peak it fell from, under the 30% limit".
 - **A PASS row reads as a pass.** "The week (-$1,208) is small against the month: 3.4% of the
-  30-day +$35,083, under 10%, so the two agree." No "noise", no "points the other way".
+  30-day +$35,083, under 10%, so the gate counts the two as agreeing." No "noise", no "points the other way".
+  Judge 7: a PASS row says what its check tested and no more ("the gate counts the two as
+  agreeing", not "the two agree"; "claims no more than the leaderboard", not "in line with").
 - **The video ends on the product.** The last frames hold the final BLOCKED reveal with the
   core-value line as the caption and the URL under it, not a text card.
 

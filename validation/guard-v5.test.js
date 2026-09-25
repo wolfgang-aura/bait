@@ -30,7 +30,7 @@ test('v5 blocks a profitable wallet whose operator lost money across its sibling
   assert.equal(g.code, 'operator_losing');
   assert.equal(g.allocation, 0);
   assert.equal(row(g, 'operator_record').result, 'fail');
-  assert.match(row(g, 'operator_record').plain, /survivor/);
+  assert.match(row(g, 'operator_record').plain, /the owner is at -\$[\d,]+, so the gate refuses\.$/);
   assert.equal(g.evidence.operator.siblings.length, 2);
   assert.equal(g.policy.id, 'wallet-copy-risk-benchmark-v5');
 });
