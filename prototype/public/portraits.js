@@ -213,7 +213,7 @@ const CAST = {
   monk: {
     m: metrics({ w: 0.88, jaw: 0.82, top: 30, chin: 220, eyeRx: 12, eyeRy: 3.6, browTilt: 0, mouthW: 15, noseW: 4, noseL: 30 }),
     skin: '#BA9068', shade: '#7A553A', light: '#E9CBA4', cloth: '#2B3A2A', clothShade: '#151D14', ink: '#141A1F',
-    bg: ['#0E3B2E', '#07090B'],
+    bg: ['#2A2724', '#0A0A0A'],
     hair: `<path class="scalp-light" d="M120 44 C152 44 176 68 184 106 C166 80 146 68 120 68 C94 68 74 80 56 106 C64 68 88 44 120 44 Z"/>`,
     front: `<path class="collar" d="M28 214 C56 180 184 180 212 214 L200 276 C172 226 68 226 40 276 Z"/>
             <path class="collar-fold" d="M60 202 C88 186 152 186 180 202 L172 216 C146 202 94 202 68 216 Z"/>

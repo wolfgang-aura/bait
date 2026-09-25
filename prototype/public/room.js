@@ -20,6 +20,7 @@
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
 import { checkpointTitle, checkRowView, reportRows } from '/verdict-view.js';
+import { ownerTreeHtml } from '/owner-tree.js';
 
 const $ = id => document.getElementById(id);
 const body = document.body;
@@ -35,7 +36,7 @@ const el = {
   truthHypeSource: $('truth-hype-source'), recordHalf: $('record-half'), turnCard: $('turn-card'),
   truthPnl: $('truth-pnl'), truthPnlCaption: $('truth-pnl-caption'), truthRows: $('truth-rows'),
   truthPaper: $('truth-paper'), truthEndpoint: $('truth-endpoint'), truthScope: $('truth-scope'),
-  truthCaptured: $('truth-captured'), truthDisclosure: $('truth-disclosure'), truthReport: $('truth-report'),
+  truthCaptured: $('truth-captured'), truthDisclosure: $('truth-disclosure'), ownerTree: $('owner-tree'), truthReport: $('truth-report'),
   sell: $('sell'), back: $('back'),
   meter: $('meter-fill'), trail: $('meter-trail'), suspicion: $('suspicion'),
   funded: $('funded'), pop: $('pop'), slotSub: $('slot-sub'), pips: $('pips'),
@@ -444,6 +445,13 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     why.textContent = v.plain;
     li.append(b, name, why);
     el.cpRows.append(li);
+    // Gate v5 refused on the owner: the funder and its other wallets, under the row that read them.
+    if (c.id === 'operator_record' && c.result === 'fail' && gate.operator) {
+      const tree = document.createElement('li');
+      tree.className = 'cp-owner';
+      tree.innerHTML = ownerTreeHtml(gate.operator, { compact: true });
+      el.cpRows.append(tree);
+    }
     if (!reduced) await sleep(260);
   }
   if (!reduced) await sleep(250);
@@ -554,6 +562,27 @@ function showReveal(p, final) {
   showTruth(p);
   // A block on a reversal was decided by the losing week, so that is what the player left
   // out: the week goes in the big number, the month in the rows.
+  // A block on the owner was decided by the wallets the player never saw: the owner's figure
+  // goes in the big number and the funder's tree replaces the wallet's own rows.
+  const owner = final.verdict === 'block' && final.gate?.failed === 'operator_record' ? final.gate.operator : null;
+  el.ownerTree.hidden = !owner;
+  el.truthRows.hidden = !!owner;
+  el.ownerTree.innerHTML = owner ? ownerTreeHtml(owner) : '';
+  if (owner) {
+    text(el.recordLabel, 'What you left out: who funds it');
+    text(el.truthPnl, owner.combinedLabel);
+    text(el.truthPnlCaption, `The owner's ${owner.days} days: this wallet plus ${owner.siblings.length} it funds`);
+    el.recordHalf.classList.add('bad'); el.recordHalf.classList.remove('good');
+    text(el.truthEndpoint, 'Nansen related-wallets, transactions, perp-pnl-summary');
+    text(el.truthScope, `First funder on Ethereum or Arbitrum; its other wallets in BAIT's index; ${owner.days}-day realised PnL each`);
+  }
+  // Stacked under 900 px, the VS sits on the seam between the halves. The owner's tree makes
+  // the record half taller than the pitch half, so 50% would land on the tree: pin it to the seam.
+  const vs = el.truthScreen.querySelector('.vs');
+  if (vs) {
+    vs.style.top = '';
+    if (owner && matchMedia('(max-width: 900px)').matches) requestAnimationFrame(() => { vs.style.top = `${el.recordHalf.offsetTop}px`; });
+  }
   if (final.verdict === 'block' && final.gate?.failed === 'regime_agreement') {
     const week = (p.truth.rows ?? []).find(r => /^7-day realised/i.test(r.label));
     if (week) {

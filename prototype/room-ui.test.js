@@ -164,8 +164,8 @@ test('round 15: the reveal states the score; the BAIT mark stays in the checkpoi
 test('round 16: nothing before the gate gives the verdict away; Enter submits a pasted wallet', () => {
   // One neutral accent for every trader until the reveal; the reveal takes the verdict's colour.
   assert.match(js, /export const NEUTRAL_ACCENT = '#C9C3B6';/);
-  // The four roster portraits share one neutral backdrop (no red loser, green winner).
-  assert.equal((read('portraits.js').match(/bg: \['#2A2724', '#0A0A0A'\]/g) ?? []).length, 4);
+  // The five roster portraits share one neutral backdrop (no red loser, green winner).
+  assert.equal((read('portraits.js').match(/bg: \['#2A2724', '#0A0A0A'\]/g) ?? []).length, 5);
   assert.doesNotMatch(js, /setAccent\(p\.accent\)|accent: p\.accent|accent: d\.accent|--accent', p\.accent/);
   assert.match(js, /revealAccent = VERDICT_ACCENT\[final\.verdict\] \?\? NEUTRAL_ACCENT;/);
   // One sealed card, worded the same for everyone.

@@ -40,7 +40,7 @@ test('first load reads each roster wallet once, live and dated to the minute, ch
     assert.equal(w.stamp, 'Nansen · read live 12:41 UTC');
   }
   assert.equal(live.status().credits_today, ROSTER.length, 'the pulse spends under the same counter as the rounds');
-  assert.equal(pulse.status().worst_case_credits_per_hour, 16);
+  assert.equal(pulse.status().worst_case_credits_per_hour, 20);
 });
 
 test('the pulse shows activity only: no realised PnL or win rate reaches the page', async () => {

@@ -331,7 +331,7 @@ test('the roster route ships hype only, and the truth arrives with the round', a
   try {
     const { status, body } = await s.call('/api/room/roster');
     assert.equal(status, 200);
-    assert.equal(body.roster.length, 4);
+    assert.equal(body.roster.length, 5);
     assert.ok(body.roster.every(tile => tile.venue === 'hyperliquid'), 'every front-door tile is Nansen-backed');
     for (const tile of body.roster) {
       assert.ok(tile.hype.value, `${tile.id} brags about something`);
@@ -511,12 +511,12 @@ test('roster pulse: the first screen gets a shared live read, the config call sp
     assert.equal((await s.call('/healthz')).body.nansen.credits_today, 0, 'loading the room config reads nothing');
     const pulse = await s.call('/api/room/pulse');
     assert.equal(pulse.status, 200);
-    assert.equal(pulse.body.live, 4);
+    assert.equal(pulse.body.live, 5);
     assert.ok(pulse.body.wallets.every(w => w.live && /^Nansen · read live \d\d:\d\d UTC$/.test(w.stamp) && w.figure === '400 trades closed in 7 days'));
     assert.doesNotMatch(JSON.stringify(pulse.body), /realized|realised|win_rate|1,?234,?567/i, 'activity only, never the reveal figure');
     await s.call('/api/room/pulse');
     const health = await s.call('/healthz');
-    assert.equal(health.body.nansen.credits_today, 4, 'a second page load is served from the shared cache');
+    assert.equal(health.body.nansen.credits_today, 5, 'a second page load is served from the shared cache');
     assert.equal(health.body.roster_pulse.refreshes_this_process, 1);
     assert.ok(!Number.isNaN(Date.parse(health.body.roster_pulse.last_success_at)));
   } finally { await s.stop(); }
@@ -526,7 +526,7 @@ test('roster pulse: the first screen gets a shared live read, the config call sp
     const pulse = await failing.call('/api/room/pulse');
     assert.equal(pulse.body.live, 0);
     assert.ok(pulse.body.wallets.every(w => !w.live && /^live read failed \d\d:\d\d UTC · Nansen \d{4}-\d\d-\d\d capture$/.test(w.stamp) && /trades? closed in 7 days$/.test(w.figure)));
-    assert.equal((await failing.call('/healthz')).body.roster_pulse.last_failure.wallets.length, 4);
+    assert.equal((await failing.call('/healthz')).body.roster_pulse.last_failure.wallets.length, 5);
   } finally { await failing.stop(); }
 });
 

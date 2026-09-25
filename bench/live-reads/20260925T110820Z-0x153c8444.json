@@ -1,0 +1,1058 @@
+{
+  "kind": "nansen-live-read",
+  "endpoint": "profiler/perp-pnl-summary",
+  "endpoints": [
+    "profiler/perp-pnl-summary",
+    "profiler/perp-trades",
+    "profiler/perp-positions",
+    "perp-screener",
+    "perp-leaderboard"
+  ],
+  "wallet": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+  "fetched_at": "2026-09-25T11:08:20Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-26T11:08:20Z",
+      "to": "2026-09-25T11:08:20Z"
+    },
+    "7d": {
+      "from": "2026-09-18T11:08:20Z",
+      "to": "2026-09-25T11:08:20Z"
+    }
+  },
+  "responses": {
+    "7d": {
+      "request": {
+        "address": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+        "date": {
+          "from": "2026-09-18T11:08:20Z",
+          "to": "2026-09-25T11:08:20Z"
+        }
+      },
+      "status": 200,
+      "credits_cost_header": "1",
+      "body": {
+        "data": {
+          "top5_coins": [
+            {
+              "coin": "NEAR",
+              "realized_pnl_usd": 812498.25874,
+              "realized_roi": 0.508765901461311,
+              "closed_trade_count": 2237,
+              "fees_usd": 718.648106
+            }
+          ],
+          "traded_coin_count": 1,
+          "traded_times": 1,
+          "closed_trade_count": 2237,
+          "winning_trade_count": 2237,
+          "realized_pnl_usd": 812498.25874,
+          "realized_pnl_percent": 0.508765901461311,
+          "win_rate": 1,
+          "fees_usd": 718.648106
+        }
+      }
+    },
+    "30d": {
+      "request": {
+        "address": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+        "date": {
+          "from": "2026-08-26T11:08:20Z",
+          "to": "2026-09-25T11:08:20Z"
+        }
+      },
+      "status": 200,
+      "credits_cost_header": "1",
+      "body": {
+        "data": {
+          "top5_coins": [
+            {
+              "coin": "NEAR",
+              "realized_pnl_usd": 812498.25874,
+              "realized_roi": 0.508765901461311,
+              "closed_trade_count": 2237,
+              "fees_usd": 718.648106
+            },
+            {
+              "coin": "GRAM",
+              "realized_pnl_usd": 0,
+              "realized_roi": 0,
+              "closed_trade_count": 0,
+              "fees_usd": 126.745998
+            }
+          ],
+          "traded_coin_count": 2,
+          "traded_times": 2,
+          "closed_trade_count": 2237,
+          "winning_trade_count": 2237,
+          "realized_pnl_usd": 812498.25874,
+          "realized_pnl_percent": 0.508765901461311,
+          "win_rate": 1,
+          "fees_usd": 845.394104
+        }
+      }
+    },
+    "fills": [
+      {
+        "request": {
+          "address": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+          "date": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          },
+          "pagination": {
+            "page": 1,
+            "per_page": 1000
+          },
+          "order_by": [
+            {
+              "field": "timestamp",
+              "direction": "DESC"
+            }
+          ]
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "pagination": {
+            "page": 1,
+            "per_page": 1000,
+            "is_last_page": true
+          },
+          "data": [
+            {
+              "timestamp": "2026-09-22T12:20:48.060000Z",
+              "side": "Long",
+              "action": "Reduce",
+              "block_number": 1156956524,
+              "token_symbol": "NEAR",
+              "price": 3.99249564685,
+              "size": 400000,
+              "value_usd": 1596998.25874,
+              "start_position": 602826.3,
+              "closed_pnl": 812498.25874,
+              "crossed": true,
+              "fee_usd": 718.648106,
+              "fee_token_symbol": "USDC",
+              "transaction_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+              "user": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+              "oid": 552931339108
+            },
+            {
+              "timestamp": "2026-09-09T10:15:45.092000Z",
+              "side": "Long",
+              "action": "Add",
+              "block_number": 1141174255,
+              "token_symbol": "GRAM",
+              "price": 1.408295103,
+              "size": 200000,
+              "value_usd": 281659.0206,
+              "start_position": 800720,
+              "closed_pnl": 0,
+              "crossed": true,
+              "fee_usd": 126.745998,
+              "fee_token_symbol": "USDC",
+              "transaction_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+              "user": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+              "oid": 540155121039
+            }
+          ]
+        }
+      }
+    ],
+    "positions": {
+      "request": {
+        "address": "0x153c8444380512cabdc34f6cea09c322e14e319a"
+      },
+      "status": 200,
+      "credits_cost_header": "1",
+      "body": {
+        "data": {
+          "asset_positions": [
+            {
+              "position": {
+                "token_symbol": "NEAR",
+                "size": "602721.4",
+                "position_value_usd": "3029458.5728199999",
+                "entry_price_usd": "1.96125",
+                "liquidation_price_usd": null,
+                "leverage_value": 10,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "302945.857282",
+                "max_leverage_value": 10,
+                "return_on_equity": "15.628000039",
+                "unrealized_pnl_usd": "1847369.2298330001",
+                "cumulative_funding_all_time_usd": "82866.515855",
+                "cumulative_funding_since_change_usd": "3931.284876",
+                "cumulative_funding_since_open_usd": "82866.515855"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "WLD",
+                "size": "5087735.7000000002",
+                "position_value_usd": "2308967.0927309999",
+                "entry_price_usd": "0.39389",
+                "liquidation_price_usd": null,
+                "leverage_value": 10,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "230896.709273",
+                "max_leverage_value": 10,
+                "return_on_equity": "1.5216457193",
+                "unrealized_pnl_usd": "304941.670502",
+                "cumulative_funding_all_time_usd": "38783.35271",
+                "cumulative_funding_since_change_usd": "22843.424012",
+                "cumulative_funding_since_open_usd": "38783.35271"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "GRAM",
+                "size": "1000720.0",
+                "position_value_usd": "1432660.7736",
+                "entry_price_usd": "1.504908",
+                "liquidation_price_usd": null,
+                "leverage_value": 5,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "286532.15472",
+                "max_leverage_value": 5,
+                "return_on_equity": "-0.243463839",
+                "unrealized_pnl_usd": "-73330.903004",
+                "cumulative_funding_all_time_usd": "41610.574445",
+                "cumulative_funding_since_change_usd": "13415.075904",
+                "cumulative_funding_since_open_usd": "41610.574445"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "kPEPE",
+                "size": "305417979.0",
+                "position_value_usd": "1401257.687652",
+                "entry_price_usd": "0.002898",
+                "liquidation_price_usd": null,
+                "leverage_value": 10,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "140125.768765",
+                "max_leverage_value": 10,
+                "return_on_equity": "5.8311106804",
+                "unrealized_pnl_usd": "516128.579569",
+                "cumulative_funding_all_time_usd": "32071.033332",
+                "cumulative_funding_since_change_usd": "20692.109535",
+                "cumulative_funding_since_open_usd": "32071.033332"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "FET",
+                "size": "4952800.0",
+                "position_value_usd": "1184709.76",
+                "entry_price_usd": "0.178337",
+                "liquidation_price_usd": null,
+                "leverage_value": 5,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "236941.952",
+                "max_leverage_value": 5,
+                "return_on_equity": "1.7063854822",
+                "unrealized_pnl_usd": "301439.805457",
+                "cumulative_funding_all_time_usd": "31757.207018",
+                "cumulative_funding_since_change_usd": "15548.685875",
+                "cumulative_funding_since_open_usd": "31757.207018"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "IMX",
+                "size": "6092369.7000000002",
+                "position_value_usd": "976728.7103039999",
+                "entry_price_usd": "0.12631",
+                "liquidation_price_usd": null,
+                "leverage_value": 5,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "195345.74206",
+                "max_leverage_value": 5,
+                "return_on_equity": "1.3457904911",
+                "unrealized_pnl_usd": "207140.814464",
+                "cumulative_funding_all_time_usd": "19955.20728",
+                "cumulative_funding_since_change_usd": "10388.405743",
+                "cumulative_funding_since_open_usd": "19955.20728"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "CFX",
+                "size": "15161872.0",
+                "position_value_usd": "829778.930816",
+                "entry_price_usd": "0.047497",
+                "liquidation_price_usd": null,
+                "leverage_value": 5,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "165955.786163",
+                "max_leverage_value": 5,
+                "return_on_equity": "0.7611263208",
+                "unrealized_pnl_usd": "109625.540127",
+                "cumulative_funding_all_time_usd": "24077.295543",
+                "cumulative_funding_since_change_usd": "11259.768163",
+                "cumulative_funding_since_open_usd": "24077.295543"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "kBONK",
+                "size": "191787580.0",
+                "position_value_usd": "723806.32692",
+                "entry_price_usd": "0.003353",
+                "liquidation_price_usd": null,
+                "leverage_value": 10,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "72380.632692",
+                "max_leverage_value": 10,
+                "return_on_equity": "1.2528361914",
+                "unrealized_pnl_usd": "80585.085087",
+                "cumulative_funding_all_time_usd": "2674.59068",
+                "cumulative_funding_since_change_usd": "8544.940694",
+                "cumulative_funding_since_open_usd": "2674.59068"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "kSHIB",
+                "size": "99152000.0",
+                "position_value_usd": "586087.472",
+                "entry_price_usd": "0.004945",
+                "liquidation_price_usd": null,
+                "leverage_value": 10,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "58608.7472",
+                "max_leverage_value": 10,
+                "return_on_equity": "1.9525493305",
+                "unrealized_pnl_usd": "95742.311486",
+                "cumulative_funding_all_time_usd": "9876.962884",
+                "cumulative_funding_since_change_usd": "6013.628625",
+                "cumulative_funding_since_open_usd": "9876.962884"
+              },
+              "position_type": "oneWay"
+            },
+            {
+              "position": {
+                "token_symbol": "PNUT",
+                "size": "10096000.0",
+                "position_value_usd": "561943.36",
+                "entry_price_usd": "0.04982",
+                "liquidation_price_usd": null,
+                "leverage_value": 3,
+                "leverage_type": "cross",
+                "leverage_raw_usd": null,
+                "margin_used_usd": "187314.453333",
+                "max_leverage_value": 3,
+                "return_on_equity": "0.3510421786",
+                "unrealized_pnl_usd": "58867.006389",
+                "cumulative_funding_all_time_usd": "12229.792939",
+                "cumulative_funding_since_change_usd": "7097.611268",
+                "cumulative_funding_since_open_usd": "12229.792939"
+              },
+              "position_type": "oneWay"
+            }
+          ],
+          "cross_maintenance_margin_used_usd": "938523.901742",
+          "cross_margin_summary_account_value_usd": "3108121.4584380002",
+          "cross_margin_summary_total_margin_used_usd": "1877047.8034880001",
+          "cross_margin_summary_total_net_liquidation_position_on_usd": "13035398.6868430004",
+          "cross_margin_summary_total_raw_usd": "-9927277.2284050006",
+          "margin_summary_account_value_usd": "3108121.4584380002",
+          "margin_summary_total_margin_used_usd": "1877047.8034880001",
+          "margin_summary_total_net_liquidation_position_usd": "13035398.6868430004",
+          "margin_summary_total_raw_usd": "-9927277.2284050006",
+          "timestamp": 1790334503098,
+          "withdrawable_usd": "1231073.6549500001"
+        }
+      }
+    },
+    "smart_money": {
+      "request": {
+        "date": {
+          "from": "2026-09-18",
+          "to": "2026-09-25"
+        },
+        "pagination": {
+          "page": 1,
+          "per_page": 10
+        },
+        "filters": {
+          "trader_type": "sm",
+          "token_symbol": "NEAR"
+        }
+      },
+      "status": 200,
+      "credits_cost_header": "1",
+      "body": {
+        "data": [
+          {
+            "smart_money_volume": 141927560.9291,
+            "smart_money_buy_volume": 73917000.02577,
+            "smart_money_sell_volume": 68010560.90333,
+            "net_position_change": 5906439.12244,
+            "trader_count": 85,
+            "token_symbol": "NEAR",
+            "mark_price": 5.023,
+            "funding": 0.0000125,
+            "previous_price_usd": 3.1472,
+            "open_interest": 385458910.0228,
+            "current_smart_money_position_longs_usd": 21614399.973400004,
+            "current_smart_money_position_shorts_usd": -7436785.069499999,
+            "smart_money_longs_count": 43,
+            "smart_money_shorts_count": 9
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "per_page": 10,
+          "is_last_page": true
+        }
+      }
+    },
+    "leaderboard": {
+      "request": {
+        "date": {
+          "from": "2026-08-26",
+          "to": "2026-09-25"
+        },
+        "pagination": {
+          "page": 1,
+          "per_page": 10
+        },
+        "filters": {
+          "trader_address": "0x153c8444380512cabdc34f6cea09c322e14e319a"
+        },
+        "premium_labels": false
+      },
+      "status": 200,
+      "credits_cost_header": "5",
+      "body": {
+        "data": [
+          {
+            "trader_address": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+            "total_pnl": 2459402.9854449998,
+            "realized_pnl_usd": 812498.25874,
+            "unrealized_pnl_usd": 1646904.7267049998,
+            "roi": 0.5385472030563572,
+            "volume_usd": 1878657.27934,
+            "total_trades": 3376,
+            "top_positions": [
+              {
+                "coin": "NEAR",
+                "side": "long",
+                "size_base": 602721.4,
+                "position_value_usd": 3027469.5922,
+                "entry_price": 1.9612500000000002,
+                "unrealized_pnl_usd": 1762553.0880199997
+              },
+              {
+                "coin": "GRAM",
+                "side": "long",
+                "size_base": 1000720,
+                "position_value_usd": 1431830.176,
+                "entry_price": 1.504908,
+                "unrealized_pnl_usd": -115648.36131499984
+              }
+            ],
+            "account_value": 2983742.510589
+          }
+        ],
+        "pagination": {
+          "page": 1,
+          "per_page": 10,
+          "is_last_page": true
+        }
+      }
+    },
+    "operator": [
+      {
+        "endpoint": "profiler/address/related-wallets",
+        "request": {
+          "address": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+          "chain": "ethereum"
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "pagination": {
+            "page": 1,
+            "per_page": 10,
+            "is_last_page": true
+          },
+          "data": [
+            {
+              "address": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+              "funder_excluded_by_label": false,
+              "relation": "First Funder",
+              "transaction_hash": "0xada249970fbd8b9ac3a899a7b8dbad818f0fec279665ba736d570fad5aed2e74",
+              "block_timestamp": "2024-11-18T09:54:47Z",
+              "order": 1,
+              "chain": "ethereum"
+            }
+          ]
+        }
+      },
+      {
+        "endpoint": "profiler/address/related-wallets",
+        "request": {
+          "address": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+          "chain": "arbitrum"
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "pagination": {
+            "page": 1,
+            "per_page": 10,
+            "is_last_page": true
+          },
+          "data": [
+            {
+              "address": "0x31cae3b7fb82d847621859fb1585353c5720660d",
+              "funder_excluded_by_label": false,
+              "relation": "First Funder",
+              "transaction_hash": "0x851f22393e8e7e3fa3356646123442a06d5edb183cc28341088cde1a5ba5f497",
+              "block_timestamp": "2025-01-25T17:05:40Z",
+              "order": 1,
+              "chain": "arbitrum"
+            }
+          ]
+        }
+      },
+      {
+        "endpoint": "profiler/address/transactions",
+        "request": {
+          "address": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+          "chain": "ethereum",
+          "date": {
+            "from": "2024-11-18",
+            "to": "2024-11-19"
+          },
+          "pagination": {
+            "page": 1,
+            "per_page": 100
+          }
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "pagination": {
+            "page": 1,
+            "per_page": 100,
+            "is_last_page": true
+          },
+          "data": [
+            {
+              "chain": "ethereum",
+              "method": "received",
+              "tokens_sent": [],
+              "tokens_received": [
+                {
+                  "token_symbol": "ETH",
+                  "token_amount": 0.1588393,
+                  "price_usd": null,
+                  "value_usd": null,
+                  "token_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                  "chain": "ethereum",
+                  "from_address": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+                  "to_address": "0x153c8444380512cabdc34f6cea09c322e14e319a"
+                }
+              ],
+              "volume_usd": 495.34041961433275,
+              "block_timestamp": "2024-11-18T09:54:47",
+              "transaction_hash": "0xada249970fbd8b9ac3a899a7b8dbad818f0fec279665ba736d570fad5aed2e74",
+              "source_type": "transfer"
+            },
+            {
+              "chain": "ethereum",
+              "method": "transfer(address,uint256)",
+              "tokens_sent": [],
+              "tokens_received": [
+                {
+                  "token_symbol": "USDT",
+                  "token_amount": 9791.652328,
+                  "price_usd": null,
+                  "value_usd": null,
+                  "token_address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+                  "chain": "ethereum",
+                  "from_address": "0x28c6c06298d514db089934071355e5743bf21d60",
+                  "to_address": "0x153c8444380512cabdc34f6cea09c322e14e319a"
+                }
+              ],
+              "volume_usd": 9793.864549747104,
+              "block_timestamp": "2024-11-18T09:51:11",
+              "transaction_hash": "0x52698980eb969042c8514033c0603b64d6ec35168441fb098c1be8cdee860b21",
+              "source_type": "transfer"
+            },
+            {
+              "chain": "ethereum",
+              "method": "transfer(address,uint256)",
+              "tokens_sent": [],
+              "tokens_received": [
+                {
+                  "token_symbol": "USDT",
+                  "token_amount": 79994,
+                  "price_usd": null,
+                  "value_usd": null,
+                  "token_address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+                  "chain": "ethereum",
+                  "from_address": "0xdfd5293d8e347dfe59e90efd55b2956a1343963d",
+                  "to_address": "0x153c8444380512cabdc34f6cea09c322e14e319a"
+                }
+              ],
+              "volume_usd": 80012.07299325077,
+              "block_timestamp": "2024-11-18T09:49:23",
+              "transaction_hash": "0xa813f68952172f5f4998c41f5be61fbd69d0692c5bdd3aad036ace661530c3e0",
+              "source_type": "transfer"
+            }
+          ]
+        }
+      },
+      {
+        "endpoint": "profiler/perp-pnl-summary",
+        "request": {
+          "address": "0x191f565e660e4323b7a54c193eb571b99fdeaffe",
+          "date": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          }
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "data": {
+            "top5_coins": [
+              {
+                "coin": "BTC",
+                "realized_pnl_usd": 84859.0456569998,
+                "realized_roi": 0.0034479255070686593,
+                "closed_trade_count": 1330,
+                "fees_usd": 9180.529515
+              },
+              {
+                "coin": "HYPE",
+                "realized_pnl_usd": 46896.20267,
+                "realized_roi": 0.005862654219349012,
+                "closed_trade_count": 1853,
+                "fees_usd": 3704.324755
+              },
+              {
+                "coin": "xyz:MU",
+                "realized_pnl_usd": 18574.917096,
+                "realized_roi": 0.003538501462655145,
+                "closed_trade_count": 943,
+                "fees_usd": 539.080592
+              },
+              {
+                "coin": "ETH",
+                "realized_pnl_usd": 16245.38542,
+                "realized_roi": 0.0017317040712578427,
+                "closed_trade_count": 687,
+                "fees_usd": 3588.863873
+              },
+              {
+                "coin": "PONS",
+                "realized_pnl_usd": 11177.376367,
+                "realized_roi": 0.021834290565955605,
+                "closed_trade_count": 1021,
+                "fees_usd": 185.152006
+              }
+            ],
+            "traded_coin_count": 15,
+            "traded_times": 14324,
+            "closed_trade_count": 13856,
+            "winning_trade_count": 9352,
+            "realized_pnl_usd": 108129.63829899971,
+            "realized_pnl_percent": 0.0012817386087626203,
+            "win_rate": 0.6749422632794457,
+            "fees_usd": 20904.933595
+          }
+        }
+      },
+      {
+        "endpoint": "profiler/perp-pnl-summary",
+        "request": {
+          "address": "0x8cc94dc843e1ea7a19805e0cca43001123512b6a",
+          "date": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          }
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "data": {
+            "top5_coins": [
+              {
+                "coin": "HEMI",
+                "realized_pnl_usd": 303797.651496,
+                "realized_roi": 0.5593283767663302,
+                "closed_trade_count": 3504,
+                "fees_usd": 198.288058
+              },
+              {
+                "coin": "MINA",
+                "realized_pnl_usd": 215811.048878,
+                "realized_roi": 0.3470651864656669,
+                "closed_trade_count": 13999,
+                "fees_usd": 298.782583
+              },
+              {
+                "coin": "JTO",
+                "realized_pnl_usd": 184483.830346,
+                "realized_roi": 0.4151668014318703,
+                "closed_trade_count": 5596,
+                "fees_usd": 190.375401
+              },
+              {
+                "coin": "PEOPLE",
+                "realized_pnl_usd": 68709.881441,
+                "realized_roi": 0.22146936944100978,
+                "closed_trade_count": 18077,
+                "fees_usd": 118.13454
+              },
+              {
+                "coin": "STRK",
+                "realized_pnl_usd": 55445.895224,
+                "realized_roi": 0.18318593002809402,
+                "closed_trade_count": 3073,
+                "fees_usd": 264.032631
+              }
+            ],
+            "traded_coin_count": 125,
+            "traded_times": 267278,
+            "closed_trade_count": 269688,
+            "winning_trade_count": 120270,
+            "realized_pnl_usd": -2791245.416787,
+            "realized_pnl_percent": -0.1082464010686343,
+            "win_rate": 0.4459597757408561,
+            "fees_usd": 13408.331877999997
+          }
+        }
+      },
+      {
+        "endpoint": "profiler/perp-pnl-summary",
+        "request": {
+          "address": "0xa4247526997374fdab0bad6f63c9f3daca8f22d4",
+          "date": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          }
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "data": {
+            "top5_coins": [
+              {
+                "coin": "xyz:CRCL",
+                "realized_pnl_usd": 108396.9212,
+                "realized_roi": 0.30244941427050054,
+                "closed_trade_count": 27,
+                "fees_usd": 10.321816
+              },
+              {
+                "coin": "HYPE",
+                "realized_pnl_usd": 86249.50482,
+                "realized_roi": 0.09857655138366388,
+                "closed_trade_count": 145,
+                "fees_usd": 1028.548481
+              },
+              {
+                "coin": "xyz:COIN",
+                "realized_pnl_usd": 65870.066,
+                "realized_roi": 0.2085354025218235,
+                "closed_trade_count": 24,
+                "fees_usd": 9.097038
+              },
+              {
+                "coin": "BTC",
+                "realized_pnl_usd": 0,
+                "realized_roi": 0,
+                "closed_trade_count": 0,
+                "fees_usd": 206.644217
+              },
+              {
+                "coin": "xyz:MSTR",
+                "realized_pnl_usd": 0,
+                "realized_roi": 0,
+                "closed_trade_count": 0,
+                "fees_usd": 28.799948
+              }
+            ],
+            "traded_coin_count": 6,
+            "traded_times": 212,
+            "closed_trade_count": 196,
+            "winning_trade_count": 136,
+            "realized_pnl_usd": 260516.49202,
+            "realized_pnl_percent": 0.168160178804942,
+            "win_rate": 0.6938775510204082,
+            "fees_usd": 1300.69145
+          }
+        }
+      },
+      {
+        "endpoint": "profiler/perp-pnl-summary",
+        "request": {
+          "address": "0xb3e475368ed0fa0ad23c04de0423d48a0758806f",
+          "date": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          }
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "data": {
+            "top5_coins": [
+              {
+                "coin": "xyz:BRENTOIL",
+                "realized_pnl_usd": 7393.8386,
+                "realized_roi": 0.002723669726578833,
+                "closed_trade_count": 710,
+                "fees_usd": 149.461707
+              },
+              {
+                "coin": "xyz:SP500",
+                "realized_pnl_usd": 2844.3029,
+                "realized_roi": 0.004134340789907881,
+                "closed_trade_count": 81,
+                "fees_usd": 164.433758
+              },
+              {
+                "coin": "ARB",
+                "realized_pnl_usd": 332.032219,
+                "realized_roi": 0.004346140280007151,
+                "closed_trade_count": 35,
+                "fees_usd": 47.388868
+              },
+              {
+                "coin": "NEAR",
+                "realized_pnl_usd": -2947.95618,
+                "realized_roi": -0.016675096220912712,
+                "closed_trade_count": 138,
+                "fees_usd": 44.52854
+              },
+              {
+                "coin": "AAVE",
+                "realized_pnl_usd": -14054.3654,
+                "realized_roi": -0.12646213862050656,
+                "closed_trade_count": 92,
+                "fees_usd": 30.480306
+              }
+            ],
+            "traded_coin_count": 7,
+            "traded_times": 3810,
+            "closed_trade_count": 1841,
+            "winning_trade_count": 496,
+            "realized_pnl_usd": -701497.311051,
+            "realized_pnl_percent": -0.1168752237742209,
+            "win_rate": 0.269418794133623,
+            "fees_usd": 1130.2253150000001
+          }
+        }
+      },
+      {
+        "endpoint": "profiler/perp-pnl-summary",
+        "request": {
+          "address": "0xbc256baa3480ec7882ac87eadc349e77291b202b",
+          "date": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          }
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "data": {
+            "top5_coins": [
+              {
+                "coin": "ZEC",
+                "realized_pnl_usd": 96867.907416,
+                "realized_roi": 0.00576029715433305,
+                "closed_trade_count": 4066,
+                "fees_usd": 10043.6708
+              },
+              {
+                "coin": "BTC",
+                "realized_pnl_usd": 45366.098781,
+                "realized_roi": 0.0008136436435146836,
+                "closed_trade_count": 3734,
+                "fees_usd": 33289.587435
+              },
+              {
+                "coin": "HYPE",
+                "realized_pnl_usd": 30686.207883,
+                "realized_roi": 0.005631227996944478,
+                "closed_trade_count": 1657,
+                "fees_usd": 3504.218522
+              },
+              {
+                "coin": "ETH",
+                "realized_pnl_usd": 12065.2921010001,
+                "realized_roi": 0.00013764264965186306,
+                "closed_trade_count": 6063,
+                "fees_usd": 51761.771822
+              },
+              {
+                "coin": "XRP",
+                "realized_pnl_usd": 5266.674029,
+                "realized_roi": 0.017593181181791387,
+                "closed_trade_count": 64,
+                "fees_usd": 173.842626
+              }
+            ],
+            "traded_coin_count": 24,
+            "traded_times": 2300,
+            "closed_trade_count": 17809,
+            "winning_trade_count": 6196,
+            "realized_pnl_usd": 196989.6516160301,
+            "realized_pnl_percent": 0.0011641080497977836,
+            "win_rate": 0.34791397607951036,
+            "fees_usd": 100558.13202511996
+          }
+        }
+      },
+      {
+        "endpoint": "profiler/perp-pnl-summary",
+        "request": {
+          "address": "0xbf2a12006918a9118368910b047291e440c2d457",
+          "date": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          }
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "data": {
+            "top5_coins": [
+              {
+                "coin": "ZEC",
+                "realized_pnl_usd": 57829.325533,
+                "realized_roi": 0.003040831831006675,
+                "closed_trade_count": 6573,
+                "fees_usd": 6986.835396
+              },
+              {
+                "coin": "xyz:SNDK",
+                "realized_pnl_usd": 14513.057979,
+                "realized_roi": 0.001671837667291826,
+                "closed_trade_count": 2350,
+                "fees_usd": 1145.95994
+              },
+              {
+                "coin": "xyz:INTC",
+                "realized_pnl_usd": 9044.121874,
+                "realized_roi": 0.005199288289893654,
+                "closed_trade_count": 917,
+                "fees_usd": 210.226711
+              },
+              {
+                "coin": "xyz:META",
+                "realized_pnl_usd": 6757.93467,
+                "realized_roi": 0.015223674068486546,
+                "closed_trade_count": 162,
+                "fees_usd": 57.154889
+              },
+              {
+                "coin": "xyz:MU",
+                "realized_pnl_usd": 5826.478728,
+                "realized_roi": 0.004536226005373593,
+                "closed_trade_count": 528,
+                "fees_usd": 165.486572
+              }
+            ],
+            "traded_coin_count": 39,
+            "traded_times": 19877,
+            "closed_trade_count": 18405,
+            "winning_trade_count": 9590,
+            "realized_pnl_usd": 110849.15406042001,
+            "realized_pnl_percent": 0.0025407587443454878,
+            "win_rate": 0.5210540613963597,
+            "fees_usd": 11575.225521010001
+          }
+        }
+      },
+      {
+        "endpoint": "profiler/perp-pnl-summary",
+        "request": {
+          "address": "0xdc6448f803903f3178a604decb388f7959913553",
+          "date": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          }
+        },
+        "status": 200,
+        "credits_cost_header": "1",
+        "body": {
+          "data": {
+            "top5_coins": [
+              {
+                "coin": "ZEC",
+                "realized_pnl_usd": 160014.950452,
+                "realized_roi": 0.015335643505756133,
+                "closed_trade_count": 2016,
+                "fees_usd": 6839.596394
+              },
+              {
+                "coin": "BTC",
+                "realized_pnl_usd": 50794.726575,
+                "realized_roi": 0.003918758949628115,
+                "closed_trade_count": 665,
+                "fees_usd": 8540.661704
+              },
+              {
+                "coin": "LIT",
+                "realized_pnl_usd": 50262.051358,
+                "realized_roi": 0.011219211404674998,
+                "closed_trade_count": 2298,
+                "fees_usd": 2908.23141
+              },
+              {
+                "coin": "ETH",
+                "realized_pnl_usd": 9036.732265,
+                "realized_roi": 0.001171728436578496,
+                "closed_trade_count": 535,
+                "fees_usd": 5060.011224
+              },
+              {
+                "coin": "ZRO",
+                "realized_pnl_usd": 8401.30973,
+                "realized_roi": 0.07731520928786997,
+                "closed_trade_count": 112,
+                "fees_usd": 43.465186
+              }
+            ],
+            "traded_coin_count": 24,
+            "traded_times": 2134,
+            "closed_trade_count": 13877,
+            "winning_trade_count": 5386,
+            "realized_pnl_usd": 161449.779405,
+            "realized_pnl_percent": 0.0029520793809353248,
+            "win_rate": 0.388124234344599,
+            "fees_usd": 35207.23824299999
+          }
+        }
+      }
+    ]
+  }
+}

@@ -263,6 +263,23 @@ h1 {
 .model-note span { color: var(--ink-dim); }
 .wallets-table { margin: 0 0 28px; }
 .wallets-table caption { text-align: left; }
+/* The live-market finding leads the page: five leaderboard wallets and their owners. */
+.owners-table { margin: 0 0 12px; }
+.owners-table caption { text-align: left; }
+.owners-table td { font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.owners-table td.pos { color: var(--ink); }
+.owners-table td.neg { color: var(--loss); }
+.owners-table td strong { color: var(--accent); font-weight: 700; }
+.owners-table + .model-note { margin: 0 0 28px; }
+@media (max-width: 760px) {
+  .owners-table thead { display: none; }
+  .owners-table table, .owners-table tbody { display: block; }
+  .owners-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .owners-table td, .owners-table td strong { display: block; padding: 0; border: 0; white-space: normal !important; overflow-wrap: anywhere; }
+  .owners-table td::before { content: attr(data-label); display: block; margin-bottom: 3px; font: 500 10px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-faint); }
+}
+.truefacts .ladder-lab { margin: 0 0 14px; }
+.truefacts .big strong { font-size: clamp(48px, 6.4vw, 84px); }
 
 .endpoints {
   font: 400 13px/1.5 var(--mono);

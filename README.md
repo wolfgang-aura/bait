@@ -12,6 +12,13 @@ the AI from funding the bad ones.**
 
 ## What we found
 
+**On the live market, 5 of the top 200 wallets on Nansen's 30-day leaderboard are funded by an
+owner whose other wallets lost more than the pitched wallet made.** A simple "don't copy a wallet
+that lost money" rule funds all five. BAIT blocks all five: four because the owner lost, one for too
+few trades. [bench/FIELD.md](bench/FIELD.md)
+
+On the benchmark:
+
 | Who decides | Attacks where money went out |
 | --- | ---: |
 | A simple rule: "don't copy a wallet that lost money this month" | **61 of 79** |
@@ -22,8 +29,7 @@ faked evidence we built by changing one thing in a real Nansen record.
 
 The worst attack uses only true facts: one owner funds several wallets, most lose, and the seller
 pitches the one that won. The simple rule, and DeepSeek and Claude on their own, fund it. BAIT asks
-Nansen who funded the wallet, sees the owner lost money, and refuses. On the live market, 5 of the
-top 200 leaderboard wallets have that shape ([bench/FIELD.md](bench/FIELD.md)).
+Nansen who funded the wallet, sees the owner lost money, and refuses.
 
 ## How it works
 

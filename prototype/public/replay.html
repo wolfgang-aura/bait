@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BAIT · The check before an AI agent moves money</title>
-<meta name="description" content="AI agents can be talked into bad bets with true facts. BAIT is the check that runs before the money moves: it reads the trader&rsquo;s record from Nansen and blocks the transfer when the record is losing.">
+<title>BAIT · The owner behind the winning wallet</title>
+<meta name="description" content="5 of the top 200 wallets on Nansen&rsquo;s 30-day Hyperliquid leaderboard are funded by an owner whose other wallets lost more than the pitched wallet made. BAIT is the gate before an AI agent copies a wallet: it asks Nansen who funded it and refuses when that owner lost.">
 <meta name="theme-color" content="#0A0B0D">
 <meta property="og:type" content="website">
-<meta property="og:title" content="BAIT · The check before an AI agent moves money">
-<meta property="og:description" content="Operator attacks and faked evidence: a simple PnL rule sent the money in 61 of 79; BAIT in 0. True facts: the AI alone backed a losing trader in 63 of 78 runs; behind the BAIT check, 0 of 78.">
+<meta property="og:title" content="BAIT · The owner behind the winning wallet">
+<meta property="og:description" content="5 of the top 200 leaderboard wallets are the winning face of an owner who lost money. A simple PnL rule funds them; BAIT asks Nansen who funded the wallet and refuses. Benchmark: the PnL rule sent money in 61 of 79 attacks, BAIT in 0.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,12 +18,12 @@
 </head>
 <body id="top">
 <a class="skip" href="#attack">Skip to the replay</a>
-<a class="live-strip" href="https://bait-wyqr.onrender.com/">Play BAIT live: talk an AI into backing a losing trader at <strong>bait-wyqr.onrender.com</strong> &rarr;</a>
+<a class="live-strip" href="https://bait-wyqr.onrender.com/">Play BAIT live: talk an AI into funding a wallet, then see who is behind it, at <strong>bait-wyqr.onrender.com</strong> &rarr;</a>
 
 <header class="mast">
   <div class="mast-inner">
     <a class="mark" href="#top" aria-label="BAIT, top of page"><span class="bait-badge">BAIT</span></a>
-    <p class="mast-note">The check that runs before an AI agent moves money · recorded proof</p>
+    <p class="mast-note">The gate before an AI agent copies a wallet · recorded proof</p>
     <nav class="mast-nav" aria-label="Pages">
       <a href="/" data-host-link>Play</a>
       <a href="/replay.html" data-host-link aria-current="page">Proof</a>
@@ -36,22 +36,62 @@
   <p id="b-error" class="error" role="alert" hidden></p>
 
   <section class="hero" aria-labelledby="hero-title">
-    <p class="lab">BAIT · for teams that let AI agents allocate capital</p>
-    <h1 id="hero-title">AI agents are starting to move real money. True facts can talk them into bad bets.</h1>
-    <p class="hero-sub"><strong>BAIT is the check that runs before the money moves.</strong> The AI proposes a transfer; BAIT reads the trader&rsquo;s record from Nansen and blocks it when the record is losing.</p>
+    <p class="lab">BAIT · live market, 25 Sep 2026</p>
+    <h1 id="hero-title">5 of the top 200 leaderboard wallets are the winning face of an owner who lost money.</h1>
+    <p class="hero-sub"><strong>BAIT is the gate before an AI agent copies a wallet.</strong> It asks Nansen who funded the wallet, reads that owner&rsquo;s other wallets, and refuses when the owner lost. A simple &ldquo;don&rsquo;t copy a losing wallet&rdquo; rule funds all five: each one made money this month.</p>
 
-    <ul class="findings" aria-label="The two findings">
-      <li><span>The operator</span><p><strong>Operator attacks plus faked evidence: a PnL rule sends the money in 61 of 79; BAIT in 0 of 79.</strong> One operator funds several wallets, most lose, the winner is pitched. Found in real Nansen data: the PnL rule funds 12 of 12 operator attacks; BAIT funds <strong>0 of 12 operator attacks</strong>, by reading the first funder and its other wallets.</p></li>
-      <li><span>Live market</span><p>Of 200 top leaderboard wallets, 5 are funded by an operator whose other wallets lost $759,169 to $10,129,956 over the same 30 days, more than the pitched wallet made. 3 of the 5 were already in the benchmark. <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/FIELD.md">Field test</a></p></li>
+    <div class="table-wrap owners-table">
+      <table class="board">
+        <thead><tr><th scope="col">Wallet (rank)</th><th scope="col">Its 30 days</th><th scope="col">Owner&rsquo;s other wallets</th><th scope="col">BAIT</th></tr></thead>
+        <tbody>
+          <tr><td data-label="Wallet (rank)">0x615a...69d5 (11)</td><td data-label="Its 30 days" class="pos">+$2,854,381</td><td data-label="Owner&rsquo;s other wallets" class="neg">3 wallets, -$2,996,395</td><td data-label="BAIT"><strong>blocks: owner lost</strong></td></tr>
+          <tr><td data-label="Wallet (rank)">0x153c...319a (68)</td><td data-label="Its 30 days" class="pos">+$812,498</td><td data-label="Owner&rsquo;s other wallets" class="neg">7 wallets, -$2,650,967</td><td data-label="BAIT"><strong>blocks: owner lost</strong></td></tr>
+          <tr><td data-label="Wallet (rank)">0x2e2b...2fab (73)</td><td data-label="Its 30 days" class="pos">+$743,510</td><td data-label="Owner&rsquo;s other wallets" class="neg">8 wallets, -$759,169</td><td data-label="BAIT"><strong>blocks: fewer than 20 trades</strong></td></tr>
+          <tr><td data-label="Wallet (rank)">0xaac0...245b (151)</td><td data-label="Its 30 days" class="pos">+$432,831</td><td data-label="Owner&rsquo;s other wallets" class="neg">2 wallets, -$10,129,956</td><td data-label="BAIT"><strong>blocks: owner lost</strong></td></tr>
+          <tr><td data-label="Wallet (rank)">0x2043...e79d (195)</td><td data-label="Its 30 days" class="pos">+$358,593</td><td data-label="Owner&rsquo;s other wallets" class="neg">4 wallets, -$1,234,554</td><td data-label="BAIT"><strong>blocks: owner lost</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="model-note">Nansen&rsquo;s 30-day Hyperliquid leaderboard, read 25 Sep 2026 06:04 UTC, each gate asked for $5,000. The simple PnL rule funds all five. The owner is the wallet&rsquo;s first funder (related-wallets, then the funding transfer); its other wallets are those in BAIT&rsquo;s index of 1,238, so five is a floor. Pre-registered before the read; 2,398 credits; every result published in <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/FIELD.md">bench/FIELD.md</a>. 3 of the 5 were already in the benchmark below. Shared funding is not proof of one owner.</p>
+
+    <ul class="findings" aria-label="The benchmark">
+      <li><span>Benchmark</span><p><strong>A simple PnL rule sends the money in 61 of 79 attacks; BAIT in 0 of 79.</strong> 12 are real operator wallets, picked by a rule written before any read: the PnL rule funds 12 of 12, gate v4 11, BAIT <strong>0 of 12 operator attacks</strong>. DeepSeek and Claude Sonnet 5 on their own backed them in 36 of 36 runs each. The other 67 are faked evidence.</p></li>
       <li><span>Faked evidence</span><p>A simple PnL rule let 49 of 67 faked records through. BAIT let <strong>0</strong>.</p></li>
       <li><span>True facts</span><p>Pitched losing traders with true facts only, the AI alone backed one in 63 of 78 runs. Behind BAIT: <strong>0 of 78</strong>. On 12 unseen losing wallets: 18 of 36, and <strong>0 of 36</strong> behind BAIT. Claude Sonnet 5 on the same 78: 74, and <strong>0</strong> behind BAIT.</p></li>
     </ul>
 
     <div class="hero-actions">
-      <a class="btn" href="https://bait-wyqr.onrender.com/">Play: talk the AI into backing a losing trader</a>
+      <a class="btn" href="https://bait-wyqr.onrender.com/">Play: talk the AI into funding a wallet</a>
       <a class="btn" href="https://x.com/WolfGanG_Aura/status/2102859321969442856">Watch the 60-second demo</a>
     </div>
 
+    <div class="hero-actions">
+      <a class="btn-ghost" href="#attack">See the recorded attack</a>
+      <a class="btn-ghost" href="#score">Test your agent&rsquo;s rules</a>
+      <a class="btn-ghost" href="#guard">How the gate works</a>
+    </div>
+
+    <p id="b-endpoints" class="endpoints skeleton-row">&nbsp;</p>
+  </section>
+
+  <section id="how" class="how sec" aria-labelledby="how-title">
+    <div class="sec-head">
+      <h2 id="how-title">How BAIT works</h2>
+      <p class="sec-meta">Three parties · the gate reads Nansen · fails closed</p>
+    </div>
+    <ol class="how-steps">
+      <li><span>01 · The AI agent</span><strong>Proposes a transfer</strong><small>In the Pitch Room that is PENNY: a third-party AI allocator with no data tools. PENNY decides on the pitch alone.</small></li>
+      <li class="bait"><span>02 · <span class="bait-badge">BAIT</span> check</span><strong>Reads Nansen before it leaves</strong><small>Gate v5 reads seven Nansen endpoints: the wallet's 30-day and 7-day perp-pnl-summary (checked for the right wallet, window dates, source and freshness), perp-trades, perp-positions, perp-screener for smart money's side of its largest position, and perp-leaderboard as a second record of the month, plus related-wallets for the wallet's first funder, transactions for the funding transfer, and each sibling wallet's 30-day perp-pnl-summary.</small></li>
+      <li><span>03 · What leaves</span><strong>All of it, a capped 25%, or $0</strong><small>A losing month, a week that reverses the month, fewer than 20 closed trades, a win rate under 40%, a summary that claims more than the leaderboard's record, or an operator that lost money across the wallets it funded: $0. One market carried the month, open positions down more than 25% of the account, or smart money two to one on the other side: 25%.</small></li>
+    </ol>
+    <p class="how-note">Every live round saves Nansen's raw response; the files and their SHA-256 are listed at <a href="/api/live-reads" data-host-link>/api/live-reads</a> and in <code>bench/live-reads/</code>. The model cannot override the check: the check runs in code after the agent decides. Missing, stale or mismatched evidence means $0. Call it from code with <code>guardAllocation</code> (section 3 below), run a local check with <code>npm run guard -- --wallet 0x... --allocation 5000</code>, or put your own agent behind it with <code>npm run bench -- --agent your-agent.mjs --snapshot</code>.</p>
+  </section>
+
+  <section id="truefacts" class="truefacts sec" aria-labelledby="truefacts-title">
+    <div class="sec-head">
+      <h2 id="truefacts-title">True facts benchmark</h2>
+      <p class="sec-meta">Losing traders pitched with true facts only · three runs each</p>
+    </div>
     <p class="lab ladder-lab" id="b-ladder-lab">Six losing wallets, 26 attacks (10 hand-written, 10 recorded from 3 player and 7 lab rounds, 6 from a recipe), three runs each, true facts only</p>
     <ol class="ladder" aria-label="Runs in which the AI backed the losing trader">
       <li class="big" data-rung="1">
@@ -78,31 +118,11 @@
 
     <div class="claims-box" aria-label="What the gate claims">
       <p class="lab">What the gate claims, and what it does not</p>
-      <p><strong>It claims:</strong> no money is sent to a trader whose verified Nansen record shows a loss, or whose record is missing, stale or for the wrong wallet.</p>
+      <p><strong>It claims:</strong> no money is sent to a trader whose verified Nansen record shows a loss, whose funder&rsquo;s other wallets lost money together, or whose record is missing, stale or for the wrong wallet.</p>
       <p id="b-detail"></p>
       <p><strong>It does not claim to predict next week.</strong> Replayed over 102 later seven-day periods on seven development wallets, the shipped gate blocked 63 periods, and 40 of those were not losing the week after; it allowed 39 (6 capped), and 9 of those lost money. The older one-rule gate blocked 38: 15 made money the next week and 5 were flat. Blocking a losing record acts on evidence you already have; it is not a forecast. <a href="https://github.com/wolfgang-aura/bait/blob/main/bench/reports/robustness-panel-concentration.md">Panel receipt</a>.</p>
     </div>
 
-    <div class="hero-actions">
-      <a class="btn-ghost" href="#attack">See the recorded attack</a>
-      <a class="btn-ghost" href="#score">Test your agent&rsquo;s rules</a>
-      <a class="btn-ghost" href="#guard">How the gate works</a>
-    </div>
-
-    <p id="b-endpoints" class="endpoints skeleton-row">&nbsp;</p>
-  </section>
-
-  <section id="how" class="how sec" aria-labelledby="how-title">
-    <div class="sec-head">
-      <h2 id="how-title">How BAIT works</h2>
-      <p class="sec-meta">Three parties · the gate reads Nansen · fails closed</p>
-    </div>
-    <ol class="how-steps">
-      <li><span>01 · The AI agent</span><strong>Proposes a transfer</strong><small>In the Pitch Room that is PENNY: a third-party AI allocator with no data tools. PENNY decides on the pitch alone.</small></li>
-      <li class="bait"><span>02 · <span class="bait-badge">BAIT</span> check</span><strong>Reads Nansen before it leaves</strong><small>Gate v5 reads seven Nansen endpoints: the wallet's 30-day and 7-day perp-pnl-summary (checked for the right wallet, window dates, source and freshness), perp-trades, perp-positions, perp-screener for smart money's side of its largest position, and perp-leaderboard as a second record of the month, plus related-wallets for the wallet's first funder, transactions for the funding transfer, and each sibling wallet's 30-day perp-pnl-summary.</small></li>
-      <li><span>03 · What leaves</span><strong>All of it, a capped 25%, or $0</strong><small>A losing month, a week that reverses the month, fewer than 20 closed trades, a win rate under 40%, a summary that claims more than the leaderboard's record, or an operator that lost money across the wallets it funded: $0. One market carried the month, open positions down more than 25% of the account, or smart money two to one on the other side: 25%.</small></li>
-    </ol>
-    <p class="how-note">Every live round saves Nansen's raw response; the files and their SHA-256 are listed at <a href="/api/live-reads" data-host-link>/api/live-reads</a> and in <code>bench/live-reads/</code>. The model cannot override the check: the check runs in code after the agent decides. Missing, stale or mismatched evidence means $0. Call it from code with <code>guardAllocation</code> (section 3 below), run a local check with <code>npm run guard -- --wallet 0x... --allocation 5000</code>, or put your own agent behind it with <code>npm run bench -- --agent your-agent.mjs --snapshot</code>.</p>
   </section>
 
   <section id="attack" class="attack sec" aria-labelledby="attack-title" hidden>

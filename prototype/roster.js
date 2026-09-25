@@ -1,5 +1,5 @@
 /**
- * The Pitch Room roster: four real public Hyperliquid traders, every one with a Nansen record.
+ * The Pitch Room roster: five real public Hyperliquid traders, every one with a Nansen record.
  *
  * A tile shows only what the trader publishes about themselves. The truth behind it is
  * served after the pick, never before, so the hype cannot be cross checked from the
@@ -8,8 +8,9 @@
  * Three sources, kept apart on purpose:
  *   - hype, Hyperliquid: the free public leaderboard rows saved in
  *     prototype/fixtures/roster-hype.json.
- *   - truth, Hyperliquid: a Nansen snapshot in validation/snapshots/ when one exists,
- *     otherwise the placeholder in prototype/fixtures/roster-snapshots/, which is
+ *   - truth, Hyperliquid: a Nansen snapshot in validation/snapshots/ when one exists, or a
+ *     saved live room read frozen into prototype/fixtures/frozen-reads/, otherwise the
+ *     placeholder in prototype/fixtures/roster-snapshots/, which is
  *     labelled as a fixture everywhere it is shown. Nothing in this file calls Nansen.
  *   The four Fomo Radar prospects that used to share the roster were removed on
  *   23 Sep 2026: they had no Nansen record, so the gate could not read them.
@@ -88,6 +89,16 @@ export const PROSPECTS = [
     name: 'THE GRINDER', handle: 'Trader 014', accent: '#FFB020', portrait: 'grinder',
     hypeKind: 'week_streak', live: true,
     voice: 'Four hundred and twenty four trades last week. Every one green.',
+  },
+  // A live-market wallet from the field test (bench/FIELD.md, leaderboard rank 68): its own
+  // record passes the PnL rule and gate v4 in full; only v5's owner check (operator_record)
+  // blocks it. Its frozen record is a saved live read, replayed (prototype/frozen-read.js).
+  // No leaderboard row: the brag is Nansen's own 7-day window.
+  {
+    id: 'cleansheet', venue: 'hyperliquid', wallet: '0x153c8444380512cabdc34f6cea09c322e14e319a',
+    name: 'THE CLEAN SHEET', handle: null, accent: '#B9A3E3', portrait: 'monk',
+    hypeKind: 'week_streak', live: true,
+    voice: 'Two thousand two hundred trades this week. Not one loss.',
   },
 ];
 
@@ -360,6 +371,8 @@ export function loadRoster({
   root = path.resolve(HERE, '..'),
   snapshotDir = path.join(root, 'validation', 'snapshots'),
   fixtureDir = path.join(root, 'prototype', 'fixtures', 'roster-snapshots'),
+  // A saved live room read frozen into a capture (prototype/frozen-read.js), with its v4 and v5 reads.
+  frozenReadDir = path.join(root, 'prototype', 'fixtures', 'frozen-reads'),
   hypeFile = path.join(root, 'prototype', 'fixtures', 'roster-hype.json'),
 } = {}) {
   const hypeBody = JSON.parse(fs.readFileSync(hypeFile, 'utf8'));
@@ -373,7 +386,7 @@ export function loadRoster({
       accent: p.accent, portrait: p.portrait, voice: p.voice,
     };
 
-    const real = findSnapshot(snapshotDir, p.wallet);
+    const real = findSnapshot(snapshotDir, p.wallet) ?? findSnapshot(frozenReadDir, p.wallet);
     const snapshot = declareCoverage(JSON.parse(
       fs.readFileSync(real ?? path.join(fixtureDir, `${p.wallet}.json`), 'utf8'),
     ));
@@ -381,16 +394,17 @@ export function loadRoster({
     const availability = snapshot.fixture === true ? 'fixture' : 'capture';
     const week = snapshot.pnl_summary_7d;
 
+    // Built for the prospect's own kind only: a Nansen-only brag has no leaderboard row.
     const headline = {
-      all_time: { value: money(hype.all_time_pnl_usd), caption: 'all time', sub: `${plain(hype.account_value_usd)} account` },
-      month: { value: money(hype.month_pnl_usd), caption: '30 days', sub: `${money(hype.all_time_pnl_usd)} all time` },
-      week: { value: money(hype.week_pnl_usd), caption: '7 days', sub: `${money(hype.all_time_pnl_usd)} all time` },
-      week_streak: { value: money(week.realized_pnl_usd), caption: '7 days', sub: `${pct(week.win_rate)} win rate` },
-    }[p.hypeKind];
+      all_time: () => ({ value: money(hype.all_time_pnl_usd), caption: 'all time', sub: `${plain(hype.account_value_usd)} account` }),
+      month: () => ({ value: money(hype.month_pnl_usd), caption: '30 days', sub: `${money(hype.all_time_pnl_usd)} all time` }),
+      week: () => ({ value: money(hype.week_pnl_usd), caption: '7 days', sub: `${money(hype.all_time_pnl_usd)} all time` }),
+      week_streak: () => ({ value: money(week.realized_pnl_usd), caption: '7 days', sub: `${pct(week.win_rate)} win rate` }),
+    }[p.hypeKind]();
 
     const loaded = {
       ...base,
-      hypeRow: hype,
+      hypeRow: hype ?? null,
       hype: {
         ...headline,
         source: p.hypeKind === 'week_streak'

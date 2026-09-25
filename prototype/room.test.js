@@ -393,9 +393,9 @@ function makeRosterRoom(script) {
 test('a pick binds the round to that prospect, and the roster call gives nothing away', async () => {
   const { service } = makeRosterRoom(answer(1250, 'intrigued', 'Opening a probe on that book.'));
   const config = await service.config();
-  assert.equal(config.roster.length, 4);
+  assert.equal(config.roster.length, 5);
   assert.deepEqual(config.roster.map(t => t.id), [
-    'legend', 'streak', 'realdeal', 'grinder',
+    'legend', 'streak', 'realdeal', 'grinder', 'cleansheet',
   ], 'every tile on the front door is a wallet Nansen covers');
   for (const tile of config.roster) assert.equal('truth' in tile, false, `${tile.id} ships no truth`);
   assert.equal('buried' in config.dossier, false, 'the config dossier is sealed too');

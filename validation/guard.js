@@ -489,7 +489,7 @@ function concentrationCheck(t, policy, pnl30, raw) {
     }
   } else {
     t.pass('concentration', value, barText,
-      `The best market, ${best.coin}, made ${pct(share)} of the ${policy.windowDays}-day result, so the profit does not rest on one market alone.`);
+      `The best market, ${best.coin}, made ${pct(share)} of the ${policy.windowDays}-day result, and everything else it traded came to ${Math.abs(pnl30 - best.realized_pnl_usd) < 0.5 ? '$0' : money(pnl30 - best.realized_pnl_usd)}, so no one market carried a book that otherwise lost money.`);
   }
 }
 

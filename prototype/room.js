@@ -410,6 +410,12 @@ export const v5ReadsOf = snap => (snap?.v5_reads?.operator
   : { operatorNote: 'Not read: live operator reads are off on this host.' });
 /** A frozen round has no operator read: the row says so instead of "could not be read". */
 export const FROZEN_V5_READS = Object.freeze({ operatorNote: 'Not read: this round plays a frozen capture; related-wallets is read live only.' });
+/**
+ * A capture frozen from a saved live read (prototype/frozen-read.js) carries that read's v4 and
+ * v5 answers, so a frozen round of it plays the same rows; any other capture has none.
+ */
+export const frozenV5ReadsOf = snap => (snap?.frozen_from && snap?.v5_reads?.operator ? { operator: snap.v5_reads.operator } : FROZEN_V5_READS);
+export const frozenV4ReadsOf = snap => (snap?.frozen_from && snap?.v4_reads ? v4ReadsOf(snap) : FROZEN_V4_READS);
 /** A frozen round has no v4 read: both rows say so instead of "could not be read". */
 export const FROZEN_V4_READS = Object.freeze({
   record: { error: 'not_read', message: 'Not read: this round plays a frozen capture; perp-leaderboard is read live only.' },
@@ -749,7 +755,7 @@ export function createRoomService({
    * (see `prospectFor`), so every wire is judged on the same two summaries, bought once
    * at round start, with their real fetch time. A frozen round reads its capture.
    */
-  const evidenceFor = p => p.executor ?? withV5Reads(withV4Reads(makeToolExecutor(p.snapshot, { mode: 'armed' }), FROZEN_V4_READS), FROZEN_V5_READS);
+  const evidenceFor = p => p.executor ?? withV5Reads(withV4Reads(makeToolExecutor(p.snapshot, { mode: 'armed' }), frozenV4ReadsOf(p.snapshot)), frozenV5ReadsOf(p.snapshot));
 
   /** The freshness row, in words, when the evidence is a live read: its real age. */
   const freshnessPlain = (p, check) => {
@@ -868,6 +874,39 @@ export function createRoomService({
   // stay in "What else BAIT found" as WATCH; they never relabel a transfer the gate cleared.
   const verdictOf = gate => (gate.decision === 'block' ? 'block' : gate.code === 'capped' ? 'capped' : 'allow');
 
+  /**
+   * Gate v5's owner read, for the reveal: the first funder (short address, chain, the funding
+   * transfer's size), the pitched wallet and each sibling with its realised PnL over the same
+   * days, and the sums. Every figure is the operator read the gate decided on, live or the
+   * frozen live read; null when the row did not read an owner.
+   */
+  async function ownerView(p, decision) {
+    const row = decision.checks?.find(c => c.id === 'operator_record');
+    const ev = decision.evidence?.operator;
+    if (!row || !ev || !['fail', 'pass'].includes(row.result)) return null;
+    let answer = null;
+    try { answer = await evidenceFor(p).execute('get_operator', { wallet: p.wallet }); } catch { answer = null; }
+    const shortAddr = a => `${String(a).slice(0, 6)}...${String(a).slice(-4)}`;
+    const own = decision.evidence.realized_pnl_usd;
+    const funding = f => (answer?.funders ?? []).find(x => x.chain === f.chain && x.funder === f.funder)?.funding_usd ?? null;
+    const lost = ev.siblings_pnl_30d_usd < 0 ? dollars(Math.abs(ev.siblings_pnl_30d_usd)) : null;
+    return {
+      result: row.result,
+      days: decision.policy?.window_days ?? 30,
+      funders: ev.funders.map(f => ({ short: shortAddr(f.funder), chain: f.chain, fundingUsd: funding(f), fundingLabel: funding(f) === null ? null : dollars(funding(f)) })),
+      wallet: { short: shortAddr(p.wallet), pnl: own, pnlLabel: money(own) },
+      siblings: ev.siblings.map(x => ({ short: shortAddr(x.wallet), pnl: x.realized_pnl_usd, pnlLabel: money(x.realized_pnl_usd) })),
+      siblingsPnl: ev.siblings_pnl_30d_usd, siblingsLabel: money(ev.siblings_pnl_30d_usd),
+      combined: ev.combined_pnl_30d_usd, combinedLabel: money(ev.combined_pnl_30d_usd),
+      readAt: answer?.retrieved_at ?? p.snapshot?.retrieved_at ?? null,
+      live: !!p.snapshot?.v5_reads?.operatorRead && !!p.snapshot?.live_read,
+      frozenFrom: p.snapshot?.live_read ? null : (p.snapshot?.frozen_from?.fetched_at ?? null),
+      line: row.result === 'fail' && lost
+        ? `The owner lost ${lost} across its other wallets; this is the one it's showing you.`
+        : null,
+    };
+  }
+
   async function runGate(p, allocation) {
     const decision = await guardAllocation({
       executor: evidenceFor(p),
@@ -912,6 +951,8 @@ export function createRoomService({
       // Gate v5: whether this round read the operator behind the wallet live.
       operatorLive: !!p.snapshot?.v5_reads?.operatorRead,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
+      // Gate v5: who is behind the wallet, when the operator row read one.
+      operator: await ownerView(p, decision),
       // The fill tape's age against the summaries the gate read. The gate never reads the
       // tape; the table says how old it is and that nothing on it decided this wire.
       tape: { ...(({ capturedAt, ageMs, maxAgeMs, stale }) => ({ capturedAt, ageMs, maxAgeMs, stale }))(tapeRecency(p.snapshot)),

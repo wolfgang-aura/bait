@@ -226,6 +226,10 @@ test('a month led by one market but not rescued by it passes the gate', async ()
   // Exactly the whole month in one market is at the bar, not over it.
   const single = await guardAllocation(v2Input(100, [{ coin: 'BTC', realized_pnl_usd: 100 }]));
   assert.equal(row(single, 'concentration').result, 'pass');
+  // Its text must not claim the profit is spread out (seen on THE CLEAN SHEET, 25 Sep 2026).
+  assert.doesNotMatch(row(single, 'concentration').plain, /does not rest on one market/);
+  assert.match(row(single, 'concentration').plain, /made 100\.0% of the 30-day result, and everything else it traded came to \$0, so no one market carried a book that otherwise lost money/);
+  assert.match(c.plain, /everything else it traded came to \+\$1,673,317/);
   // The executor rounds the total to cents; the per-market figure is not rounded.
   const rounded = await guardAllocation(v2Input(6_890_819.833430001, [{ coin: 'BTC', realized_pnl_usd: 6_890_819.833430001 }]));
   assert.equal(row(rounded, 'concentration').result, 'pass', 'rounding to cents is not concentration');

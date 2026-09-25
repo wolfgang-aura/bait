@@ -32,10 +32,11 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   const guarded = JSON.parse(files.get('recorded-results.json')).comparison.rows.find(r => r.config === 'guarded');
   assert.equal(typeof guarded?.blocked, 'number');
   assert.match(html, /<span class="sec-num">3<\/span>Guard</);
-  // The product is introduced before the proof: what BAIT is, who it is for, then the ladder.
-  assert.match(html, /BAIT is the check that runs before the money moves/);
-  assert.match(html, /for teams that let AI agents allocate capital/);
-  assert.ok(html.indexOf('BAIT is the check') < html.indexOf('class="ladder"'), 'the product line comes before the ladder');
+  // The live-market finding leads, then what BAIT is, then the benchmark; the true-facts ladder follows in its own section.
+  assert.match(html, /5 of the top 200 leaderboard wallets are the winning face of an owner who lost money/);
+  assert.match(html, /BAIT is the gate before an AI agent copies a wallet/);
+  assert.doesNotMatch(html, /blocks it when the record is losing/);
+  assert.ok(html.indexOf('winning face of an owner') < html.indexOf('owners-table"') && html.indexOf('owners-table"') < html.indexOf('class="ladder"'), 'finding, then the five wallets, then the ladder');
   assert.match(html, /Runs where the AI alone backed a losing trader/);
   assert.match(html, /With Nansen tools in hand, it still did/);
   assert.match(html, /Behind the BAIT check, no money reached a loser/);

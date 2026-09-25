@@ -1,0 +1,496 @@
+{
+  "wallet": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+  "schema_version": 1,
+  "chain": "hyperliquid",
+  "retrieved_at": "2026-09-25T11:08:20Z",
+  "windows": {
+    "30d": {
+      "from": "2026-08-26T11:08:20Z",
+      "to": "2026-09-25T11:08:20Z"
+    },
+    "7d": {
+      "from": "2026-09-18T11:08:20Z",
+      "to": "2026-09-25T11:08:20Z"
+    }
+  },
+  "trades_30d": [
+    {
+      "timestamp": "2026-09-09T10:15:45.092000Z",
+      "side": "Long",
+      "action": "Add",
+      "block_number": 1141174255,
+      "token_symbol": "GRAM",
+      "price": 1.408295103,
+      "size": 200000,
+      "value_usd": 281659.0206,
+      "start_position": 800720,
+      "closed_pnl": 0,
+      "crossed": true,
+      "fee_usd": 126.745998,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "user": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+      "oid": 540155121039
+    },
+    {
+      "timestamp": "2026-09-22T12:20:48.060000Z",
+      "side": "Long",
+      "action": "Reduce",
+      "block_number": 1156956524,
+      "token_symbol": "NEAR",
+      "price": 3.99249564685,
+      "size": 400000,
+      "value_usd": 1596998.25874,
+      "start_position": 602826.3,
+      "closed_pnl": 812498.25874,
+      "crossed": true,
+      "fee_usd": 718.648106,
+      "fee_token_symbol": "USDC",
+      "transaction_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "user": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+      "oid": 552931339108
+    }
+  ],
+  "trades_pagination": {
+    "per_page": 1000,
+    "pages_fetched": 1,
+    "is_complete": true
+  },
+  "open_positions": {
+    "asset_positions": [
+      {
+        "position": {
+          "token_symbol": "NEAR",
+          "size": "602721.4",
+          "position_value_usd": "3029458.5728199999",
+          "entry_price_usd": "1.96125",
+          "liquidation_price_usd": null,
+          "leverage_value": 10,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "302945.857282",
+          "max_leverage_value": 10,
+          "return_on_equity": "15.628000039",
+          "unrealized_pnl_usd": "1847369.2298330001",
+          "cumulative_funding_all_time_usd": "82866.515855",
+          "cumulative_funding_since_change_usd": "3931.284876",
+          "cumulative_funding_since_open_usd": "82866.515855"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "WLD",
+          "size": "5087735.7000000002",
+          "position_value_usd": "2308967.0927309999",
+          "entry_price_usd": "0.39389",
+          "liquidation_price_usd": null,
+          "leverage_value": 10,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "230896.709273",
+          "max_leverage_value": 10,
+          "return_on_equity": "1.5216457193",
+          "unrealized_pnl_usd": "304941.670502",
+          "cumulative_funding_all_time_usd": "38783.35271",
+          "cumulative_funding_since_change_usd": "22843.424012",
+          "cumulative_funding_since_open_usd": "38783.35271"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "GRAM",
+          "size": "1000720.0",
+          "position_value_usd": "1432660.7736",
+          "entry_price_usd": "1.504908",
+          "liquidation_price_usd": null,
+          "leverage_value": 5,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "286532.15472",
+          "max_leverage_value": 5,
+          "return_on_equity": "-0.243463839",
+          "unrealized_pnl_usd": "-73330.903004",
+          "cumulative_funding_all_time_usd": "41610.574445",
+          "cumulative_funding_since_change_usd": "13415.075904",
+          "cumulative_funding_since_open_usd": "41610.574445"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "kPEPE",
+          "size": "305417979.0",
+          "position_value_usd": "1401257.687652",
+          "entry_price_usd": "0.002898",
+          "liquidation_price_usd": null,
+          "leverage_value": 10,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "140125.768765",
+          "max_leverage_value": 10,
+          "return_on_equity": "5.8311106804",
+          "unrealized_pnl_usd": "516128.579569",
+          "cumulative_funding_all_time_usd": "32071.033332",
+          "cumulative_funding_since_change_usd": "20692.109535",
+          "cumulative_funding_since_open_usd": "32071.033332"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "FET",
+          "size": "4952800.0",
+          "position_value_usd": "1184709.76",
+          "entry_price_usd": "0.178337",
+          "liquidation_price_usd": null,
+          "leverage_value": 5,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "236941.952",
+          "max_leverage_value": 5,
+          "return_on_equity": "1.7063854822",
+          "unrealized_pnl_usd": "301439.805457",
+          "cumulative_funding_all_time_usd": "31757.207018",
+          "cumulative_funding_since_change_usd": "15548.685875",
+          "cumulative_funding_since_open_usd": "31757.207018"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "IMX",
+          "size": "6092369.7000000002",
+          "position_value_usd": "976728.7103039999",
+          "entry_price_usd": "0.12631",
+          "liquidation_price_usd": null,
+          "leverage_value": 5,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "195345.74206",
+          "max_leverage_value": 5,
+          "return_on_equity": "1.3457904911",
+          "unrealized_pnl_usd": "207140.814464",
+          "cumulative_funding_all_time_usd": "19955.20728",
+          "cumulative_funding_since_change_usd": "10388.405743",
+          "cumulative_funding_since_open_usd": "19955.20728"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "CFX",
+          "size": "15161872.0",
+          "position_value_usd": "829778.930816",
+          "entry_price_usd": "0.047497",
+          "liquidation_price_usd": null,
+          "leverage_value": 5,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "165955.786163",
+          "max_leverage_value": 5,
+          "return_on_equity": "0.7611263208",
+          "unrealized_pnl_usd": "109625.540127",
+          "cumulative_funding_all_time_usd": "24077.295543",
+          "cumulative_funding_since_change_usd": "11259.768163",
+          "cumulative_funding_since_open_usd": "24077.295543"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "kBONK",
+          "size": "191787580.0",
+          "position_value_usd": "723806.32692",
+          "entry_price_usd": "0.003353",
+          "liquidation_price_usd": null,
+          "leverage_value": 10,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "72380.632692",
+          "max_leverage_value": 10,
+          "return_on_equity": "1.2528361914",
+          "unrealized_pnl_usd": "80585.085087",
+          "cumulative_funding_all_time_usd": "2674.59068",
+          "cumulative_funding_since_change_usd": "8544.940694",
+          "cumulative_funding_since_open_usd": "2674.59068"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "kSHIB",
+          "size": "99152000.0",
+          "position_value_usd": "586087.472",
+          "entry_price_usd": "0.004945",
+          "liquidation_price_usd": null,
+          "leverage_value": 10,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "58608.7472",
+          "max_leverage_value": 10,
+          "return_on_equity": "1.9525493305",
+          "unrealized_pnl_usd": "95742.311486",
+          "cumulative_funding_all_time_usd": "9876.962884",
+          "cumulative_funding_since_change_usd": "6013.628625",
+          "cumulative_funding_since_open_usd": "9876.962884"
+        },
+        "position_type": "oneWay"
+      },
+      {
+        "position": {
+          "token_symbol": "PNUT",
+          "size": "10096000.0",
+          "position_value_usd": "561943.36",
+          "entry_price_usd": "0.04982",
+          "liquidation_price_usd": null,
+          "leverage_value": 3,
+          "leverage_type": "cross",
+          "leverage_raw_usd": null,
+          "margin_used_usd": "187314.453333",
+          "max_leverage_value": 3,
+          "return_on_equity": "0.3510421786",
+          "unrealized_pnl_usd": "58867.006389",
+          "cumulative_funding_all_time_usd": "12229.792939",
+          "cumulative_funding_since_change_usd": "7097.611268",
+          "cumulative_funding_since_open_usd": "12229.792939"
+        },
+        "position_type": "oneWay"
+      }
+    ],
+    "cross_maintenance_margin_used_usd": "938523.901742",
+    "cross_margin_summary_account_value_usd": "3108121.4584380002",
+    "cross_margin_summary_total_margin_used_usd": "1877047.8034880001",
+    "cross_margin_summary_total_net_liquidation_position_on_usd": "13035398.6868430004",
+    "cross_margin_summary_total_raw_usd": "-9927277.2284050006",
+    "margin_summary_account_value_usd": "3108121.4584380002",
+    "margin_summary_total_margin_used_usd": "1877047.8034880001",
+    "margin_summary_total_net_liquidation_position_usd": "13035398.6868430004",
+    "margin_summary_total_raw_usd": "-9927277.2284050006",
+    "timestamp": 1790334503098,
+    "withdrawable_usd": "1231073.6549500001",
+    "live": false,
+    "fetched_at": "2026-09-25T11:08:20Z"
+  },
+  "source": "capture",
+  "fixture": false,
+  "pnl_summary_30d": {
+    "top5_coins": [
+      {
+        "coin": "NEAR",
+        "realized_pnl_usd": 812498.25874,
+        "realized_roi": 0.508765901461311,
+        "closed_trade_count": 2237,
+        "fees_usd": 718.648106
+      },
+      {
+        "coin": "GRAM",
+        "realized_pnl_usd": 0,
+        "realized_roi": 0,
+        "closed_trade_count": 0,
+        "fees_usd": 126.745998
+      }
+    ],
+    "traded_coin_count": 2,
+    "traded_times": 2,
+    "closed_trade_count": 2237,
+    "winning_trade_count": 2237,
+    "realized_pnl_usd": 812498.25874,
+    "realized_pnl_percent": 0.508765901461311,
+    "win_rate": 1,
+    "fees_usd": 845.394104
+  },
+  "pnl_summary_7d": {
+    "top5_coins": [
+      {
+        "coin": "NEAR",
+        "realized_pnl_usd": 812498.25874,
+        "realized_roi": 0.508765901461311,
+        "closed_trade_count": 2237,
+        "fees_usd": 718.648106
+      }
+    ],
+    "traded_coin_count": 1,
+    "traded_times": 1,
+    "closed_trade_count": 2237,
+    "winning_trade_count": 2237,
+    "realized_pnl_usd": 812498.25874,
+    "realized_pnl_percent": 0.508765901461311,
+    "win_rate": 1,
+    "fees_usd": 718.648106
+  },
+  "fills_coverage": {
+    "complete": true,
+    "fills": 2,
+    "live": false,
+    "covers_from": "2026-08-26T11:08:20Z",
+    "covers_to": "2026-09-22T12:20:48.060000Z",
+    "covers_7d": true,
+    "from_capture": "2026-09-25T11:08:20Z"
+  },
+  "reconciliation": {
+    "skipped": "live fills are the newest pages only; not reconciled against the summary"
+  },
+  "v4_reads": {
+    "smartMoney": {
+      "NEAR": {
+        "token_symbol": "NEAR",
+        "smart_money_longs_usd": 21614399.973400004,
+        "smart_money_shorts_usd": 7436785.069499999,
+        "smart_money_longs_count": 43,
+        "smart_money_shorts_count": 9,
+        "window": {
+          "from": "2026-09-18",
+          "to": "2026-09-25"
+        },
+        "source": "Nansen /api/v1/perp-screener",
+        "retrieved_at": "2026-09-25T11:08:20Z"
+      }
+    },
+    "record": {
+      "wallet": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+      "window": {
+        "from": "2026-08-26",
+        "to": "2026-09-25"
+      },
+      "realized_pnl_usd": 812498.26,
+      "total_trades": 3376,
+      "source": "Nansen /api/v1/perp-leaderboard",
+      "retrieved_at": "2026-09-25T11:08:20Z"
+    },
+    "smartMoneyRead": true,
+    "recordRead": true
+  },
+  "v5_reads": {
+    "operator": {
+      "wallet": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+      "funders": [
+        {
+          "chain": "ethereum",
+          "funder": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+          "excluded": null,
+          "funding_usd": 495.34,
+          "funding_error": null,
+          "funding_ok": true,
+          "counts": true
+        },
+        {
+          "chain": "arbitrum",
+          "funder": "0x31cae3b7fb82d847621859fb1585353c5720660d",
+          "excluded": null,
+          "funding_usd": null,
+          "funding_error": "no_indexed_siblings",
+          "funding_ok": false,
+          "counts": false
+        }
+      ],
+      "siblings": [
+        {
+          "wallet": "0x191f565e660e4323b7a54c193eb571b99fdeaffe",
+          "chain": "ethereum",
+          "funder": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+          "realized_pnl_usd": 108129.64,
+          "closed_trade_count": 13856,
+          "window": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          },
+          "retrieved_at": "2026-09-25T11:08:20.000Z"
+        },
+        {
+          "wallet": "0x8cc94dc843e1ea7a19805e0cca43001123512b6a",
+          "chain": "ethereum",
+          "funder": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+          "realized_pnl_usd": -2791245.42,
+          "closed_trade_count": 269688,
+          "window": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          },
+          "retrieved_at": "2026-09-25T11:08:20.000Z"
+        },
+        {
+          "wallet": "0xa4247526997374fdab0bad6f63c9f3daca8f22d4",
+          "chain": "ethereum",
+          "funder": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+          "realized_pnl_usd": 260516.49,
+          "closed_trade_count": 196,
+          "window": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          },
+          "retrieved_at": "2026-09-25T11:08:20.000Z"
+        },
+        {
+          "wallet": "0xb3e475368ed0fa0ad23c04de0423d48a0758806f",
+          "chain": "ethereum",
+          "funder": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+          "realized_pnl_usd": -701497.31,
+          "closed_trade_count": 1841,
+          "window": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          },
+          "retrieved_at": "2026-09-25T11:08:20.000Z"
+        },
+        {
+          "wallet": "0xbc256baa3480ec7882ac87eadc349e77291b202b",
+          "chain": "ethereum",
+          "funder": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+          "realized_pnl_usd": 196989.65,
+          "closed_trade_count": 17809,
+          "window": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          },
+          "retrieved_at": "2026-09-25T11:08:20.000Z"
+        },
+        {
+          "wallet": "0xbf2a12006918a9118368910b047291e440c2d457",
+          "chain": "ethereum",
+          "funder": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+          "realized_pnl_usd": 110849.15,
+          "closed_trade_count": 18405,
+          "window": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          },
+          "retrieved_at": "2026-09-25T11:08:20.000Z"
+        },
+        {
+          "wallet": "0xdc6448f803903f3178a604decb388f7959913553",
+          "chain": "ethereum",
+          "funder": "0x21a31ee1afc51d94c2efccaa2092ad1028285549",
+          "realized_pnl_usd": 161449.78,
+          "closed_trade_count": 13877,
+          "window": {
+            "from": "2026-08-26T11:08:20Z",
+            "to": "2026-09-25T11:08:20Z"
+          },
+          "retrieved_at": "2026-09-25T11:08:20.000Z"
+        }
+      ],
+      "window": {
+        "from": "2026-08-26T11:08:20Z",
+        "to": "2026-09-25T11:08:20Z"
+      },
+      "index_wallets": 1238,
+      "source": "Nansen /api/v1/profiler/address/related-wallets",
+      "retrieved_at": "2026-09-25T11:08:20.000Z"
+    },
+    "operatorRead": true,
+    "credits": 10,
+    "endpoints": [
+      "profiler/address/related-wallets",
+      "profiler/address/transactions",
+      "profiler/perp-pnl-summary"
+    ]
+  },
+  "frozen_from": {
+    "file": "bench/live-reads/20260925T110820Z-0x153c8444.json",
+    "sha256": "6d03f19dfe864cf2cdb8494b9833fac66eb04b3c8c1e31c0e7c6c7e40fe08739",
+    "fetched_at": "2026-09-25T11:08:20Z",
+    "note": "A live room read of this wallet, replayed through prototype/live-evidence.js with no network call (prototype/frozen-read.js)."
+  }
+}

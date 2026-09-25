@@ -18,12 +18,12 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ROSTER = loadRoster();
 const by = id => ROSTER.find(p => p.id === id);
 
-test('the roster is four Nansen-backed Hyperliquid prospects, and is never ordered by PnL', () => {
-  assert.equal(ROSTER.length, 4);
-  assert.deepEqual(ROSTER.map(p => p.venue), ['hyperliquid', 'hyperliquid', 'hyperliquid', 'hyperliquid']);
-  assert.equal(new Set(ROSTER.map(p => p.id)).size, 4, 'ids are unique');
-  assert.equal(new Set(ROSTER.map(p => p.accent)).size, 4, 'every prospect has its own accent colour');
-  assert.equal(new Set(ROSTER.map(p => p.portrait)).size, 4, 'every prospect has its own portrait');
+test('the roster is five Nansen-backed Hyperliquid prospects, and is never ordered by PnL', () => {
+  assert.equal(ROSTER.length, 5);
+  assert.ok(ROSTER.every(p => p.venue === 'hyperliquid'));
+  assert.equal(new Set(ROSTER.map(p => p.id)).size, 5, 'ids are unique');
+  assert.equal(new Set(ROSTER.map(p => p.accent)).size, 5, 'every prospect has its own accent colour');
+  assert.equal(new Set(ROSTER.map(p => p.portrait)).size, 5, 'every prospect has its own portrait');
   const fomoDir = path.join(ROOT, 'prototype', 'fixtures', 'fomo');
   assert.ok(!fs.existsSync(fomoDir) || fs.readdirSync(fomoDir).length === 0, 'the Fomo tapes are gone');
 
@@ -247,6 +247,7 @@ test('every figure a prospect brags about is in the loaded record', () => {
     ['streak', /six hundred grand/, p => p.hypeRow.week_pnl_usd, 600_000],
     ['realdeal', /hundred and sixteen thousand/, p => p.hypeRow.month_pnl_usd, 116_000],
     ['grinder', /four hundred and twenty four trades/i, p => p.snapshot.pnl_summary_7d.closed_trade_count, 424],
+    ['cleansheet', /two thousand two hundred trades this week/i, p => p.snapshot.pnl_summary_7d.closed_trade_count, 2200],
   ];
   for (const [id, said, read, spoken] of brags) {
     const p = by(id);

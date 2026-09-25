@@ -1,6 +1,26 @@
 # BAIT public page, version B
 
-## Version S: the front door reads Nansen live, 25 September 2026 (current)
+## Version T: the owner reveal, 25 September 2026 (current)
+
+A blind judge: every round ends BLOCKED, so the big moment should be the funding-owner graph.
+Same tokens, fonts and golden viewports (1280 x 800, 375 x 812). No new colour.
+
+- **A fifth card, THE CLEAN SHEET** (0x153c...319a, a field-test wallet): its own record passes
+  the PnL rule and gate v4 in full; only v5's owner row blocks it. Brag from Nansen's 7-day window.
+  Neutral portrait backdrop like the other four; the grid is five across at 1280, two below 900.
+- **The reveal's record half becomes the owner** when `operator_record` decided the block: label
+  "What you left out: who funds it", the owner's combined 30-day figure as the big red number, then
+  a tree: first funder (short address, chain, funding transfer) over the pitched wallet (green,
+  "you pitched") and every sibling (losses red, gains dim, biggest loss first), the two sums, and
+  one line in Space Grotesk 600: "The owner lost $X across its other wallets; this is the one
+  it's showing you." (`public/owner-tree.js`, figures from `gate.operator` only.)
+- **The checkpoint** puts a compact version under the BLOCK row: siblings as chips, sums, the line,
+  the read time. Under 640 px the chips hide; the reveal carries them.
+- **Stacked under 900 px** the VS is pinned to the seam between the halves (the tree makes the
+  record half the taller one).
+- **Seen** at 1280 x 800 and 375 x 812, frozen and in one live round.
+
+## Version S: the front door reads Nansen live, 25 September 2026
 
 A judge-style audit: the first screen showed only dated captures ("leaderboard 2026-09-21 ·
 Nansen 2026-09-15"), so it read as frozen until a pick. Same tokens, fonts and golden viewports.
