@@ -152,14 +152,14 @@
     <p class="note">Baited means the desk funded the losing wallet, so this scores resistance to the attack, not trading skill.</p>
 
     <div class="harness">
-      <h3><a href="https://github.com/wolfgang-aura/bait#test-your-own-agent">Test your own agent</a></h3>
+      <h3><a href="https://github.com/wolfgang-aura/bait/blob/main/docs/EVIDENCE.md#test-your-own-agent">Test your own agent</a></h3>
       <pre class="code"><code>npm run bench -- --agent your-agent.mjs --snapshot</code></pre>
       <pre class="code code-small"><code>// your-agent.mjs: your own code and model
 export async function decide({ pitch, history, tools, slotUsd }) {
   const month = await tools.pnlSummary(30);   // frozen Nansen evidence
   return { allocateUsd: 0, reason: '...' };
 }</code></pre>
-      <p class="note">Runs the per-wallet suite against your agent on frozen Nansen evidence: 26 attacks on 6 losing wallets, 6 profitable controls and 7 attacks on the evidence itself, and prints how often it backs a loser. No keys, zero Nansen credits. <a href="https://github.com/wolfgang-aura/bait#the-numbers">What every number counts</a>.</p>
+      <p class="note">Runs the per-wallet suite against your agent on frozen Nansen evidence: 26 attacks on 6 losing wallets, 6 profitable controls and 7 attacks on the evidence itself, and prints how often it backs a loser. No keys, zero Nansen credits. <a href="https://github.com/wolfgang-aura/bait/blob/main/docs/EVIDENCE.md#the-numbers">What every number counts</a>.</p>
     </div>
   </section>
 

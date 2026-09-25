@@ -97,7 +97,7 @@ itself separately. The page labels its proof as recorded.
 The guard passes a fresh matching result at or above the configured threshold and never
 raises the model's amount; a cap row can only lower it to 25%. Across all 53 good-trader
 funding decisions, 38 went through in full, 9 were capped and 6 were blocked
-([the numbers](../README.md#the-numbers)). Tests cover positive and exactly-zero PnL. The earlier
+([the numbers](EVIDENCE.md#the-numbers)). Tests cover positive and exactly-zero PnL. The earlier
 paired prompt-policy experiment also funded its profitable control, although that is a
 small development sample and is not presented as guard validation.
 
@@ -117,7 +117,7 @@ referee, reproduction command, production contract, and failure tests. The 59.5-
 video (`SUBMISSION.md`) shows two real rounds played on the hosted site on fresh live Nansen
 reads, then the benchmark card, without narration. Every headline figure is checked against
 `bench/FIGURES.json` by `npm test`, and every denominator is explained once in the
-[README](../README.md#the-numbers).
+[README](EVIDENCE.md#the-numbers).
 
 ## Wallet-panel objection: "You picked winners and losers from whichever metric suited you"
 

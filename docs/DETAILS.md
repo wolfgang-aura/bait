@@ -1,6 +1,6 @@
 # BAIT in detail
 
-The README keeps the findings, the commands and [every denominator](../README.md#the-numbers).
+[EVIDENCE.md](EVIDENCE.md) keeps the findings and [every denominator](EVIDENCE.md#the-numbers).
 This page holds the rest: the single-wallet ladder, how the Pitch Room plays, the bench, the
 gate and why Nansen is structural.
 

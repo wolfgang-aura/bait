@@ -5,8 +5,8 @@
 > one AI (PENNY) with the BAIT check (gate v4) between it and the money: see
 > [docs/DETAILS.md](../docs/DETAILS.md) and the [README](../README.md). The costs, caps, test
 > counts and results below are those of that date; the current figures are in
-> [bench/FIGURES.json](../bench/FIGURES.json) and the README's
-> [numbers](../README.md#the-numbers).*
+> [bench/FIGURES.json](../bench/FIGURES.json) and the evidence page's
+> [numbers](../docs/EVIDENCE.md#the-numbers).*
 
 One pitch, two AI desks. Both get the same evidence and the same rule. Only one of
 them can query the Nansen record. You have three turns to talk either of them into

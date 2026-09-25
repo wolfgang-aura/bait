@@ -65,9 +65,9 @@ test('figure drift: the checker catches a stale figure, a v3 default, a mixed be
   assert.equal(checkLinks('docs/x.md', '[gone](missing.md) [ok](DETAILS.md) [anchor](../README.md#no-such-heading)').length, 2);
 });
 
-test('figure drift: the README explains every denominator once, in "The numbers"', () => {
-  const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
-  const numbers = readme.split('## The numbers')[1]?.split('\n## ')[0] ?? '';
+test('figure drift: docs/EVIDENCE.md explains every denominator once, in "The numbers"', () => {
+  const evidence = fs.readFileSync(path.join(ROOT, 'docs', 'EVIDENCE.md'), 'utf8');
+  const numbers = evidence.split('## The numbers')[1]?.split('\n## ')[0] ?? '';
   for (const den of ['of 79', 'of 12', 'of 78', 'of 26', 'of 67', 'of 54', 'of 18', 'of 36', 'of 35', 'of 53']) {
     assert.ok(numbers.includes(den), `"The numbers" does not explain "${den}"`);
   }

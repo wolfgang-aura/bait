@@ -43,7 +43,7 @@ What it recomputes and what it reads as recorded:
   round of 23 Sep, because the raw read holds Nansen's answers and not the model's, and the video file.
 
 To re-run a model or re-read Nansen yourself you need keys; the commands are in
-[bench/V5.md](bench/V5.md) and the README's [Run it and re-score it](README.md#run-it-and-re-score-it).
+[bench/V5.md](bench/V5.md) and [Run it and re-score it](docs/EVIDENCE.md#run-it-and-re-score-it).
 
 ## 3. Read the numbers (1 minute)
 
@@ -58,7 +58,7 @@ To re-run a model or re-read Nansen yourself you need keys; the commands are in
 | 18 and 0 of 36 | The same on 12 losing wallets the project had never seen: AI alone, behind BAIT |
 | 38 of 53 | The cost: good-trader transfers that went through in full (9 capped, 6 blocked) |
 
-Every denominator is explained once in the README's [The numbers](README.md#the-numbers).
+Every denominator is explained once in [The numbers](docs/EVIDENCE.md#the-numbers).
 
 ## Where the attacks came from
 
