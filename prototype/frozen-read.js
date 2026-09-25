@@ -79,6 +79,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   if (!file) { console.error('usage: node prototype/frozen-read.js bench/live-reads/<file>.json'); process.exit(2); }
   const snap = await frozenSnapshot(file);
   const out = path.join(FROZEN_DIR, `${snap.wallet}.json`);
+  fs.mkdirSync(FROZEN_DIR, { recursive: true });
   fs.writeFileSync(out, `${JSON.stringify(snap, null, 2)}\n`);
   const op = snap.v5_reads?.operator;
   console.log(`wrote ${path.relative(ROOT, out)}: 30d ${snap.pnl_summary_30d.realized_pnl_usd}, operator siblings ${op?.siblings?.length ?? 0}, read ${snap.frozen_from.fetched_at}`);

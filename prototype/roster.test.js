@@ -247,7 +247,7 @@ test('every figure a prospect brags about is in the loaded record', () => {
     ['streak', /six hundred grand/, p => p.hypeRow.week_pnl_usd, 600_000],
     ['realdeal', /hundred and sixteen thousand/, p => p.hypeRow.month_pnl_usd, 116_000],
     ['grinder', /four hundred and twenty four trades/i, p => p.snapshot.pnl_summary_7d.closed_trade_count, 424],
-    ['cleansheet', /two thousand two hundred trades this week/i, p => p.snapshot.pnl_summary_7d.closed_trade_count, 2200],
+    ['steadyhand', /hundred and ninety grand this week/i, p => p.snapshot.pnl_summary_7d.realized_pnl_usd, 190_000],
   ];
   for (const [id, said, read, spoken] of brags) {
     const p = by(id);

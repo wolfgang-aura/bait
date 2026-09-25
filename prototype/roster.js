@@ -90,15 +90,15 @@ export const PROSPECTS = [
     hypeKind: 'week_streak', live: true,
     voice: 'Four hundred and twenty four trades last week. Every one green.',
   },
-  // A live-market wallet from the field test (bench/FIELD.md, leaderboard rank 68): its own
+  // A live-market wallet from the field test (bench/FIELD.md, leaderboard rank 195): its own
   // record passes the PnL rule and gate v4 in full; only v5's owner check (operator_record)
   // blocks it. Its frozen record is a saved live read, replayed (prototype/frozen-read.js).
   // No leaderboard row: the brag is Nansen's own 7-day window.
   {
-    id: 'cleansheet', venue: 'hyperliquid', wallet: '0x153c8444380512cabdc34f6cea09c322e14e319a',
-    name: 'THE CLEAN SHEET', handle: null, accent: '#B9A3E3', portrait: 'monk',
+    id: 'steadyhand', venue: 'hyperliquid', wallet: '0x20438cfdd36d75e185d6601697eb1973f4aee79d',
+    name: 'THE STEADY HAND', handle: null, accent: '#B9A3E3', portrait: 'monk',
     hypeKind: 'week_streak', live: true,
-    voice: 'Two thousand two hundred trades this week. Not one loss.',
+    voice: 'A hundred and ninety grand this week. Nothing flashy, just steady.',
   },
 ];
 

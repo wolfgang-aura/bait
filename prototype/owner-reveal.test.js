@@ -1,5 +1,5 @@
 /**
- * THE CLEAN SHEET: a live-market wallet from the field test that the PnL rule and gate v4 fund
+ * THE STEADY HAND: a live-market wallet from the field test that the PnL rule and gate v4 fund
  * in full, and gate v5 blocks on its owner. Its frozen record is a saved live room read,
  * replayed; the reveal shows the funder and every sibling from that read and nothing else.
  */
@@ -22,14 +22,14 @@ import { loadAgent, replayAgentCase } from '../bench/agent.js';
 import { AGENT } from '../bench/v4.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const WALLET = '0x153c8444380512cabdc34f6cea09c322e14e319a';
+const WALLET = '0x20438cfdd36d75e185d6601697eb1973f4aee79d';
 const FROZEN = path.join(FROZEN_DIR, `${WALLET}.json`);
 const committed = JSON.parse(fs.readFileSync(FROZEN, 'utf8'));
-const card = () => loadRoster().find(p => p.id === 'cleansheet');
+const card = () => loadRoster().find(p => p.id === 'steadyhand');
 
 test('the frozen record is the saved live read, replayed through the live path: nothing typed by hand', async () => {
   const raw = path.join(ROOT, committed.frozen_from.file);
-  assert.match(committed.frozen_from.file, /^bench\/live-reads\/\d{8}T\d{6}Z-0x153c8444\.json$/);
+  assert.match(committed.frozen_from.file, /^bench\/live-reads\/\d{8}T\d{6}Z-0x20438cfd\.json$/);
   assert.equal(createHash('sha256').update(fs.readFileSync(raw)).digest('hex'), committed.frozen_from.sha256);
   const rebuilt = JSON.parse(JSON.stringify(await frozenSnapshot(raw)));
   assert.deepEqual(rebuilt, committed, 'node prototype/frozen-read.js rebuilds the committed capture byte for byte');
@@ -72,7 +72,7 @@ test('only a capture frozen from a live read carries operator reads into a froze
 
 test('the gate hands the reveal the funder and every sibling, each figure from the operator read', async () => {
   const service = createRoomService({ liveEvidence: null });
-  const { gate } = await service.fixture('cleansheet');
+  const { gate } = await service.fixture('steadyhand');
   assert.equal(gate.decision, 'block');
   assert.equal(gate.failed, 'operator_record');
   const op = gate.operator;
@@ -84,7 +84,7 @@ test('the gate hands the reveal the funder and every sibling, each figure from t
   const sum = read.siblings.reduce((a, s) => a + s.realized_pnl_usd, 0);
   assert.ok(Math.abs(op.siblingsPnl - sum) < 0.01);
   assert.ok(Math.abs(op.combined - (sum + committed.pnl_summary_30d.realized_pnl_usd)) < 0.01);
-  assert.equal(op.wallet.short, '0x153c...319a');
+  assert.equal(op.wallet.short, '0x2043...e79d');
   assert.equal(op.frozenFrom, committed.frozen_from.fetched_at);
   assert.equal(op.live, false);
   assert.equal(op.line, `The owner lost $${Math.round(Math.abs(sum)).toLocaleString('en-US')} across its other wallets; this is the one it's showing you.`);
@@ -93,11 +93,11 @@ test('the gate hands the reveal the funder and every sibling, each figure from t
 });
 
 test('the owner tree draws the funder, the pitched wallet, every sibling, both sums and the line', async () => {
-  const { gate } = await createRoomService({ liveEvidence: null }).fixture('cleansheet');
+  const { gate } = await createRoomService({ liveEvidence: null }).fixture('steadyhand');
   const op = gate.operator;
   const html = ownerTreeHtml(op);
-  assert.match(html, /First funder<\/span> <b>0x21a3\.\.\.5549<\/b> <span class="ot-meta">Ethereum · sent it \$495 to start<\/span>/);
-  assert.match(html, /<li class="ot-node pitched"><b>0x153c\.\.\.319a<\/b><span class="ot-tag">you pitched<\/span><em>\+\$812,498<\/em><\/li>/);
+  assert.match(html, /First funder<\/span> <b>0xeb26\.\.\.d4cf<\/b> <span class="ot-meta">Ethereum · sent it \$4,307 to start<\/span>/);
+  assert.match(html, /<li class="ot-node pitched"><b>0x2043\.\.\.e79d<\/b><span class="ot-tag">you pitched<\/span><em>\+\$358,593<\/em><\/li>/);
   for (const s of op.siblings) {
     assert.ok(html.includes(`<li class="ot-node ${s.pnl < 0 ? 'loss' : 'gain'}"><b>${s.short}</b><em>${s.pnlLabel}</em></li>`), s.short);
   }
@@ -108,7 +108,7 @@ test('the owner tree draws the funder, the pitched wallet, every sibling, both s
   const order = [...html.matchAll(/<li class="ot-node (?:loss|gain)"><b>[^<]+<\/b><em>([^<]+)<\/em>/g)].map(m => Number(m[1].replace(/[$,+]/g, '')));
   assert.deepEqual(order, [...order].sort((a, b) => a - b));
   assert.doesNotMatch(html, /ot-src/);
-  assert.match(ownerTreeHtml(op, { compact: true }), /class="owner-tree compact losing"[\s\S]*Owner read: frozen capture of a live read, 2026-09-25 11:08 UTC/);
+  assert.match(ownerTreeHtml(op, { compact: true }), /class="owner-tree compact losing"[\s\S]*Owner read: frozen capture of a live read, 2026-09-25 11:31 UTC/);
   // Escaped, and nothing without a read.
   assert.doesNotMatch(ownerTreeHtml({ ...op, wallet: { ...op.wallet, short: '<script>' } }), /<script>/);
   assert.equal(ownerTreeHtml(null), '');

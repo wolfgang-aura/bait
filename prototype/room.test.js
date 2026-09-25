@@ -395,7 +395,7 @@ test('a pick binds the round to that prospect, and the roster call gives nothing
   const config = await service.config();
   assert.equal(config.roster.length, 5);
   assert.deepEqual(config.roster.map(t => t.id), [
-    'legend', 'streak', 'realdeal', 'grinder', 'cleansheet',
+    'legend', 'streak', 'realdeal', 'grinder', 'steadyhand',
   ], 'every tile on the front door is a wallet Nansen covers');
   for (const tile of config.roster) assert.equal('truth' in tile, false, `${tile.id} ships no truth`);
   assert.equal('buried' in config.dossier, false, 'the config dossier is sealed too');

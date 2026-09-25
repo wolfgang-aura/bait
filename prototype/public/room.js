@@ -273,7 +273,7 @@ async function pasteWallet(event) {
     return;
   }
   el.anyWalletGo.disabled = true;
-  text(el.anyWalletNote, 'Reading Nansen for this wallet: PnL summaries, fills, positions and smart money...');
+  text(el.anyWalletNote, 'Reading Nansen for this wallet: PnL summaries, fills, positions, smart money and who funded it...');
   try {
     const res = await api('/api/room/start', { method: 'POST', body: { wallet } });
     chosen = { name: res.prospect.name, short: res.prospect.short, accent: NEUTRAL_ACCENT };

@@ -65,7 +65,8 @@ test('the default route is the Pitch Room, with the guard console still reachabl
     assert.equal(page.status, 200);
     assert.match(page.type, /text\/html/);
     assert.match(page.body, /The Pitch Room/);
-    assert.match(page.body, /BAIT is the check that runs before the money moves/);
+    assert.match(page.body, /BAIT is the gate before an AI agent copies a wallet\./);
+    assert.match(page.body, /It asks Nansen who funded the wallet, reads the owner&rsquo;s other wallets, and refuses when the owner lost\./);
     assert.match(page.body, /Built for teams that let AI agents allocate capital/);
     assert.match(page.body, /talk the AI into backing/);
     assert.match(page.body, /What BAIT will check/);

@@ -5,7 +5,7 @@
 A blind judge: every round ends BLOCKED, so the big moment should be the funding-owner graph.
 Same tokens, fonts and golden viewports (1280 x 800, 375 x 812). No new colour.
 
-- **A fifth card, THE CLEAN SHEET** (0x153c...319a, a field-test wallet): its own record passes
+- **A fifth card, THE STEADY HAND** (0x2043...e79d, field-test rank 195; replaced THE CLEAN SHEET, 0x153c, whose 100% win rate over 2,237 trades read as broken data): its own record passes
   the PnL rule and gate v4 in full; only v5's owner row blocks it. Brag from Nansen's 7-day window.
   Neutral portrait backdrop like the other four; the grid is five across at 1280, two below 900.
 - **The reveal's record half becomes the owner** when `operator_record` decided the block: label
@@ -18,6 +18,9 @@ Same tokens, fonts and golden viewports (1280 x 800, 375 x 812). No new colour.
   the read time. Under 640 px the chips hide; the reveal carries them.
 - **Stacked under 900 px** the VS is pinned to the seam between the halves (the tree makes the
   record half the taller one).
+- **The roster's first line leads with the owner finding**, as the proof page does: "BAIT is the
+  gate before an AI agent copies a wallet. It asks Nansen who funded the wallet, reads the owner's
+  other wallets, and refuses when the owner lost." Same two-weight line and "Built for" note.
 - **Seen** at 1280 x 800 and 375 x 812, frozen and in one live round.
 
 ## Version S: the front door reads Nansen live, 25 September 2026

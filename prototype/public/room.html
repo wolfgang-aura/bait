@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BAIT · The Pitch Room</title>
-<meta name="description" content="AI agents can be talked into bad bets. BAIT is the check that runs before the money moves: it reads Nansen and blocks the transfer when the record is losing.">
+<meta name="description" content="BAIT is the gate before an AI agent copies a wallet: it asks Nansen who funded the wallet, reads the owner's other wallets, and refuses when the owner lost.">
 <meta name="theme-color" content="#0A0B0D">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,8 +33,8 @@
   <!-- ============================================ 1. pick your hero ==== -->
   <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
     <p class="concept" id="concept">
-      AI agents are starting to move real money, and true facts can talk them into bad bets.
-      <b>BAIT is the check that runs before the money moves.</b>
+      BAIT is the gate before an AI agent copies a wallet.
+      <b>It asks Nansen who funded the wallet, reads the owner&rsquo;s other wallets, and refuses when the owner lost.</b>
       <span class="for-whom">Built for teams that let AI agents allocate capital.</span>
     </p>
     <div class="roster-head">
@@ -50,7 +50,7 @@
         <input id="any-wallet-input" name="wallet" type="text" placeholder="0x followed by 40 hex characters" spellcheck="false" autocomplete="off" maxlength="42" aria-describedby="any-wallet-note">
         <button type="submit" id="any-wallet-go">Read it on Nansen</button>
       </div>
-      <p class="aw-note" id="any-wallet-note">One live Nansen check (PnL summaries, fills, positions, smart money and, when it matters, the leaderboard), then the same round.</p>
+      <p class="aw-note" id="any-wallet-note">One live Nansen check (PnL summaries, fills, positions, smart money and, when it matters, the leaderboard and who funded the wallet), then the same round.</p>
     </form>
     <div class="caller" id="caller">
       <p class="caller-line" id="caller-line"></p>
