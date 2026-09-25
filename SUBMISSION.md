@@ -16,8 +16,8 @@ Current evidence:
   reached 7,919 charged credits since 14 September after the field test (25 Sep 06:48 UTC,
   `bench/FIELD.md`); hosted rounds are counted separately at /api/usage.
 - Public repository: <https://github.com/wolfgang-aura/bait>
-- Playable build: <https://bait-wyqr.onrender.com/>, serving public commit 48b8773 (gate v5: the
-  Pitch Room reads the owner behind the wallet; `/healthz` checked 25 Sep 15:30 UTC). Both video
+- Playable build: <https://bait-wyqr.onrender.com/>, serving public commit a0e37e2 or later (gate v5:
+  the Pitch Room reads the owner behind the wallet; `/healthz` reports the exact commit it serves). Both video
   rounds were played earlier, on public commit 4ef7b40 (gate v4); both were blocked before the
   owner read (a losing month, a reversed week), so v5 decides them the same way.
 - Recorded proof page: <https://wolfgang-aura.github.io/bait/> (leads with the 25 Sep field test,

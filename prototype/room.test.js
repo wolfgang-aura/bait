@@ -841,7 +841,8 @@ test('the referee names only a figure the player typed that is not in the record
   const sealed = steady.checkerData.pnl_summary_30d.realized_pnl_usd;
   assert.equal(offendingFigure(`It made $${Math.round(sealed).toLocaleString('en-US')} in 30 days.`, round.dossier, round.data), null);
   assert.equal(refereeLine('$209,987'), 'Referee: $209,987 is not in the record. The line is spent.');
-  assert.equal(refereeLine(null), 'Referee: a figure in that line is not in the record. The line is spent.');
+  // Judge 6: with no figure named, the referee claims nothing about figures.
+  assert.equal(refereeLine(null), 'Referee: the line does not match the record as stated. The line is spent.');
 });
 
 test('judge 5: the result headline is true in every case: "without checking who funds the wallet" unless PENNY asked', () => {

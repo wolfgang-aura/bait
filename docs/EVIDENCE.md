@@ -52,7 +52,7 @@ flowchart LR
 
 | Nansen endpoint | Credits | The rule it drives |
 | --- | ---: | --- |
-| `profiler/perp-pnl-summary`, 30 days | 1 | Right wallet, window dates, source and age; a losing month blocks; under 20 trades or a win rate under 40% blocks; one market carrying the month caps at 25% |
+| `profiler/perp-pnl-summary`, 30 days | 1 | Right wallet, window dates, source and age; a losing month blocks; under 20 trades or a win rate under 40% blocks; one market making more than the whole month (the rest of the book lost) caps at 25% |
 | `profiler/perp-pnl-summary`, 7 days | 1 | A week that reverses the month by 10% of it or more blocks |
 | `profiler/perp-positions` | 1 | Open positions down over 25% of the account cap at 25%; names the largest position |
 | `perp-screener` (smart money, that market) | 1 | Two thirds of at least $1M of smart money on the other side caps at 25% |

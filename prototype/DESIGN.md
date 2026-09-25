@@ -227,7 +227,7 @@ the copy alone.
 Changes on top of Version J, from an independent judge's re-grade.
 
 - **The referee is not PENNY.** A false figure is called by the referee, in amber mono under
-  the composer ("Referee: a figure in that line is not in the record. The line is spent."),
+  the composer ("Referee: +$9,999,999 is not in the record. The line is spent."; judge 6: a true figure in the wrong window is named as such, and with no specific reason the line says only "the line does not match the record as stated"),
   never inside PENNY's bubble; PENNY has no data and cannot know the record. Leaving the loss
   out is the game: a line made only of offered fact cards can never be caught, and a
   checker complaint that only names an omission is overruled. The checker's own reason,

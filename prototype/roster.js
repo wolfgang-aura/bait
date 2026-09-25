@@ -79,18 +79,36 @@ export function readOf(snapshot) {
  * the figure has moved, this is the one line that says by how much, computed from the two reads.
  * Null for a frozen round, a tile whose brag is not Nansen's 7-day window, or no change.
  */
+/**
+ * Judge 6: one rule for every wallet. The tile's figure is compared with the same window on the
+ * round's read (a 7-day or week figure with the 7-day realised PnL, a 30-day figure with the 30-day);
+ * an all-time tile has no window on the read and gets no line. The wording is the true one:
+ * "moved since" only when the tile is an earlier Nansen read of the same measure, otherwise the two
+ * figures are named with their reads and how far apart they are (a leaderboard's 30 days and
+ * Nansen's 30-day realised are different reads, and the saved read can be older than the tile).
+ */
 export function movedSince(p) {
-  const saved = p?.savedRead;
+  const tile = p?.tileFigure;
   const now = readOf(p?.snapshot);
-  if (!saved || !now.live || p.hype?.hypeFrom !== 'Nansen') return null;
-  const live7 = Number(p.snapshot?.pnl_summary_7d?.realized_pnl_usd);
-  if (!Number.isFinite(live7) || !Number.isFinite(saved.week7)) return null;
-  const delta = live7 - saved.week7;
+  if (!tile || !Number.isFinite(tile.value) || !now.at) return null;
+  const summary = tile.window === '7d' ? p.snapshot?.pnl_summary_7d : tile.window === '30d' ? p.snapshot?.pnl_summary_30d : null;
+  const value = Number(summary?.realized_pnl_usd);
+  if (!Number.isFinite(value)) return null;
+  // The same read the tile shows: nothing moved.
+  if (tile.source === 'Nansen' && Date.parse(tile.at) === Date.parse(now.at)) return null;
+  const delta = value - tile.value;
   if (Math.round(delta) === 0) return null;
-  const when = `${dayMonth(saved.at)} ${hm(saved.at)}`;
+  const when = `${dayMonth(tile.at)} ${hm(tile.at)}`;
+  const days = tile.window === '7d' ? '7-day' : '30-day';
+  const moved = tile.source === 'Nansen' && Date.parse(now.at) > Date.parse(tile.at);
+  const line = moved
+    ? `${days} moved since the ${when} read: ${money(delta)}`
+    : `${days}: the tile's ${money(tile.value)} is the ${when} ${tile.source === 'Nansen' ? 'Nansen' : 'leaderboard'} read; this read's realised is ${money(value)}, ${money(delta)} apart`;
   return {
-    window: '7-day realised', tile: money(saved.week7), live: money(live7), delta: Math.round(delta), deltaLabel: money(delta),
-    savedAt: saved.at, line: `7-day moved since the ${when} read: ${money(delta)}`,
+    window: days, tile: money(tile.value), live: money(value), delta: Math.round(delta), deltaLabel: money(delta),
+    savedAt: tile.at, kind: moved ? 'moved' : 'apart', line,
+    // The facts panel's words: a moved line says which figure the tile shows.
+    panel: moved ? `the tile's ${money(tile.value)} was the saved read; ${line}` : line,
   };
 }
 
@@ -449,11 +467,21 @@ export function loadRoster({
     const loaded = {
       ...base,
       hypeRow: hype ?? null,
-      // The saved read behind the tile, kept through a live refresh so the round can say how far
-      // the live 7-day figure moved from the tile's (movedSince).
-      savedRead: { at: snapshot.retrieved_at, week7: Number(week.realized_pnl_usd) },
+      // The tile's figure, its window and the read it came from, kept through a live refresh so the
+      // round can link it to the same window on its own read (movedSince, judge 6: every wallet).
+      tileFigure: {
+        best_week: { window: '7d', value: Number(week.realized_pnl_usd), source: 'Nansen', at: snapshot.retrieved_at },
+        week: { window: '7d', value: Number(hype?.week_pnl_usd), source: 'leaderboard', at: hype?.capturedAt },
+        month: { window: '30d', value: Number(hype?.month_pnl_usd), source: 'leaderboard', at: hype?.capturedAt },
+        all_time: null,
+      }[p.hypeKind],
       hype: {
         ...headline,
+        // Judge 6: the read the tile's figure came from, printed under it, so a live stamp elsewhere
+        // on the tile is never read as this figure's.
+        readLabel: fromNansen
+          ? `Nansen ${readOf(snapshot).label}`
+          : `Hyperliquid leaderboard read ${dayMonth(hype.capturedAt)} ${hm(hype.capturedAt)} UTC`,
         source: fromNansen
           ? `Nansen 7-day window to ${stamp(snapshot.retrieved_at)}`
           : `Public Hyperliquid leaderboard, ${stamp(hype.capturedAt)}`,

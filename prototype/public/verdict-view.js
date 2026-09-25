@@ -83,3 +83,9 @@ export function pitchedView(final) {
     source: [p.used ? sources.join(' · ') : `Your lines quoted no fact card; the round's lead fact · ${sources.join(' · ')}`, p.moved?.line].filter(Boolean).join(' · '),
   };
 }
+
+/**
+ * Judge 6: "...; this is the one being pitched." said once on the result screen, under the owner
+ * tree that marks the pitched wallet. The deciding line and the gate table keep the figures.
+ */
+export const oncePitched = line => String(line ?? '').replace(/;\s*this is the one being pitched\.?$/, '.');

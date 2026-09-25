@@ -19,7 +19,7 @@
  */
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
-import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView } from '/verdict-view.js';
+import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched } from '/verdict-view.js';
 import { ownerTreeHtml } from '/owner-tree.js';
 
 const $ = id => document.getElementById(id);
@@ -163,12 +163,14 @@ function renderRoster(tiles) {
     name.textContent = p.name;
     const sub = document.createElement('span');
     sub.textContent = p.handle ? `${p.handle} · ${p.short}` : p.short;
-    // Both dates on the tile: where the brag was read, and when the record behind it was captured.
+    // Judge 6: the read the figure above came from, directly under it ("Nansen saved read 25 Sep
+    // 11:31 UTC", "Hyperliquid leaderboard read 21 Sep 21:56 UTC"). The live stamp lower down
+    // belongs to the trade count and says so.
     const dates = document.createElement('em');
     dates.className = 'tile-dates';
-    dates.textContent = p.hype.hypeFrom === 'Nansen'
+    dates.textContent = p.hype.readLabel ?? (p.hype.hypeFrom === 'Nansen'
       ? `Nansen ${p.hype.hypeDate}`
-      : `${p.hype.hypeFrom} ${p.hype.hypeDate} · Nansen ${p.hype.recordDate}`;
+      : `${p.hype.hypeFrom} ${p.hype.hypeDate}`);
     // The live line (roster pulse): Nansen activity read minutes ago, or the saved figure
     // with its date and the reason the live read did not happen. Filled by loadPulse().
     const pulse = document.createElement('span');
@@ -181,7 +183,7 @@ function renderRoster(tiles) {
     pulseStamp.className = 'pulse-stamp';
     pulseStamp.textContent = 'profiler/perp-pnl-summary, 7 days';
     pulse.append(pulseFigure, pulseStamp);
-    info.append(value, caption, name, sub, pulse, dates);
+    info.append(value, caption, dates, name, sub, pulse);
     // Said, not hidden: a machine-pace record.
     if (p.note) { const note = document.createElement('em'); note.className = 'tile-note'; note.textContent = p.note; info.append(note); }
 
@@ -200,7 +202,7 @@ function renderRoster(tiles) {
  * with its date; nothing stale is shown as live.
  */
 export function pulseLine(w, recordDate) {
-  if (!w) return { state: 'failed', figure: '', stamp: `live read failed · Nansen ${recordDate} capture` };
+  if (!w) return { state: 'failed', figure: '', stamp: `live read failed · count: Nansen ${recordDate} read` };
   return { state: w.live ? 'live' : w.status === 'paused' ? 'paused' : 'failed', figure: w.figure ?? '', stamp: w.stamp ?? '' };
 }
 
@@ -377,7 +379,7 @@ function agreedBeat(shot, final) {
   // record was missing. Anything else gets no mark.
   if (q?.askedThenSent || q?.noticedThenSent) {
     const ok = document.createElement('span'); ok.className = 'mark-ok';
-    ok.textContent = q.askedThenSent ? 'Asked for the record ✓' : q.doubted ? 'Questioned the record ✓' : 'Noticed there was no track record ✓';
+    ok.textContent = q.askedThenSent ? 'Asked for the record ✓' : q.doubted ? 'Questioned the record ✓' : 'Noted a gap in the record ✓';
     const bad = document.createElement('span'); bad.className = 'mark-bad'; bad.textContent = 'Sent anyway ✗';
     el.agreedMarks.append(ok, q.askedThenSent && !q.shownWindow ? ' · never shown it · ' : ' · ', bad);
   }
@@ -392,7 +394,7 @@ function agreedBeat(shot, final) {
 const CHECK_NAME = {
   evidence_30d: '30-day record is this wallet\u2019s', evidence_freshness: 'Read is fresh', evidence_7d: '7-day record is this wallet\u2019s',
   realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
-  low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month', open_book: 'Open positions not deep underwater',
+  low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'Profitable without its best market', open_book: 'Open positions not deep underwater',
   smart_money_side: 'Smart money not against the open book', independent_record: 'Leaderboard record agrees',
   operator_record: 'Owner behind the wallet not losing',
   tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
@@ -440,7 +442,8 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     const name = document.createElement('strong');
     name.textContent = CHECK_NAME[c.id] ?? c.id.replace(/_/g, ' ');
     const why = document.createElement('span');
-    why.textContent = v.plain;
+    // The owner tree under this row says "this is the one being pitched"; the row says it once there.
+    why.textContent = c.id === 'operator_record' && c.result === 'fail' && gate.operator ? oncePitched(v.plain) : v.plain;
     // Judge 5: one number and one limit on the row; a second base, when there is one, on hover.
     if (c.detail) li.title = c.detail;
     li.append(b, name, why);
@@ -508,7 +511,7 @@ const QUOTE_WORDS = 16;
 function decidingFigure(final) {
   if (!final?.because || !['block', 'capped'].includes(final.verdict)) return '';
   if (!(final.peak > 0 || final.checkOnly)) return '';
-  return String(final.because).split(/(?<=\.)\s+(?=[A-Z])/)[0].trim();
+  return oncePitched(String(final.because).split(/(?<=\.)\s+(?=[A-Z])/)[0].trim());
 }
 
 /**
@@ -589,7 +592,8 @@ function showReveal(p, final) {
   const vs = el.truthScreen.querySelector('.vs');
   if (vs) {
     vs.style.top = '';
-    if (owner && matchMedia('(max-width: 900px)').matches) requestAnimationFrame(() => { vs.style.top = `${el.recordHalf.offsetTop}px`; });
+    // Judge 6: every verdict, not only the owner's: a long source line (the tile link) ran under a VS at 50%.
+    if (matchMedia('(max-width: 900px)').matches) requestAnimationFrame(() => { vs.style.top = `${el.recordHalf.offsetTop}px`; });
   }
   if (final.verdict === 'block' && final.gate?.failed === 'regime_agreement') {
     const week = (p.truth.rows ?? []).find(r => /^7-day realised/i.test(r.label));
@@ -728,7 +732,7 @@ function renderGate(host, gate, verdict = null) {
     const b = document.createElement('b');
     b.textContent = `${v.result === 'superseded' ? 'cap' : label[check.result] ?? check.result} · ${check.id.replace(/_/g, ' ')}`;
     const span = document.createElement('span');
-    span.textContent = v.plain;
+    span.textContent = oncePitched(v.plain);
     if (check.detail) row.title = check.detail;
     // The Nansen read this check stands on, so the table reads as a set of checks on
     // named evidence, not one sign test.
@@ -800,7 +804,7 @@ function renderFacts(d) {
   // Judge 5: every card is a figure from this round's one read, and the line says which. When a
   // live read moved the tile's saved 7-day figure, the same line says by how much.
   el.dossierRead.hidden = !d.read;
-  text(el.dossierRead, d.read ? [`Nansen, ${d.read.label}`, d.moved ? `the tile's ${d.moved.tile} was the saved read; ${d.moved.line}` : ''].filter(Boolean).join(' · ') : '');
+  text(el.dossierRead, d.read ? [`Nansen, ${d.read.label}`, d.moved ? d.moved.panel ?? d.moved.line : ''].filter(Boolean).join(' · ') : '');
   // Round 9: no unlock drip. Every flattering fact is on the table from the start.
   el.nextFact.hidden = true;
   text(el.nextFact, '');
@@ -1044,7 +1048,7 @@ async function pitch() {
     updateCount();
     const last = state.shots[state.shots.length - 1];
     // The referee, not PENNY, calls a false figure. PENNY has no data, so it cannot.
-    if (last?.caught) { text(el.status, last.referee ?? 'Referee: a figure in that line is not in the record.'); el.status.classList.add('referee'); }
+    if (last?.caught) { text(el.status, last.referee ?? 'Referee: the line does not match the record as stated. The line is spent.'); el.status.classList.add('referee'); }
     else el.status.classList.remove('referee');
     // Hold on the transfer card long enough to read it, then the reveal.
     // The agreed beat and the checkpoint are paced in finish(); no extra wait here.
@@ -1320,7 +1324,7 @@ async function fixture(name, prospectId) {
     risk: p.risk,
     // The fixture lines quote the first fact card, so that is what was pitched, from this read.
     read: state.dossier.read,
-    pitched: { used: true, read: state.dossier.read, moved: null,
+    pitched: { used: true, read: state.dossier.read, moved: frozen.dossier?.moved ?? null,
       facts: [state.dossier.facts[0]].map(f => ({ id: f.id, value: f.value, label: f.label,
         source: f.id === 'all-time' ? 'public Hyperliquid leaderboard' : `Nansen, ${state.dossier.read.label}` })) },
   };
@@ -1368,9 +1372,9 @@ async function fixture(name, prospectId) {
     // A false figure: the referee speaks under the composer, PENNY's bubble does not.
     enterRoom();
     renderState({ ...state, shotsUsed: 1, shotsLeft: 2, funded: 0, suspicion: 45, mood: 'caught', peak: 0, stopped: 0,
-      shots: [{ ...fixtureShots[0], caught: true, referee: 'Referee: a figure in that line is not in the record. The line is spent.' }],
-      line: 'Hm. Go on.', checks: [] });
-    text(el.status, 'Referee: a figure in that line is not in the record. The line is spent.');
+      shots: [{ ...fixtureShots[0], caught: true, referee: 'Referee: 51.4% and 2,661 trades are 30-day figures, not 7-day. The line is spent.' }],
+      line: 'The referee struck that line. I heard it.', checks: [] });
+    text(el.status, 'Referee: 51.4% and 2,661 trades are 30-day figures, not 7-day. The line is spent.');
     el.status.classList.add('referee');
     return;
   }

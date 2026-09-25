@@ -520,7 +520,7 @@ test('roster pulse: the first screen gets a shared live read, the config call sp
     const pulse = await s.call('/api/room/pulse');
     assert.equal(pulse.status, 200);
     assert.equal(pulse.body.live, 5);
-    assert.ok(pulse.body.wallets.every(w => w.live && /^Nansen · read live \d\d:\d\d UTC$/.test(w.stamp) && w.figure === '400 trades closed in the last 7 days'));
+    assert.ok(pulse.body.wallets.every(w => w.live && /^count: Nansen, read live \d\d:\d\d UTC$/.test(w.stamp) && w.figure === '400 trades closed in the last 7 days'));
     assert.doesNotMatch(JSON.stringify(pulse.body), /realized|realised|win_rate|1,?234,?567/i, 'activity only, never the reveal figure');
     await s.call('/api/room/pulse');
     const health = await s.call('/healthz');
@@ -533,7 +533,7 @@ test('roster pulse: the first screen gets a shared live read, the config call sp
   try {
     const pulse = await failing.call('/api/room/pulse');
     assert.equal(pulse.body.live, 0);
-    assert.ok(pulse.body.wallets.every(w => !w.live && /^live read failed \d\d:\d\d UTC · Nansen \d{4}-\d\d-\d\d capture$/.test(w.stamp) && /trades? closed in 7 days$/.test(w.figure)));
+    assert.ok(pulse.body.wallets.every(w => !w.live && /^live read failed \d\d:\d\d UTC · count: Nansen saved read \d{1,2} [A-Z][a-z]{2} \d\d:\d\d UTC$/.test(w.stamp) && /trades? closed in 7 days$/.test(w.figure)));
     assert.equal((await failing.call('/healthz')).body.roster_pulse.last_failure.wallets.length, 5);
   } finally { await failing.stop(); }
 });

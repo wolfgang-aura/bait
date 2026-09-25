@@ -27,7 +27,8 @@ export const PULSE_TIMEOUT_MS = 15_000;
 
 const iso = d => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 const hhmm = value => `${new Date(value).toISOString().slice(11, 16)} UTC`;
-const day = value => new Date(value).toISOString().slice(0, 10);
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const savedAt = value => { const d = new Date(value); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${hhmm(value)}`; };
 const count = n => Math.round(n).toLocaleString('en-US');
 
 /** The figure a tile prints, from a live read or the saved capture. One short line. */
@@ -121,10 +122,12 @@ export function createRosterPulse({
     const wallets = prospects.map(p => {
       const s = saved.get(p.id);
       const r = pause ? null : last?.results.get(p.id);
-      const savedLabel = s.at ? `Nansen ${day(s.at)} capture` : 'no saved capture';
+      // Judge 6: the stamp names the figure it dates (the trade count), so it is never read as the
+      // tile's brag, which carries its own read label.
+      const savedLabel = s.at ? `count: Nansen saved read ${savedAt(s.at)}` : 'no saved count';
       if (r?.ok) {
         return { id: p.id, live: true, status: 'live', trades7d: r.trades, coins7d: r.coins, readAt,
-          figure: pulseFigure(r.trades, { live: true }), stamp: `Nansen · read live ${hhmm(readAt)}` };
+          figure: pulseFigure(r.trades, { live: true }), stamp: `count: Nansen, read live ${hhmm(readAt)}` };
       }
       const status = pause ? 'paused' : 'failed';
       const why = pause ? (PAUSE_WORDS[pause.code] ?? `live reads paused: ${pause.reason}`)

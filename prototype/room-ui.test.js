@@ -19,7 +19,7 @@ test('the round rule is said up front: raise the commitment, then Wire it; the w
   assert.ok(js.indexOf('await agreedBeat(') < js.indexOf('await barricade(') && js.indexOf('await barricade(') < js.indexOf('await playCheckpoint(result.prospect'),
     'beat, then the barricade, then the checkpoint');
   assert.match(js, /setTimeout\(done, final\?\.quotes\?\.agreed\?\.askedThenSent \|\| final\?\.quotes\?\.agreed\?\.noticedThenSent \? 3200 : 1500\)/);
-  assert.match(js, /Noticed there was no track record ✓/);
+  assert.match(js, /Noted a gap in the record ✓/);
   assert.doesNotMatch(js, /got none/, 'no claim the page cannot back');
   assert.doesNotMatch(js, /\(ALLOCATION: /, 'the raw token is humanised on screen');
   // PENNY's own words and the two marks: asked for the record, sent anyway.

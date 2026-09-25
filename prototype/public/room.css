@@ -113,7 +113,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
   text-transform: uppercase; color: var(--text);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.tile-dates { display: block; margin-top: 4px; font: 400 9px/1.35 var(--mono); font-style: normal; color: var(--faint); }
+/* Judge 6: the figure's own read, right under its caption. */
+.tile-info .tile-dates { display: block; height: 24px; margin: -2px 0 7px; padding-left: 6px; border-left: 2px solid var(--line); font: 400 9px/1.35 var(--mono); font-style: normal; color: var(--faint); overflow: hidden; white-space: normal; }
 .tile-info span { display: block; font: 400 9px/1.4 var(--mono); color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The roster pulse: a live Nansen line read minutes ago. Green dot = read live; amber = the
    saved figure, dated, with the reason. The same line never shows a realised figure. */
@@ -752,6 +753,7 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .grid .tile[aria-selected="true"], .grid .tile:hover { transform: none; }
   .grid .tile-info { padding: 6px 8px 7px; }
   .grid .tile-info i { height: auto; margin-bottom: 4px; }
+  .grid .tile-info .tile-dates { height: auto; margin: -2px 0 4px; }
   .concept { font-size: 15px; margin-top: 10px; }
   .for-whom { font-size: 12px; }
   .roster .screen-title { font-size: 18px; margin: 10px 0 4px; }
@@ -874,10 +876,10 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .cp-card { padding: 16px; }
   .cp-head { top: -16px; margin-top: -16px; padding-top: 16px; }
   .cp-title { font-size: 21px; }
-  .cp-row { grid-template-columns: 48px 1fr; padding: 6px 8px; }
-  /* On a phone the row keeps its verdict and name; the full sentence is on the reveal's
-     gate table, one tap away. Every row and the stamp fit in one screen. */
-  .cp-row span { display: none; }
+  .cp-row { grid-template-columns: 48px 1fr; gap: 2px 10px; padding: 6px 8px; }
+  /* Judge 6: a phone row carries the same sentence as the desktop row (the worst trade's share of
+     the account, why a concentration row passes), under the verdict and name; the card scrolls. */
+  .cp-row span { grid-column: 2; font-size: 11px; line-height: 1.35; }
   .cp-stamp { margin-top: 12px; font-size: 16px; white-space: nowrap; transform: rotate(-2deg); padding: 5px 10px; }
 }
 @media (prefers-reduced-motion: reduce) {

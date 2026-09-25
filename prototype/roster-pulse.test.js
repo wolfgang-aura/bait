@@ -37,7 +37,7 @@ test('first load reads each roster wallet once, live and dated to the minute, ch
   for (const w of view.wallets) {
     assert.equal(w.live, true);
     assert.equal(w.figure, '1,087 trades closed in the last 7 days');
-    assert.equal(w.stamp, 'Nansen · read live 12:41 UTC');
+    assert.equal(w.stamp, 'count: Nansen, read live 12:41 UTC');
   }
   assert.equal(live.status().credits_today, ROSTER.length, 'the pulse spends under the same counter as the rounds');
   assert.equal(pulse.status().worst_case_credits_per_hour, 20);
@@ -59,7 +59,7 @@ test('page loads inside the TTL share one read; after the TTL one refresh follow
   tick(2000);
   const view = await pulse.get();
   assert.equal(calls.length, 2 * ROSTER.length);
-  assert.equal(view.wallets[0].stamp, 'Nansen · read live 12:56 UTC');
+  assert.equal(view.wallets[0].stamp, 'count: Nansen, read live 12:56 UTC');
 });
 
 test('a failed read falls back to the saved figure with its date, says so, and is not retried inside the TTL', async () => {
@@ -71,7 +71,9 @@ test('a failed read falls back to the saved figure with its date, says so, and i
     assert.equal(w.live, false);
     assert.equal(w.status, 'failed');
     assert.equal(w.figure, pulseFigure(saved.pnl_summary_7d.closed_trade_count));
-    assert.equal(w.stamp, `live read failed 12:41 UTC · Nansen ${saved.retrieved_at.slice(0, 10)} capture`);
+    const at = new Date(saved.retrieved_at);
+    const when = `${at.getUTCDate()} ${at.toLocaleString('en-US', { month: 'short', timeZone: 'UTC' })} ${saved.retrieved_at.slice(11, 16)} UTC`;
+    assert.equal(w.stamp, `live read failed 12:41 UTC · count: Nansen saved read ${when}`);
   }
   assert.equal(pulse.status().last_failure.wallets.length, ROSTER.length);
   assert.equal(pulse.status().last_success_at, null);
@@ -89,7 +91,7 @@ test('the caps refuse the pulse before a call leaves, and always keep one round 
   const view = await pulse.get();
   assert.equal(calls.length, 0);
   assert.equal(view.wallets[0].status, 'paused');
-  assert.match(view.wallets[0].stamp, /^live reads paused: daily credit cap · Nansen \d{4}-\d\d-\d\d capture$/);
+  assert.match(view.wallets[0].stamp, /^live reads paused: daily credit cap · count: Nansen saved read \d{1,2} [A-Z][a-z]{2} \d\d:\d\d UTC$/);
   assert.equal(live.available(), true, 'the round read still fits');
   assert.equal(pulse.status().blocked_by, 'daily_cap');
 });
@@ -99,7 +101,7 @@ test('live reads off or no key: nothing is read and every tile says so', async (
     const { pulse, calls } = setup(opts);
     const view = await pulse.get();
     assert.equal(calls.length, 0);
-    assert.ok(view.wallets.every(w => !w.live && w.stamp.startsWith(`${words} · Nansen `)));
+    assert.ok(view.wallets.every(w => !w.live && w.stamp.startsWith(`${words} · count: Nansen saved read `)));
   }
 });
 
