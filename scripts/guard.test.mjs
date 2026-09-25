@@ -24,12 +24,13 @@ function capture() {
 
 test('parseArgs reads the wallet, the amount and the json flag', () => {
   assert.deepEqual(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--json']), {
-    wallet: WALLET, allocation: 5000, json: true, timeoutMs: 10_000, policy: 'v4',
+    wallet: WALLET, allocation: 5000, json: true, timeoutMs: 10_000, policy: 'v5',
   });
   assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--timeout', '2500']).timeoutMs, 2500);
   assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v1']).policy, 'v1');
   assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v4']).policy, 'v4');
-  assert.match(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v5']).error, /--policy must be v1, v2, v3 or v4/);
+  assert.equal(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v5']).policy, 'v5');
+  assert.match(parseArgs(['--wallet', WALLET, '--allocation', '5000', '--policy', 'v6']).error, /--policy must be v1, v2, v3, v4 or v5/);
 });
 
 test('parseArgs refuses missing, unknown and non-numeric arguments', () => {
@@ -72,15 +73,16 @@ test('a profitable wallet prints ALLOW, the enforced amount and the credit line,
     env: ENV, write: out.write, now: NOW, call: pnl(2_450_809.467724999),
   });
   assert.equal(code, 0);
-  assert.match(out.text(), /Fetching Nansen 7- and 30-day PnL summary and open positions, then smart money \(perp-screener\) and a second record \(perp-leaderboard\), at most 9 credits\.\.\./);
+  assert.match(out.text(), /Fetching Nansen 7- and 30-day PnL summary and open positions, then smart money \(perp-screener\) and a second record \(perp-leaderboard\), then the operator behind the wallet \(related-wallets, transactions, sibling summaries\), at most 21 credits\.\.\./);
   assert.match(out.text(), /DECISION\s+ALLOW/);
   assert.match(out.text(), /enforced\s+\$5,000\.00/);
   assert.match(out.text(), /pnl 30d\s+\$2,450,809\.47/);
   assert.match(out.text(), /pnl 7d\s+\$2,450,809\.47/);
-  // Two windows, the open positions and v4's leaderboard record (the stub holds no position,
-  // so no screener read): eight credits, and the named check table.
-  assert.match(out.text(), /credits\s+8 charged/);
-  assert.match(out.text(), /policy\s+wallet-copy-risk-v4/);
+  // Two windows, the open positions, v4's leaderboard record (the stub holds no position, so no
+  // screener read) and v5's two related-wallets reads (the stub names no first funder, so nothing
+  // more): ten credits, and the named check table.
+  assert.match(out.text(), /credits\s+10 charged/);
+  assert.match(out.text(), /policy\s+wallet-copy-risk-v5/);
   assert.match(out.text(), /CHECKS/);
   assert.match(out.text(), /PASS regime_agreement/);
   assert.match(out.text(), /PASS thin_sample/);

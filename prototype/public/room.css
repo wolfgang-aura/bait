@@ -115,6 +115,23 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 }
 .tile-dates { display: block; margin-top: 4px; font: 400 9px/1.35 var(--mono); font-style: normal; color: var(--faint); }
 .tile-info span { display: block; font: 400 9px/1.4 var(--mono); color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The roster pulse: a live Nansen line read minutes ago. Green dot = read live; amber = the
+   saved figure, dated, with the reason. The same line never shows a realised figure. */
+.tile-info .tile-pulse {
+  position: relative; margin-top: 6px; padding: 5px 0 0 11px; border-top: 1px solid var(--line-soft);
+  white-space: normal; overflow: visible;
+}
+.tile-pulse::before {
+  content: ""; position: absolute; left: 0; top: 9px; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--faint);
+}
+.tile-pulse[data-state="live"]::before { background: var(--green); box-shadow: 0 0 0 2px rgba(98, 212, 154, .18); }
+.tile-pulse[data-state="failed"]::before, .tile-pulse[data-state="paused"]::before { background: var(--amber); }
+.tile-pulse small { display: block; font: 400 9px/1.35 var(--mono); white-space: normal; }
+.tile-pulse .pulse-figure { color: var(--text); font-weight: 500; }
+.tile-pulse .pulse-stamp { color: var(--faint); white-space: normal; }
+.tile-pulse[data-state="live"] .pulse-stamp { color: var(--green); }
+.tile-pulse[data-state="failed"] .pulse-stamp, .tile-pulse[data-state="paused"] .pulse-stamp { color: var(--amber); }
 
 .caller {
   margin-top: 16px; min-height: 76px;

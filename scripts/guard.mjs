@@ -25,13 +25,15 @@ import {
   PRODUCTION_GUARD_POLICY_V2,
   PRODUCTION_GUARD_POLICY_V3,
   PRODUCTION_GUARD_POLICY_V4,
+  PRODUCTION_GUARD_POLICY_V5,
 } from '../validation/guard.js';
+import { OPERATOR_CHAINS, MAX_SIBLINGS_READ } from '../validation/v5-evidence.js';
 
 export const USAGE =
-  'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2|v3|v4] [--json] [--timeout <ms>]';
+  'Usage: npm run guard -- --wallet 0x<40 hex> --allocation <usd> [--policy v1|v2|v3|v4|v5] [--json] [--timeout <ms>]';
 
 /** v4 is the default gate. v1-v3 stay selectable so a recorded result can be rerun. */
-export const POLICIES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3, v4: PRODUCTION_GUARD_POLICY_V4 };
+export const POLICIES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3, v4: PRODUCTION_GUARD_POLICY_V4, v5: PRODUCTION_GUARD_POLICY_V5 };
 
 const FLAGS_WITH_VALUES = new Set(['--wallet', '--allocation', '--timeout', '--policy']);
 
@@ -40,7 +42,7 @@ const FLAGS_WITH_VALUES = new Set(['--wallet', '--allocation', '--timeout', '--p
  * never silent defaults: a guard that guesses its own input is not a guard.
  */
 export function parseArgs(argv = []) {
-  const out = { wallet: null, allocation: null, json: false, timeoutMs: DEFAULT_GUARD_TIMEOUT_MS, policy: 'v4' };
+  const out = { wallet: null, allocation: null, json: false, timeoutMs: DEFAULT_GUARD_TIMEOUT_MS, policy: 'v5' };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     if (flag === '--json') {
@@ -62,7 +64,7 @@ export function parseArgs(argv = []) {
       out.timeoutMs = n;
     }
     if (flag === '--policy') {
-      if (!(value in POLICIES)) return { error: `--policy must be v1, v2, v3 or v4, got "${value}".` };
+      if (!(value in POLICIES)) return { error: `--policy must be v1, v2, v3, v4 or v5, got "${value}".` };
       out.policy = value;
     }
   }
@@ -152,8 +154,10 @@ export async function main({
   // v4 adds perp-screener (1) and perp-leaderboard (5), both only when nothing has refused.
   const positions = policy.openBookCheck ? 1 : 0;
   const v4 = (policy.smartMoneyCheck ? 1 : 0) + (policy.independentRecordCheck ? 5 : 0);
-  const most = windows.length + positions + v4;
-  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary${positions ? ' and open positions' : ''}${v4 ? ', then smart money (perp-screener) and a second record (perp-leaderboard)' : ''}, at most ${most} credit${most === 1 ? '' : 's'}...\n`);
+  // v5 adds the operator: related-wallets per chain, one funding read per counted funder, one summary per sibling.
+  const v5 = policy.operatorCheck ? OPERATOR_CHAINS.length * 2 + MAX_SIBLINGS_READ : 0;
+  const most = windows.length + positions + v4 + v5;
+  write(`Fetching Nansen ${windows.join('- and ')}-day PnL summary${positions ? ' and open positions' : ''}${v4 ? ', then smart money (perp-screener) and a second record (perp-leaderboard)' : ''}${v5 ? ', then the operator behind the wallet (related-wallets, transactions, sibling summaries)' : ''}, at most ${most} credit${most === 1 ? '' : 's'}...\n`);
 
   let decision;
   try {

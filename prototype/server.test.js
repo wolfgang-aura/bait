@@ -259,7 +259,7 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     assert.equal(blocked.body.code, 'pnl_below_minimum');
     assert.equal(blocked.body.allocation, 0, 'a blocked check never returns the proposed amount');
     assert.equal(blocked.body.attempted, 5000);
-    assert.equal(blocked.body.policy.id, 'wallet-copy-risk-v4');
+    assert.equal(blocked.body.policy.id, 'wallet-copy-risk-v5');
     assert.equal(blocked.body.checks.find(c => c.id === 'realised_pnl_30d').result, 'fail');
     assert.equal(blocked.body.evidence.source, 'Nansen /api/v1/profiler/perp-pnl-summary');
     assert.equal(blocked.body.creditsCharged, 1, 'a wallet the 30-day evidence refuses never buys the 7-day window');
@@ -276,8 +276,9 @@ test('POST /api/guard blocks a losing wallet and allows a profitable one, on stu
     assert.equal(allowed.body.decision, 'allow');
     assert.equal(allowed.body.allocation, 5000);
     assert.equal(allowed.body.evidence.realized_pnl_usd, 2450809.47);
-    assert.equal(allowed.body.creditsCharged, 8, 'an allow read both windows, the open positions and the v4 leaderboard record (no open position, so no screener)');
+    assert.equal(allowed.body.creditsCharged, 10, 'an allow read both windows, the open positions, the v4 leaderboard record (no open position, so no screener) and v5 related-wallets on two chains (the stub names no funder)');
     assert.ok(allowed.body.checks.some(c => c.id === 'independent_record'), 'the v4 row is on the table');
+    assert.equal(allowed.body.checks.find(c => c.id === 'operator_record').result, 'not_assessed', 'the v5 row is on the table');
     assert.equal(allowed.body.checks.find(c => c.id === 'regime_agreement').result, 'pass');
   } finally { await profitable.stop(); }
 });
@@ -397,8 +398,9 @@ test('/healthz reports the live-read caps and counters, and the key never reache
     assert.equal(body.nansen.daily_cap, 12);
     assert.equal(body.nansen.total_cap, 99);
     // The most one read can cost: two summaries, the open positions (round 17), and gate v4's
-    // perp-screener (1) and perp-leaderboard (5); fill pages are off in this test.
-    assert.deepEqual([body.nansen.credits_per_round.refused, body.nansen.credits_per_round.full], [4, 9]);
+    // perp-screener (1) and perp-leaderboard (5), and gate v5's operator read (at most 12: two
+    // related-wallets, two funding transfers, eight sibling summaries); fill pages are off in this test.
+    assert.deepEqual([body.nansen.credits_per_round.refused, body.nansen.credits_per_round.full], [4, 21]);
     assert.equal('credits_per_read' in body.nansen, false, 'one honest shape, not a single number');
     assert.equal(body.nansen.cache_ttl_minutes, 30);
     assert.ok(Number.isInteger(body.nansen.credits_today));
@@ -498,6 +500,34 @@ test('hosted with NANSEN_LIVE=1: a Hyperliquid pick is live with its fetch time,
     const guard = await s.call('/api/guard', { method: 'POST', body: { wallet: LOSING_WALLET, allocation: 5000 } });
     assert.equal(guard.status, 403, 'the public guard route stays closed hosted; only the room spends');
   } finally { await s.stop(); }
+});
+
+test('roster pulse: the first screen gets a shared live read, the config call spends nothing, and a failure is said on every tile', async () => {
+  const env = { NANSEN_LIVE: '1', BAIT_TEST_STUBS: '1', ROOM_NANSEN_CALL_MODULE: ROOM_STUB,
+    HOSTED_LIVE_FILL_PAGES: '0', HOSTED_LIVE_POSITIONS: '0' };
+  const s = await startServer(env);
+  try {
+    await s.call('/api/room');
+    assert.equal((await s.call('/healthz')).body.nansen.credits_today, 0, 'loading the room config reads nothing');
+    const pulse = await s.call('/api/room/pulse');
+    assert.equal(pulse.status, 200);
+    assert.equal(pulse.body.live, 4);
+    assert.ok(pulse.body.wallets.every(w => w.live && /^Nansen · read live \d\d:\d\d UTC$/.test(w.stamp) && w.figure === '400 trades closed in 7 days'));
+    assert.doesNotMatch(JSON.stringify(pulse.body), /realized|realised|win_rate|1,?234,?567/i, 'activity only, never the reveal figure');
+    await s.call('/api/room/pulse');
+    const health = await s.call('/healthz');
+    assert.equal(health.body.nansen.credits_today, 4, 'a second page load is served from the shared cache');
+    assert.equal(health.body.roster_pulse.refreshes_this_process, 1);
+    assert.ok(!Number.isNaN(Date.parse(health.body.roster_pulse.last_success_at)));
+  } finally { await s.stop(); }
+
+  const failing = await startServer({ ...env, ROOM_STUB_FAIL: '1' });
+  try {
+    const pulse = await failing.call('/api/room/pulse');
+    assert.equal(pulse.body.live, 0);
+    assert.ok(pulse.body.wallets.every(w => !w.live && /^live read failed \d\d:\d\d UTC · Nansen \d{4}-\d\d-\d\d capture$/.test(w.stamp) && /trades? closed in 7 days$/.test(w.figure)));
+    assert.equal((await failing.call('/healthz')).body.roster_pulse.last_failure.wallets.length, 4);
+  } finally { await failing.stop(); }
 });
 
 test('round 17: the live-reads listing, a direct fetch and /api/proof all skip a read still sealed', () => {

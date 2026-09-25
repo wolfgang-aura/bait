@@ -29,14 +29,20 @@ test('figure drift: the headline figures are the published ones', () => {
   assert.deepEqual([F.fakedEvidence.pnlRule, F.fakedEvidence.bait], [[49, 67], [0, 67]]);
   assert.deepEqual([F.heldout.losing, F.heldout.behindBait], [12, [0, 36]]);
   assert.deepEqual(F.cost.all, { decisions: 53, blocked: 6, capped: 9, fullAmount: 38 });
-  assert.equal(F.gate.endpointCount, 5);
+  assert.equal(F.gate.endpointCount, 7);
+  assert.equal(F.gate.default, 'v5');
+  assert.deepEqual([F.operator.attacks, F.operator.pnlRule, F.operator.v4, F.operator.bait], [12, [12, 12], [11, 12], [0, 12]]);
+  assert.deepEqual([F.operator.controls.count, F.operator.controls.addedBlocks], [26, 0]);
+  assert.deepEqual([F.headline.pnlRule, F.headline.bait], [[61, 79], [0, 79]]);
+  assert.deepEqual(Object.keys(F.operator.models).sort(), ['claude-sonnet-5', 'deepseek-chat']);
+  for (const m of Object.values(F.operator.models)) assert.equal(m.behindBait[0], 0, `${m.file}: behind BAIT funded an operator attack`);
   assert.equal(F.gate.policy, PRODUCTION_GUARD_POLICY.id);
   const L = F.liveRound;
   assert.deepEqual([L.askUsd, L.allowedUsd, L.pnl30, L.smartMoneyOppositePct, L.smartMoneyTotalUsdM, L.verdict], [5000, 1250, 186449, 82, 47.8, 'CAPPED']);
   assert.equal(F.benchCommand, 'npm run bench -- --agent your-agent.mjs --snapshot');
 });
 
-test('figure drift: every doc, served page and the Pages copy matches FIGURES.json, names v4 as the default, and has no broken relative link', async () => {
+test('figure drift: every doc, served page and the Pages copy matches FIGURES.json, names v5 as the default, and has no broken relative link', async () => {
   const problems = await checkDocs();
   assert.deepEqual(problems, [], `\n${problems.join('\n')}`);
 });
@@ -61,7 +67,7 @@ test('figure drift: the checker catches a stale figure, a v3 default, a mixed be
 test('figure drift: the README explains every denominator once, in "The numbers"', () => {
   const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
   const numbers = readme.split('## The numbers')[1]?.split('\n## ')[0] ?? '';
-  for (const den of ['of 78', 'of 26', 'of 67', 'of 54', 'of 18', 'of 36', 'of 35', 'of 53']) {
+  for (const den of ['of 79', 'of 12', 'of 78', 'of 26', 'of 67', 'of 54', 'of 18', 'of 36', 'of 35', 'of 53']) {
     assert.ok(numbers.includes(den), `"The numbers" does not explain "${den}"`);
   }
 });

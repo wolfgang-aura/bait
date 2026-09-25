@@ -14,9 +14,23 @@ BAIT does not execute trades, predict returns, rank wallets, guarantee future pr
 or replace portfolio risk controls. Passing the guard means the proposal satisfies one
 minimum eligibility rule. It does not mean the wallet is safe or worth copying.
 
-## Default policy since 23 Sep 2026: `wallet-copy-risk-v4`
+## Default policy since 25 Sep 2026: `wallet-copy-risk-v5`
 
-`wallet-copy-risk-v4` (`PRODUCTION_GUARD_POLICY`, pre-registered in
+`wallet-copy-risk-v5` (`PRODUCTION_GUARD_POLICY`, pre-registered in
+[bench/V5.md](../bench/V5.md)) keeps every v4 rule below and adds `operator_record`, read only
+when nothing earlier refused. `profiler/address/related-wallets` names the wallet's first funder on
+Ethereum and on Arbitrum (1 credit each). A funder counts as an operator unless its label is an
+exchange, bridge, router or service, it first-funded more than 10 indexed wallets, or the funding
+transfer (`profiler/address/transactions`, 1 credit) was under $100. The other wallets in
+`bench/v5/operator-index.json` with the same first funder are its siblings; each one's 30-day
+`profiler/perp-pnl-summary` over the same window is read (1 credit, up to 8). When this wallet plus
+its siblings lost money, the gate refuses (`operator_losing`). Anything it cannot read is
+`not_assessed` and changes nothing. The executor answers one more tool, `get_operator({ wallet,
+days, window })`. `PRODUCTION_GUARD_POLICY_V4` or `--policy v4` runs v4.
+
+## `wallet-copy-risk-v4` (default 23-25 Sep 2026)
+
+`wallet-copy-risk-v4` (pre-registered in
 [bench/V4.md](../bench/V4.md)) keeps every v3 rule below and adds two reads, both only when
 nothing earlier refused: `perp-screener` (1 credit), which caps at 25% when at least two thirds
 of at least $1M of smart money's open positions in the wallet's largest open position's market
@@ -66,6 +80,7 @@ a one-line `plain` explanation. The public `reason` names the first failing row.
 | `open_book` | `profiler/perp-positions` (v3 r3) | Open positions down at most 25% of the account value | cap at 25% (`capped`) |
 | `smart_money_side` | `perp-screener`, smart money, the largest open position's market (v4) | Under two thirds of at least $1M on the other side | cap at 25% (`capped`) |
 | `independent_record` | `perp-leaderboard`, the same 30 calendar days (v4) | The summary claims no more than this record plus max($1,000, 25% of it) | block `record_disagreement` |
+| `operator_record` | `profiler/address/related-wallets` (first funder), `profiler/address/transactions` (funding size), siblings' `profiler/perp-pnl-summary` (v5) | This wallet plus its indexed siblings made at least $0 over the same 30 days | block `operator_losing` |
 | `tail_loss` | Worst single closed trade | At most 25% of volume or account | not assessed here, see below |
 | `max_drawdown` | Peak-to-trough realised curve | 30% of peak, 15% of account | not assessed here, see below |
 
@@ -141,7 +156,7 @@ const decision = await guardAllocation({
   executor,                  // adapter that serves the Nansen PnL summary
   wallet,                    // 0x-prefixed 20-byte address
   allocation: proposedUsd,  // non-negative finite number
-  // policy is optional. The default is wallet-copy-risk-v4.
+  // policy is optional. The default is wallet-copy-risk-v5.
   // Pass PRODUCTION_GUARD_POLICY_V1 for the one-window rule.
 });
 
@@ -185,17 +200,19 @@ stays in the path.
 Cost is one credit per window: one for `wallet-realized-pnl-30d-v1`, two for
 `wallet-copy-risk-v2` or `-v3`, and only one when the 30-day evidence already refuses. v3 and
 v4 add `profiler/perp-positions` (1) once the summaries pass; v4 adds `perp-screener` (1) and
-`perp-leaderboard` (5), so the CLI's v4 default costs at most 9.
+`perp-leaderboard` (5), so v4 costs 9 at most. v5, the default since 25 Sep, adds
+`profiler/address/related-wallets` on two chains (2), one `profiler/address/transactions` read per
+counted funder (up to 2) and one 30-day summary per indexed sibling (up to 8): at most 21 credits.
 
 `runLiveGuard` wraps that adapter, enforces 15-minute freshness, and adds
 `creditsCharged` and `creditsRemaining` to the decision. Its own default policy is
 pinned to v1, because its contract test asserts the one-credit v1 behaviour; callers pass
-`policy`. `POST /api/guard` in `prototype/server.js` and the CLI both pass the v4 default.
+`policy`. `POST /api/guard` in `prototype/server.js` and the CLI both pass the v5 default.
 
 Two ways to run it, both needing only `NANSEN_API_KEY` in `.env`:
 
 ```powershell
-# wallet-copy-risk-v4 (the default), at most 9 credits, 1 if the month refuses; prints the full check table
+# wallet-copy-risk-v5 (the default), at most 21 credits, 1 if the month refuses; prints the full check table
 npm run guard -- --wallet 0x69cc3ae720efdff1cd2a8edec79a7a3fac6e14fd --allocation 5000
 
 # the recorded one-window rule, one credit
@@ -247,6 +264,7 @@ than a fault.
 | `low_win_rate` | block | `low_win_rate` | The 30-day win rate is below the policy minimum. v2 and later. |
 | `paper_headline` | block | `paper_headline` | More than 80% of the headline is unsold. v2 and later, and only when the adapter supplies unrealised PnL. |
 | `record_disagreement` | block | `independent_record` | The 30-day summary claims more realised PnL than `perp-leaderboard` records for the same days, by over 25% of that record and $1,000. v4. |
+| `operator_losing` | block | `operator_record` | The wallet's first funder also funded indexed Hyperliquid wallets, and together with this one they lost money over the same 30 days. v5. |
 | `window_dates_mismatch` | block | `evidence_30d` | The response is labelled 30 days but its dates do not span them (v3 revision 2). |
 | `evidence_unavailable` | block | `evidence_30d` or `evidence_7d` | The evidence adapter returned no usable PnL, or threw. |
 | `evidence_timeout` | block | `evidence_30d` or `evidence_7d` | The evidence check exceeded the deadline. |

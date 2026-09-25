@@ -45,6 +45,7 @@ import { fileURLToPath } from 'node:url';
 import { guardAllocation, BENCHMARK_GUARD_POLICY, agentVerdictLine } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
 import { withV4Reads } from '../validation/v4-evidence.js';
+import { withV5Reads } from '../validation/v5-evidence.js';
 import { CapExceeded } from '../validation/providers.js';
 import { buildCase, checkPitchClaims, EncounterError } from './encounter.js';
 import { runDesk, SLOT } from './desk.js';
@@ -403,6 +404,12 @@ export const ASKED_FOR_RECORD = { test: line => recordMention(line) === 'asked' 
 
 /** Gate v4's reads on a live snapshot, as withV4Reads takes them. */
 export const v4ReadsOf = snap => ({ record: snap?.v4_reads?.record ?? undefined, smartMoney: snap?.v4_reads?.smartMoney ?? {} });
+/** Gate v5's operator read on a live snapshot, as withV5Reads takes it. */
+export const v5ReadsOf = snap => (snap?.v5_reads?.operator
+  ? { operator: snap.v5_reads.operator }
+  : { operatorNote: 'Not read: live operator reads are off on this host.' });
+/** A frozen round has no operator read: the row says so instead of "could not be read". */
+export const FROZEN_V5_READS = Object.freeze({ operatorNote: 'Not read: this round plays a frozen capture; related-wallets is read live only.' });
 /** A frozen round has no v4 read: both rows say so instead of "could not be read". */
 export const FROZEN_V4_READS = Object.freeze({
   record: { error: 'not_read', message: 'Not read: this round plays a frozen capture; perp-leaderboard is read live only.' },
@@ -419,6 +426,8 @@ const CALL_ROWS = {
   // Gate v4: one row each.
   smartMoney: ['smart_money_side'],
   record: ['independent_record'],
+  // Gate v5: the operator behind the wallet.
+  operator: ['operator_record'],
 };
 /**
  * Round 18: the Nansen calls behind a verdict, for the card under the checkpoint: endpoint,
@@ -433,7 +442,7 @@ export function nansenCalls(snapshot, checks) {
   const lr = snapshot?.live_read;
   if (!lr) {
     return [{ endpoint: 'frozen Nansen capture', credits: 0, at: snapshot?.retrieved_at ?? null, cached: false, frozen: true,
-      decided: word([...CALL_ROWS.summary30, ...CALL_ROWS.summary7, ...CALL_ROWS.trades, ...CALL_ROWS.positions, ...CALL_ROWS.smartMoney, ...CALL_ROWS.record]) }];
+      decided: word([...CALL_ROWS.summary30, ...CALL_ROWS.summary7, ...CALL_ROWS.trades, ...CALL_ROWS.positions, ...CALL_ROWS.smartMoney, ...CALL_ROWS.record, ...CALL_ROWS.operator]) }];
   }
   const cached = !!lr.cached;
   const cost = n => (cached ? 0 : n);
@@ -450,6 +459,11 @@ export function nansenCalls(snapshot, checks) {
   if (v4?.smartMoneyRead) calls.push({ endpoint: 'perp-screener, smart money', credits: cost(1), at, cached, decided: word(CALL_ROWS.smartMoney) });
   if (v4?.recordRead) calls.push({ endpoint: 'perp-leaderboard, 30 days', credits: cost(5), at, cached, decided: word(CALL_ROWS.record) });
   else if (v4?.record?.skipped) calls.push({ endpoint: 'perp-leaderboard, 30 days', credits: 0, at, cached, skipped: true, decided: 'N/A' });
+  // Gate v5: first funder, funding transfer and sibling summaries, one line for the operator read.
+  const v5 = snapshot.v5_reads;
+  const short = e => ({ 'profiler/address/related-wallets': 'related-wallets', 'profiler/address/transactions': 'transactions', 'profiler/perp-pnl-summary': 'sibling perp-pnl-summary' }[e] ?? e);
+  if (v5?.operatorRead) calls.push({ endpoint: `operator: ${v5.endpoints.map(short).join(', ')}`, credits: cost(v5.credits ?? 0), at, cached, decided: word(CALL_ROWS.operator) });
+  else if (v5?.operator?.skipped) calls.push({ endpoint: 'operator: related-wallets', credits: 0, at, cached, skipped: true, decided: 'N/A' });
   return calls;
 }
 
@@ -615,9 +629,9 @@ export function createRoomService({
     // answering from the capture, with the capture's own windows and date on it.
     const liveTools = makeToolExecutor(snap, { mode: 'armed' });
     const tapeTools = makeToolExecutor(chosen.snapshot, { mode: 'armed' });
-    const executor = withV4Reads({
+    const executor = withV5Reads(withV4Reads({
       execute: (name, input) => (name === 'get_closed_trades' ? tapeTools : liveTools).execute(name, input),
-    }, v4ReadsOf(snap));
+    }, v4ReadsOf(snap)), v5ReadsOf(snap));
     return {
       p: { ...refreshed, executor, guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
       evidence: {
@@ -658,7 +672,7 @@ export function createRoomService({
     const snap = liveSnapshot(stub, read);
     const p = walletProspect(wallet, snap);
     return {
-      p: { ...p, executor: withV4Reads(makeToolExecutor(p.snapshot, { mode: 'armed' }), v4ReadsOf(snap)), guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
+      p: { ...p, executor: withV5Reads(withV4Reads(makeToolExecutor(p.snapshot, { mode: 'armed' }), v4ReadsOf(snap)), v5ReadsOf(snap)), guardPolicy: liveEvidence.policy ?? ROOM_LIVE_GUARD_POLICY },
       evidence: {
         mode: 'live', live: true, code: null, reason: null, pasted: true,
         fetchedAt: read.fetchedAt, fetchedLabel: hhmm(read.fetchedAt), cached: !!read.cached,
@@ -735,7 +749,7 @@ export function createRoomService({
    * (see `prospectFor`), so every wire is judged on the same two summaries, bought once
    * at round start, with their real fetch time. A frozen round reads its capture.
    */
-  const evidenceFor = p => p.executor ?? withV4Reads(makeToolExecutor(p.snapshot, { mode: 'armed' }), FROZEN_V4_READS);
+  const evidenceFor = p => p.executor ?? withV5Reads(withV4Reads(makeToolExecutor(p.snapshot, { mode: 'armed' }), FROZEN_V4_READS), FROZEN_V5_READS);
 
   /** The freshness row, in words, when the evidence is a live read: its real age. */
   const freshnessPlain = (p, check) => {
@@ -827,6 +841,26 @@ export function createRoomService({
     // Gate v4 (bench/V4.md).
     smart_money_side: 'perp-screener, smart money in the largest open position\u2019s market',
     independent_record: 'perp-leaderboard, the same 30 days',
+    // Gate v5 (bench/V5.md).
+    operator_record: 'related-wallets first funder, transactions, sibling perp-pnl-summary',
+  };
+
+  /**
+   * Gate v5's row in one line: the funder by short address (never a Nansen label), how many
+   * indexed wallets it also paid for, and what they made together. N/A keeps the gate's reason.
+   */
+  const operatorPlain = (c, evidence, days) => {
+    if (c.id !== 'operator_record') return c.plain;
+    const op = evidence?.operator;
+    const shortAddr = a => `${String(a).slice(0, 6)}...${String(a).slice(-4)}`;
+    if (op && (c.result === 'fail' || c.result === 'pass')) {
+      const n = op.siblings.length;
+      const who = `First funder ${op.funders.map(f => shortAddr(f.funder)).join(' and ')} also paid for ${n} indexed wallet${n === 1 ? '' : 's'}`;
+      return c.result === 'fail'
+        ? `${who}; with this one the operator made ${money(op.combined_pnl_30d_usd)} over ${days} days, so this wallet is the survivor.`
+        : `${who}; together they made ${money(op.combined_pnl_30d_usd)} over ${days} days.`;
+    }
+    return String(c.plain ?? '').replace(/ This check can refuse only on sibling records it read; a missing read changes nothing\.$/, '');
   };
 
   /** The report can explain a concern; it never stamps BLOCKED on money the gate let through. */
@@ -848,7 +882,7 @@ export function createRoomService({
     });
     const checks = [
       ...(decision.checks ?? []).filter(c => !['tail_loss', 'max_drawdown'].includes(c.id))
-        .map(c => ({ id: c.id, result: c.result, plain: plainer(freshnessPlain(p, c)), source: CHECK_SOURCE[c.id] ?? null })),
+        .map(c => ({ id: c.id, result: c.result, plain: plainer(operatorPlain({ ...c, plain: freshnessPlain(p, c) }, decision.evidence, decision.policy?.window_days ?? 30)), source: CHECK_SOURCE[c.id] ?? null })),
       ...tapeRows(p),
     ];
     return {
@@ -875,6 +909,8 @@ export function createRoomService({
       // Gate v4: which of its two reads this round bought live.
       smartMoneyLive: !!p.snapshot?.v4_reads?.smartMoneyRead,
       recordLive: !!p.snapshot?.v4_reads?.recordRead,
+      // Gate v5: whether this round read the operator behind the wallet live.
+      operatorLive: !!p.snapshot?.v5_reads?.operatorRead,
       failed: decision.checks?.find(c => c.result === 'fail')?.id ?? null,
       // The fill tape's age against the summaries the gate read. The gate never reads the
       // tape; the table says how old it is and that nothing on it decided this wire.

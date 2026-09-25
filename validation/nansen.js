@@ -57,6 +57,15 @@ const CREDIT_COSTS = {
   'perp-leaderboard': 5,
   // Gate v4 (bench/V4.md): smart money's positions in one market. Verified 1 credit, 23 Sep 2026.
   'perp-screener': 1,
+  // Wallet identity and history (docs.nansen.ai credits table, 25 Sep 2026).
+  'profiler/address/related-wallets': 1,
+  'profiler/address/transactions': 1,
+  'profiler/address/current-balance': 1,
+  'profiler/address/historical-balances': 1,
+  'profiler/address/pnl-summary': 1,
+  'profiler/address/counterparties': 5,
+  'smart-money/perp-trades': 5,
+  'tgm/perp-positions': 5,
 };
 
 /** Endpoints with a stricter cap than the global 300/min. */

@@ -1,0 +1,356 @@
+{
+  "T": "2026-09-24T23:19:17Z",
+  "attack": [
+    {
+      "wallet": "0xaac091f502a773498fb9336f41500fd13098245b",
+      "own": 432830.64,
+      "siblings": 2,
+      "siblingsPnl": -9848908.919999998,
+      "combined": -9416078.279999997,
+      "counted": true,
+      "component": 3
+    },
+    {
+      "wallet": "0x615a2071e01b28093e65d81be32cea6e173d69d5",
+      "own": 2854381.07,
+      "siblings": 3,
+      "siblingsPnl": -2880588.63,
+      "combined": -26207.560000000056,
+      "counted": true,
+      "component": 4
+    },
+    {
+      "wallet": "0xe87cc392a3d4c6010fc5b29cf42f075768046ef6",
+      "own": 53719.19,
+      "siblings": 1,
+      "siblingsPnl": -74098.24,
+      "combined": -20379.050000000003,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0x09f92ea3d2d80e83d2e8fdef045b43778bdcdc1c",
+      "own": 250939.15,
+      "siblings": 4,
+      "siblingsPnl": -884227.43,
+      "combined": -633288.28,
+      "counted": true,
+      "component": 12
+    },
+    {
+      "wallet": "0xd74916aecd93ca55deb392dfad4c3ae43951ea49",
+      "own": 816008.46,
+      "siblings": 6,
+      "siblingsPnl": -1709218.5999999999,
+      "combined": -893210.1399999999,
+      "counted": true,
+      "component": 8
+    },
+    {
+      "wallet": "0xa582c011842e4aa4d3e3578128dd9851c5846a5c",
+      "own": 7182.68,
+      "siblings": 1,
+      "siblingsPnl": -225122.12,
+      "combined": -217939.44,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0xc1e7b0174bd771b9b9a106fce446f652a6ae0034",
+      "own": 424724.5,
+      "siblings": 5,
+      "siblingsPnl": -898528.3800000001,
+      "combined": -473803.8800000001,
+      "counted": true,
+      "component": 13
+    },
+    {
+      "wallet": "0x153c8444380512cabdc34f6cea09c322e14e319a",
+      "own": 812498.26,
+      "siblings": 7,
+      "siblingsPnl": -2643978.09,
+      "combined": -1831479.8299999998,
+      "counted": true,
+      "component": 10
+    },
+    {
+      "wallet": "0x25e9e31168d7ec59b0bfd54ebde8f3f6b9b1a5ea",
+      "own": 213010.23,
+      "siblings": 5,
+      "siblingsPnl": -335197.4699999999,
+      "combined": -122187.2399999999,
+      "counted": true,
+      "component": 9
+    },
+    {
+      "wallet": "0x2385aae82b8ff5ec9e72f122f3462b9a1b9db98a",
+      "own": 34979.83,
+      "siblings": 3,
+      "siblingsPnl": -345736.93999999994,
+      "combined": -310757.1099999999,
+      "counted": true,
+      "component": 5
+    },
+    {
+      "wallet": "0x81d96d76e102f628fc2a4ce149ddab2c7ceef04d",
+      "own": 188059.21,
+      "siblings": 1,
+      "siblingsPnl": -259751.42,
+      "combined": -71692.21000000002,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0xe739ef8e160d0ca4fd16e1789dbcf8bf579c8744",
+      "own": 203740.63,
+      "siblings": 2,
+      "siblingsPnl": -24546799.2,
+      "combined": -24343058.57,
+      "counted": true,
+      "component": 3
+    }
+  ],
+  "control": [
+    {
+      "wallet": "0x666073af75b8d2e6e9efea414db566494e61aafe",
+      "own": 1134589.87,
+      "siblings": 1,
+      "siblingsPnl": 432830.64,
+      "combined": 1567420.5100000002,
+      "counted": true,
+      "component": 3
+    },
+    {
+      "wallet": "0xfb941d2344b72ea9101400392b818173772d0ddf",
+      "own": 1164590.07,
+      "siblings": 1,
+      "siblingsPnl": 46508.41,
+      "combined": 1211098.48,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0x634fe24f2f7396f5d967ec3936df04f49a3e6951",
+      "own": 4107004.4,
+      "siblings": 1,
+      "siblingsPnl": -135322.06,
+      "combined": 3971682.34,
+      "counted": true,
+      "component": 10
+    },
+    {
+      "wallet": "0x9e2cbb5d800181c1ef21b25010dc4ea80eeb5508",
+      "own": 3312058.84,
+      "siblings": 4,
+      "siblingsPnl": 192038.66999999998,
+      "combined": 3504097.51,
+      "counted": true,
+      "component": 12
+    },
+    {
+      "wallet": "0xaa57ef244c09de1a28437f3e05f208e87c938566",
+      "own": 427580.36,
+      "siblings": 3,
+      "siblingsPnl": -194432.78999999998,
+      "combined": 233147.57,
+      "counted": true,
+      "component": 4
+    },
+    {
+      "wallet": "0xdd7a372377fc633f74ab6e20963803d52f448830",
+      "own": 1052727.25,
+      "siblings": 1,
+      "siblingsPnl": -22739.94,
+      "combined": 1029987.31,
+      "counted": true,
+      "component": 8
+    },
+    {
+      "wallet": "0xa2710511e1dac83973de2b394f669183a175a3f7",
+      "own": 826599.31,
+      "siblings": 5,
+      "siblingsPnl": -772092.66,
+      "combined": 54506.65000000002,
+      "counted": true,
+      "component": 8
+    },
+    {
+      "wallet": "0xfc079a49e371976f559bea0cd1c1f87a5f5b9464",
+      "own": 999504.01,
+      "siblings": 1,
+      "siblingsPnl": 112373.14,
+      "combined": 1111877.15,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0x091159a8106b077c13e89bc09701117e8b5f129a",
+      "own": 5965007.8,
+      "siblings": 1,
+      "siblingsPnl": 72756.02,
+      "combined": 6037763.819999999,
+      "counted": true,
+      "component": 3
+    },
+    {
+      "wallet": "0xbf732ea04197942783e34730ed6e0f6099575d58",
+      "own": 11938633.42,
+      "siblings": 7,
+      "siblingsPnl": -1011906.03,
+      "combined": 10926727.39,
+      "counted": true,
+      "component": 13
+    },
+    {
+      "wallet": "0x4025d75db7a13e25dc6305ac00cc1c849f26b7c9",
+      "own": 423372.27,
+      "siblings": 2,
+      "siblingsPnl": 469841.10000000003,
+      "combined": 893213.3700000001,
+      "counted": true,
+      "component": 10
+    },
+    {
+      "wallet": "0x2e2b6070bec9be9f50887cfe306ac6ca93002fab",
+      "own": 743509.65,
+      "siblings": 8,
+      "siblingsPnl": -686845.57,
+      "combined": 56664.080000000075,
+      "counted": true,
+      "component": 9
+    },
+    {
+      "wallet": "0x59629e23c52a0d7c092436870ef2db1dc382ddf8",
+      "own": 934033.05,
+      "siblings": 1,
+      "siblingsPnl": 257300.76,
+      "combined": 1191333.81,
+      "counted": true,
+      "component": 5
+    },
+    {
+      "wallet": "0xb5b3f3caf9d778b1293e5cd29f32e84b04c67a08",
+      "own": 2758515.9,
+      "siblings": 2,
+      "siblingsPnl": 740617.28,
+      "combined": 3499133.1799999997,
+      "counted": true,
+      "component": 3
+    },
+    {
+      "wallet": "0x482b0f4dad512fe086e121882a81e34c374acae4",
+      "own": 460715.47,
+      "siblings": 1,
+      "siblingsPnl": -50842.26,
+      "combined": 409873.20999999996,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0x60a8c761f39696b3b419f31dcda20b405cb685f6",
+      "own": 1077118.62,
+      "siblings": 6,
+      "siblingsPnl": 1087563.17,
+      "combined": 2164681.79,
+      "counted": true,
+      "component": 7
+    },
+    {
+      "wallet": "0x45f717946a3fb49054ebebecbb1ab8ce9325f166",
+      "own": 473964.09,
+      "siblings": 1,
+      "siblingsPnl": -9612.32,
+      "combined": 464351.77,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0x64702807a1f0f9888ea22b858099d7f481227b55",
+      "own": 1638500.91,
+      "siblings": 1,
+      "siblingsPnl": -392417.96,
+      "combined": 1246082.95,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0xe6e0e0dd371e4f9bd5218ab4bc0634d59705ae71",
+      "own": 313639.36,
+      "siblings": 1,
+      "siblingsPnl": -113265.75,
+      "combined": 200373.61,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0x597568694fe6ee1b701ec8578bd57102c9a29abd",
+      "own": 630462.65,
+      "siblings": 1,
+      "siblingsPnl": 26424.39,
+      "combined": 656887.04,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0x519c721de735f7c9e6146d167852e60d60496a47",
+      "own": 3977270.95,
+      "siblings": 7,
+      "siblingsPnl": 1644773.0499999998,
+      "combined": 5622044,
+      "counted": true,
+      "component": 8
+    },
+    {
+      "wallet": "0x3ed4033676d0bdb3938728ca4ac673d00e74bd06",
+      "own": 3968072.53,
+      "siblings": 2,
+      "siblingsPnl": -1302000.0699999998,
+      "combined": 2666072.46,
+      "counted": true,
+      "component": 3
+    },
+    {
+      "wallet": "0x9bd2ee53f6c6aa778209b8673f6c7df754830c88",
+      "own": 973547.41,
+      "siblings": 2,
+      "siblingsPnl": 271253.72,
+      "combined": 1244801.13,
+      "counted": true,
+      "component": 3
+    },
+    {
+      "wallet": "0xfe26b6771dc71a336c8616b69ea6953bc9afd13f",
+      "own": 56324.14,
+      "siblings": 1,
+      "siblingsPnl": -28642.42,
+      "combined": 27681.72,
+      "counted": true,
+      "component": 2
+    },
+    {
+      "wallet": "0x5b5f798b94f54d33ba316c8b1c837e930c90c052",
+      "own": 2031150.66,
+      "siblings": 5,
+      "siblingsPnl": 1619159.3400000003,
+      "combined": 3650310,
+      "counted": true,
+      "component": 6
+    },
+    {
+      "wallet": "0xc298efc4785f2f282838924103509156c9578a9c",
+      "own": 3342652.7,
+      "siblings": 3,
+      "siblingsPnl": 939739.81,
+      "combined": 4282392.51,
+      "counted": true,
+      "component": 4
+    }
+  ],
+  "components": 33,
+  "index": {
+    "universe": 1238,
+    "groups": 48,
+    "wallets": 153,
+    "services": 15
+  }
+}

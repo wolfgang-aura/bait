@@ -176,7 +176,7 @@ test('the live executor refuses any tool other than get_pnl_summary and get_open
 
   await assert.rejects(
     () => executor.execute('get_closed_trades', { wallet: WALLET, days: 30 }),
-    /serves get_pnl_summary, get_open_positions, get_independent_record and get_smart_money_market only/,
+    /serves get_pnl_summary, get_open_positions, get_independent_record, get_smart_money_market and get_operator only/,
   );
   assert.equal(call.calls.length, 0, 'an unknown tool must not spend a credit');
 });
@@ -219,4 +219,27 @@ test('an invalid wallet is refused before any credit is spent', async () => {
   assert.equal(decision.allocation, 0);
   assert.equal(call.calls.length, 0);
   assert.equal(decision.creditsCharged, 0);
+});
+
+test('v5 live: get_operator reads related-wallets per chain, the funding once, and the indexed siblings over the gate window', async () => {
+  const F = '0x' + 'f'.repeat(40);
+  const S = '0x' + '1'.repeat(40);
+  const W = WALLET.toLowerCase();
+  const index = { universe: 10, groups: { ['ethereum:' + F]: [W, S] }, services: [] };
+  const seen = [];
+  const call = async (p, body) => {
+    seen.push(p);
+    if (p === 'profiler/address/related-wallets') return { data: { data: body.chain === 'ethereum' ? [{ address: F, relation: 'First Funder', transaction_hash: '0xab', block_timestamp: '2022-01-05T18:05:34Z', address_label: '' }] : [] } };
+    if (p === 'profiler/address/transactions') return { data: { data: [{ transaction_hash: '0xab', volume_usd: 7603, tokens_received: [{ from_address: F }] }] } };
+    return { data: { data: { realized_pnl_usd: -9_999_999, closed_trade_count: 40 } } };
+  };
+  const executor = createLiveGuardExecutor({ call, now: () => new Date(NOW), operatorIndex: index });
+  const window = { from: '2026-08-22T12:00:00Z', to: '2026-09-21T12:00:00Z' };
+  const op = await executor.execute('get_operator', { wallet: WALLET, window });
+  assert.deepEqual(seen, ['profiler/address/related-wallets', 'profiler/address/related-wallets', 'profiler/address/transactions', 'profiler/perp-pnl-summary']);
+  assert.equal(op.siblings[0].wallet, S);
+  assert.equal(op.siblings[0].realized_pnl_usd, -9_999_999);
+  assert.equal(executor.creditsCharged(), 4);
+  const none = createLiveGuardExecutor({ call, now: () => new Date(NOW), operatorIndex: null });
+  assert.equal((await none.execute('get_operator', { wallet: WALLET, window })).error, 'not_read');
 });

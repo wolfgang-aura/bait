@@ -11967,7 +11967,6 @@
         "data": [
           {
             "trader_address": "0xfe47c8f29f65830d7990e85852cc2c5cee1c0085",
-            "trader_address_label": "HL Perps Shark",
             "total_pnl": 64791.560326,
             "realized_pnl_usd": 70579.914097,
             "unrealized_pnl_usd": -5788.353771000004,

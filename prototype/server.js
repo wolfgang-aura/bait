@@ -35,6 +35,7 @@ import { createHostedGuard, clientIp, REPLAY_PATH } from './hosted-guard.js';
 import { replayProvider, REPLAY_SOURCE } from './replay-provider.js';
 import { chooseDeskMode, probeHosted, hostedProvider, validatePennyTurn, labelFor, HOSTED_PENNY_URL } from './desk-mode.js';
 import { ROOM_DESK, FORMAT_SUFFIX } from './room.js';
+import { createRosterPulse, PULSE_TTL_MS } from './roster-pulse.js';
 import { createLiveEvidence, DEFAULT_DAILY_CAP, DEFAULT_TOTAL_CAP, listRawReads, RAW_NAME } from './live-evidence.js';
 
 /**
@@ -359,6 +360,8 @@ function health() {
     // reported under its own name so nothing here reads as the Pitch Room's mode.
     lab_encounter: { mode: dataSource.status().live ? 'live Nansen refresh' : 'frozen snapshot', data: dataSource.status() },
     room_live: room,
+    // The front door's shared live read (prototype/roster-pulse.js).
+    roster_pulse: rosterPulse.status(),
     nansen_quota: nansenQuota(),
     keys_present: ['ANTHROPIC_API_KEY', 'DEEPSEEK_API_KEY', 'NANSEN_API_KEY'].filter(
       (k) => !!(process.env[k] || env[k])
@@ -555,6 +558,21 @@ const encounterService = createEncounterService({
  */
 const roomRoster = loadRoster();
 
+/**
+ * The roster pulse: the front door's live Nansen read, one 7-day summary per roster wallet
+ * (1 credit each), shared by every visitor and refreshed at most once per
+ * ROSTER_PULSE_TTL_MIN (default 15). It spends under the room's caps with one round's read
+ * kept in reserve. It is off whenever the room's live reads are off.
+ */
+const PULSE_TTL = capEnv('ROSTER_PULSE_TTL_MIN', PULSE_TTL_MS / 60_000) * 60_000;
+const rosterPulse = createRosterPulse({
+  prospects: roomRoster,
+  call: ROOM_STUB ?? nansenCall,
+  budget: liveEvidence,
+  ttlMs: Math.max(60_000, PULSE_TTL),
+  log: (message) => console.log(`[roster-pulse] ${message}`),
+});
+
 const roomService = createRoomService({
   roster: roomRoster,
   liveEvidence,
@@ -671,6 +689,8 @@ const server = http.createServer(async (req, res) => {
           last_live_failure: live.last_live_failure,
           counter_persistence: live.counter_persistence,
         },
+        // The front door's shared live read: last success, last failure, spend.
+        roster_pulse: rosterPulse.status(),
       });
     }
 
@@ -709,6 +729,11 @@ const server = http.createServer(async (req, res) => {
       if (url.pathname === '/api/room/fixture' && req.method === 'GET') {
         if (HOSTED) return send(404, { error: 'Unknown room route.' });
         return send(200, await roomService.fixture(url.searchParams.get('prospect')));
+      }
+      // The front door's live read: activity only (7-day closed trades), never a realised
+      // figure. Shared and cached server side, so a page load spends at most the refresh.
+      if (url.pathname === '/api/room/pulse' && req.method === 'GET') {
+        return send(200, await rosterPulse.get());
       }
       if (url.pathname === '/api/room/leaderboard' && req.method === 'GET') {
         return send(200, { entries: roomService.leaderboard() });
@@ -897,7 +922,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  model calls     ${JSON.stringify(h.model_calls_used)} of ${JSON.stringify(h.model_call_caps)}`);
   console.log(`  live refresh    ${LIVE_ENABLED && !HOSTED ? `enabled for the card encounter (<=${MAX_REFRESH_CREDITS} credits per refresh)` : HOSTED ? 'disabled for the card encounter (hosted spends only through the room live read)' : 'disabled (NANSEN_LIVE=0)'}`);
   console.log(`  nansen quota    ${h.nansen_quota.calls_since} calls since ${h.nansen_quota.since}, ${h.nansen_quota.credits_used_local}/${h.nansen_quota.credit_budget} credits`);
-  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} (${PRODUCTION_GUARD_POLICY.id}: 1 credit if the month refuses, at most 9)` : 'disabled (HOSTED=1)'}`);
+  console.log(`  live guard      ${h.live_guard.enabled ? `${GUARD_ROUTE} (${PRODUCTION_GUARD_POLICY.id}: 1 credit if the month refuses, at most 21)` : 'disabled (HOSTED=1)'}`);
   console.log(`  default rule    ${h.default_rule}`);
   console.log(`  control wallet  ${h.control_wallet ?? 'none'}`);
   console.log(`  runs loaded     ${h.runs_loaded}`);

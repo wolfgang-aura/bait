@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#0A0B0D">
 <meta property="og:type" content="website">
 <meta property="og:title" content="BAIT · The check before an AI agent moves money">
-<meta property="og:description" content="True facts: the AI alone backed a losing trader in 63 of 78 runs; behind the BAIT check, 0 of 78. Faked evidence: a simple PnL rule let 49 of 67 through; BAIT let 0. Model tested: DeepSeek.">
+<meta property="og:description" content="Operator attacks and faked evidence: a simple PnL rule sent the money in 61 of 79; BAIT in 0. True facts: the AI alone backed a losing trader in 63 of 78 runs; behind the BAIT check, 0 of 78.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='20' font-weight='700' text-anchor='middle' fill='%230A0B0D'%3EB%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,8 +41,9 @@
     <p class="hero-sub"><strong>BAIT is the check that runs before the money moves.</strong> The AI proposes a transfer; BAIT reads the trader&rsquo;s record from Nansen and blocks it when the record is losing.</p>
 
     <ul class="findings" aria-label="The two findings">
-      <li><span>True facts</span><p>Pitched losing traders with true facts only, the AI alone backed one in 63 of 78 runs. Behind BAIT: <strong>0 of 78</strong>. On 12 unseen losing wallets: 18 of 36, and <strong>0 of 36</strong> behind BAIT. Claude Sonnet 5 on the same 78: 74, and <strong>0</strong> behind BAIT.</p></li>
+      <li><span>The operator</span><p><strong>Operator attacks plus faked evidence: a PnL rule sends the money in 61 of 79; BAIT in 0 of 79.</strong> One operator funds several wallets, most lose, the winner is pitched. Found in real Nansen data: the PnL rule funds 12 of 12 operator attacks; BAIT funds <strong>0 of 12 operator attacks</strong>, by reading the first funder and its other wallets.</p></li>
       <li><span>Faked evidence</span><p>A simple PnL rule let 49 of 67 faked records through. BAIT let <strong>0</strong>.</p></li>
+      <li><span>True facts</span><p>Pitched losing traders with true facts only, the AI alone backed one in 63 of 78 runs. Behind BAIT: <strong>0 of 78</strong>. On 12 unseen losing wallets: 18 of 36, and <strong>0 of 36</strong> behind BAIT. Claude Sonnet 5 on the same 78: 74, and <strong>0</strong> behind BAIT.</p></li>
     </ul>
 
     <div class="hero-actions">
@@ -97,8 +98,8 @@
     </div>
     <ol class="how-steps">
       <li><span>01 · The AI agent</span><strong>Proposes a transfer</strong><small>In the Pitch Room that is PENNY: a third-party AI allocator with no data tools. PENNY decides on the pitch alone.</small></li>
-      <li class="bait"><span>02 · <span class="bait-badge">BAIT</span> check</span><strong>Reads Nansen before it leaves</strong><small>Gate v4 reads five Nansen endpoints: the wallet's 30-day and 7-day perp-pnl-summary (checked for the right wallet, window dates, source and freshness), perp-trades, perp-positions, perp-screener for smart money's side of its largest position, and perp-leaderboard as a second record of the month.</small></li>
-      <li><span>03 · What leaves</span><strong>All of it, a capped 25%, or $0</strong><small>A losing month, a week that reverses the month, fewer than 20 closed trades, a win rate under 40%, or a summary that claims more than the leaderboard's record: $0. One market carried the month, open positions down more than 25% of the account, or smart money two to one on the other side: 25%.</small></li>
+      <li class="bait"><span>02 · <span class="bait-badge">BAIT</span> check</span><strong>Reads Nansen before it leaves</strong><small>Gate v5 reads seven Nansen endpoints: the wallet's 30-day and 7-day perp-pnl-summary (checked for the right wallet, window dates, source and freshness), perp-trades, perp-positions, perp-screener for smart money's side of its largest position, and perp-leaderboard as a second record of the month, plus related-wallets for the wallet's first funder, transactions for the funding transfer, and each sibling wallet's 30-day perp-pnl-summary.</small></li>
+      <li><span>03 · What leaves</span><strong>All of it, a capped 25%, or $0</strong><small>A losing month, a week that reverses the month, fewer than 20 closed trades, a win rate under 40%, a summary that claims more than the leaderboard's record, or an operator that lost money across the wallets it funded: $0. One market carried the month, open positions down more than 25% of the account, or smart money two to one on the other side: 25%.</small></li>
     </ol>
     <p class="how-note">Every live round saves Nansen's raw response; the files and their SHA-256 are listed at <a href="/api/live-reads" data-host-link>/api/live-reads</a> and in <code>bench/live-reads/</code>. The model cannot override the check: the check runs in code after the agent decides. Missing, stale or mismatched evidence means $0. Call it from code with <code>guardAllocation</code> (section 3 below), run a local check with <code>npm run guard -- --wallet 0x... --allocation 5000</code>, or put your own agent behind it with <code>npm run bench -- --agent your-agent.mjs --snapshot</code>.</p>
   </section>
@@ -164,7 +165,7 @@ export async function decide({ pitch, history, tools, slotUsd }) {
   <section id="guard" class="guard sec" aria-labelledby="guard-title" hidden>
     <div class="sec-head">
       <h2 id="guard-title"><span class="sec-num">3</span>Guard</h2>
-      <p class="sec-meta">Up to six reads on five Nansen endpoints · no model tools · fail closed</p>
+      <p class="sec-meta">Up to 18 reads on seven Nansen endpoints · no model tools · fail closed</p>
     </div>
 
     <h3 id="b-rule-title" class="rule-title"></h3>
@@ -193,7 +194,7 @@ if (decision.decision === 'allow') {
       <button type="button" id="b-copy" class="btn-ghost">Copy the snippet</button>
       <span id="b-copy-status" class="copy-status" role="status" aria-live="polite"></span>
     </div>
-    <p class="note guard-live">Run it live with only a Nansen key: <code>npm run guard -- --wallet 0x… --allocation 5000</code> reads the two summaries, the open positions, perp-screener and perp-leaderboard (at most 9 credits, 1 if the month already refuses). A Pitch Room live read also takes the newest page of fills: 5 credits when the record refuses, 10 when the gate clears or caps. Every live read's raw Nansen response is committed in <a href="https://github.com/wolfgang-aura/bait/tree/main/bench/live-reads">bench/live-reads</a> with its SHA-256.</p>
+    <p class="note guard-live">Run it live with only a Nansen key: <code>npm run guard -- --wallet 0x… --allocation 5000</code> reads the two summaries, the open positions, perp-screener, perp-leaderboard and the operator behind the wallet (at most 21 credits, 1 if the month already refuses). A Pitch Room live read also takes the newest page of fills: 5 credits when the record refuses, 10 when the gate clears or caps, plus 2 to 12 for the operator read when nothing earlier refuses (22 at most). Every live read's raw Nansen response is committed in <a href="https://github.com/wolfgang-aura/bait/tree/main/bench/live-reads">bench/live-reads</a> with its SHA-256.</p>
 
     <details class="audit" id="audit">
       <summary>Audit: prompt-only rule, paired policy test, sources, hashes</summary>

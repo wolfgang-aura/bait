@@ -18,6 +18,8 @@ export async function call(pathName, body) {
   if (pathName === 'perp-screener') {
     return ok({ data: [{ token_symbol: body.filters.token_symbol, current_smart_money_position_longs_usd: 2_000_000, current_smart_money_position_shorts_usd: -1_000_000 }] });
   }
+  // Gate v5 (bench/V5.md): no first funder, so the operator row is not assessed and nothing more is read.
+  if (pathName === 'profiler/address/related-wallets' || pathName === 'profiler/address/transactions') return ok({ data: [] });
   if (pathName === 'perp-leaderboard') {
     return ok({ data: [{ trader_address: body.filters.trader_address, realized_pnl_usd: pnl30, total_trades: 400 }] });
   }

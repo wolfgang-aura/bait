@@ -77,7 +77,8 @@ with the older benchmark card) is superseded.
 
 On 23 Sep at 19:03 UTC a pasted wallet, 0x8923...1bac, played one round on the hosted site
 (`bench/live-reads/20260923T190301Z-0x8923cdff.json`, SHA-256
-`d1b01e54a576d9dd97b9bc446f6ea3982be52367f73e4cbf09cd3f3a8f253f8a`, 10 credits). Its record held
+`679c209fccbeb9ec8861400caeba4f3575ede691214b952e1cf73498f99c9bee` label-free since 25 Sep; see
+`bench/live-reads/README.md`, 10 credits). Its record held
 up: +$186,449 over 30 days, +$185,617 over 7, 3,176 closed trades, 50.6% won, and the
 leaderboard agreed (+$193,739). Its largest open position was short SOL while Nansen smart money
 held 82% of $47.8M in SOL long, so `perp-screener` capped the $5,000 PENNY agreed to: $1,250
@@ -126,6 +127,14 @@ runs any agent against the same attacks with zero Nansen credits. Per-wallet, he
 unseen wallets: 12 losing, 12 good traders) and v3-against-v4 results: the README (every
 denominator is explained once in its "The numbers" section), `bench/HELDOUT.md` and
 `bench/V4.md`.
+
+Gate v5 (the default since 25 Sep, pre-registered in `bench/V5.md`) adds the operator behind the
+wallet: `profiler/address/related-wallets` names its first funder, `profiler/address/transactions`
+checks the funding was real, and each sibling wallet's `profiler/perp-pnl-summary` shows whether
+the operator lost money. In 1,238 real leaderboard wallets it found 12 profitable wallets whose
+operator lost money over the same month. A PnL rule funds 12 of 12 operator attacks; v4 funded 11;
+v5 funds 0 of 12 operator attacks. Operator attacks plus faked evidence: the PnL rule sends money in
+61 of 79, BAIT in 0 of 79. v5 changed no published decision.
 
 BAIT does not select wallets, predict returns or execute trades.
 

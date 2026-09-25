@@ -38,7 +38,7 @@ import { SNAPSHOTS, makeCase } from './paired.js';
 import { loadConfig, replayCase } from './run.js';
 import { loadAgent, agentConfig, makeMeter, replayAgentCase } from './agent.js';
 import { loadGateBuysCases, runGateBuysCase, tallyGateBuys, formatGateBuys } from './gate-buys.js';
-import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, BENCHMARK_GUARD_POLICY_V3, BENCHMARK_GUARD_POLICY_V4, guardAllocation } from '../validation/guard.js';
+import { BENCHMARK_GUARD_POLICY, BENCHMARK_GUARD_POLICY_V2, BENCHMARK_GUARD_POLICY_V3, BENCHMARK_GUARD_POLICY_V4, BENCHMARK_GUARD_POLICY_V5, guardAllocation } from '../validation/guard.js';
 import { makeToolExecutor } from '../validation/tools.js';
 import { deepseekProvider, anthropicProvider, modelCallsUsed, CAPS, CapExceeded } from '../validation/providers.js';
 import { creditsUsed } from '../validation/nansen.js';
@@ -61,7 +61,7 @@ export const RECORDED_WALLET = '0xc26cbb6483229e0d0f9a1cab675271eda535b8f4';
 export const PRIOR_WALLET_ROWS = 'bench/reports/2026-09-22T22-43-22-858Z-wallets.jsonl';
 
 /** The gate policies every gated answer is also scored under. `SHIPPED` is the one in use. */
-export const SHIPPED = 'v4';
+export const SHIPPED = 'v5';
 export const GATE_VARIANTS = Object.freeze({
   v1: BENCHMARK_GUARD_POLICY,
   'v2-no-concentration': { ...BENCHMARK_GUARD_POLICY_V2, id: `${BENCHMARK_GUARD_POLICY_V2.id}-no-concentration`, maxTopCoinPnlShare: null },
@@ -72,6 +72,9 @@ export const GATE_VARIANTS = Object.freeze({
   // Shipped since 23 Sep 2026 (bench/V4.md): v3 plus perp-screener and perp-leaderboard rows, read
   // from the saved raw responses in bench/v4/reads/ (not assessed where none was saved).
   v4: BENCHMARK_GUARD_POLICY_V4,
+  // bench/V5.md: v4 plus the operator behind the wallet (related-wallets, transactions, sibling
+  // perp-pnl-summary), read from the saved raw responses in bench/v5/reads/.
+  v5: BENCHMARK_GUARD_POLICY_V5,
 });
 
 /** The models a desk can run on, and the ledger vendor each one is charged to. */
@@ -177,10 +180,10 @@ export function makeWalletPlan({ cases, configs, repeats = 3, baseline = null })
 /** What each gate policy does with one final answer. Deterministic, no model, no credit. */
 export async function gateVariants(data, attempted) {
   const out = {};
-  const { v4Executor } = await import('./v4.js');
+  const { benchExecutor } = await import('./v5.js');
   for (const [name, policy] of Object.entries(GATE_VARIANTS)) {
     const base = makeToolExecutor(data, { mode: 'armed' });
-    const g = await guardAllocation({ executor: name === 'v4' ? v4Executor(data, base) : base, wallet: data.wallet,
+    const g = await guardAllocation({ executor: name === 'v4' || name === 'v5' ? await benchExecutor(data, { inner: base, operator: name === 'v5' }) : base, wallet: data.wallet,
       allocation: attempted, policy, now: () => new Date(data.retrieved_at) });
     out[name] = { decision: g.decision, code: g.code, allocation: g.allocation, blocked: g.blocked };
   }
@@ -259,7 +262,7 @@ export function formatLosingTable(cases, rows, { agentName = agentOf(rows) } = {
 
 export function formatControlTable(cases, rows, { agentName = agentOf(rows) } = {}) {
   const head = ['control', '30d / 7d realised PnL', 'best market share', 'unarmed funded', 'armed-basic funded', 'gated funded', 'model tried to fund (gated)',
-    'false blocks v1', 'false blocks v2 before', 'false blocks v2 @60%', 'false blocks v2', 'false blocks v3', 'false blocks v4 shipped', 'capped v4',
+    'false blocks v1', 'false blocks v2 before', 'false blocks v2 @60%', 'false blocks v2', 'false blocks v3', `false blocks v4${SHIPPED === 'v4' ? ' shipped' : ''}`, `false blocks v5${SHIPPED === 'v5' ? ' shipped' : ''}`, `capped ${SHIPPED}`,
     ...(agentName ? [`${agentName.replace(/^agent:/, '')} funded`] : [])];
   const controls = cases.filter(c => c.testCase.cohort !== 'losing');
   const totals = {};
@@ -287,7 +290,7 @@ export function gateFlips(rows) {
   const gated = rows.filter(r => r.config === GATED && !r.error && r.gates);
   const count = (a, b, cohort) => gated.filter(r => (cohort === 'losing') === (r.cohort === 'losing'))
     .filter(r => r.gates[a].decision !== r.gates[b].decision).length;
-  const pairs = [['v2-no-concentration', 'v2'], ['v2-no-concentration', 'v2-concentration-0.6'], ['v1', 'v2'], ['v2', 'v3'], ['v1', 'v3'], ['v3', 'v4']];
+  const pairs = [['v2-no-concentration', 'v2'], ['v2-no-concentration', 'v2-concentration-0.6'], ['v1', 'v2'], ['v2', 'v3'], ['v1', 'v3'], ['v3', 'v4'], ['v4', 'v5']];
   return Object.fromEntries(pairs.map(([a, b]) => [`${a} -> ${b}`, {
     losing: count(a, b, 'losing'), losingRuns: gated.filter(r => r.cohort === 'losing').length,
     controls: count(a, b, 'control'), controlRuns: gated.filter(r => r.cohort !== 'losing').length,
@@ -587,7 +590,7 @@ function baseRow(job) {
 
 export async function main(argv = process.argv.slice(2), { log = write } = {}) {
   let execute = false, repeats = 3, resume = null, maxCalls = null, agentSpec = null, outDir = DEFAULT_OUT;
-  let model = 'deepseek-chat', losingOnly = false, configNames = CONFIGS;
+  let model = 'deepseek-chat', losingOnly = false, configNames = CONFIGS, set = 'all', onlyRepeat = null;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--execute') execute = true;
@@ -599,18 +602,25 @@ export async function main(argv = process.argv.slice(2), { log = write } = {}) {
     else if (a === '--model') model = argv[++i];
     else if (a === '--losing-only') losingOnly = true;
     else if (a === '--configs') configNames = argv[++i].split(',');
-    else throw new Error('Usage: node bench/wallets.js [--execute] [--repeats N] [--max-calls N] [--resume <jsonl>] [--agent <file.mjs>] [--out <dir>] [--model deepseek-chat|claude-sonnet-5] [--losing-only] [--configs a,b]');
+    else if (a === '--set') set = argv[++i];
+    // Run one repeat of the plan, so repeats can run side by side; merge the rows files with --resume.
+    else if (a === '--only-repeat') onlyRepeat = Number(argv[++i]);
+    else throw new Error('Usage: node bench/wallets.js [--execute] [--repeats N] [--max-calls N] [--resume <jsonl>] [--agent <file.mjs>] [--out <dir>] [--model deepseek-chat|claude-sonnet-5] [--losing-only] [--configs a,b] [--set all|operator]');
   }
   const vendor = VENDOR_OF[model];
   if (!vendor) throw new Error(`Unknown model ${JSON.stringify(model)}. Use ${Object.keys(VENDOR_OF).join(' or ')}.`);
   for (const name of configNames) if (!CONFIGS.includes(name)) throw new Error(`Unknown config ${name}. Use ${CONFIGS.join(', ')}.`);
   // Another model cannot reuse DeepSeek's recorded answers: only deepseek-chat imports them.
   const reuseDeepseek = model === 'deepseek-chat';
-  const cases = loadAllCases().filter(c => !losingOnly || c.testCase.cohort === 'losing');
+  if (!['all', 'operator'].includes(set)) throw new Error(`Unknown --set ${set}. Use all or operator.`);
+  // --set operator: the operator attacks and controls of bench/V5.md (bench/v5.js), in place of the published cases.
+  const pool = set === 'operator' ? await (await import('./v5.js')).loadOperatorCases() : loadAllCases();
+  const cases = pool.filter(c => !losingOnly || c.testCase.cohort === 'losing');
   const configs = configNames.map(name => loadConfig(name));
   // An --agent row sits beside the desks, one run per case. With no --agent there is none.
   const baseline = agentSpec ? agentConfig(agentSpec, { repo: ROOT }) : null;
   const plan = makeWalletPlan({ cases, configs, repeats, baseline });
+  if (onlyRepeat !== null) plan.jobs = plan.jobs.filter(j => j.repeat === onlyRepeat);
   const { reused, counts } = await importRows({ jobs: plan.jobs, recordedFile: reuseDeepseek ? path.join(ROOT, RECORDED_ROWS) : null,
     priorFile: reuseDeepseek ? path.join(ROOT, PRIOR_WALLET_ROWS) : null, resumeFile: resume ? path.resolve(ROOT, resume) : null });
   const fresh = plan.jobs.filter(j => !reused.has(j.key));

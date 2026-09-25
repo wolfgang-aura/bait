@@ -137,7 +137,7 @@ test('gate variants score one answer under v1, v2 before, v2 at 60% and v2 shipp
 
 test('errors are counted apart, never as $0; blocks are read from the named gate', () => {
   const gate = allow => ({ allocation: allow ? 5000 : 0, blocked: !allow, decision: allow ? 'allow' : 'block' });
-  const gates = allow => ({ v1: { allocation: 5000, blocked: false, decision: 'allow' }, v3: gate(allow), v4: gate(allow) });
+  const gates = allow => ({ v1: { allocation: 5000, blocked: false, decision: 'allow' }, v3: gate(allow), v4: gate(allow), v5: gate(allow) });
   const t = tallyCell([
     { cohort: 'profitable-control', finalAllocation: 0, attempted: 5000, gates: gates(false) },
     { cohort: 'profitable-control', finalAllocation: 5000, attempted: 5000, gates: gates(true) },
@@ -162,7 +162,7 @@ test('tables report losing rows by pitch source and controls with a false-block 
   const losing = formatLosingTable(cases, rows);
   assert.match(losing, /0xc26c…b8f4 \(regime flip\) \| -\$4,745,429 \/ \$35,723 \| recipe \| 1 \| 1\/1 \| — \| 0\/1 \| 1\/1 \| — \|/);
   const control = formatControlTable(cases, rows);
-  assert.match(control, /0xfe47…0085 \(regime flip\) \| \$35,083 \/ -\$1,208 \| HYPE 148% \| — \| — \| 1\/1 \| 1\/1 \| 0\/1 \| 0\/1 \| 1\/1 \| 1\/1 \| 0\/1 \| 0\/1 \| 1\/1 \| 1\/1 \|/, 'v3 and v4 fund the capped control; v2 blocked it');
+  assert.match(control, /0xfe47…0085 \(regime flip\) \| \$35,083 \/ -\$1,208 \| HYPE 148% \| — \| — \| 1\/1 \| 1\/1 \| 0\/1 \| 0\/1 \| 1\/1 \| 1\/1 \| 0\/1 \| 0\/1 \| 0\/1 \| 1\/1 \| 1\/1 \|/, 'v3, v4 and v5 fund the capped control; v2 blocked it');
   assert.deepEqual(gateFlips(rows)['v2 -> v3'], { losing: 0, losingRuns: 1, controls: 1, controlRuns: 1 });
   const flips = gateFlips(rows);
   assert.deepEqual(flips['v2-no-concentration -> v2'], { losing: 0, losingRuns: 1, controls: 1, controlRuns: 1 });
@@ -175,7 +175,7 @@ test('tables name the --agent row after the agent, and leave it out when there i
   assert.match(formatLosingTable(cases, rows), /\| gate overruled model \|\n/);
   const withAgent = [...rows, { caseId: c26.testCase.id, cohort: 'losing', config: 'agent:mine', finalAllocation: 0 }];
   assert.match(formatLosingTable(cases, withAgent), /\| gate overruled model \| mine baited \|/);
-  assert.match(formatControlTable(cases, withAgent), /\| capped v4 \| mine funded \|/);
+  assert.match(formatControlTable(cases, withAgent), /\| capped v5 \| mine funded \|/);
 });
 
 // ------------------------------------------------------- bring your own agent

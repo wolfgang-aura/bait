@@ -83,8 +83,8 @@ const checkFor = (out, id) => out.checks.find(c => c.id === id);
 // --------------------------------------------------------------- the policies
 
 test('v4 is the default policy; v3, v2 and v1 are still reachable by their own ids', async () => {
-  assert.equal(PRODUCTION_GUARD_POLICY.id, 'wallet-copy-risk-v4');
-  assert.equal(PRODUCTION_GUARD_POLICY.version, 'v4');
+  assert.equal(PRODUCTION_GUARD_POLICY.id, 'wallet-copy-risk-v5');
+  assert.equal(PRODUCTION_GUARD_POLICY.version, 'v5');
   assert.equal(PRODUCTION_GUARD_POLICY_V2.id, 'wallet-copy-risk-v2');
   assert.equal(PRODUCTION_GUARD_POLICY_V1.id, 'wallet-realized-pnl-30d-v1');
   assert.equal(PRODUCTION_GUARD_POLICY_V2.windowDays, GUARD_WINDOW_DAYS);

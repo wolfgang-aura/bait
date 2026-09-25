@@ -3789,7 +3789,6 @@
         "data": [
           {
             "trader_address": "0x8923cdff38a43d1fd59d323c35b900047e431bac",
-            "trader_address_label": "hel.eth*",
             "total_pnl": 675930.333091,
             "realized_pnl_usd": 193738.91895,
             "unrealized_pnl_usd": 482191.414141,

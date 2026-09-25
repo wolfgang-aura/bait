@@ -1,6 +1,22 @@
 # BAIT public page, version B
 
-## Version R: the reveal says it once, 24 September 2026 (current)
+## Version S: the front door reads Nansen live, 25 September 2026 (current)
+
+A judge-style audit: the first screen showed only dated captures ("leaderboard 2026-09-21 ·
+Nansen 2026-09-15"), so it read as frozen until a pick. Same tokens, fonts and golden viewports.
+
+- **One live line per tile**, under the handle, above the dates: a dot, the figure in `--text`,
+  the stamp under it. Green dot and green stamp "Nansen · read live HH:MM UTC" when read live;
+  amber dot and amber stamp "live read failed HH:MM UTC · Nansen YYYY-MM-DD capture" (or "live
+  reads paused: daily credit cap ·", "live reads off ·") over the saved figure. Grey while loading.
+- **Activity only**: "N trades closed in 7 days" from `profiler/perp-pnl-summary` over 7 days.
+  Never realised PnL or win rate: the tile stays hype only and the 30-day figure stays the reveal.
+- **Server side, shared** (`prototype/roster-pulse.js`, `GET /api/room/pulse`): refreshed at
+  most every 15 minutes (ROSTER_PULSE_TTL_MIN), 1 credit per wallet, under the room's caps with
+  one round's read in reserve. `/healthz` reports it as `roster_pulse`.
+- **Seen** at 1280 x 800 (live and forced-failure) and 375 x 812 (live; the figure wraps).
+
+## Version R: the reveal says it once, 24 September 2026
 
 Second complaint on the reveal (v25 video, round 2): the tilted stamp sat on the headline and the
 BAIT line, and the same sentence appeared three times (headline, "agreed to send $X" tag, the amber

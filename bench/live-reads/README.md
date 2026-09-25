@@ -1,9 +1,17 @@
 # Raw live Nansen reads
 
 One JSON file per fresh live read the hosted Pitch Room made, saved byte for byte as it
-arrived and listed with its SHA-256 at `/api/live-reads`. Committed files are never
-rewritten; SUBMISSION.md publishes the SHA-256 of the three reads the submission cites (both
-video rounds and the round `perp-screener` capped).
+arrived and listed with its SHA-256 at `/api/live-reads`, minus Nansen's address labels.
+SUBMISSION.md publishes the SHA-256 of the three reads the submission cites (both video rounds
+and the round `perp-screener` capped).
+
+Labels: Nansen's redistribution guide prohibits public display of address labels in bulk, so
+no committed or served read carries one. On 25 Sep 2026 `node scripts/strip-nansen-labels.mjs
+--write` removed the `trader_address_label` field from the three files here that held one
+(20260923T155252Z, 20260923T160814Z, 20260923T190301Z) and nothing else; their SHA-256 changed
+and every place that records one was updated. The two video rounds held no label and are
+unchanged. Reads saved after that are stripped before they are written
+(`validation/nansen-labels.js`).
 
 Fields: `responses['30d']` and `responses['7d']` are the two `profiler/perp-pnl-summary`
 calls (request, status, credit header, body). From 23 Sep 2026 06:41 UTC a read also holds

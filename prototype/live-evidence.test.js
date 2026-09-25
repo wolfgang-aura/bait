@@ -598,8 +598,8 @@ test('v4 live round: smart money against the book caps, the leaderboard record i
   const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], mock, { fillPages: 1, positions: true, rawDir });
   const round = await service.start({ prospect: 'grinder' });
   assert.equal(live.status().credits_today, 10, 'two summaries, fills, positions, perp-screener (1) and perp-leaderboard (5)');
-  assert.equal(live.status().credits_per_round.full, 10);
-  assert.equal(live.status().credits_per_round.refused, 5, 'a refused round skips the 5-credit leaderboard');
+  assert.equal(live.status().credits_per_round.full, 22, 'plus the gate v5 operator read at most (12)');
+  assert.equal(live.status().credits_per_round.refused, 5, 'a refused round skips the 5-credit leaderboard and the operator read');
   const screener = mock.seen.find(c => c.pathName === 'perp-screener');
   assert.deepEqual(screener.body.filters, { trader_type: 'sm', token_symbol: 'HYPE' }, 'the market of the largest open position');
   const board = mock.seen.find(c => c.pathName === 'perp-leaderboard');
@@ -613,7 +613,7 @@ test('v4 live round: smart money against the book caps, the leaderboard record i
   assert.equal(row('smart_money_side').source, 'perp-screener, smart money in the largest open position’s market');
   assert.equal(row('independent_record').result, 'pass');
   assert.equal(final.verdict, 'capped');
-  assert.equal(final.gate.policyId, 'wallet-copy-risk-room-live-v4');
+  assert.equal(final.gate.policyId, 'wallet-copy-risk-room-live-v5');
   assert.equal(final.gate.smartMoneyLive, true);
   assert.equal(final.gate.recordLive, true);
   const calls = final.gate.calls.map(c => [c.endpoint, c.credits, c.decided]);
@@ -652,4 +652,104 @@ test('v4 live round: a leaderboard record below the summary blocks the wire as r
   assert.equal(final.verdict, 'block');
   assert.equal(final.gate.checks.find(c => c.id === 'independent_record').result, 'fail');
   assert.match(final.gate.reason, /perp-leaderboard/);
+});
+
+// ------------------------------------------------------------ gate v5 (bench/V5.md)
+
+const FUNDER = '0x1111111111111111111111111111111111111111';
+const SIBLING = '0x2222222222222222222222222222222222222222';
+const TX = '0x' + 'ab'.repeat(32);
+/** v4Mock plus the operator read: GRINDER's first funder on arbitrum also paid for SIBLING, which lost `siblingPnl`. */
+function v5Mock({ siblingPnl = -500_000, label = 'Some Fund' } = {}) {
+  const base = v4Mock({ side: 'long' });
+  const ok = data => ({ status: 200, headers: { 'x-nansen-credits-cost': '1' }, data });
+  const call = async (pathName, body, opts) => {
+    if (pathName === 'profiler/address/related-wallets') {
+      base.seen.push({ pathName, body, opts });
+      return ok({ data: body.chain === 'arbitrum'
+        ? [{ address: FUNDER, address_label: label, relation: 'First Funder', transaction_hash: TX, block_timestamp: '2025-01-01T00:00:00Z', chain: 'arbitrum' }]
+        : [] });
+    }
+    if (pathName === 'profiler/address/transactions') {
+      base.seen.push({ pathName, body, opts });
+      return ok({ data: [{ transaction_hash: TX, volume_usd: 5_000, tokens_received: [{ from_address: FUNDER, from_address_label: label }] }] });
+    }
+    if (pathName === 'profiler/perp-pnl-summary' && body.address === SIBLING) {
+      base.seen.push({ pathName, body, opts });
+      return ok({ data: { realized_pnl_usd: siblingPnl, closed_trade_count: 90 } });
+    }
+    return base.call(pathName, body, opts);
+  };
+  return { call, seen: base.seen };
+}
+const INDEX = { universe: 2, groups: { [`arbitrum:${FUNDER}`]: [GRINDER, SIBLING] }, services: [] };
+
+test('v5 live round: the operator behind the wallet lost money, so the operator row blocks, by short address and in one line', async () => {
+  const mock = v5Mock();
+  const rawDir = fs.mkdtempSync(path.join(os.tmpdir(), 'bait-v5-'));
+  const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], mock, { fillPages: 1, positions: true, rawDir, operatorIndex: INDEX });
+  const round = await service.start({ prospect: 'grinder' });
+  assert.deepEqual(mock.seen.filter(c => c.pathName.startsWith('profiler/address')).map(c => [c.pathName, c.body.chain]),
+    [['profiler/address/related-wallets', 'ethereum'], ['profiler/address/related-wallets', 'arbitrum'], ['profiler/address/transactions', 'arbitrum']]);
+  assert.equal(live.status().credits_today, 10 + 4, 'v4\'s ten, two related-wallets, one funding transfer, one sibling summary');
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  const row = final.gate.checks.find(c => c.id === 'operator_record');
+  assert.equal(row.result, 'fail');
+  assert.equal(final.verdict, 'block');
+  assert.equal(final.gate.policyId, 'wallet-copy-risk-room-live-v5');
+  assert.equal(final.gate.operatorLive, true);
+  assert.equal(row.plain, 'First funder 0x1111...1111 also paid for 1 indexed wallet; with this one the operator made -$488,000 over 30 days, so this wallet is the survivor.');
+  assert.equal(row.source, 'related-wallets first funder, transactions, sibling perp-pnl-summary');
+  assert.doesNotMatch(JSON.stringify(final), /Some Fund/, 'no Nansen label reaches the page');
+  assert.deepEqual(final.gate.calls.at(-1), { endpoint: 'operator: related-wallets, transactions, sibling perp-pnl-summary', credits: 4, at: final.gate.calls.at(-1).at, cached: false, decided: 'BLOCK' });
+  const { listRawReads } = await import('./live-evidence.js');
+  const text = fs.readFileSync(path.join(rawDir, listRawReads(rawDir)[0].file), 'utf8');
+  assert.doesNotMatch(text, /Some Fund|address_label/, 'the saved raw read is label-free');
+  const saved = JSON.parse(text);
+  assert.equal(saved.responses.operator.find(r => r.endpoint === 'profiler/address/related-wallets' && r.request.chain === 'arbitrum').body.data[0].funder_excluded_by_label, false);
+});
+
+test('v5 live round: an exchange funder is not an operator; the row says why and no sibling is read', async () => {
+  const mock = v5Mock({ label: 'Binance 14' });
+  const { service } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], mock, { fillPages: 1, positions: true, operatorIndex: INDEX });
+  const round = await service.start({ prospect: 'grinder' });
+  assert.equal(mock.seen.filter(c => c.pathName === 'profiler/address/transactions' || c.body?.address === SIBLING).length, 0);
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  const row = final.gate.checks.find(c => c.id === 'operator_record');
+  assert.equal(row.result, 'not_assessed');
+  assert.equal(row.plain, 'Not assessed: no first funder counts as an operator (arbitrum 0x1111...1111: label: exchange, bridge, router or service).');
+  assert.doesNotMatch(JSON.stringify(final), /Binance/);
+});
+
+test('v5 live round: a wallet an earlier row refuses never buys the operator read', async () => {
+  const mock = v5Mock();
+  const base = mock.call;
+  mock.call = async (pathName, body, opts) => {
+    const res = await base(pathName, body, opts);
+    if (pathName === 'profiler/perp-pnl-summary' && body.address === GRINDER && Math.round((Date.parse(body.date.to) - Date.parse(body.date.from)) / 86_400_000) === 30) res.data.data.realized_pnl_usd = -2_000_000;
+    return res;
+  };
+  const { service, live } = liveRoom([...answer(4000, 'intrigued', 'Opening small.')], mock, { fillPages: 1, positions: true, operatorIndex: INDEX });
+  const round = await service.start({ prospect: 'grinder' });
+  assert.equal(mock.seen.filter(c => c.pathName.startsWith('profiler/address')).length, 0);
+  assert.equal(live.status().credits_today, 5);
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  const row = final.gate.checks.find(c => c.id === 'operator_record');
+  assert.equal(row.result, 'not_assessed');
+  assert.match(row.plain, /^Not read: the "realised_pnl_30d" check already refused this request/);
+  assert.equal(final.gate.calls.find(c => c.endpoint.startsWith('operator')).skipped, true);
+});
+
+test('a frozen round shows the operator row as not read, never as could not be read', async () => {
+  const board = createLeaderboardStore(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'bait-room-frozen-')), 'lb.json'));
+  const service = createRoomService({ roster: loadRoster(), provider: stubProvider([...answer(4000, 'intrigued', 'Opening small.')]), leaderboard: board });
+  const round = await service.start({ prospect: 'grinder' });
+  await say(service, round.id, 0, round.dossier.facts[0].insert);
+  const { final } = await service.finish(round.id, { wire: true });
+  const row = final.gate.checks.find(c => c.id === 'operator_record');
+  assert.equal(row.result, 'not_assessed');
+  assert.match(row.plain, /frozen capture; related-wallets is read live only|already refused this request/);
 });

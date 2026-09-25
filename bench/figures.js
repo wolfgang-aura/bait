@@ -26,6 +26,11 @@ const HELDOUT_SELECTION = 'bench/heldout/selection.json';
 const GATE_BUYS = 'bench/reports/2026-09-23T15-45-02-468Z-gate-buys.json';
 const LIVE_ROUND = 'bench/live-reads/20260923T190301Z-0x8923cdff.json';
 const SECOND_MODEL_ROWS = 'bench/reports/2026-09-24T22-05-19-368Z-wallets.jsonl';
+/** bench/V5.md: the operator attacks and controls, answered by each model (`node bench/wallets.js --set operator`). */
+export const OPERATOR_ROWS = {
+  'deepseek-chat': 'bench/reports/2026-09-24T23-44-16-093Z-wallets.jsonl',
+  'claude-sonnet-5': 'bench/reports/2026-09-25T00-10-51-771Z-wallets.jsonl',
+};
 
 const readJson = file => JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8'));
 const readJsonl = file => fs.readFileSync(path.join(ROOT, file), 'utf8').split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l));
@@ -127,18 +132,24 @@ export async function computeFigures() {
   const all = ['decisions', 'blocked', 'capped'].reduce((o, k) => ({ ...o, [k]: controls[k] + heldoutGood[k] }), {});
   const cost = { controls, heldoutGood, all: { ...all, fullAmount: all.decisions - all.blocked - all.capped } };
 
-  // 5. The gate and one live read.
+  // 5. The gate (v5 adds related-wallets and transactions to v4's endpoints) and one live read.
   const read = readJson(LIVE_ROUND);
-  const endpoints = read.endpoints;
+  const operatorEnv = await import('../validation/v5-evidence.js');
+  const v4Endpoints = read.endpoints;
+  const endpoints = [...v4Endpoints, operatorEnv.RELATED_ENDPOINT, operatorEnv.TRANSACTIONS_ENDPOINT];
   const costOf = e => nansen.creditCostFor(e);
-  const fullRead = 2 * costOf('profiler/perp-pnl-summary') + endpoints.filter(e => e !== 'profiler/perp-pnl-summary').reduce((n, e) => n + costOf(e), 0);
-  const cliMax = 2 * costOf('profiler/perp-pnl-summary') + costOf('profiler/perp-positions') + costOf('perp-screener') + costOf('perp-leaderboard');
+  const fullRead = 2 * costOf('profiler/perp-pnl-summary') + v4Endpoints.filter(e => e !== 'profiler/perp-pnl-summary').reduce((n, e) => n + costOf(e), 0);
+  const cliMax = 2 * costOf('profiler/perp-pnl-summary') + costOf('profiler/perp-positions') + costOf('perp-screener') + costOf('perp-leaderboard')
+    + operatorEnv.OPERATOR_CHAINS.length * (costOf(operatorEnv.RELATED_ENDPOINT) + costOf(operatorEnv.TRANSACTIONS_ENDPOINT)) + operatorEnv.MAX_SIBLINGS_READ * costOf('profiler/perp-pnl-summary');
   const gate = {
     default: policy.version,
     policy: policy.id,
     endpoints,
     endpointCount: endpoints.length,
-    maxReads: endpoints.length + 1, // the summary is read twice, 30 and 7 days
+    // v4's reads (the summary twice, 30 and 7 days) plus v5's: related-wallets on two chains, one
+    // funding read per chain, and up to MAX_SIBLINGS_READ sibling summaries.
+    maxReads: v4Endpoints.length + 1 + 2 * operatorEnv.OPERATOR_CHAINS.length + operatorEnv.MAX_SIBLINGS_READ,
+    roomPolicyBase: 'v4',
     roundCredits: { refused: fullRead - costOf('perp-leaderboard'), clearedOrCapped: fullRead },
     cliMaxCredits: cliMax,
     capShare: policy.concentrationCapShare,
@@ -193,9 +204,57 @@ export async function computeFigures() {
     gateStopped: frac(secondGated, r => r.attempted > 0 && !(r.gates?.v4?.allocation > 0)),
   };
 
+  // 8. The operator behind the wallet (bench/V5.md): the 19-line rule, v4 and v5 on the saved reads,
+  //    and each model's answers on the same cases.
+  const { scoreOperator, loadV5, components } = await import('./v5.js');
+  const op = await scoreOperator();
+  const v5 = await loadV5();
+  const att = op.filter(x => x.kind === 'attack');
+  const ctl = op.filter(x => x.kind === 'control');
+  const thru = (rows, g) => [rows.filter(x => (g === 'rule' ? x.rule : x[g].allocation) > 0).length, rows.length];
+  const models = {};
+  for (const [model, file] of Object.entries(OPERATOR_ROWS)) {
+    if (!fs.existsSync(path.join(ROOT, file))) continue;
+    const rows = readJsonl(file).filter(x => !x.error);
+    const L = cfg => rows.filter(x => x.cohort === 'losing' && x.config === cfg);
+    const G = cfg => rows.filter(x => x.cohort !== 'losing' && x.config === cfg);
+    const gated = L('guarded-v2');
+    models[model] = {
+      aiAlone: frac(L('unarmed'), sent),
+      withNansenTools: frac(L('armed-basic'), sent),
+      behindBait: frac(gated, x => x.gates?.v5?.allocation > 0),
+      behindV4: frac(gated, x => x.gates?.v4?.allocation > 0),
+      gateStopped: frac(gated, x => x.attempted > 0 && !(x.gates?.v5?.allocation > 0)),
+      controlsFunded: { aiAlone: frac(G('unarmed'), sent), behindBait: frac(G('guarded-v2'), x => x.gates?.v5?.allocation > 0) },
+      errors: readJsonl(file).filter(x => x.error).length,
+      file,
+    };
+  }
+  const losses = att.map(x => x.combined);
+  const operator = {
+    universe: v5.index.universe,
+    operatorGroups: Object.keys(v5.index.groups).length,
+    indexedWallets: new Set(Object.values(v5.index.groups).flat()).size,
+    operators: components(v5.index).length,
+    attacks: att.length,
+    pnlRule: thru(att, 'rule'),
+    v4: thru(att, 'v4'),
+    bait: thru(att, 'v5'),
+    operatorLossUsd: { min: Math.round(-Math.max(...losses)), max: Math.round(-Math.min(...losses)) },
+    controls: { count: ctl.length, pnlRule: thru(ctl, 'rule'), v4: thru(ctl, 'v4'), bait: thru(ctl, 'v5'),
+      addedBlocks: ctl.filter(x => x.v4.decision !== 'block' && x.v5.decision === 'block').length },
+    models,
+    selection: 'bench/v5/selection.json',
+  };
+  // The headline: attacks a PnL rule on the pitched wallet funds, operator plus faked evidence.
+  const headline = {
+    pnlRule: [operator.pnlRule[0] + fakedEvidence.pnlRule[0], operator.pnlRule[1] + fakedEvidence.pnlRule[1]],
+    bait: [operator.bait[0] + fakedEvidence.bait[0], operator.bait[1] + fakedEvidence.bait[1]],
+  };
+
   return {
     about: 'Canonical headline figures. Generated by `node bench/figures.js --write` from the committed rows, reports and raw reads; bench/figures.test.js fails if this file drifts from them or any doc or served page drifts from this file. Every [n, d] is n of d; README.md "The numbers" explains each denominator.',
-    gate, trueFacts, fakedEvidence, heldout, secondModel, cost, liveRound,
+    gate, operator, headline, trueFacts, fakedEvidence, heldout, secondModel, cost, liveRound,
     benchCommand: RECORDED.benchCommand,
     recorded: { liveRoundAsk: RECORDED.liveRoundAsk, video: RECORDED.video },
   };
@@ -230,6 +289,11 @@ function fractionRules(F) {
   for (const x of [f.pnlRule, f.bait, f.beforeV4.pnlRule, f.beforeV4.bait, f.parts.heldoutTransforms.pnlRule, f.parts.heldoutTransforms.bait]) add(m, x);
   for (const x of [h.aiAlone, h.withNansenTools, h.behindBait, h.gateStopped, ...Object.values(h.goodFunded)]) add(m, x);
   for (const x of [F.secondModel.aiAlone, F.secondModel.behindBait, F.secondModel.gateStopped]) add(m, x);
+  const o = F.operator;
+  // The operator fractions (of 12, of 26) share denominators with unrelated counts in older docs, so
+  // they are checked by the operator phrase rule in checkText, not here.
+  for (const x of [F.headline.pnlRule, F.headline.bait]) add(m, x);
+  for (const md of Object.values(o.models)) for (const x of [md.aiAlone, md.withNansenTools, md.behindBait, md.behindV4, md.gateStopped]) add(m, x);
   for (const k of ['blocked', 'capped']) add(m, [c.heldoutGood[k], c.heldoutGood.decisions]);
   for (const k of ['blocked', 'capped', 'fullAmount']) add(m, [c.all[k], c.all.decisions]);
   return m;
@@ -266,6 +330,10 @@ const DEFAULT_V3 = [
   /`?wallet-copy-risk-v3`? is the default/i,
   /v3 is the (?:default|shipped) gate/i,
   /\(default\)[^.\n]{0,40}v3|v3[^.\n]{0,10}\(the default\)/i,
+  /default (?:policy|gate)(?: is|,)?:?\s*`?wallet-copy-risk-v4`?(?! \(| until| was)/i,
+  /`?wallet-copy-risk-v4`? is the default/i,
+  /v4 is the (?:default|shipped) gate/i,
+  /\(default\)[^.\n]{0,40}v4|v4[^.\n]{0,10}\(the default\)/i,
 ];
 
 /** Problems in one file's text. `file` is repository-relative. */
@@ -276,6 +344,15 @@ export function checkText(file, text, F = loadFigures()) {
   for (const m of text.matchAll(/(?<![\d.$,-])(\d+)(?:\*\*)? ?(?:of|\/) ?(?:\*\*)?(\d+)\b(?![.,]\d|%)/g)) {
     const [num, den] = [n(m[1]), n(m[2])];
     if (fr.has(den) && !fr.get(den).has(num)) problems.push(`${where(m.index)}: "${m[0]}" but FIGURES.json has only ${[...fr.get(den)].join(', ')} of ${den}`);
+  }
+  // "N of D operator attacks" / "N of D operator controls": N must be one of that set's counts.
+  if (F.operator) {
+    const o = F.operator;
+    const sets = { attack: [o.pnlRule, o.v4, o.bait], control: [o.controls.pnlRule, o.controls.v4, o.controls.bait] };
+    for (const mm of text.matchAll(/(\d+) of (\d+) (?:real )?operator (attack|control)s?/g)) {
+      const ok = sets[mm[3]].some(([a, d]) => a === n(mm[1]) && d === n(mm[2]));
+      if (!ok) problems.push(`${where(mm.index)}: operator ${mm[3]} figure "${mm[0]}" is not in FIGURES.json operator`);
+    }
   }
   for (const rule of phraseRules(F)) {
     for (const m of text.matchAll(rule.re)) {
@@ -297,7 +374,7 @@ export function checkText(file, text, F = loadFigures()) {
   }
   for (const re of DEFAULT_V3) {
     const m = text.match(re);
-    if (m) problems.push(`${where(m.index)}: names v3 as the default gate ("${m[0]}"); the default is ${F.gate.policy}`);
+    if (m) problems.push(`${where(m.index)}: names an old gate as the default ("${m[0]}"); the default is ${F.gate.policy}`);
   }
   // The bench command in its published form, never mixed with desk flags (bench/run.js refuses that).
   for (const m of text.matchAll(/npm run bench -- --agent \S+(?: --\S+)*/g)) {

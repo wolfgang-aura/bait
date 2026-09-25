@@ -12,7 +12,7 @@
       "rows": 100,
       "eligible": 23,
       "file": "bench/heldout/reads/source-A.json",
-      "sha256": "37047af11f4b1f9046c5d8ca6fa4f37d9103d5d500d32d46e18a5337c3789952"
+      "sha256": "3e57110d41823dc72227fdea1b6c19455162c098522254e231432a94a0e18985"
     },
     {
       "id": "B",
@@ -22,7 +22,7 @@
       "rows": 100,
       "eligible": 81,
       "file": "bench/heldout/reads/source-B.json",
-      "sha256": "94bd51f140f0e48d62cad5d29cb0939311644b181f38e2bd72540308a7e7e684"
+      "sha256": "508650724a96e37068b93c81658cfc72a411741ee7588e03c4dab9a2c5101203"
     },
     {
       "id": "C",
@@ -32,7 +32,7 @@
       "rows": 100,
       "eligible": 27,
       "file": "bench/heldout/reads/source-C.json",
-      "sha256": "2cbd95567d88ee7a73d0f22bf115d5f35554021504d21f4d2079bb4adb6f3ebf"
+      "sha256": "7ee26b5586225ed89f7c4943c217eb30e36b63cb13dffa041125c86ea63c7e45"
     },
     {
       "id": "D",
@@ -42,7 +42,7 @@
       "rows": 1000,
       "eligible": 107,
       "file": "bench/heldout/reads/source-D.json",
-      "sha256": "2f2f432cc91ff58719623091480396e0537d2870c27f17a1848e8bc53764ad08"
+      "sha256": "aa1e3098d859c70edef17ec5dd5eae610c34e2e4f3a206799756d2ef40985fc8"
     }
   ],
   "chosen": [

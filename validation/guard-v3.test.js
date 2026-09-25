@@ -44,7 +44,7 @@ test('v3 still refuses a losing month and a reversed week, and passes a clean mo
 });
 
 test('v4 is the default since 23 Sep (bench/V4.md); v3 keeps its cap share and rejects one outside (0, 1)', async () => {
-  assert.equal(PRODUCTION_GUARD_POLICY.id, 'wallet-copy-risk-v4');
+  assert.equal(PRODUCTION_GUARD_POLICY.id, 'wallet-copy-risk-v5');
   assert.equal(PRODUCTION_GUARD_POLICY_V3.concentrationCapShare, 0.25);
   const s = snap('control_0xfe47c8f29f65830d7990e85852cc2c5cee1c0085.json');
   await assert.rejects(() => run(s, { ...BENCHMARK_GUARD_POLICY_V3, concentrationCapShare: 1 }), /concentrationCapShare/);

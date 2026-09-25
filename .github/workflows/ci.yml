@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: validation/package-lock.json
+      - run: npm --prefix validation ci
+      - name: Tests
+        run: npm test
+      - name: Figures match every doc and served page
+        run: npm run figures
+      - name: Bench an agent with no keys (frozen snapshots, zero credits)
+        run: npm run bench -- --agent examples/agents/check-then-decide.mjs --snapshot

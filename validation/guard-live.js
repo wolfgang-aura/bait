@@ -32,6 +32,15 @@ import {
   creditCostFor,
 } from './nansen.js';
 import { leaderboardRequest, screenerRequest, recordFromLeaderboard, smartMoneyFromScreener, LEADERBOARD_ENDPOINT, SCREENER_ENDPOINT } from './v4-evidence.js';
+import { createOperatorReader } from './v5-evidence.js';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+/** Gate v5's operator index (bench/V5.md), built from Nansen reads by `node bench/v5.js --collect`. */
+export const OPERATOR_INDEX_FILE = fileURLToPath(new URL('../bench/v5/operator-index.json', import.meta.url));
+export function loadOperatorIndex(file = OPERATOR_INDEX_FILE) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
 
 /** The only endpoint a live guard check is permitted to touch. */
 export const GUARD_ENDPOINT = 'profiler/perp-pnl-summary';
@@ -52,6 +61,7 @@ export function createLiveGuardExecutor({
   call = nansenCall,
   now = () => new Date(),
   timeoutMs = DEFAULT_GUARD_TIMEOUT_MS,
+  operatorIndex = undefined,
 } = {}) {
   const calls = [];
   let charged = 0;
@@ -60,8 +70,9 @@ export function createLiveGuardExecutor({
     if (name === 'get_open_positions') return openPositions(args);
     if (name === 'get_independent_record') return independentRecord(args);
     if (name === 'get_smart_money_market') return smartMoneyMarket(args);
+    if (name === 'get_operator') return operator(args);
     if (name !== 'get_pnl_summary') {
-      throw new Error(`Live guard executor serves get_pnl_summary, get_open_positions, get_independent_record and get_smart_money_market only, not "${name}".`);
+      throw new Error(`Live guard executor serves get_pnl_summary, get_open_positions, get_independent_record, get_smart_money_market and get_operator only, not "${name}".`);
     }
 
     const wallet = String(args.wallet ?? '').toLowerCase();
@@ -157,6 +168,23 @@ export function createLiveGuardExecutor({
     return smartMoneyFromScreener(response?.data, { tokenSymbol: args.token_symbol, request: body, retrievedAt: at.toISOString() });
   }
 
+  // Gate v5: the operator behind the wallet (related-wallets per chain, the funding transfer,
+  // each indexed sibling's 30-day summary over the gate's own window).
+  async function operator(args = {}) {
+    const index = operatorIndex === undefined ? loadOperatorIndex() : operatorIndex;
+    if (!index) return { error: 'not_read', message: 'Not assessed: no operator index in this checkout (bench/v5/operator-index.json, built by node bench/v5.js --collect).' };
+    const wallet = String(args.wallet ?? '').toLowerCase();
+    const at = now();
+    const window = args.window?.from && args.window?.to ? args.window : { from: iso(new Date(at.getTime() - (args.days ?? GUARD_WINDOW_DAYS) * 86_400_000)), to: iso(at) };
+    const counted = async (p, body, opts) => {
+      calls.push({ path: p, body, at: now().toISOString() });
+      const r = await call(p, body, opts);
+      charged += creditCostFor(p);
+      return r;
+    };
+    return createOperatorReader({ call: counted, index, now, timeoutMs })({ wallet, window });
+  }
+
   return {
     execute,
     calls,
@@ -198,8 +226,9 @@ export async function runLiveGuard({
   call = nansenCall,
   now = () => new Date(),
   timeoutMs = DEFAULT_GUARD_TIMEOUT_MS,
+  operatorIndex = undefined,
 } = {}) {
-  const executor = createLiveGuardExecutor({ call, now, timeoutMs });
+  const executor = createLiveGuardExecutor({ call, now, timeoutMs, operatorIndex });
   const decision = await guardAllocation({ executor, wallet, allocation, policy, timeoutMs, now });
 
   let creditsCharged = null;

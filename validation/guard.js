@@ -36,6 +36,12 @@
  * every v3 rule and adds two reads outside the profiler family: perp-screener (smart money on
  * the other side of the largest open position caps) and perp-leaderboard (a summary that
  * claims more than Nansen's leaderboard records for the same days is refused).
+ *
+ * `wallet-copy-risk-v5` (pre-registered in bench/V5.md) keeps every v4 rule and adds the operator
+ * behind the wallet: Nansen's related-wallets names the wallet's first funder; the other indexed
+ * Hyperliquid wallets that funder paid for are its siblings; their realised PnL over the same days
+ * is read from perp-pnl-summary. A profitable wallet whose operator lost money across its wallets
+ * is the survivor being shown, and the gate refuses it (`operator_record`).
  */
 
 export const GUARD_WINDOW_DAYS = 30;
@@ -167,10 +173,35 @@ export const PRODUCTION_GUARD_POLICY_V4 = Object.freeze({
 });
 
 /**
- * The default gate since 23 Sep 2026: v4, after its pre-registered benchmark (bench/V4.md) met the
+ * v5 (pre-registered in bench/V5.md before any operator read was scored): every v4 rule and bar
+ * unchanged, plus one row after independent_record.
+ *
+ * - operator_record (block): the wallet's first funder on Ethereum or Arbitrum
+ *   (profiler/address/related-wallets), when it is not an exchange, bridge or service and the
+ *   funding transfer was at least $100 (profiler/address/transactions), names an operator. The
+ *   other wallets in BAIT's operator index with the same first funder are its siblings. When this
+ *   wallet's 30-day realised PnL plus its siblings' over the same days (profiler/perp-pnl-summary)
+ *   is below zero, the operator lost money and the profitable wallet is the one being shown: block.
+ *   Read only when nothing earlier refused. A failed read, no funder, an excluded funder, no
+ *   sibling or no sibling record is not assessed and changes nothing.
+ */
+export const PRODUCTION_GUARD_POLICY_V5 = Object.freeze({
+  ...PRODUCTION_GUARD_POLICY_V4,
+  id: 'wallet-copy-risk-v5',
+  version: 'v5',
+  revision: 1,
+  revisionNotes: '2026-09-25 r1: v4 r1 plus operator_record (related-wallets first funder, transactions funding size, sibling perp-pnl-summary; block). Pre-registered in bench/V5.md.',
+  operatorCheck: true,
+  operatorMaxCombinedLossUsd: 0,
+});
+
+/**
+ * The default gate since 25 Sep 2026: v5, after its pre-registered benchmark (bench/V5.md) met the
+ * ship rule (operator attacks 0 of 12 through against v4's 11; no published decision changed).
+ * Before that, from 23 Sep 2026: v4, after its pre-registered benchmark (bench/V4.md) met the
  * ship rule. v1, v2 and v3 stay reachable by name, and v3's published numbers are unchanged.
  */
-export const PRODUCTION_GUARD_POLICY = PRODUCTION_GUARD_POLICY_V4;
+export const PRODUCTION_GUARD_POLICY = PRODUCTION_GUARD_POLICY_V5;
 
 export const BENCHMARK_GUARD_POLICY = Object.freeze({
   ...PRODUCTION_GUARD_POLICY_V1,
@@ -196,9 +227,16 @@ export const BENCHMARK_GUARD_POLICY_V4 = Object.freeze({
   maxEvidenceAgeMs: null,
 });
 
-const POLICY_BASES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3, v4: PRODUCTION_GUARD_POLICY_V4 };
-const CAPPING = v => v === 'v3' || v === 'v4';
-const TWO_WINDOW = v => v === 'v2' || v === 'v3' || v === 'v4';
+export const BENCHMARK_GUARD_POLICY_V5 = Object.freeze({
+  ...PRODUCTION_GUARD_POLICY_V5,
+  id: 'wallet-copy-risk-benchmark-v5',
+  maxEvidenceAgeMs: null,
+});
+
+const POLICY_BASES = { v1: PRODUCTION_GUARD_POLICY_V1, v2: PRODUCTION_GUARD_POLICY_V2, v3: PRODUCTION_GUARD_POLICY_V3, v4: PRODUCTION_GUARD_POLICY_V4, v5: PRODUCTION_GUARD_POLICY_V5 };
+const CAPPING = v => v === 'v3' || v === 'v4' || v === 'v5';
+const TWO_WINDOW = v => v === 'v2' || v === 'v3' || v === 'v4' || v === 'v5';
+const V4_FAMILY = v => v === 'v4' || v === 'v5';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const walletPattern = /^0x[a-fA-F0-9]{40}$/;
@@ -253,7 +291,10 @@ function normalizePolicy(policy) {
       throw new TypeError('Guard policy maxTopCoinPnlShare must be null or a positive number');
     }
   }
-  if (merged.version === 'v4') {
+  if (merged.version === 'v5' && (!finite(merged.operatorMaxCombinedLossUsd) || merged.operatorMaxCombinedLossUsd < 0)) {
+    throw new TypeError('Guard policy operatorMaxCombinedLossUsd must be a non-negative number');
+  }
+  if (V4_FAMILY(merged.version)) {
     for (const key of ['smartMoneyWindowDays', 'smartMoneyMinOppositeShare', 'smartMoneyMinTotalUsd', 'recordMaxOverstatementShare', 'recordMinOverstatementUsd']) {
       if (!finite(merged[key]) || merged[key] < 0) throw new TypeError(`Guard policy ${key} must be a non-negative number`);
     }
@@ -284,7 +325,9 @@ export const V2_CHECK_IDS = Object.freeze([
 
 /** v4's rows, after open_book. Each reads one Nansen endpoint outside the profiler family. */
 export const V4_CHECK_IDS = Object.freeze(['smart_money_side', 'independent_record']);
-const ALL_CHECK_IDS = V2_CHECK_IDS.flatMap(id => (id === 'concentration' ? [id, 'open_book', ...V4_CHECK_IDS] : [id]));
+/** v5's row, after independent_record: the operator behind the wallet. */
+export const V5_CHECK_IDS = Object.freeze(['operator_record']);
+const ALL_CHECK_IDS = V2_CHECK_IDS.flatMap(id => (id === 'concentration' ? [id, 'open_book', ...V4_CHECK_IDS, ...V5_CHECK_IDS] : [id]));
 
 /** Where each v4 row's evidence comes from, as the gate names it in the table and the reason. */
 export const SMART_MONEY_SOURCE = 'Nansen /api/v1/perp-screener';
@@ -314,7 +357,7 @@ function checkTable() {
     finish(fallback = 'Not assessed. An earlier check already decided this request.') {
       // Round 17: v3 r3's open-book row sits after concentration, only when the policy ran it.
       // v4's two rows follow it, again only when the policy ran them, so a v3 table is unchanged.
-      const extra = ['open_book', ...V4_CHECK_IDS].filter(id => rows.has(id));
+      const extra = ['open_book', ...V4_CHECK_IDS, ...V5_CHECK_IDS].filter(id => rows.has(id));
       const ids = V2_CHECK_IDS.flatMap(id => (id === 'concentration' ? [id, ...extra] : [id]));
       return ids.map(id => rows.get(id) ?? { id, result: 'not_assessed', value: null, threshold: null, plain: fallback });
     },
@@ -716,7 +759,7 @@ export async function guardAllocation({
   // v4 in the Pitch Room (readAllWindows) shows its later rows even after a refusal: the round's
   // read already holds what they need, and the decision is still the first failure. Elsewhere a
   // refused request buys nothing more.
-  const showAll = policy.version === 'v4' && policy.readAllWindows === true;
+  const showAll = V4_FAMILY(policy.version) && policy.readAllWindows === true;
   let book = null;
   if (policy.openBookCheck && (showAll || !t.firstFailure())) book = await openBook(t, executor, wallet, policy, evidence);
   if (policy.smartMoneyCheck && (showAll || !t.firstFailure())) await smartMoneySide(t, executor, wallet, policy, book, evidence);
@@ -727,6 +770,11 @@ export async function guardAllocation({
       const what = before.id === 'realised_pnl_30d' ? `the ${policy.windowDays}-day record` : `the "${before.id}" check`;
       t.skip('independent_record', `Not read: ${what} already refused this request, so a second record (5 credits) could not change it.`);
     }
+  }
+  if (policy.operatorCheck) {
+    const before = t.firstFailure();
+    if (!before) await operatorRecord(t, executor, wallet, policy, raw, evidence);
+    else if (showAll) t.skip('operator_record', `Not read: the "${before.id}" check already refused this request, so the operator's other wallets could not change it.`);
   }
 
   const failure = t.firstFailure();
@@ -739,6 +787,7 @@ export async function guardAllocation({
       paper_headline: 'paper_headline',
       concentration: 'top_coin_concentration',
       independent_record: 'record_disagreement',
+      operator_record: 'operator_losing',
     }[failure.id];
     const reason = {
       realised_pnl_30d: policy.minimumRealizedPnlUsd === 0
@@ -750,6 +799,7 @@ export async function guardAllocation({
       paper_headline: 'blocked: most of the headline PnL is unsold paper',
       concentration: `blocked: one market carries more than ${Math.round(policy.maxTopCoinPnlShare * 100)}% of the ${policy.windowDays}-day realised PnL`,
       independent_record: `blocked: the ${policy.windowDays}-day summary claims more realised PnL than Nansen's perp-leaderboard records for the same days`,
+      operator_record: `blocked: the operator behind this wallet lost money over the same ${policy.windowDays} days across the wallets its first funder paid for`,
     }[failure.id];
     return result({ attempted, policy, evidence, code, reason, checks: t.finish() });
   }
@@ -892,6 +942,63 @@ async function independentRecord(t, executor, wallet, policy, raw, evidence) {
   } else {
     t.pass('independent_record', value, bar,
       `Nansen's perp-leaderboard records ${money(record)} for this wallet over the same ${policy.windowDays} days, in line with the summary.`);
+  }
+  return undefined;
+}
+
+/**
+ * v5: the operator behind the wallet. One `get_operator` answer (validation/v5-evidence.js): the
+ * first funders, which of them count, and each sibling's realised PnL over the same days.
+ * Blocks when this wallet plus its siblings lost money. Never raises an amount.
+ */
+async function operatorRecord(t, executor, wallet, policy, raw, evidence) {
+  const days = policy.windowDays;
+  const bar = `this wallet plus every sibling sharing its first funder made at least -$${Math.round(policy.operatorMaxCombinedLossUsd).toLocaleString('en-US')} over the same ${days} days`;
+  const skip = why => t.skip('operator_record', `Not assessed: ${why} This check can refuse only on sibling records it read; a missing read changes nothing.`, null, bar);
+  const range = raw?.window ?? raw?.date ?? null;
+  let op;
+  try { op = await executor.execute('get_operator', { wallet, days, window: range }); } catch (err) { op = { error: String(err?.message ?? err) }; }
+  if (op?.error === 'not_read' && op.message) return t.skip('operator_record', op.message, null, bar);
+  if (!op || op.error) return skip('the first-funder read could not be made.');
+  if (String(op.wallet ?? '').toLowerCase() !== wallet.toLowerCase()) return skip('the operator read that came back is for a different wallet.');
+  const funders = Array.isArray(op.funders) ? op.funders : [];
+  const shortAddr = a => `${String(a).slice(0, 6)}...${String(a).slice(-4)}`;
+  if (!funders.length) return skip('Nansen names no first funder for this wallet on Ethereum or Arbitrum.');
+  const counting = funders.filter(f => f.counts === true);
+  if (!counting.length) {
+    const why = funders.map(f => {
+      const reason = f.excluded ? f.excluded
+        : f.funding_error === 'no_indexed_siblings' ? 'no other indexed wallet'
+          : f.funding_ok === false ? `funding transfer ${f.funding_usd === null || f.funding_usd === undefined ? 'unverified' : `$${Math.round(f.funding_usd)}`}, under the bar`
+            : 'not counted';
+      return `${f.chain} ${shortAddr(f.funder)}: ${reason}`;
+    }).join('; ');
+    return skip(`no first funder counts as an operator (${why}).`);
+  }
+  const siblings = (Array.isArray(op.siblings) ? op.siblings : []).filter(s => s && String(s.wallet ?? '').toLowerCase() !== wallet.toLowerCase());
+  if (!siblings.length) return skip('no other indexed Hyperliquid wallet shares its first funder.');
+  const withRecord = siblings.filter(s => finite(s.realized_pnl_usd));
+  if (!withRecord.length) return skip(`its ${siblings.length} sibling wallet${siblings.length === 1 ? ' has' : 's have'} no Hyperliquid record over these days.`);
+  const own = evidence.realized_pnl_30d_usd;
+  if (!finite(own)) return skip("this wallet's own realised PnL is unknown.");
+  const sum = withRecord.reduce((a, s) => a + s.realized_pnl_usd, 0);
+  const combined = own + sum;
+  const funderText = counting.map(f => shortAddr(f.funder)).join(' and ');
+  evidence.operator = {
+    funders: counting.map(f => ({ chain: f.chain, funder: f.funder })),
+    siblings: withRecord.map(s => ({ wallet: s.wallet, realized_pnl_usd: s.realized_pnl_usd })),
+    siblings_pnl_30d_usd: Math.round(sum * 100) / 100,
+    combined_pnl_30d_usd: Math.round(combined * 100) / 100,
+  };
+  const n = withRecord.length;
+  const plural = n === 1 ? '' : 's';
+  const value = `this wallet ${money(own)} + ${n} sibling${plural} ${money(sum)} = ${money(combined)}`;
+  if (combined < -policy.operatorMaxCombinedLossUsd) {
+    t.fail('operator_record', value, bar,
+      `The wallet's first funder, ${funderText}, also paid for ${n} other Hyperliquid wallet${plural} BAIT has indexed. Over the same ${days} days they made ${money(sum)}; with this wallet the operator is at ${money(combined)}. The profitable wallet is the survivor being shown, so the gate refuses.`);
+  } else {
+    t.pass('operator_record', value, bar,
+      `The wallet's first funder, ${funderText}, also paid for ${n} other indexed Hyperliquid wallet${plural}; together with this one they made ${money(combined)} over the same ${days} days.`);
   }
   return undefined;
 }

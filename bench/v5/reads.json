@@ -1,0 +1,10 @@
+{
+  "files": {
+    "bench/v5/reads/universe.jsonl": "a43c73454bf073195795aabb44450b40c36064a4b428d7bc5fc40d0876249d97",
+    "bench/v5/reads/related.jsonl": "719acc527fe6ff8e38e0701c997c5e6cdb3ab1dee9df0441478478fa77c49bed",
+    "bench/v5/reads/funding.jsonl": "6da960e4fcc7b3ac7c082356ae09fa4c74c80a4ff28d32ad2a7c26f9ee667d4e",
+    "bench/v5/reads/summaries.jsonl": "35dd3a4342b101df87ab4d80654dc13926e2399203435c3a9c5f9c8664f524ca",
+    "bench/v5/reads/cases.jsonl": "cb8a92c2bc5edbec8b298c536cba0146d0fadb2a5e8755fc25f0aca4d7c2de3e",
+    "bench/v5/reads/v4.jsonl": "8b3c9c0e779f4945f720dcaa3e523434e152a69acfe488eecb94612fbe738510"
+  }
+}

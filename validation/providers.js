@@ -49,7 +49,10 @@ export const MAX_TOKENS = 1024;
 // deliberately untouched, so the expensive vendor still stops at 98.
 // Anthropic 98 -> 580 on 25 Sep 2026 for one second-model run (claude-sonnet-5, AI alone
 // and behind the gate, 468 calls, about $1.6), founder-authorized.
-export const CAPS = { anthropic: 580, deepseek: 5000 };
+// Anthropic 580 -> 2400 and DeepSeek 5000 -> 5800 on 25 Sep 2026 for the v5 operator benchmark
+// (bench/V5.md): three desks, 38 cases, 3 runs, up to 1,710 calls per model; the founder said
+// cost is not a constraint for this round.
+export const CAPS = { anthropic: 2400, deepseek: 5800 };
 
 export class CapExceeded extends Error {
   constructor(vendor, used, cap) {

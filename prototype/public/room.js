@@ -167,7 +167,19 @@ function renderRoster(tiles) {
     dates.textContent = p.hype.hypeFrom === 'Nansen'
       ? `Nansen ${p.hype.hypeDate}`
       : `${p.hype.hypeFrom} ${p.hype.hypeDate} · Nansen ${p.hype.recordDate}`;
-    info.append(value, caption, name, sub, dates);
+    // The live line (roster pulse): Nansen activity read minutes ago, or the saved figure
+    // with its date and the reason the live read did not happen. Filled by loadPulse().
+    const pulse = document.createElement('span');
+    pulse.className = 'tile-pulse';
+    pulse.dataset.state = 'loading';
+    const pulseFigure = document.createElement('small');
+    pulseFigure.className = 'pulse-figure';
+    pulseFigure.textContent = 'Reading Nansen live…';
+    const pulseStamp = document.createElement('small');
+    pulseStamp.className = 'pulse-stamp';
+    pulseStamp.textContent = 'profiler/perp-pnl-summary, 7 days';
+    pulse.append(pulseFigure, pulseStamp);
+    info.append(value, caption, name, sub, pulse, dates);
     // Said, not hidden: a machine-pace record.
     if (p.note) { const note = document.createElement('em'); note.className = 'tile-note'; note.textContent = p.note; info.append(note); }
 
@@ -178,6 +190,32 @@ function renderRoster(tiles) {
     el.grid.append(tile);
   });
   focus(0);
+}
+
+/**
+ * The roster pulse: one shared, server-cached live Nansen read per tile (activity only, never
+ * a realised figure). A failure says so on every tile and falls back to the saved figure
+ * with its date; nothing stale is shown as live.
+ */
+export function pulseLine(w, recordDate) {
+  if (!w) return { state: 'failed', figure: '', stamp: `live read failed · Nansen ${recordDate} capture` };
+  return { state: w.live ? 'live' : w.status === 'paused' ? 'paused' : 'failed', figure: w.figure ?? '', stamp: w.stamp ?? '' };
+}
+
+function applyPulse(pulse) {
+  const byId = new Map((pulse?.wallets ?? []).map(w => [w.id, w]));
+  [...el.grid.children].forEach((tile, i) => {
+    const node = tile.querySelector('.tile-pulse');
+    if (!node) return;
+    const line = pulseLine(byId.get(tile.dataset.id), roster[i]?.hype?.recordDate ?? 'saved');
+    node.dataset.state = line.state;
+    text(node.querySelector('.pulse-figure'), line.figure);
+    text(node.querySelector('.pulse-stamp'), line.stamp);
+  });
+}
+
+async function loadPulse() {
+  try { applyPulse(await api('/api/room/pulse')); } catch { applyPulse(null); }
 }
 
 function focus(index) {
@@ -354,10 +392,12 @@ const CHECK_NAME = {
   realised_pnl_30d: '30-day realised PnL', regime_agreement: '7-day and 30-day agree', thin_sample: 'Enough closed trades',
   low_win_rate: 'Win rate at least 40%', paper_headline: 'Headline is realised', concentration: 'One market not carrying the month', open_book: 'Open positions not deep underwater',
   smart_money_side: 'Smart money not against the open book', independent_record: 'Leaderboard record agrees',
+  operator_record: 'Operator behind the wallet not losing',
   tail_loss: 'Worst single trade', max_drawdown: 'Drawdown',
   fills_drawdown: 'Drawdown in the newest fills', fills_worst_trade: 'Worst trade in the newest fills',
 };
-const V4_ROWS = ['smart_money_side', 'independent_record'];
+// Gate v4's two rows and v5's operator row always show, N/A included.
+const V4_ROWS = ['smart_money_side', 'independent_record', 'operator_record'];
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
@@ -379,7 +419,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     : `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
   const at = String(gate.evidenceAt ?? '');
   text(el.cpRead, gate.live
-    ? `Reading Nansen perp-pnl-summary${[gate.tape?.live && 'perp-trades', gate.positionsLive && 'perp-positions', gate.smartMoneyLive && 'perp-screener', gate.recordLive && 'perp-leaderboard'].filter(Boolean).map((e, i, a) => (i === a.length - 1 ? ' and ' : ', ') + e).join('')} for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
+    ? `Reading Nansen perp-pnl-summary${[gate.tape?.live && 'perp-trades', gate.positionsLive && 'perp-positions', gate.smartMoneyLive && 'perp-screener', gate.recordLive && 'perp-leaderboard', gate.operatorLive && 'related-wallets'].filter(Boolean).map((e, i, a) => (i === a.length - 1 ? ' and ' : ', ') + e).join('')} for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
     : `Reading Nansen perp-pnl-summary for ${who}: the ${at.slice(0, 10)} capture`);
   const raw = final.evidence?.raw;
   if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
@@ -389,7 +429,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   el.cpStamp.hidden = true;
   el.checkpoint.className = 'checkpoint';
   el.checkpoint.hidden = false;
-  // Gate v4's two rows always show, N/A included: the card says what each extra Nansen read decided or why it was not read.
+  // Gate v4's two rows and v5's operator row always show, N/A included: the card says what each extra Nansen read decided or why it was not read.
   const rows = (gate.checks ?? []).filter(c => c.result !== 'not_assessed' || c.id === 'evidence_freshness' || c.id.startsWith('fills_') || V4_ROWS.includes(c.id));
   if (!reduced) await sleep(450);
   for (const c of rows) {
@@ -846,7 +886,7 @@ function setBadge(evidence) {
   el.badge.textContent = live ? `live Nansen · fetched ${evidence.fetchedLabel}` : 'frozen capture';
   el.badge.classList.toggle('live', live);
   el.badge.title = live
-    ? `Live Nansen read for this trader (up to six reads on five endpoints), fetched ${evidence.fetchedAt}${evidence.cached ? ' (cached, no new credit)' : ''}.`
+    ? `Live Nansen read for this trader (the Pitch Room's v4 read: two summaries, fills, positions, smart money and the leaderboard), fetched ${evidence.fetchedAt}${evidence.cached ? ' (cached, no new credit)' : ''}.`
     : evidence?.reason ?? 'Frozen capture. No live read in this round.';
 }
 
@@ -1389,6 +1429,8 @@ async function boot() {
     // The roster is the only fetch the front door waits on; the ladder and board fill in behind.
     const config = await api('/api/room');
     renderRoster(config.roster);
+    // Not awaited: the roster is usable while the live line loads.
+    loadPulse();
     boardEntries = config.leaderboard ?? [];
     renderBoard(boardEntries);
     renderBoard(boardEntries, null, el.frontBoard, 3);

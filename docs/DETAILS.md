@@ -23,7 +23,18 @@ are measured on those fills only when they cover a week or more; a page that cov
 busy wallet's 1,000 fills can be minutes) shows those rows as N/A, too short to judge. A frozen
 round uses the capture's fills and says how old they are.
 
-Since 23 September the default gate is v4 (`wallet-copy-risk-v4`, pre-registered in
+Since 25 September the default gate is v5 (`wallet-copy-risk-v5`, pre-registered in
+[bench/V5.md](../bench/V5.md)): every v4 rule below unchanged, plus `operator_record`. It reads
+the wallet's first funder on Ethereum and Arbitrum (`profiler/address/related-wallets`, 1 credit
+each), checks the funding transfer was at least $100 (`profiler/address/transactions`, 1 credit),
+finds the other indexed wallets that funder paid for (`bench/v5/operator-index.json`) and reads
+each one's 30-day `profiler/perp-pnl-summary` over the same window (1 credit, up to 8). When this
+wallet plus its siblings lost money, the gate refuses (`operator_losing`). Exchanges, bridges,
+routers and funders of more than 10 indexed wallets do not count. It is read only when nothing
+earlier refused. The guard CLI and `POST /api/guard` run v5; the Pitch Room's live read stays on
+v4's reads.
+
+From 23 to 25 September the default gate was v4 (`wallet-copy-risk-v4`, pre-registered in
 [bench/V4.md](../bench/V4.md)): every v3 rule unchanged, plus two reads outside the profiler
 family. `perp-screener` (smart-money cohort, 1 credit) gives smart money's current longs and
 shorts in the market of the wallet's largest open position; when at least two thirds of at
@@ -205,7 +216,7 @@ allocator with the data in hand still funds the loser. The
 4. Run your own agent against the recorded attacks:
    `npm run bench -- --agent your-agent.mjs --snapshot`.
 5. With your own Nansen key, run the gate live with the command above: 1 credit when the
-   month already refuses, at most 9 otherwise, under a minute.
+   month already refuses, at most 21 otherwise (v5's operator read included), under a minute.
 
 ## Why Nansen is structural
 
