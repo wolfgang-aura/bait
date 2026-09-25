@@ -25,12 +25,12 @@ const configTools = id => CONFIG_TOOLS[id] ?? String(id);
 const configRank = id => { const i = CONFIG_ORDER.indexOf(id); return i === -1 ? CONFIG_ORDER.length : i; };
 
 const DESK_TOOLS = { unarmed: 'No tools', armed: 'Nansen PnL + trades' };
-const DESK_NAME = { unarmed: 'Unarmed desk', armed: 'Nansen-armed desk' };
+const DESK_NAME = { unarmed: 'Unarmed agent', armed: 'Nansen-armed agent' };
 const PITCH_TITLES = ['Sell the comeback', 'Focus on one winning market', 'Ask for a trial allocation'];
 const LESSONS = [
-  'A profitable week sat inside a losing month, and only the armed desk checked the full period.',
-  'The unarmed desk took one market’s profit as the wallet’s total, while the armed desk found the missing losses.',
-  'Both desks funded the trader, but only the armed desk knew about the loss and sized small.',
+  'A profitable week sat inside a losing month, and only the armed agent checked the full period.',
+  'The unarmed agent took one market’s profit as the wallet’s total, while the armed agent found the missing losses.',
+  'Both agents funded the trader, but only the armed agent knew about the loss and sized small.',
 ];
 
 let results;
@@ -93,7 +93,7 @@ function renderEndpoints() {
   const line = $('b-endpoints');
   line.classList.remove('skeleton-row');
   const gate = GATE_ENDPOINTS.map(e => `<code>${escape(e)}</code>`).join(' · ');
-  line.innerHTML = `Evidence: the gate reads ${GATE_ENDPOINTS.length === 7 ? 'seven' : GATE_ENDPOINTS.length} Nansen endpoints: ${gate} · the replayed attack in section 1 was recorded ${escape(day(results.round.dataRetrievedAt))}, before the owner check; its desk read ${parts.join(' · ')} · live rounds keep their raw Nansen reads at <a href="https://bait-wyqr.onrender.com/api/live-reads">/api/live-reads</a>`;
+  line.innerHTML = `Evidence: the gate reads ${GATE_ENDPOINTS.length === 7 ? 'seven' : GATE_ENDPOINTS.length} Nansen endpoints: ${gate} · the replayed attack in section 1 was recorded ${escape(day(results.round.dataRetrievedAt))}, before the owner check; its agent read ${parts.join(' · ')} · live rounds keep their raw Nansen reads at <a href="https://bait-wyqr.onrender.com/api/live-reads">/api/live-reads</a>`;
 }
 
 /* ---------- 1 · attack: the recorded round ---------- */

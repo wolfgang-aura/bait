@@ -19,7 +19,7 @@
  */
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
-import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE, WATCH_NOTE_SHORT, recordHeadline, wireLogRows, commitmentCard } from '/verdict-view.js';
+import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE, WATCH_NOTE_SHORT, recordHeadline, wireLogRows, commitmentCard, transcriptSaid, transcriptCheck } from '/verdict-view.js';
 import { ownerTreeHtml } from '/owner-tree.js';
 
 const $ = id => document.getElementById(id);
@@ -1281,14 +1281,14 @@ function renderTranscript() {
     you.className = 'said-you';
     you.textContent = `${shot.n}. You: ${shot.text}`;
     const desk = document.createElement('p');
-    desk.textContent = `PENNY: ${shot.full || shot.line}`;
+    desk.textContent = `PENNY: ${transcriptSaid(shot.full, shot.line)}`;
     const meta = document.createElement('code');
     meta.textContent = [
       `allocation ${dollars(shot.allocation)}`,
       `mood ${shot.mood}`,
       `suspicion ${shot.suspicionBefore} to ${shot.suspicion}`,
       ...(shot.checks ?? []).map(c => c.endpoint),
-      shot.caught ? 'claim rejected' : shot.check,
+      transcriptCheck(shot),
     ].join(' · ');
     block.append(you, desk, meta);
     el.transcript.append(block);

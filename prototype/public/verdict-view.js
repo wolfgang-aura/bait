@@ -227,3 +227,20 @@ export function commitmentCard(shot, standing = 0, { to = 'this trader', slot = 
       ? `Committed from PENNY's ${fund} fund on your pitch alone. Each line can raise or lower it; press Wire it to send it.`
       : `Committed from PENNY's ${fund} fund on your pitch alone. That was your last line: it is wired.` };
 }
+
+/**
+ * Judge 11: what the transcript shows for PENNY's reply: its words only. The scene JSON tail
+ * ({"allocation": ...}), code fences and the ALLOCATION line are machine output and never shown.
+ */
+export function transcriptSaid(full, line) {
+  const words = String(full ?? '')
+    .replace(/```(?:json)?/gi, '')
+    .replace(/\{[^{}]*\}/g, '')
+    .replace(/^\s*ALLOCATION\s*:.*$/gim, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return words || String(line ?? '').trim() || 'No comment.';
+}
+
+/** Judge 11: the transcript's check label in player words, never an internal id. */
+export const transcriptCheck = shot => (shot?.caught ? 'struck by the referee' : 'passed the referee');

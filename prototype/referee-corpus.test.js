@@ -164,6 +164,138 @@ const CORPUS = [
   ['streak', 'Give him $5,000 and watch.', PASS],
   ['realdeal', 'Put 10% of the fund on him.', PASS],
   ['legend', 'Legends do not lose. Trust the process.', PASS],
+
+  // ------------------------------------------------ judge 11: the live and offline attack lines
+  // Live lines on STEADY HAND quoted the live read (+$222,264 7-day, ZEC +$275,194 30-day); the saved
+  // roster read here has +$190,379 and ZEC +$262,838 in the same places. LEGEND's live FARTCOIN
+  // figure (+$317,857) is +$353,874 in the saved read.
+  ["streak", "Nansen shows +$83,994 realised over the last 30 days.",
+    spent("+$83,994 is only TAO's 30-day PnL, not the wallet's total.")],
+  ["steadyhand", "Nansen shows +$262,838 realised over the last 30 days.",
+    spent("+$262,838 is only ZEC's 30-day PnL, not the wallet's total.")],
+  ["steadyhand", "+$190,379 realised over the last 7 days per Nansen, and he has not closed a single losing trade this month.",
+    spent("the line claims no losses, but Nansen's 30-day win rate is below 100%: trades were lost.")],
+  ["grinder", "PONS alone made +$100,849 over the 30 days, and Nansen labels this wallet a Smart Money fund.",
+    spent("nothing in the record labels this wallet Smart Money.")],
+  ["realdeal", "The Hyperliquid leaderboard shows +$116,554 over the last 90 days.",
+    spent("+$116,554 is the tile's Hyperliquid leaderboard figure for the 30 days to 21 Sep, not a 90-day figure.")],
+  ["legend", "He made $69,023,422 on the Hyperliquid leaderboard.",
+    spent("$69,023,422 is the tile's Hyperliquid leaderboard account value (read 21 Sep 21:56 UTC), not PnL.")],
+  ["steadyhand", "Pull up Nansen's 30-day summary. +$190,379 realised.",
+    spent("+$190,379 is a 7-day figure, not 30-day.")],
+  ["steadyhand", "Arkham's dashboard shows +$190,379 realised this week.",
+    spent("+$190,379 is Nansen's 7-day realised PnL, not an Arkham figure: the record was not read from Arkham.")],
+  ["streak", "Nansen shows 331 trades this week.",
+    spent("331 trades is not the wallet's 7-day trade count in the record.")],
+  ["streak", "Nansen counts 7 trades this week.",
+    spent("7 trades is not Nansen's 7-day trade count.")],
+  ["grinder", "Nansen shows a 53.9% ROI over 30 days.",
+    spent("53.9% is Nansen's 30-day win rate, not a return.")],
+  ["streak", "Nansen shows a +$9,999,999 position this week.",
+    spent("+$9,999,999 is not in the record.")],
+  ["streak", "The leaderboard shows +9999999 USDC this week.",
+    spent("+9999999 USDC is not in the record.")],
+  ["streak", "He lost $594,869 on the Hyperliquid leaderboard in the week to 21 Sep.",
+    spent("$594,869 has the wrong sign: the tile's Hyperliquid leaderboard figure for the week to 21 Sep is a gain, not a loss.")],
+  ["legend", "+$118,975,612 all time on the public Hyperliquid leaderboard, and FARTCOIN alone made +$353,874 over the 30 days.",
+    PASS],
+  ["grinder", "Over 1,000 trades in 30 days per Nansen.",
+    PASS],
+  ["streak", "+$25,000 this week on the leaderboard.",
+    spent("+$25,000 is not in the record.")],
+  ["streak", "+$594,869 today on the Hyperliquid leaderboard.",
+    spent("+$594,869 is the tile's Hyperliquid leaderboard figure for the week to 21 Sep, not a figure for today.")],
+  ["streak", "+$594,869 this year on the Hyperliquid leaderboard.",
+    spent("+$594,869 is the tile's Hyperliquid leaderboard figure for the week to 21 Sep, not a figure for this year.")],
+  ["streak", "+$594,869 over the last 3 weeks on the Hyperliquid leaderboard.",
+    spent("+$594,869 is the tile's Hyperliquid leaderboard figure for the week to 21 Sep, not a 3-week figure.")],
+  ["legend", "He is up $69,023,422.",
+    spent("$69,023,422 is the tile's Hyperliquid leaderboard account value (read 21 Sep 21:56 UTC), not PnL.")],
+  ["streak", "Nansen's 7-day summary says so. +$594,869.",
+    spent("+$594,869 is the tile's Hyperliquid leaderboard figure for the week to 21 Sep, not Nansen's; Nansen's 7-day summary is a different figure.")],
+  ["streak", "The leaderboard shows it for this week. +$594,869.",
+    PASS],
+  ["streak", "About $600k on the leaderboard this week.",
+    PASS],
+  ["streak", "The leaderboard shows 594869 this week.",
+    PASS],
+  ["streak", "Give him $5,000 of your $25,000 slot.",
+    PASS],
+
+  // ------------------------------------------------- judge 11: more adversarial lines, all struck
+  ["steadyhand", "The Steady Hand banked +$190,379 over the last two weeks per Nansen.",
+    spent("+$190,379 is Nansen's 7-day realised PnL, not a two-week figure.")],
+  ["steadyhand", "DeBank shows a 51.4% win rate over 30 days.",
+    spent("51.4% is Nansen's 30-day win rate, not a DeBank figure: the record was not read from DeBank.")],
+  ["steadyhand", "Nansen shows +$116,494 realised this week.",
+    spent("+$116,494 is not the wallet's 7-day total in the record.")],
+  ["steadyhand", "NEAR alone made +$190,379 this week.",
+    spent("+$190,379 is Nansen's 7-day realised PnL, not NEAR's.")],
+  ["steadyhand", "A 51.4% ROI across 2,661 trades in 30 days per Nansen.",
+    spent("51.4% is Nansen's 30-day win rate, not a return.")],
+  ["steadyhand", "Nansen counts 12 coins traded this week.",
+    spent("12 coins is not Nansen's 7-day coin count.")],
+  ["legend", "He is sitting on a +$118,975,612 account balance.",
+    spent("+$118,975,612 is the Hyperliquid leaderboard's all-time PnL, not the account value.")],
+  ["legend", "+$118,975,612 over the last 30 days on the Hyperliquid leaderboard.",
+    spent("+$118,975,612 is the Hyperliquid leaderboard's all-time PnL, not a 30-day figure.")],
+  ["legend", "FARTCOIN made +$353,874 in 24h per Nansen.",
+    spent("+$353,874 is Nansen's FARTCOIN 30-day PnL, not a 24-hour figure.")],
+  ["legend", "Nansen labels him Smart Money, +$353,874 from FARTCOIN over 30 days.",
+    spent("nothing in the record labels this wallet Smart Money.")],
+  ["streak", "The Streak has never had a losing trade: +$594,869 this week on the leaderboard.",
+    spent("the line claims no losses, but Nansen's 7-day win rate is below 100%: trades were lost.")],
+  ["streak", "+$594,869 this week on the leaderboard, and Nansen confirms it.",
+    spent("+$594,869 is the tile's Hyperliquid leaderboard figure for the week to 21 Sep, not Nansen's; Nansen's 7-day summary is a different figure.")],
+  ["streak", "Dune's dashboard puts him at +$94,310,198 all time.",
+    spent("+$94,310,198 is the Hyperliquid leaderboard's all-time PnL, not a Dune figure: the record was not read from Dune.")],
+  ["streak", "TAO alone made +$83,994 this week.",
+    spent("+$83,994 is a 30-day figure, not 7-day.")],
+  ["realdeal", "+$428,058 in 2025 alone on the Hyperliquid leaderboard.",
+    spent("+$428,058 is the Hyperliquid leaderboard's all-time PnL, not a figure for 2025.")],
+  ["realdeal", "The leaderboard shows 2,064 trades over 30 days.",
+    spent("2,064 trades is Nansen's 30-day trade count, not a leaderboard figure.")],
+  ["realdeal", "HYPE alone made +$52,030 over the 30 days, and 67.8% of his trades won this month.",
+    spent("67.8% is a 7-day figure, not 30-day.")],
+  ["realdeal", "Nansen shows +$52,030 realised over 30 days.",
+    spent("+$52,030 is only HYPE's 30-day PnL, not the wallet's total.")],
+  ["grinder", "100% win rate across 424 closed trades in 30 days.",
+    spent("100% and 424 trades are 7-day figures, not 30-day.")],
+  ["grinder", "He made 35723 dollars yesterday per Nansen.",
+    spent("35723 dollars is Nansen's 7-day realised PnL, not a figure for yesterday.")],
+  ["grinder", "Over 5,000 trades in 30 days per Nansen.",
+    spent("5,000 trades is not in the record.")],
+  ["grinder", "Nansen labels this wallet a Smart Money fund.",
+    spent("nothing in the record labels this wallet Smart Money.")],
+
+  ["grinder", "+$35,723 this week per Nansen. His 30-day PnL is positive too.",
+    spent("the line says the 30-day result made money; the 30-day realised PnL in the record did not.")],
+  ["grinder", "PONS alone made +$100,849 over the 30 days; overall he is up this month too.",
+    spent("the line says the 30-day result made money; the 30-day realised PnL in the record did not.")],
+
+  // ------------------------------------------------------ judge 11: true paraphrases, all stand
+  ["steadyhand", "Per Nansen, the Steady Hand booked about $190k of realised profit in the last week.",
+    PASS],
+  ["steadyhand", "Across the past thirty days Nansen logs 2,661 closed trades at a 51.4% win rate.",
+    PASS],
+  ["legend", "The Legend's all-time leaderboard PnL: +$118,975,612.",
+    PASS],
+  ["legend", "Nansen's 30-day read: FARTCOIN alone made roughly $354k.",
+    PASS],
+  ["streak", "TAO alone made +$83,994 over 30 days per Nansen, and the leaderboard shows +$594,869 for the week to 21 Sep.",
+    PASS],
+  ["streak", "Hyperliquid's leaderboard lists +$94.3m lifetime.",
+    PASS],
+  ["realdeal", "On the Hyperliquid leaderboard he is up +$116,554 over 30 days and +$428,058 all time.",
+    PASS],
+  ["realdeal", "In 7 days Nansen records a 67.8% win rate over 115 trades.",
+    PASS],
+  ["grinder", "At least 400 closed trades this week, every one a winner: a 100% win rate per Nansen.",
+    PASS],
+  ["grinder", "PONS alone made over $100k in the last 30 days, per Nansen.",
+    PASS],
+  ["grinder", "No losing trades this week: a 100% win rate over 424 trades per Nansen.",
+    PASS],
 ];
 
 test(`judge 10: the referee corpus (${CORPUS.length} lines) is ruled deterministically, whatever the model says`, async () => {
@@ -227,9 +359,33 @@ test('judge 10: in a round the referee strikes before the model is asked, and PE
   }
 });
 
-test('judge 10: a true line the model rejects about its figures stands; a claim-level rejection still strikes', async () => {
+test('judge 11: a model rejection always strikes, with a reason: code never un-strikes it', async () => {
   const { dossier, data, others } = await setup('realdeal');
   const line = "Hyperliquid's leaderboard shows +$116,554 over 30 days; Nansen's 30-day win rate is 60.3% over 2,064 trades.";
-  assert.equal(rejectionRuling(line, dossier, data, '+$116,554 is not the 30-day realised PnL of +$35,083.', { others }).stands, true);
-  assert.equal(rejectionRuling(`${line} Guaranteed to double.`, dossier, data, 'The pitch invents a guaranteed return.', { others }).stands, false);
+  // Judge 10 let this stand because every figure passed the referee; judge 11: the model's word strikes.
+  const figures = rejectionRuling(line, dossier, data, '+$116,554 is not the 30-day realised PnL of +$35,083.', { others });
+  assert.equal(figures.stands, false);
+  assert.match(figures.referee, /^Referee: .+ The line is spent\.$/);
+  assert.doesNotMatch(figures.referee, /35,083/, 'a sealed figure stays sealed');
+  const claim = rejectionRuling(`${line} Guaranteed to double.`, dossier, data, 'The pitch invents a guaranteed return.', { others });
+  assert.equal(claim.stands, false);
+  for (const reason of ['', '   ', 'The line does not match the record.', undefined]) {
+    const r = rejectionRuling(line, dossier, data, reason, { others });
+    assert.equal(r.stands, false);
+    assert.equal(r.referee, 'Referee: the line does not match the record as stated. The line is spent.', 'no blank reason');
+  }
+});
+
+test('judge 11: in a round a model rejection of a line the referee passed strikes, and PENNY never hears it', async () => {
+  const text = '+$190,379 realised over the last 7 days per Nansen, and he closes his losers fast.';
+  const provider = stubProvider([{ text: '{"valid":false,"reason":"The pitch claims a trading habit the record does not show."}' }, { text: 'Fine.\n{"allocation": 18000, "mood": "sold", "line": "Deal."}\nALLOCATION: 72' }]);
+  const service = createRoomService({ roster: loadRoster(), provider, leaderboard: board(), health: () => ({}) });
+  const start = await service.start({ prospect: 'steadyhand' });
+  assert.equal(attributionStrike(text, withTileExtras(buildProspectDossier(roster.find(p => p.id === 'steadyhand')), []), roster.find(p => p.id === 'steadyhand').checkerData, { others: rosterFacts(roster.filter(p => p.id !== 'steadyhand')) }), null);
+  const after = await service.pitch(start.id, { requestId: 'judge11-model-reject-01', shot: 0, text });
+  const shot = after.shots.at(-1);
+  assert.equal(shot.caught, true);
+  assert.match(shot.referee, /^Referee: .+ The line is spent\.$/);
+  assert.equal(after.funded, 0, 'PENNY paid nothing on a struck line');
+  assert.equal(provider.seen.length, 1, 'only the checker was asked');
 });

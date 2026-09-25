@@ -41,8 +41,11 @@ test('judge 6: 30-day figures typed under "last 7 days" get the real reason, not
   assert.equal(refereeVerdict('It made +$190,379 over 30 days.', d, p.checkerData), 'Referee: +$190,379 is a 7-day figure, not 30-day. The line is spent.');
   // A figure off the record is still named.
   assert.equal(refereeVerdict('Made $209,987 on ZEC.', d, p.checkerData), 'Referee: $209,987 is not in the record. The line is spent.');
+  // Judge 11: "never loses" is checked against the win rate, not left general.
+  assert.equal(refereeVerdict('He never loses. Best on the board.', d, p.checkerData),
+    "Referee: the line claims no losses, but Nansen's 30-day win rate is below 100%: trades were lost. The line is spent.");
   // No specific reason: the referee never claims a figure is missing.
-  const general = refereeVerdict('He never loses. Best on the board.', d, p.checkerData);
+  const general = refereeVerdict('Best on the board. Trust the process.', d, p.checkerData);
   assert.doesNotMatch(general, /not in the record/);
   assert.equal(general, 'Referee: the line does not match the record as stated. The line is spent.');
   // A sealed figure is never placed in its window by the referee (that would confirm it).

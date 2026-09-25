@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "BAIT: the gate, backed by Nansen data, that stops an AI trading desk from funding a wallet whose record or owner lost money.",
+  "description": "BAIT: the gate, backed by Nansen data, that stops an AI trading agent from funding a wallet whose record or owner lost money.",
   "license": "MIT",
   "engines": {
     "node": ">=22"

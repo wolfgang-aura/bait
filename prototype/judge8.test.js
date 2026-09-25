@@ -63,21 +63,26 @@ test('judge 8: every tile figure is a published fact in the round, never "not in
   }
 });
 
-test('judge 8: THE STREAK tile figure in its own window and source is checked, not struck, and the checker is told it is published', async () => {
-  // The checker model rejects the line on the tile figure; the line quotes it with its window and
-  // source, so the room overrules that rejection and PENNY hears the line.
+test('judge 8: THE STREAK tile figure in its own window and source passes the referee; judge 11: a model rejection still strikes', async () => {
+  const line = '+$594,869 in the week to 21 Sep on the Hyperliquid leaderboard. Shorts pay.';
+  // The checker accepts: the referee passes the tile figure and PENNY hears the line.
+  const ok = room([{ text: '{"valid":true,"reason":""}' }, DESK(2500)]);
+  const round = await ok.start({ prospect: 'streak' });
+  const heard = await ok.pitch(round.id, { requestId: 'judge8-streak-0', shot: 0, text: line });
+  assert.equal(heard.shots.at(-1).caught, false, 'the tile figure is not a caught lie');
+  assert.equal(heard.funded, 2500);
+  assert.match(heard.shots.at(-1).full ?? '', /./);
+  // Judge 11: code never overrules a model rejection. It strikes, and the sealed figure stays sealed.
   const service = room([
     { text: '{"valid":false,"reason":"+$594,869 is not in the known facts; the 7-day realised PnL is -$163,698."}' },
     DESK(2500),
   ]);
   const start = await service.start({ prospect: 'streak' });
-  const line = '+$594,869 in the week to 21 Sep on the Hyperliquid leaderboard. Shorts pay.';
   const after = await service.pitch(start.id, { requestId: 'judge8-streak-1', shot: 0, text: line });
   const shot = after.shots.at(-1);
-  assert.equal(shot.caught, false, 'the tile figure is not a caught lie');
-  assert.equal(after.funded, 2500);
-  assert.match(shot.full ?? '', /./);
-  assert.ok(after.mood !== 'caught');
+  assert.equal(shot.caught, true);
+  assert.equal(after.funded, 0);
+  assert.doesNotMatch(shot.referee, /163,698/);
 });
 
 test('judge 8: the checker prompt lists the tile figure as published, with its window and read', async () => {

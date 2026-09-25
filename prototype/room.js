@@ -454,12 +454,6 @@ function typedFigures(text) {
   for (const m of t.matchAll(COUNT)) out.push({ typed: m[0].trim(), at: m.index, end: m.index + m[0].length, pct: false, n: Number(m[1].replace(/,/g, '')), count: true });
   return out.sort((a, b) => a.at - b.at);
 }
-const sameFigure = (a, b, tight = false) => {
-  if (a.count !== b.count || a.pct !== b.pct) return false;
-  if (a.count) return a.n === b.n;
-  if (a.pct) return Math.abs(a.n - b.n) <= (tight ? 0.051 : 0.51);
-  return Math.abs(Math.abs(a.n) - Math.abs(b.n)) <= Math.max(1, Math.abs(b.n) * 0.01);
-};
 const CARD_DESC = {
   'week-pnl': { money: '7-day realised PnL' },
   'week-wins': { pct: '7-day win rate', count: '7-day trade count' },
@@ -488,15 +482,6 @@ function visibleFigures(dossier) {
   }
   return out;
 }
-/** A published tile figure the line typed, within rounding: the entry and the text as typed. */
-function typedPublished(text, dossier) {
-  const out = [];
-  for (const fig of typedFigures(text)) {
-    const f = (dossier?.published ?? []).find(x => typedFigures(x.value).some(v => sameFigure(fig, v, true)));
-    if (f) out.push({ f, typed: fig.typed, fig });
-  }
-  return out;
-}
 
 /**
  * Judge 10: the referee's specific reason for a line, or null. The deterministic ruling first (every
@@ -507,9 +492,9 @@ export function specificReason(text, dossier, data, opts = {}) {
   return attributionStrike(text, dossier, data, opts) ?? signClaim(text, data);
 }
 
-/** Judge 10: the deterministic strike on its own, run on every line before the model is asked. */
+/** Judge 10: the deterministic strike, run on every line before the model is asked. Judge 11: a line that says a losing window made money is struck here too. */
 export function attributionStrike(text, dossier, data, { others = [] } = {}) {
-  return deterministicStrike(text, dossier, data, { others });
+  return deterministicStrike(text, dossier, data, { others }) ?? signClaim(text, data);
 }
 
 /** Judge 10: the other roster wallets' visible figures, so a borrowed figure is named as theirs. */
@@ -525,23 +510,26 @@ const SAYS_UP = /\b(up|profitable|in profit|positive|green|made money|making mon
 function signClaim(text, data) {
   const t = String(text ?? '');
   if (!SAYS_UP.test(t)) return null;
-  const window = claimedWindow(t);
-  const pnl = window === '7d' ? data?.pnl_summary_7d?.realized_pnl_usd : window === '30d' ? data?.pnl_summary_30d?.realized_pnl_usd : null;
-  if (!(Number(pnl) < 0)) return null;
-  return `Referee: the line says the ${DAYS[window]} result made money; the ${DAYS[window]} realised PnL in the record did not. The line is spent.`;
+  // Judge 11: each sentence is read on its own, so "+$X this week. His 30-day PnL is positive too."
+  // is checked on the 30 days.
+  for (const part of [t, ...t.split(/(?<!\d)[.!?;](?!\d)/)]) {
+    if (!SAYS_UP.test(part)) continue;
+    const window = claimedWindow(part);
+    const pnl = window === '7d' ? data?.pnl_summary_7d?.realized_pnl_usd : window === '30d' ? data?.pnl_summary_30d?.realized_pnl_usd : null;
+    if (Number(pnl) < 0) return `Referee: the line says the ${DAYS[window]} result made money; the ${DAYS[window]} realised PnL in the record did not. The line is spent.`;
+  }
+  return null;
 }
 
 /**
  * The referee's line for a rejected pitch, the most specific true reason first; the general line
- * claims nothing about any figure. The room itself never shows the general line: see
- * rejectionRuling, which lets a line stand rather than strike it without a reason.
+ * claims nothing about any figure. Judge 11: the room shows it when the checker rejects a line and
+ * names nothing usable (see rejectionRuling): a model rejection always strikes.
  */
 export function refereeVerdict(text, dossier, data, opts = {}) {
   return specificReason(text, dossier, data, opts) ?? REFEREE_GENERAL;
 }
 
-// A checker reason is about a figure when it names one the line typed or a measure a figure is.
-const FIGURE_TERMS = /\b(win rate|trades?|pnl|p&l|profit|realised|realized|account|all[- ]time|leaderboard|figure|number|amount|percent\w*|\d+[- ]?days?|week|month|window|summary)\b|[$%]/i;
 const NUMBER = /[+-]?\$?\d[\d,]*(?:\.\d+)?(?:\s?(?:k|m|mm|million|thousand)\b)?%?/gi;
 
 /**
@@ -583,28 +571,17 @@ export function withTileExtras(dossier, extras) {
 }
 
 /**
- * Judge 9: what the room does with a checker rejection. A strike always names what is wrong: the
- * specific reason first; else, when every figure the line typed is on an offered card or on the
- * tile and the rejection is about figures, the line stands (true figures are not struck without a
- * reason); else the checker's own reason, with sealed figures kept sealed. With nothing to name,
- * the line stands. Returns { stands: true, check } or { stands: false, referee }.
+ * Judge 11: what the room does with a checker rejection. A model rejection always strikes: code may
+ * add strikes, it never un-strikes one. The reason is the most specific true one: the referee's own
+ * first; else the checker's reason, with sealed figures kept sealed; else the plain general line.
+ * Returns { stands: false, referee }.
  */
 export function rejectionRuling(text, dossier, data, reason, opts = {}) {
   const specific = specificReason(text, dossier, data, opts);
   if (specific) return { stands: false, referee: specific };
-  const figs = typedFigures(text);
   const r = String(reason ?? '');
-  const digits = r.replace(/[^\d\s]/g, '').split(/\s+/).filter(Boolean);
-  const aboutFigures = FIGURE_TERMS.test(r) || figs.some(f => digits.includes(f.typed.replace(/[^\d]/g, '')));
-  const check = typedPublished(text, dossier).length ? 'published' : 'on the record';
-  const named = namesSomething(r);
-  // Judge 10: every figure has passed the deterministic check (true as stated), so a rejection about
-  // figures is the model's mistake, not the line's.
-  if (figs.length && (aboutFigures || !named)) return { stands: true, check };
-  // "The line does not match the record" names nothing: it is the no-reason strike, never shown.
-  const said = named ? publicReason(r, text, dossier) : null;
-  if (said) return { stands: false, referee: `Referee: ${said} The line is spent.` };
-  return { stands: true, check };
+  const said = namesSomething(r) ? publicReason(r, text, dossier) : null;
+  return { stands: false, referee: said ? `Referee: ${said} The line is spent.` : REFEREE_GENERAL };
 }
 
 const recordName = () => 'Nansen';
@@ -1648,12 +1625,9 @@ export function createRoomService({
           });
         } catch (err) {
           if (err.code !== 'CLAIM_REJECTED') throw err;
-          // Judge 8, 9: a strike always names what is wrong (which figure, and why). A rejection with
-          // no such reason, on a line whose figures are all on the tile or an offered card, is
-          // overruled: true figures are not struck without a reason.
+          // Judge 11: a model rejection always strikes, with the most specific true reason.
           const ruling = rejectionRuling(text, s.dossier, s.checkerData, err.reason, { others: s.others });
-          if (!ruling.stands) return caught(s, { text, reason: err.reason, referee: ruling.referee, started, requestId: body.requestId });
-          pending.check = ruling.check;
+          return caught(s, { text, reason: err.reason, referee: ruling.referee, started, requestId: body.requestId });
         }
 
         s.phase = `${DESK_NAME} is reading your line`;

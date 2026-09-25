@@ -298,7 +298,8 @@ test('a rejected claim is a caught lie: the shot burns, the funded counter does 
   assert.equal(caught.suspicion, Math.min(100, start.suspicion + 30 - 13));
   assert.equal(caught.shots[1].caught, true);
   assert.equal(caught.finished, false);
-  assert.equal(provider.calls, 3, 'a caught lie never reaches the desk');
+  // Judge 11: "up over the full 30 days" on a losing month is struck by the referee before the checker is asked.
+  assert.equal(provider.calls, 2, 'a caught lie never reaches the desk, nor the checker');
 });
 
 test('a desk failure keeps the shot, and an identical retry does not re-run the check', async () => {

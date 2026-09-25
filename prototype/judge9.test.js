@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { stubProvider } from '../validation/providers.js';
 import {
   createRoomService, createLeaderboardStore, loadRoster, buildProspectDossier, offendingFigure, refereeVerdict,
-  rejectionRuling, silentHeadline, endingCopy, roomAgentLine, CLEARED_LINE, CAP_AGENT_LINE, REFEREE_GENERAL, withTileExtras,
+  rejectionRuling, silentHeadline, endingCopy, roomAgentLine, CLEARED_LINE, CAP_AGENT_LINE, REFEREE_GENERAL, withTileExtras, attributionStrike,
 } from './room.js';
 import { refreshProspect, TILE_FIGURE } from './roster.js';
 import { frozenSnapshot } from './frozen-read.js';
@@ -57,15 +57,12 @@ test('judge 9: every figure a tile prints is a published fact, with its window a
       assert.ok(e.window && e.source && e.span && e.from && e.claim, `${p.id} ${e.value} carries window, source and claim`);
       assert.equal(e.source, p.hype.readLabel, p.id);
     }
-    // The tile's whole text, pitched as it reads, is never "not in the record", and a checker
-    // rejection about its figures is overruled.
+    // The tile's whole text, pitched as it reads, is never "not in the record" by the referee.
+    // Judge 11: a model rejection is no longer overruled; it strikes (see referee-corpus.test.js).
     const line = tileText(p);
     assert.equal(offendingFigure(line, d, p.checkerData), null, `${p.id}: ${line}`);
     assert.doesNotMatch(refereeVerdict(line, d, p.checkerData), /is not in the record/, p.id);
-    for (const e of d.published) {
-      const ruling = rejectionRuling(line, d, p.checkerData, `${e.value} is not in the record.`);
-      assert.equal(ruling.stands, true, `${p.id}: ${e.value} ${JSON.stringify(ruling)}`);
-    }
+    assert.equal(attributionStrike(line, d, p.checkerData), null, `${p.id}: ${line}`);
   }
 });
 
@@ -77,12 +74,12 @@ test('judge 9: THE GRINDER\'s "100% win rate" and THE STEADY HAND\'s "42.1% win 
   for (const [id, line, pct] of cases) {
     for (const roster of [loadRoster(), [await withRead('grinder', GRINDER_LIVE)]]) {
       if (!roster.some(p => p.id === id)) continue;
-      const service = room([{ text: `{"valid":false,"reason":"${pct} is not in the record."}` }, DESK(2500)], roster);
+      // Judge 11: the referee passes the line; only a checker acceptance lets PENNY hear it.
+      const service = room([{ text: '{"valid":true,"reason":""}' }, DESK(2500)], roster);
       const start = await service.start({ prospect: id });
       const after = await service.pitch(start.id, { requestId: `judge9-${id}-${roster.length}`, shot: 0, text: line });
       const shot = after.shots.at(-1);
-      assert.equal(shot.caught, false, `${id}: ${shot.referee ?? ''}`);
-      assert.equal(shot.check, 'published');
+      assert.equal(shot.caught, false, `${id} ${pct}: ${shot.referee ?? ''}`);
       assert.equal(after.funded, 2500);
     }
   }
@@ -116,33 +113,39 @@ test('judge 9: REAL DEAL\'s exact line: the win rate and count are named as Nans
   for (const reason of ['', 'The claim does not match the record as stated.', 'The win rate is not a leaderboard figure.']) {
     assert.deepEqual(rejectionRuling(line, d, p.checkerData, reason), { stands: false, referee: expected });
   }
-  // Named with its own source, the same figures stand whatever the checker said.
+  // Named with its own source, the same figures pass the referee. Judge 11: a checker rejection
+  // with no nameable reason still strikes, with the plain general line.
   const fixed = "Hyperliquid's leaderboard shows +$116,554 for the 30 days to 21 Sep and +$428,058 all time; Nansen shows a 76.4% win rate over 3,373 trades this month.";
-  assert.equal(rejectionRuling(fixed, d, p.checkerData, 'The line does not match the record.').stands, true);
+  assert.equal(attributionStrike(fixed, d, p.checkerData), null);
+  assert.deepEqual(rejectionRuling(fixed, d, p.checkerData, 'The line does not match the record.'), { stands: false, referee: REFEREE_GENERAL });
   // The all-time sub-line figure in the same line is its own window, never "not a 30-day figure".
   assert.doesNotMatch(refereeVerdict(fixed, d, p.checkerData), /428,058/);
 });
 
-test('judge 9: the room never shows the general strike; a claim-level reason is said with sealed figures sealed', async () => {
+test('judge 9: a claim-level reason is said with sealed figures sealed; judge 11: a rejection with no reason strikes with the general line', async () => {
   const p = loadRoster().find(x => x.id === 'streak');
   const d = buildProspectDossier(p);
   const sealed = Math.round(Math.abs(p.checkerData.pnl_summary_30d.realized_pnl_usd)).toLocaleString('en-US');
-  const r = rejectionRuling('He never loses. Best on the board.', d, p.checkerData, `The wallet lost -$${sealed} over 30 days (realized_pnl_usd), so "never loses" is false.`);
+  const r = rejectionRuling('He is the best trader on the board.', d, p.checkerData, `The wallet lost -$${sealed} over 30 days (realized_pnl_usd), so "best on the board" is false.`);
   assert.equal(r.stands, false);
   assert.notEqual(r.referee, REFEREE_GENERAL);
   assert.doesNotMatch(r.referee, new RegExp(sealed.replace(/,/g, ',')));
   assert.doesNotMatch(r.referee, /realized_pnl_usd|_/);
-  assert.match(r.referee, /^Referee: The wallet lost a sealed figure over 30 days \(realised PnL\), so "never loses" is false\. The line is spent\.$/);
-  // No reason at all, or a reason that names nothing ("does not match the record"): the line stands.
-  assert.equal(rejectionRuling('Trust the process.', d, p.checkerData, '').stands, true);
-  assert.equal(rejectionRuling('He never loses.', d, p.checkerData, 'The line does not match the record as stated.').stands, true);
+  assert.match(r.referee, /^Referee: The wallet lost a sealed figure over 30 days \(realised PnL\), so "best on the board" is false\. The line is spent\.$/);
+  // Judge 11: "never loses" is the referee's own strike, whatever the checker said.
+  assert.equal(rejectionRuling('He never loses.', d, p.checkerData, 'The line does not match the record as stated.').referee,
+    "Referee: the line claims no losses, but Nansen's 30-day win rate is below 100%: trades were lost. The line is spent.");
+  // Judge 11: no reason at all, or one that names nothing, still strikes, with the plain general line.
+  assert.deepEqual(rejectionRuling('Trust the process.', d, p.checkerData, ''), { stands: false, referee: REFEREE_GENERAL });
   // A claim-level reason on a line of true figures is still said: a guarantee is not a figure.
   assert.match(rejectionRuling('+$594,869 in the week to 21 Sep, guaranteed to repeat.', d, p.checkerData, 'The pitch invents a guaranteed return.').referee, /^Referee: The pitch invents a guaranteed return\. The line is spent\.$/);
-  // In a round, a rejection with no nameable reason never reaches the screen as a strike.
+  // Judge 11: in a round, a rejection with no nameable reason strikes with the general line, never a blank one.
   const service = room([{ text: '{"valid":false,"reason":""}' }, DESK(1000)]);
   const start = await service.start({ prospect: 'streak' });
   const after = await service.pitch(start.id, { requestId: 'judge9-general-1', shot: 0, text: '+$594,869 in the week to 21 Sep. Shorts pay.' });
-  assert.equal(after.shots.at(-1).caught, false);
+  assert.equal(after.shots.at(-1).caught, true);
+  assert.equal(after.shots.at(-1).referee, REFEREE_GENERAL);
+  assert.equal(after.funded, 0);
   assert.doesNotMatch(read('./public/room.js'), /the line does not match the record as stated/);
 });
 

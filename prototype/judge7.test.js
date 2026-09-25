@@ -159,7 +159,7 @@ test('judge 7: the proof page strapline lists the gate\'s seven endpoints, from 
   assert.deepEqual(listed, short);
   assert.match(replay, /the gate reads \$\{GATE_ENDPOINTS\.length === 7 \? 'seven' : GATE_ENDPOINTS\.length\} Nansen endpoints/);
   // The replayed round's own reads are named as that round's, not as the gate's list.
-  assert.match(replay, /the replayed attack in section 1 was recorded [^`]*its desk read/);
+  assert.match(replay, /the replayed attack in section 1 was recorded [^`]*its agent read/);
 });
 
 test('judge 7: the proof page says the owner catch is by construction', () => {
