@@ -1,6 +1,26 @@
 # BAIT public page, version B
 
-## Version Z: default-deny, 26 September 2026 (current)
+## Version AA: hook first, verdict first, 26 September 2026 (current)
+
+Outside review: the idea is strong, but a judge needs too many steps to feel it and the first
+screen does not hook. Same tokens, fonts and golden viewports (1440 x 900, 375 x 812). Referee and
+gate untouched.
+
+- **The first screen is a hook, one number and a start button.** "Talk an AI into wiring money to
+  a losing trader, using only true facts." Then the benchmark headline from bench/FIGURES.json
+  (`headline.pnlRule` 61 of 79, `headline.bait` 0 of 79; the README table's figures), large in
+  amber, and "Start a round", which picks the "Start here" card. Button above the fold at both
+  golden viewports. The live-market finding (5 of the top 200) moved under the grid, beside its
+  five rows.
+- **A pick answers at once.** The card turns amber with "Picked · starting the round…" before the
+  server is asked; the room opens with the pitch box scrolled into view (its bottom edge at the
+  window's), focused and flashed amber once.
+- **The checkpoint opens on the outcome.** Stamp, then the one deciding row (`gate.failed`, else the
+  first BLOCK; a cap's first CAP row; a clear says "No check blocked or capped it."), with the
+  owner tree under an owner block. Every row and the Nansen calls fold behind "See every check
+  (N)". Rows no longer tick in one by one (about 4 s saved).
+
+## Version Z: default-deny, 26 September 2026
 
 Judges 11 and 12 (live builds b07f4c5, 754d519). Same tokens, fonts and golden viewports. Live 09ae398.
 

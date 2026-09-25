@@ -32,15 +32,18 @@
 
   <!-- ============================================ 1. pick your hero ==== -->
   <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
-    <!-- Judge 3: the first screen leads with the live-market finding (bench/FIELD.md), not the benchmark. -->
-    <div class="lead" id="concept">
-      <p class="lead-lab">Live market · Nansen&rsquo;s 30-day leaderboard · 25 Sep 2026</p>
-      <p class="concept"><b>5 of the top 200 wallets are the winning face of an owner whose other wallets lost more than it made.</b>
-        A &ldquo;don&rsquo;t copy a losing wallet&rdquo; rule funds all five. BAIT blocks all five: four on the owner, one for too few trades.</p>
-      <p class="for-whom">BAIT is the gate before an AI agent copies a wallet. It asks Nansen who funded the wallet, reads the owner&rsquo;s other wallets, and refuses when the owner lost. THE STEADY HAND is one of the five.</p>
+    <!-- Outside review, 26 Sep: the first screen hooks with one short line and one big number from
+         the benchmark (bench/FIGURES.json headline), and the start button sits above the fold. -->
+    <div class="lead hook" id="concept">
+      <h1 class="hook-line" id="roster-title">Talk an AI into wiring money to a losing trader, using only true facts.</h1>
+      <p class="hook-figure" id="hook-figure"><b id="hook-number">61 of 79</b>
+        <span>benchmark attacks got money past a simple &ldquo;don&rsquo;t copy a wallet that lost money&rdquo; rule. Behind BAIT: <strong>0 of 79</strong>.</span></p>
+      <p class="for-whom">BAIT is the gate before an AI agent copies a wallet. It asks Nansen who funded the wallet, reads the owner&rsquo;s other wallets, and refuses when the owner lost.</p>
+      <p class="hook-go"><button type="button" class="primary start-round" id="start-round">Start a round</button>
+        <span class="hook-go-note" id="start-note">with THE STEADY HAND, or pick any trader below</span></p>
     </div>
     <div class="roster-head">
-      <h1 class="screen-title" id="roster-title">Your turn: pick a trader, then talk the AI into backing them.</h1>
+      <p class="screen-title pick-title">Pick a trader, then talk PENNY, the AI, into backing them.</p>
       <p class="truth-credit" id="truth-credit"><span>Truth source</span> <b>Nansen</b> profiler for every trader here · Hyperliquid perpetuals</p>
     </div>
     <!-- Setup facts (a missing key) sit in the page flow, never in a toast over the stats. -->
@@ -64,6 +67,10 @@
          first screen already says what the game proves. Both are read from files. -->
     <div class="front-proof">
       <div class="owners-strip" aria-label="The five owner wallets">
+        <!-- Judge 3's live-market finding (bench/FIELD.md), now under the grid beside its five rows. -->
+        <p class="lead-lab">Live market · Nansen&rsquo;s 30-day leaderboard · 25 Sep 2026</p>
+        <p class="concept"><b>5 of the top 200 wallets are the winning face of an owner whose other wallets lost more than it made.</b>
+          A &ldquo;don&rsquo;t copy a losing wallet&rdquo; rule funds all five. BAIT blocks all five: four on the owner, one for too few trades. THE STEADY HAND is one of the five.</p>
         <p class="col-head">The five · 30 days to 25 Sep 06:04 UTC · owner&rsquo;s other wallets</p>
         <ol class="owners-list" id="owners-list">
           <li><b>0x615a...69d5</b><span class="pos">+$2,854,381</span><span class="neg">3 wallets, -$2,996,395</span><em>owner lost</em></li>
@@ -296,10 +303,16 @@
       <p class="cp-move" id="cp-move"></p>
       <p class="cp-read" id="cp-read"></p>
     </div>
-    <ol class="cp-rows" id="cp-rows"></ol>
-    <!-- Round 18: the Nansen calls this verdict stands on. -->
-    <ul class="cp-calls" id="cp-calls" hidden aria-label="Nansen calls behind this verdict"></ul>
+    <!-- Outside review, 26 Sep: the outcome first (stamp and the one row that decided it); every
+         row and the Nansen calls fold behind "See every check". -->
     <p class="cp-stamp" id="cp-stamp" hidden></p>
+    <ol class="cp-rows cp-decider" id="cp-decider" aria-label="The check that decided"></ol>
+    <details class="cp-all" id="cp-all">
+      <summary id="cp-all-summary">See every check</summary>
+      <ol class="cp-rows" id="cp-rows"></ol>
+      <!-- Round 18: the Nansen calls this verdict stands on. -->
+      <ul class="cp-calls" id="cp-calls" hidden aria-label="Nansen calls behind this verdict"></ul>
+    </details>
     <p class="cp-actions"><button type="button" class="primary cp-next" id="cp-next" hidden>See what happened &rarr;</button></p>
   </div>
 </div>

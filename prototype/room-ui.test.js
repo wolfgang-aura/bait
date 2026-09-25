@@ -172,7 +172,7 @@ test('round 15: the reveal states the score; the BAIT mark stays in the checkpoi
   assert.doesNotMatch(shown, /fill tape|noise band|% bar\b|Policy \$\{gate\.policyId\}/);
   // A block supersedes a cap in the final table as in the checkpoint.
   assert.match(js, /renderGate\(el\.finalGate, final\.gate, final\.verdict\)/);
-  assert.match(js, /const v = checkRowView\(c, final\.verdict\);/);
+  assert.match(js, /const v = checkRowView\(c, verdict\);/);
 });
 
 test('round 16: nothing before the gate gives the verdict away; Enter submits a pasted wallet', () => {
@@ -202,14 +202,21 @@ test('round 17: Wire it never sits where Pitch was, and ignores clicks for 700 m
   assert.match(js, /if \(wireShown && \(el\.wire\.hidden \|\| wireAmount !== state\.funded\)\) wireArmedAt = performance\.now\(\);/);
 });
 
-test('the front door leads with the live-market finding, the benchmark is one line below, and the owner card is marked (judge 3)', () => {
+test('the front door hooks with one line and the benchmark headline; the live-market finding sits under the grid; the owner card is marked', () => {
   const roster = html.slice(html.indexOf('id="roster-screen"'), html.indexOf('</section>', html.indexOf('id="roster-screen"')));
   const lead = roster.slice(0, roster.indexOf('id="roster-grid"'));
-  assert.match(lead, /5 of the top 200 wallets are the winning face of an owner whose other wallets lost more than it made\./);
-  assert.match(lead, /rule funds all five\. BAIT blocks all five: four on the owner, one for too few trades\./);
-  assert.doesNotMatch(lead, /of 78|26 attacks|6 losing wallets/, 'no benchmark above the grid');
+  // Outside review, 26 Sep: a short hook, then one big number, then the start button, before the grid.
+  const hook = lead.match(/<h1 class="hook-line" id="roster-title">([^<]+)<\/h1>/);
+  assert.ok(hook, 'the hook is the page h1');
+  assert.ok(hook[1].split(/\s+/).length <= 14, `hook is ${hook[1].split(/\s+/).length} words`);
+  assert.doesNotMatch(lead, /of 78|26 attacks|6 losing wallets/, 'the true-facts benchmark stays in the room, not above the grid');
+  assert.ok(lead.indexOf('id="hook-number"') < lead.indexOf('id="start-round"'), 'number, then the start button');
   assert.doesNotMatch(roster, /id="ladder"|26 attacks|6 losing wallets/);
-  assert.equal((roster.match(/of 78/g) ?? []).length, 2, 'one benchmark line: 63 of 78 and 0 of 78');
+  assert.equal((roster.match(/of 78/g) ?? []).length, 2, 'one true-facts benchmark line: 63 of 78 and 0 of 78');
+  // The live-market finding moved under the grid, beside its five rows.
+  const below = roster.slice(roster.indexOf('id="roster-grid"'));
+  assert.match(below, /5 of the top 200 wallets are the winning face of an owner whose other wallets lost more than it made\./);
+  assert.match(below, /rule funds all five\. BAIT blocks all five: four on the owner, one for too few trades\./);
   assert.ok(roster.indexOf('owners-list') > roster.indexOf('id="roster-grid"'), 'the five sit below the grid');
   // The five rows are the Proof page's owners table, figure for figure.
   const page = read('replay.html');
@@ -221,6 +228,68 @@ test('the front door leads with the live-market finding, the benchmark is one li
   assert.equal(roomRows.filter(r => r[3] === 'owner lost').length, 4);
   assert.match(js, /if \(p\.start\) \{ const start = document\.createElement\('span'\); start\.className = 'tile-start'; start\.textContent = 'Start here';/);
   assert.doesNotMatch(js, /renderLadder|ladderHead/);
+});
+
+test('the home number is the benchmark headline as recorded in bench/FIGURES.json, never typed from memory', () => {
+  const F = JSON.parse(fs.readFileSync(new URL('../bench/FIGURES.json', import.meta.url), 'utf8'));
+  const [n, d] = F.headline.pnlRule;
+  const [b, bd] = F.headline.bait;
+  const lead = html.slice(html.indexOf('id="concept"'), html.indexOf('id="roster-grid"'));
+  assert.ok(lead.includes(`<b id="hook-number">${n} of ${d}</b>`), `home number is ${n} of ${d}`);
+  assert.match(lead, /benchmark attacks got money past a simple &ldquo;don&rsquo;t copy a wallet that lost money&rdquo; rule\./);
+  assert.ok(lead.includes(`Behind BAIT: <strong>${b} of ${bd}</strong>.`), `BAIT figure is ${b} of ${bd}`);
+  // The README's table states the same two figures (README is frozen; this only reads it).
+  const readme = fs.readFileSync(new URL('../README.md', import.meta.url), 'utf8');
+  assert.ok(readme.includes(`| **${n} of ${d}** |`));
+  assert.ok(readme.includes(`| BAIT | **${b} of ${bd}** |`));
+});
+
+test('one click starts a round: the start button and every card mark the pick at once, then the pitch box is scrolled to and focused', () => {
+  assert.match(html, /<button type="button" class="primary start-round" id="start-round">Start a round<\/button>/);
+  assert.match(js, /el\.startRound\.addEventListener\('click', \(\) => \{ if \(!roster\.length\) return; focus\(startIndex\(\)\); pick\(\); \}\);/);
+  assert.match(js, /const startIndex = \(\) => Math\.max\(0, roster\.findIndex\(p => p\.start\)\);/);
+  assert.match(js, /tile\.addEventListener\('click', \(\) => \{ focus\(i\); pick\(\); \}\);/);
+  const pick = js.slice(js.indexOf('async function pick()'), js.indexOf('/** The picked card'));
+  // The picked state lands before the server is asked, and comes off if the start fails.
+  assert.ok(pick.indexOf('markPicked(tile, true)') > 0 && pick.indexOf('markPicked(tile, true)') < pick.indexOf("api('/api/room/start'"), 'marked before the request');
+  assert.match(pick, /catch \(err\) \{\s*markPicked\(tile, false\);/);
+  assert.match(pick, /if \(picking\) return;/, 'a double click starts one round');
+  assert.match(js, /flag\.textContent = 'Picked · starting the round…';/);
+  assert.match(js, /tile\.classList\.toggle\('picked', on\);/);
+  const css = read('room.css');
+  assert.match(css, /\.tile\.picked \{ border-color: var\(--amber\);/);
+  // The room opens on the pitch box: focused without a jump, its bottom edge in view, flashed once.
+  const enter = js.slice(js.indexOf('function enterRoom()'), js.indexOf('/** The cast and the premise.'));
+  assert.match(enter, /el\.line\.focus\(\{ preventScroll: true \}\);\s*el\.composer\.scrollIntoView\(\{ block: 'end', behavior: 'auto' \}\);/);
+  assert.match(enter, /el\.composer\.classList\.add\('ready'\);/);
+  assert.match(css, /\.composer\.ready #line \{ animation: composer-ready/);
+});
+
+test('the checkpoint opens on the outcome and the one deciding row; every check is folded behind "See every check"', async () => {
+  const card = html.slice(html.indexOf('id="checkpoint"'), html.indexOf('id="barrier"'));
+  // Stamp, then the deciding row, then the folded list with the Nansen calls inside it.
+  assert.ok(card.indexOf('id="cp-stamp"') < card.indexOf('id="cp-decider"') && card.indexOf('id="cp-decider"') < card.indexOf('id="cp-all"'));
+  assert.match(card, /<details class="cp-all" id="cp-all">\s*<summary id="cp-all-summary">See every check<\/summary>\s*<ol class="cp-rows" id="cp-rows"><\/ol>/);
+  assert.ok(card.indexOf('id="cp-calls"') > card.indexOf('id="cp-all"'), 'the calls fold with the rows');
+  assert.doesNotMatch(card, /<details class="cp-all"[^>]*open/, 'folded by default');
+  const cp = js.slice(js.indexOf('async function playCheckpoint'), js.indexOf('function checkpointRow'));
+  assert.match(cp, /el\.cpAll\.open = false;/);
+  assert.match(cp, /const decider = decidingCheck\(gate, final\.verdict\);/);
+  assert.match(cp, /if \(decider\) el\.cpDecider\.append\(checkpointRow\(decider, final\.verdict, gate, \{ tree: true \}\)\);/);
+  assert.match(cp, /none\.textContent = 'No check blocked or capped it\.';/);
+  assert.match(cp, /text\(el\.cpAllSummary, `See every check \(\$\{rows\.length\}\)`\);/);
+  assert.doesNotMatch(cp, /sleep\(260\)/, 'no row ticks in one by one');
+  // The deciding row, from the gate's own rows.
+  const { decidingCheck } = await import('./public/verdict-view.js');
+  const checks = [
+    { id: 'evidence_30d', result: 'pass' }, { id: 'thin_sample', result: 'cap' },
+    { id: 'realised_pnl_30d', result: 'fail' }, { id: 'operator_record', result: 'fail' },
+  ];
+  assert.equal(decidingCheck({ checks, failed: 'operator_record' }, 'block').id, 'operator_record', 'the row the gate names');
+  assert.equal(decidingCheck({ checks }, 'block').id, 'realised_pnl_30d', 'else the first BLOCK row');
+  assert.equal(decidingCheck({ checks: checks.filter(c => c.result !== 'fail') }, 'capped').id, 'thin_sample');
+  assert.equal(decidingCheck({ checks: [{ id: 'evidence_30d', result: 'pass' }] }, 'allow'), null, 'a clear has no deciding row');
+  assert.equal(decidingCheck(null, 'block'), null);
 });
 
 test('on a phone the first card face is on the first screen and PENNY speaks after one job line (judge 4)', () => {

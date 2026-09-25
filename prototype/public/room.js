@@ -19,7 +19,7 @@
  */
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
-import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE, WATCH_NOTE_SHORT, recordHeadline, wireLogRows, commitmentCard, transcriptSaid, transcriptCheck } from '/verdict-view.js';
+import { checkpointTitle, checkRowView, decidingCheck, reportRows, readingLine, pitchedView, oncePitched, checkName, factGroups, WATCH_NOTE, WATCH_NOTE_SHORT, recordHeadline, wireLogRows, commitmentCard, transcriptSaid, transcriptCheck } from '/verdict-view.js';
 import { ownerTreeHtml } from '/owner-tree.js';
 
 const $ = id => document.getElementById(id);
@@ -57,6 +57,8 @@ const el = {
   initials: $('initials'), submitScore: $('submit-score'), scoreStatus: $('score-status'),
   scoreEntry: $('score-entry'), boardList: $('board-list'), again: $('again'),
   transcript: $('transcript-body'), bootError: $('boot-error'), setupNote: $('setup-note'),
+  cpDecider: $('cp-decider'), cpAll: $('cp-all'), cpAllSummary: $('cp-all-summary'),
+  startRound: $('start-round'), startNote: $('start-note'),
   checkpoint: $('checkpoint'), cpMove: $('cp-move'), cpRead: $('cp-read'), cpRows: $('cp-rows'), cpCalls: $('cp-calls'), cpStamp: $('cp-stamp'),
   agreedQuote: $('agreed-quote'), agreedMarks: $('agreed-marks'), wire: $('wire-it'),
   replayNote: $('replay-note'),
@@ -243,21 +245,56 @@ function focus(index) {
   ].join('  ·  '));
 }
 
+/**
+ * Outside review, 26 Sep: a pick answers at once. The card is marked picked ("Starting the
+ * round…") while the server reads the record, then the room opens with the pitch box in view
+ * and focused. The start button on the first screen picks the "Start here" card.
+ */
+let picking = false;
 async function pick() {
+  if (picking) return;
+  picking = true;
   const p = roster[focused];
+  const tile = el.grid.children[focused];
   el.grid.querySelectorAll('.tile').forEach(t => { t.disabled = true; });
+  markPicked(tile, true);
+  el.startRound.disabled = true;
+  text(el.startNote, `Starting a round with ${p.name}…`);
   try {
     // Straight into the room. The record is the reveal, so it waits for BAIT's check.
     const state = await api('/api/room/start', { method: 'POST', body: { prospect: p.id } });
     adopt(state);
     enterRoom();
   } catch (err) {
+    markPicked(tile, false);
     el.bootError.hidden = false;
     text(el.bootError, `The round could not start: ${err.message}`);
   } finally {
+    picking = false;
+    el.startRound.disabled = false;
+    text(el.startNote, startNoteText());
     el.grid.querySelectorAll('.tile').forEach(t => { t.disabled = false; });
   }
 }
+
+/** The picked card: a visible state and a status line on the card itself. */
+function markPicked(tile, on) {
+  if (!tile) return;
+  tile.classList.toggle('picked', on);
+  tile.setAttribute('aria-busy', String(on));
+  tile.querySelector('.tile-picked')?.remove();
+  if (on) {
+    const flag = document.createElement('span');
+    flag.className = 'tile-picked';
+    flag.setAttribute('role', 'status');
+    flag.textContent = 'Picked · starting the round…';
+    tile.querySelector('.tile-art')?.append(flag);
+  }
+}
+
+/** The start button picks the "Start here" card, the first card when none is marked. */
+const startIndex = () => Math.max(0, roster.findIndex(p => p.start));
+const startNoteText = () => `with ${roster[startIndex()]?.name ?? 'the first trader'}, or pick any trader below`;
 
 /** The same rule the server applies: 0x and 40 hex characters. */
 export const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
@@ -417,6 +454,9 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   const raw = final.evidence?.raw;
   if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
   el.cpRows.replaceChildren();
+  el.cpDecider.replaceChildren();
+  el.cpDecider.hidden = true;
+  el.cpAll.open = false;
   el.cpCalls.replaceChildren();
   el.cpCalls.hidden = true;
   el.cpStamp.hidden = true;
@@ -424,31 +464,10 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   el.checkpoint.hidden = false;
   // Gate v4's two rows and v5's operator row always show, N/A included: the card says what each extra Nansen read decided or why it was not read.
   const rows = (gate.checks ?? []).filter(c => c.result !== 'not_assessed' || c.id === 'evidence_freshness' || c.id.startsWith('fills_') || V4_ROWS.includes(c.id));
-  if (!reduced) await sleep(450);
-  for (const c of rows) {
-    const v = checkRowView(c, final.verdict);
-    const li = document.createElement('li');
-    li.className = `cp-row ${v.result}`;
-    const b = document.createElement('b');
-    b.textContent = v.label;
-    const name = document.createElement('strong');
-    name.textContent = c.name ?? checkName(c.id);
-    const why = document.createElement('span');
-    // The owner tree under this row says "the wallet you pitched has the same first funder"; the row says it once there.
-    why.textContent = c.id === 'operator_record' && c.result === 'fail' && gate.operator ? oncePitched(v.plain) : v.plain;
-    // Judge 5: one number and one limit on the row; a second base, when there is one, on hover.
-    if (c.detail) li.title = c.detail;
-    li.append(b, name, why);
-    el.cpRows.append(li);
-    // Gate v5 refused on the owner: the funder and its other wallets, under the row that read them.
-    if (c.id === 'operator_record' && c.result === 'fail' && gate.operator) {
-      const tree = document.createElement('li');
-      tree.className = 'cp-owner';
-      tree.innerHTML = ownerTreeHtml(gate.operator, { compact: true });
-      el.cpRows.append(tree);
-    }
-    if (!reduced) await sleep(260);
-  }
+  // Outside review, 26 Sep: the outcome first. The stamp and the one row that decided it are open;
+  // every row and the Nansen calls sit folded under "See every check". No row ticks in one by one.
+  const decider = decidingCheck(gate, final.verdict);
+  for (const c of rows) el.cpRows.append(checkpointRow(c, final.verdict, gate, { tree: c !== decider }));
   // Judge 7: a WATCH row beside a cleared or capped stamp says why it did not block.
   if (rows.some(c => c.result === 'caution')) {
     const note = document.createElement('li');
@@ -456,12 +475,21 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     note.textContent = WATCH_NOTE;
     el.cpRows.append(note);
   }
-  if (!reduced) await sleep(250);
   renderCalls(gate.calls ?? [], gate.read);
+  text(el.cpAllSummary, `See every check (${rows.length})`);
+  if (!reduced) await sleep(250);
   const kind = final.verdict === 'block' ? 'blocked' : final.verdict === 'capped' ? 'caution' : 'cleared';
   el.cpStamp.className = `cp-stamp ${kind}`;
   setStamp(el.cpStamp, final);
   el.cpStamp.hidden = false;
+  if (decider) el.cpDecider.append(checkpointRow(decider, final.verdict, gate, { tree: true }));
+  else if (final.verdict === 'allow') {
+    const none = document.createElement('li');
+    none.className = 'cp-note cp-none';
+    none.textContent = 'No check blocked or capped it.';
+    el.cpDecider.append(none);
+  }
+  el.cpDecider.hidden = !el.cpDecider.children.length;
   el.cpStamp.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
   // No auto-dismiss: the checkpoint stays until the player has read it.
   el.cpNext.hidden = false;
@@ -470,6 +498,36 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
   await new Promise(resolve => el.cpNext.addEventListener('click', resolve, { once: true }));
   el.cpNext.hidden = true;
   el.checkpoint.hidden = true;
+}
+
+/**
+ * One checkpoint row: its word, its name and its sentence. Gate v5 refused on the owner: the
+ * funder and its other wallets go under the row that read them (`tree`), once on the card.
+ */
+function checkpointRow(c, verdict, gate, { tree = true } = {}) {
+  const frag = document.createDocumentFragment();
+  const v = checkRowView(c, verdict);
+  const li = document.createElement('li');
+  li.className = `cp-row ${v.result}`;
+  const b = document.createElement('b');
+  b.textContent = v.label;
+  const name = document.createElement('strong');
+  name.textContent = c.name ?? checkName(c.id);
+  const why = document.createElement('span');
+  // The owner tree under this row says "the wallet you pitched has the same first funder"; the row says it once there.
+  const owner = c.id === 'operator_record' && c.result === 'fail' && gate.operator;
+  why.textContent = owner && tree ? oncePitched(v.plain) : v.plain;
+  // Judge 5: one number and one limit on the row; a second base, when there is one, on hover.
+  if (c.detail) li.title = c.detail;
+  li.append(b, name, why);
+  frag.append(li);
+  if (owner && tree) {
+    const ownerTree = document.createElement('li');
+    ownerTree.className = 'cp-owner';
+    ownerTree.innerHTML = ownerTreeHtml(gate.operator, { compact: true });
+    frag.append(ownerTree);
+  }
+  return frag;
 }
 
 /**
@@ -807,7 +865,14 @@ function enterRoom() {
   renderScene(dossier);
   renderFacts(dossier);
   el.line.disabled = false;
-  el.line.focus();
+  // Outside review, 26 Sep: the next step is the pitch box. Bring it into view (its bottom edge at
+  // the bottom of the window, so PENNY and the fact cards stay above it), focus it, and flash it once.
+  window.scrollTo(0, 0);
+  el.line.focus({ preventScroll: true });
+  el.composer.scrollIntoView({ block: 'end', behavior: 'auto' });
+  el.composer.classList.remove('ready');
+  void el.composer.offsetWidth;
+  el.composer.classList.add('ready');
 }
 
 /** The cast and the premise. Drawn once per round. */
@@ -1475,6 +1540,7 @@ async function fixture(name, prospectId) {
 async function boot() {
   el.line.addEventListener('input', updateCount);
   el.anyWallet.addEventListener('submit', pasteWallet);
+  el.startRound.addEventListener('click', () => { if (!roster.length) return; focus(startIndex()); pick(); });
   el.wire.addEventListener('click', () => {
     if (performance.now() - wireArmedAt < WIRE_ARM_MS) return;
     if (!sending && round && !round.finished && round.funded > 0) finish();
@@ -1511,6 +1577,7 @@ async function boot() {
     // The roster is the only fetch the front door waits on; the board fills in behind.
     const config = await api('/api/room');
     renderRoster(config.roster);
+    text(el.startNote, startNoteText());
     // Not awaited: the roster is usable while the live line loads.
     loadPulse();
     boardEntries = config.leaderboard ?? [];

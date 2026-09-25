@@ -140,8 +140,8 @@ test('the page draws the tree under the owner row on the checkpoint and in place
   const js = fs.readFileSync(path.join(ROOT, 'prototype', 'public', 'room.js'), 'utf8');
   const html = fs.readFileSync(path.join(ROOT, 'prototype', 'public', 'room.html'), 'utf8');
   assert.match(js, /import \{ ownerTreeHtml \} from '\/owner-tree\.js';/);
-  assert.match(js, /if \(c\.id === 'operator_record' && c\.result === 'fail' && gate\.operator\)/);
-  assert.match(js, /tree\.innerHTML = ownerTreeHtml\(gate\.operator, \{ compact: true \}\);/);
+  assert.match(js, /const owner = c\.id === 'operator_record' && c\.result === 'fail' && gate\.operator;/);
+  assert.match(js, /ownerTree\.innerHTML = ownerTreeHtml\(gate\.operator, \{ compact: true \}\);/);
   assert.match(js, /final\.gate\?\.failed === 'operator_record' \? final\.gate\.operator : null/);
   assert.match(js, /el\.ownerTree\.innerHTML = owner \? ownerTreeHtml\(owner\) : '';/);
   assert.match(js, /text\(el\.truthPnl, owner\.combinedLabel\);/);

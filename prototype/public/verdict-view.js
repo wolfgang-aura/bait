@@ -36,6 +36,18 @@ export function checkRowView(check, verdict) {
   return { result: check.result, label: LABEL[check.result] ?? check.result, plain: humanText(check.plain) };
 }
 
+/**
+ * Outside review, 26 Sep: the checkpoint opens on the outcome and the one row that decided it.
+ * A block: the row the gate names as failed (`gate.failed`), else its first BLOCK row. A cap: the
+ * first CAP row. A clear decides on no single row, so it has none and the page says so.
+ */
+export function decidingCheck(gate, verdict) {
+  const checks = gate?.checks ?? [];
+  if (verdict === 'block') return checks.find(c => c.id === gate?.failed && c.result === 'fail') ?? checks.find(c => c.result === 'fail') ?? null;
+  if (verdict === 'capped') return checks.find(c => c.result === 'cap') ?? null;
+  return null;
+}
+
 /** The report's flag ids and the gate row that decides each one. */
 export const ROW_FOR_FLAG = {
   realised_negative: 'realised_pnl_30d', low_win_rate: 'low_win_rate', thin_sample: 'thin_sample',
