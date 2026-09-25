@@ -572,7 +572,15 @@ export function createLiveEvidence({
  * frozen capture's fill tape. The fills are not live and the snapshot says so, with the
  * capture's own dates, so no drawdown or trade figure is presented as part of the live read.
  */
-export function liveSnapshot(frozen, read) {
+/**
+ * Judge 5: a live round is one read. The capture's own v4 and v5 answers (a frozen saved read
+ * carries them) and its frozen_from pointer never ride along under live summaries; only what this
+ * read bought is kept, so the owner row cannot mix a saved sibling read with a live own record.
+ */
+const withoutSavedReads = ({ v4_reads: _v4, v5_reads: _v5, frozen_from: _from, ...rest }) => rest;
+
+export function liveSnapshot(capture, read) {
+  const frozen = withoutSavedReads(capture);
   const liveFills = read.fills && !read.fills.error;
   const fills = [...(liveFills ? read.fills.rows : (frozen.trades_30d ?? []))].sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
   if (liveFills) {

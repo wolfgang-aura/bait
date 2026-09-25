@@ -367,6 +367,7 @@ body[data-mood="caught"] .bubble { border-color: #5A2B2B; }
 .client-head { display: flex; align-items: flex-end; gap: 12px; }
 .dossier { margin-top: 12px; border-top: 1px solid var(--line-soft); padding-top: 10px; }
 .dossier-head { margin: 0 0 8px; font: 400 11.5px/1.4 var(--display); color: var(--dim); }
+.dossier-read { margin: -4px 0 8px; font: 400 9.5px/1.4 var(--mono); color: var(--faint); }
 .facts { display: grid; gap: 6px; }
 .fact {
   display: flex; align-items: baseline; gap: 9px; width: 100%; text-align: left;
@@ -744,9 +745,10 @@ html[data-frozen] *, html[data-frozen] *::before, html[data-frozen] *::after { a
   .mast nav { gap: 12px; font-size: 12px; }
   .badge { display: none; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  /* All four tiles above the fold at 375 x 812: a short face crop, no lift, compact plate. */
-  .grid .tile-art { aspect-ratio: 16 / 9; }
-  .grid .tile-art .bust { height: 180%; top: -18%; }
+  /* Judge 5: the 16:9 crop showed eyes only. A near-square crop shows the face, brows to chin,
+     and the first card still ends above the fold at 375 x 812. */
+  .grid .tile-art { aspect-ratio: 1 / 1; }
+  .grid .tile-art .bust { height: 112%; top: -4%; }
   .grid .tile[aria-selected="true"], .grid .tile:hover { transform: none; }
   .grid .tile-info { padding: 6px 8px 7px; }
   .grid .tile-info i { height: auto; margin-bottom: 4px; }

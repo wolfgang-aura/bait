@@ -49,7 +49,7 @@ import { withV5Reads } from '../validation/v5-evidence.js';
 import { CapExceeded } from '../validation/providers.js';
 import { buildCase, checkPitchClaims, EncounterError } from './encounter.js';
 import { runDesk, SLOT } from './desk.js';
-import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect, tapeRecency, walletProspect, WALLET_PATTERN, spanText } from './roster.js';
+import { loadRoster, rosterTile, prospectPublic, refreshProspect, findProspect, tapeRecency, walletProspect, WALLET_PATTERN, spanText, readOf, movedSince } from './roster.js';
 import { ROOM_LIVE_GUARD_POLICY, liveSnapshot, hhmm } from './live-evidence.js';
 
 export { SLOT, loadRoster, findProspect };
@@ -111,6 +111,8 @@ export class RoomError extends Error {
  */
 export function buildProspectDossier(p) {
   const truth = p.truth;
+  // Judge 5: one read per round. Every fact card is a figure from this read and says which.
+  const read = readOf(p.snapshot);
   return {
     id: `pitch-room-${p.id}`,
     prospectId: p.id,
@@ -128,9 +130,10 @@ export function buildProspectDossier(p) {
     maxPitch: MAX_PITCH,
     capturedAt: truth.capturedAt,
     // What the scene's ticker prints about the record's age.
-    evidenceLabel: truth.availability === 'live'
-      ? `live Nansen read ${truth.capturedLabel}`
-      : `captured ${String(truth.capturedAt).slice(0, 10)}`,
+    evidenceLabel: `Nansen ${read.label}`,
+    // The round's one read, and how far the tile's saved 7-day figure has moved since (live only).
+    read,
+    moved: movedSince(p),
     window: p.snapshot ? p.snapshot.windows['30d'] : p.record.window,
     loss: truth.pnl,
     lossLabel: truth.pnlLabel,
@@ -401,7 +404,9 @@ const recordName = () => 'Nansen';
  */
 // "30 days" as well as "30-day": a desk asking "where are the last 30 days?" has asked.
 /** Words that name the record PENNY could have asked for. */
-export const RECORD_WORDS = /\b(30[- ]?days?|thirty[- ]days?|last month|trailing|track record|record|p&l|pnl|profit and loss|drawdown|window|evidence|history|verif\w*|book|performance|returns?|results|numbers)\b/i;
+// Judge 5: "Seven days isn't thirty. Show the rest." asks for the longer record without naming
+// it, so a bare "thirty"/"30", "the rest" and "the full month" count as record words too.
+export const RECORD_WORDS = /\b(30[- ]?days?|thirty[- ]days?|thirty|30|the rest|the full (?:month|record|picture|history)|last month|trailing|track record|record|p&l|pnl|profit and loss|drawdown|window|evidence|history|verif\w*|book|performance|returns?|results|numbers)\b/i;
 /** A request: a question about the record, or an explicit ask to be shown it. */
 const ASKS = /\?|\b(show (?:me|us|the|your)|give me|send me|i need|i'd need|i want to see|need to see|let me see|prove it|where(?:'s| is| are)|(?:i|i've|i have) asked for|i asked)\b/i;
 /** A remark that the record is missing, which is not a request. */
@@ -509,6 +514,28 @@ export function nansenCalls(snapshot, checks) {
   return calls;
 }
 
+/**
+ * Judge 5: what this round's BAIT check reads, for the checkpoint's "Reading Nansen ..." line. A
+ * live round lists what it bought; a frozen round of a saved live read lists what that read held
+ * (its v4 and v5 answers replay); any other capture has only what the capture holds.
+ */
+export function roundReads(snapshot) {
+  const live = !!snapshot?.live_read;
+  const replayed = live || !!snapshot?.frozen_from;
+  const v4 = replayed ? snapshot?.v4_reads : null;
+  const v5 = replayed ? snapshot?.v5_reads : null;
+  const fills = (snapshot?.trades_30d?.length ?? 0) > 0;
+  const positions = !!snapshot?.open_positions && !snapshot.open_positions.skipped;
+  return [
+    'perp-pnl-summary (30 and 7 days)',
+    ...(fills ? [live && !snapshot.live_read.fills_live ? 'perp-trades (saved capture)' : 'perp-trades'] : []),
+    ...(positions ? ['perp-positions'] : []),
+    ...(v4?.smartMoneyRead ? ['perp-screener'] : []),
+    ...(v4?.recordRead ? ['perp-leaderboard'] : []),
+    ...(v5?.operatorRead ? ['related-wallets', 'transactions', 'the siblings’ perp-pnl-summary'] : []),
+  ];
+}
+
 /** Round 17: the evidence as the page may see it before the verdict: no figures, no raw pointer. */
 export function sealEvidence(ev) {
   if (!ev) return ev;
@@ -567,7 +594,9 @@ export function endingCopy({ s, peak, executed, verdict }) {
       ? noticed.kind === 'doubted'
         ? `${DESK_NAME} questioned the record, then agreed to send ${x} anyway.`
         : `${DESK_NAME} noticed there was no track record, then agreed to send ${x} anyway.`
-      : `${DESK_NAME} never asked for the record and agreed to send ${x}.`
+      // Judge 5: "never asked" was false when PENNY asked in words the detector missed. PENNY has
+      // no tools (ROOM_DESK), so it never reads the owner: this sentence is true in every round.
+      : `${DESK_NAME} agreed to send ${x} without checking who funds the wallet.`
     : quotes.agreed?.shownWindow
       ? `${DESK_NAME} asked for the record, got part of it from your pitch, and agreed to send ${x}.`
     : asked.n < quotes.agreed?.n
@@ -596,6 +625,32 @@ export function endingCopy({ s, peak, executed, verdict }) {
     subline: `${read} cleared it: ${dollars(executed)} reached ${name}.`,
     trail: null,
     quotes,
+  };
+}
+
+/**
+ * Judge 5: the result screen's "What you pitched" card shows the facts the player's lines used,
+ * with this round's read on them, never the tile's saved figure. A fact is used when a line holds
+ * its sentence or a figure within rounding of its value. A round whose lines quoted no fact card
+ * shows the round's lead fact, and says it was not quoted.
+ */
+export function pitchedFacts(shots, dossier) {
+  const facts = (dossier?.facts ?? []).filter(f => f.tone === 'positive');
+  const lines = (shots ?? []).filter(shot => !shot.caught).map(shot => String(shot.text ?? ''));
+  const typed = lines.flatMap(line => (line.match(FIGURE) ?? []).map(figureValue));
+  const near = (a, b) => (a.pct ? Math.abs(a.n - b.n) <= 0.51 : Math.abs(Math.abs(a.n) - Math.abs(b.n)) <= Math.max(1, Math.abs(b.n) * 0.01));
+  const usedFact = f => lines.some(line => f.insert && line.includes(f.insert))
+    || (String(f.value).match(FIGURE) ?? []).map(figureValue).some(v => typed.some(t => t.pct === v.pct && near(t, v)));
+  const used = facts.filter(usedFact);
+  const read = dossier?.read ?? null;
+  const source = f => (f.id === 'all-time' ? 'public Hyperliquid leaderboard' : `Nansen, ${read?.label ?? 'saved read'}`);
+  const pick = used.length ? used : facts.slice(0, 1);
+  return {
+    used: used.length > 0,
+    facts: pick.map(({ id, value, label }) => ({ id, value, label, source: source({ id }) })),
+    read,
+    // The moved line belongs beside the 7-day figure only.
+    moved: pick.some(f => f.id === 'week-pnl') ? dossier?.moved ?? null : null,
   };
 }
 
@@ -857,7 +912,11 @@ export function createRoomService({
         const at = `Worst peak-to-trough over ${liveTape ? over : `${dd.trades.toLocaleString('en-US')} fills`}: ${dollars(dd.max_drawdown_usd)}`;
         if (!parts.length) return { id, result: 'not_assessed', plain: `${at}. No limit applied: the running result never rose above zero and no account value is held, so there is no base to measure it against.`, source };
         const over30 = parts.some(([, , share, limit]) => share > limit);
-        return { id, result: over30 ? 'caution' : 'pass', plain: `${at}, ${parts.map(([label, value, share, limit]) => measure(label, value, share, limit)).join('; ')}.`, source };
+        // Judge 5: one number against one limit on screen, the one that decides: the base furthest
+        // over its limit, or, when both pass, the one closest to it. The other goes in `detail`.
+        const [decides, ...rest] = [...parts].sort((a, b) => b[2] / b[3] - a[2] / a[3]);
+        return { id, result: over30 ? 'caution' : 'pass', plain: `${at}, ${measure(...decides)}.`,
+          ...(rest.length ? { detail: `Also ${rest.map(([label, value, share, limit]) => measure(label, value, share, limit)).join('; ')}.` } : {}), source };
       }
       if (flag) return { id, result: 'caution', plain: liveTape ? `Over ${over}: ${flag.plain.charAt(0).toLowerCase()}${flag.plain.slice(1)}` : flag.plain, source };
       return { id, result: 'pass', plain: `${name} within the report's limit over ${where}.`, source };
@@ -897,10 +956,15 @@ export function createRoomService({
     const shortAddr = a => `${String(a).slice(0, 6)}...${String(a).slice(-4)}`;
     if (op && (c.result === 'fail' || c.result === 'pass')) {
       const n = op.siblings.length;
-      const who = `First funder ${op.funders.map(f => shortAddr(f.funder)).join(' and ')} also paid for ${n} indexed wallet${n === 1 ? '' : 's'}`;
-      return c.result === 'fail'
-        ? `${who}; with this one the owner made ${money(op.combined_pnl_30d_usd)} over ${days} days, so this wallet is the survivor.`
-        : `${who}; together they made ${money(op.combined_pnl_30d_usd)} over ${days} days.`;
+      const who = `First funder ${op.funders.map(f => shortAddr(f.funder)).join(' and ')} also funds ${n} indexed wallet${n === 1 ? '' : 's'}`;
+      // Judge 5: shared funding is not proof of one owner, so the row says what the funder
+      // funds and what those wallets did, not that this wallet "is the survivor".
+      if (c.result === 'fail') {
+        return op.siblings_pnl_30d_usd < 0
+          ? `${who} that lost ${dollars(Math.abs(op.siblings_pnl_30d_usd))} over ${days} days; this is the one being pitched.`
+          : `${who}; with this one they made ${money(op.combined_pnl_30d_usd)} over ${days} days; this is the one being pitched.`;
+      }
+      return `${who}; together they made ${money(op.combined_pnl_30d_usd)} over ${days} days.`;
     }
     return String(c.plain ?? '').replace(/ This check can refuse only on sibling records it read; a missing read changes nothing\.$/, '');
   };
@@ -937,8 +1001,10 @@ export function createRoomService({
       readAt: answer?.retrieved_at ?? p.snapshot?.retrieved_at ?? null,
       live: !!p.snapshot?.v5_reads?.operatorRead && !!p.snapshot?.live_read,
       frozenFrom: p.snapshot?.live_read ? null : (p.snapshot?.frozen_from?.fetched_at ?? null),
+      // The same read label as every other figure in the round.
+      readLabel: readOf(p.snapshot).label,
       line: row.result === 'fail' && lost
-        ? `The owner lost ${lost} across its other wallets; this is the one it's showing you.`
+        ? `Its first funder also funds ${ev.siblings.length} wallet${ev.siblings.length === 1 ? '' : 's'} that lost ${lost}; this is the one being pitched.`
         : null,
     };
   }
@@ -979,6 +1045,9 @@ export function createRoomService({
       calls: nansenCalls(p.snapshot, checks),
       evidenceAt: decision.evidence.retrieved_at ?? null,
       live: !!p.snapshot?.live_read,
+      // Judge 5: the one read this verdict stands on, and every endpoint the check reads.
+      read: readOf(p.snapshot),
+      reads: roundReads(p.snapshot),
       // Round 17: the open positions were read live with the summaries (profiler/perp-positions).
       positionsLive: !!p.snapshot?.open_positions?.live,
       // Gate v4: which of its two reads this round bought live.
@@ -1019,7 +1088,7 @@ export function createRoomService({
         headline: 'Nothing flattering to pitch.',
         subline: `Every number in ${name}'s live record points the wrong way, so there is no round. The BAIT check read it anyway, as if the whole ${dollars(SLOT)} were on the way.`,
         because: gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null,
-        quotes: {}, trail: null, agentLine: agentVerdictLine(verdict),
+        quotes: {}, trail: null, agentLine: agentVerdictLine(verdict), read: readOf(p.snapshot),
       },
     };
   }
@@ -1323,8 +1392,13 @@ export function createRoomService({
         gate,
         whatIf,
         risk,
-        // On a live round a block was decided on the live read, so the sentence names it.
-        agentLine: s.evidence?.live && verdict === 'block'
+        // On a live round a block was decided on the live read, so the sentence names it. A block
+        // on the owner or another rule is not a negative-PnL block, so it is not called one.
+        agentLine: verdict === 'block' && gate.failed === 'operator_record'
+          ? 'The first funder’s other wallets lost more than this one made. The owner rule blocks allocation.'
+          : verdict === 'block' && gate.failed && gate.failed !== 'realised_pnl_30d'
+          ? 'The Nansen record fails one of the BAIT check’s rules. That rule blocks allocation.'
+          : s.evidence?.live && verdict === 'block'
           ? 'The live Nansen read found negative realised PnL. The matching guard rule blocks allocation.'
           : verdict === 'capped'
             ? 'One market carried the whole month, so the guard sent a quarter of the request and held the rest.'
@@ -1339,6 +1413,9 @@ export function createRoomService({
         because: plainer(gate.checks.find(c => c.result === 'fail' || c.result === 'cap')?.plain ?? null) || null,
         checkedRecord: recordName(s.prospect),
         bestLine,
+        // Judge 5: the round's one read, and the facts the player's lines used, from that read.
+        read: readOf(s.prospect.snapshot),
+        pitched: pitchedFacts(s.shots, s.dossier),
       };
       if (whatIf) {
         const word = { block: 'blocked', capped: 'capped', allow: 'cleared' }[whatIf.verdict] ?? 'checked';

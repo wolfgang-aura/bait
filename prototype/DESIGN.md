@@ -47,8 +47,13 @@ Same tokens, fonts and golden viewports (1280 x 800, 375 x 812). No new colour.
   "What you left out: who funds it", the owner's combined 30-day figure as the big red number, then
   a tree: first funder (short address, chain, funding transfer) over the pitched wallet (green,
   "you pitched") and every sibling (losses red, gains dim, biggest loss first), the two sums, and
-  one line in Space Grotesk 600: "The owner lost $X across its other wallets; this is the one
-  it's showing you." (`public/owner-tree.js`, figures from `gate.operator` only.)
+  one line in Space Grotesk 600: "Its first funder also funds N wallets that lost $X; this is the
+  one being pitched." (hedged like home and proof: shared funding is not proof of one owner;
+  `public/owner-tree.js`, figures from `gate.operator` only.)
+- **One read per round** (judge 5): the fact cards, the checkpoint, the owner tree and the result
+  screen carry the round's one read label, "read live 12:40 UTC" or "saved read 25 Sep 11:31 UTC".
+  The tile keeps its dated saved figure; the facts panel adds "7-day moved since the 25 Sep 11:31
+  read: +$X" when a live read changed it. "What you pitched" shows the facts the lines used.
 - **The checkpoint** puts a compact version under the BLOCK row: siblings as chips, sums, the line,
   the read time. Under 640 px the chips hide; the reveal carries them.
 - **Stacked under 900 px** the VS is pinned to the seam between the halves (the tree makes the

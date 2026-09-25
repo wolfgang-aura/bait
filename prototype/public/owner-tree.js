@@ -19,7 +19,8 @@ export function ownerTreeHtml(op, { compact = false } = {}) {
   const kids = [...op.siblings].sort((a, b) => a.pnl - b.pnl);
   const node = (x, cls, tag = '') => `<li class="ot-node ${cls}"><b>${esc(x.short)}</b>${tag}<em>${esc(x.pnlLabel)}</em></li>`;
   const n = op.siblings.length;
-  const source = op.live
+  // Judge 5: the same read label as every other figure in the round, when the server sends it.
+  const source = op.readLabel ? `Owner, ${op.readLabel}` : op.live
     ? `Owner read live, ${when(op.readAt)}`
     : op.frozenFrom ? `Owner read: frozen capture of a live read, ${when(op.frozenFrom)}` : `Owner read: capture, ${when(op.readAt)}`;
   return `<figure class="owner-tree${compact ? ' compact' : ''}${op.result === 'fail' ? ' losing' : ''}" aria-label="Who funds this wallet">

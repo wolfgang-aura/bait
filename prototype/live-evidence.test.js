@@ -185,7 +185,7 @@ test('a Hyperliquid round plays the live read: truth, dossier, every wire and th
   assert.equal(round.evidence.credits, LIVE_READ_CREDITS);
   assert.equal('truth' in round.prospect, false, 'the live record is sealed until the verdict');
   assert.deepEqual(round.dossier.sealed, { label: '7-day and 30-day realised PnL' });
-  assert.match(round.dossier.evidenceLabel, /^live Nansen read /);
+  assert.match(round.dossier.evidenceLabel, /^Nansen read live \d\d:\d\d UTC$/);
 
   const said = await say(service, round.id, 0, '+$15,000 realised over the last 7 days.');
   assert.equal(said.finished, false, 'a commitment raises the meter; the player wires it');
@@ -264,7 +264,7 @@ test('a capped or failed read plays the frozen capture and says why; the Fomo fo
   const capped = liveRoom([], mockNansen(), { dailyCap: 0 });
   const r = await capped.service.start({ prospect: 'legend' });
   assert.equal(r.evidence.code, 'daily_cap');
-  assert.match(r.dossier.evidenceLabel, /^captured /);
+  assert.match(r.dossier.evidenceLabel, /^Nansen saved read \d+ [A-Z][a-z]{2} \d\d:\d\d UTC$/);
   assert.equal(SHOTS, 3);
 });
 
@@ -464,8 +464,11 @@ test('round 16: newest fills covering under a week are N/A, "too short to judge"
   round = await full.start({ prospect: 'grinder' });
   await say(full, round.id, 0, round.dossier.facts[0].insert);
   checks = (await full.finish(round.id, {})).final.gate.checks;
+  // Judge 5: one number against one limit, the one closest to its limit; the other is the row's detail.
   assert.equal(checks.find(c => c.id === 'fills_drawdown').plain,
-    'Worst peak-to-trough over all 6 fills in the window: $200, 0.0% of the $2,938,036 account value (Nansen positions), under the 15% limit; 6.7% of the $3,000 peak it fell from, under the 30% limit.');
+    'Worst peak-to-trough over all 6 fills in the window: $200, 6.7% of the $3,000 peak it fell from, under the 30% limit.');
+  assert.equal(checks.find(c => c.id === 'fills_drawdown').detail,
+    'Also 0.0% of the $2,938,036 account value (Nansen positions), under the 15% limit.');
   // A curve that fell from zero has no peak; it is measured against the account value alone.
   const flat = liveRoom([...answer(5000, 'intrigued', 'Opening small.')], fillsMock({ fills: 6 }), { fillPages: 1 }).service;
   round = await flat.start({ prospect: 'grinder' });
@@ -555,7 +558,7 @@ test('round 18: the verdict lists the Nansen calls it stands on, with credits, t
   const frozen = nansenCalls({ retrieved_at: '2026-09-21T00:00:00Z' }, [{ id: 'realised_pnl_30d', result: 'fail' }]);
   assert.deepEqual(frozen, [{ endpoint: 'frozen Nansen capture', credits: 0, at: '2026-09-21T00:00:00Z', cached: false, frozen: true, decided: 'BLOCK' }]);
   const client = fs.readFileSync(new URL('./public/room.js', import.meta.url), 'utf8');
-  assert.match(client, /renderCalls\(gate\.calls \?\? \[\]\);/);
+  assert.match(client, /renderCalls\(gate\.calls \?\? \[\], gate\.read\);/);
 });
 
 test('round 20: a read that times out once and then succeeds is live, counted once as used, the first attempt as unused', async () => {
@@ -699,7 +702,7 @@ test('v5 live round: the operator behind the wallet lost money, so the operator 
   assert.equal(final.verdict, 'block');
   assert.equal(final.gate.policyId, 'wallet-copy-risk-room-live-v5');
   assert.equal(final.gate.operatorLive, true);
-  assert.equal(row.plain, 'First funder 0x1111...1111 also paid for 1 indexed wallet; with this one the owner made -$488,000 over 30 days, so this wallet is the survivor.');
+  assert.equal(row.plain, 'First funder 0x1111...1111 also funds 1 indexed wallet that lost $500,000 over 30 days; this is the one being pitched.');
   assert.equal(row.source, 'related-wallets first funder, transactions, sibling perp-pnl-summary');
   assert.doesNotMatch(JSON.stringify(final), /Some Fund/, 'no Nansen label reaches the page');
   assert.deepEqual(final.gate.calls.at(-1), { endpoint: 'owner: related-wallets, transactions, sibling perp-pnl-summary', credits: 4, at: final.gate.calls.at(-1).at, cached: false, decided: 'BLOCK' });

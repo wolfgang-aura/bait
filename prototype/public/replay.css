@@ -572,6 +572,12 @@ tbody tr:last-child { border-bottom: 0; }
 tbody tr:hover { background: var(--panel); }
 tbody td em { font-style: normal; color: var(--ink-dim); }
 
+/* Judge 5: the earlier gate-v1 run, closed by default */
+.earlier-run > summary { cursor: pointer; list-style: none; }
+.earlier-run > summary::-webkit-details-marker { display: none; }
+.earlier-run > summary .sec-meta::after { content: " \00B7  show"; color: var(--accent); }
+.earlier-run[open] > summary .sec-meta::after { content: " \00B7  hide"; }
+
 /* the audit fold: everything methodological lives behind this one summary */
 .audit {
   margin-top: 40px;

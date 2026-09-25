@@ -60,6 +60,39 @@ function span(fromIso, toIso) {
 const stamp = iso => `${day(iso)} UTC`;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const dayMonth = iso => { const d = new Date(iso); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`; };
+const hm = iso => new Date(iso).toISOString().slice(11, 16);
+
+/**
+ * Which Nansen read a round's figures come from, in the words every screen prints (judge 5):
+ * "read live 12:40 UTC" for a live round, "saved read 25 Sep 11:31 UTC" otherwise. One round has
+ * one read, so the fact cards, the BAIT check and the result screen all carry this label.
+ */
+export function readOf(snapshot) {
+  const live = !!(snapshot?.source === 'live' && snapshot.live_read);
+  const at = live ? snapshot.live_read.fetched_at : snapshot?.retrieved_at ?? null;
+  if (!at || !Number.isFinite(Date.parse(at))) return { live, at: null, label: live ? 'read live' : 'saved read' };
+  return { live, at, label: live ? `read live ${hm(at)} UTC` : `saved read ${dayMonth(at)} ${hm(at)} UTC` };
+}
+
+/**
+ * The tile keeps its dated saved 7-day figure. When a live round reads the same window again and
+ * the figure has moved, this is the one line that says by how much, computed from the two reads.
+ * Null for a frozen round, a tile whose brag is not Nansen's 7-day window, or no change.
+ */
+export function movedSince(p) {
+  const saved = p?.savedRead;
+  const now = readOf(p?.snapshot);
+  if (!saved || !now.live || p.hype?.hypeFrom !== 'Nansen') return null;
+  const live7 = Number(p.snapshot?.pnl_summary_7d?.realized_pnl_usd);
+  if (!Number.isFinite(live7) || !Number.isFinite(saved.week7)) return null;
+  const delta = live7 - saved.week7;
+  if (Math.round(delta) === 0) return null;
+  const when = `${dayMonth(saved.at)} ${hm(saved.at)}`;
+  return {
+    window: '7-day realised', tile: money(saved.week7), live: money(live7), delta: Math.round(delta), deltaLabel: money(delta),
+    savedAt: saved.at, line: `7-day moved since the ${when} read: ${money(delta)}`,
+  };
+}
 
 /**
  * The lineup. Numbers live in the evidence files, not here: this table carries only
@@ -416,6 +449,9 @@ export function loadRoster({
     const loaded = {
       ...base,
       hypeRow: hype ?? null,
+      // The saved read behind the tile, kept through a live refresh so the round can say how far
+      // the live 7-day figure moved from the tile's (movedSince).
+      savedRead: { at: snapshot.retrieved_at, week7: Number(week.realized_pnl_usd) },
       hype: {
         ...headline,
         source: fromNansen

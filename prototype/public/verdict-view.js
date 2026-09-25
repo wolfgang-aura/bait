@@ -52,3 +52,34 @@ export function reportRows(risk, checks = [], verdict = null) {
   }
   return rows;
 }
+
+/**
+ * Judge 5: the checkpoint's "Reading Nansen ..." line. It names every endpoint this round's check
+ * reads (the server's `gate.reads`) and the one read they come from (`gate.read.label`): "read live
+ * 12:40 UTC", or "saved read 25 Sep 11:31 UTC" for a round that made no call.
+ */
+export function readingLine(gate, who) {
+  const reads = gate?.reads?.length ? gate.reads : ['perp-pnl-summary'];
+  const list = reads.length > 1 ? `${reads.slice(0, -1).join(', ')} and ${reads.at(-1)}` : reads[0];
+  const label = gate?.read?.label ?? (gate?.live ? 'read live' : 'saved read');
+  return `Reading Nansen ${list} for ${who}: ${label}${gate?.read?.live ? '' : ', no call this round'}`;
+}
+
+/**
+ * Judge 5: the result screen's "What you pitched" card, from the server's `final.pitched`: the
+ * facts the player's lines used (or the round's lead fact, said as such), each from the round's
+ * read, plus how far the tile's saved 7-day figure moved when a live read changed it. Null when
+ * the round has no pitch (a pasted wallet with nothing flattering), so the tile's hype stays.
+ */
+export function pitchedView(final) {
+  const p = final?.pitched;
+  if (!p?.facts?.length) return null;
+  const [lead, ...more] = p.facts;
+  const also = more.slice(0, 2).map(f => `${f.value} ${f.label}`);
+  const sources = [...new Set(p.facts.map(f => f.source))];
+  return {
+    value: lead.value,
+    caption: [lead.label, ...also].join(' · '),
+    source: [p.used ? sources.join(' · ') : `Your lines quoted no fact card; the round's lead fact · ${sources.join(' · ')}`, p.moved?.line].filter(Boolean).join(' · '),
+  };
+}

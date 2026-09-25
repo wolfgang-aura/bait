@@ -30,13 +30,18 @@ test('the round rule is said up front: raise the commitment, then Wire it; the w
   assert.doesNotMatch(js, /CAUTION/);
 });
 
-test('the footer names all seven Nansen endpoints the Pitch Room (gate v5 reads) uses', () => {
+test('the footer is two short lines: seven Nansen endpoints, live or a dated saved read, and where they are listed', () => {
+  // Judge 5: the old footer was one ~90-word sentence. The seven endpoints are listed on the proof
+  // page's "How BAIT works" (replay.html#how), which the footer links to.
   const foot = html.slice(html.indexOf('<p class="foot">'), html.indexOf('</p>', html.indexOf('<p class="foot">')));
-  for (const e of ['profiler/perp-pnl-summary', 'profiler/perp-trades', 'profiler/perp-positions', 'perp-screener', 'perp-leaderboard',
-    'profiler/address/related-wallets', 'profiler/address/transactions']) {
-    assert.ok(foot.includes(`<code>${e}</code>`), e);
-  }
-  assert.match(foot, /The Pitch Room's BAIT check reads Nansen/);
+  const words = foot.replace(/<[^>]+>/g, ' ').trim().split(/\s+/);
+  assert.ok(words.length <= 35, `${words.length} words`);
+  assert.equal((foot.match(/<br>/g) ?? []).length, 1, 'two lines');
+  assert.match(foot, /The BAIT check reads seven Nansen endpoints, live when this host has a key, else a dated saved read\./);
+  assert.match(foot, /<a href="\/replay\.html#how">/);
+  const how = fs.readFileSync(new URL('./public/replay.html', import.meta.url), 'utf8');
+  const steps = how.slice(how.indexOf('id="how"'), how.indexOf('</section>', how.indexOf('id="how"')));
+  for (const e of ['perp-pnl-summary', 'perp-trades', 'perp-positions', 'perp-screener', 'perp-leaderboard', 'related-wallets', 'transactions']) assert.ok(steps.includes(e), e);
 });
 
 test('round 22: the reveal says each thing once, and the stamp never sits on its text', () => {
@@ -139,7 +144,9 @@ test('the Proof page is current: per-wallet suite, two summaries, real credit co
   assert.match(page, /<a class="live-strip" href="https:\/\/bait-wyqr\.onrender\.com\/">/);
   // Judge 4: section 4 is the 20 Sep run under gate v1 (validation/wallet-navigator.test.js judges it
   // by the v1 rule), labelled as such, and says the current gate also reads the owner.
-  assert.match(page, /The 20 Sep 2026 run: five wallets under gate v1<\/h2>/);
+  // Judge 5: it is collapsed, closed by default, under a summary that says it is earlier.
+  assert.match(page, /<details class="earlier-run" id="earlier-run">\s*<summary class="sec-head">\s*<h2 id="wallets-title"><span class="sec-num">4<\/span>Earlier: the 20 Sep run under gate v1<\/h2>/);
+  assert.doesNotMatch(page, /<details class="earlier-run"[^>]*open/);
   assert.match(page, /The current gate, v5, also reads the owner/);
   assert.match(rjs, /Allowed by gate v1: its 30-day realised PnL is not negative\./);
   assert.doesNotMatch(page + rjs, /independently observed realised PnL is non-negative/);

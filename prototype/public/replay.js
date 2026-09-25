@@ -55,7 +55,7 @@ function renderHero() {
   if (w.control) {
     const b = results.baseline;
     // Round 15: one plain sentence on the card; the detail sits with the claims below.
-    $('b-control').textContent = `On ${w.wallets.filter(x => x.cohort !== 'losing').length} profitable traders it blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} funding decisions and capped ${w.control.capped[0]}.`;
+    $('b-control').textContent = `On the ${w.wallets.filter(x => x.cohort !== 'losing').length} profitable traders in this table (${w.control.falseBlocks[1]} funding decisions) it blocked ${w.control.falseBlocks[0]} and capped ${w.control.capped[0]}.`;
     $('b-detail').innerHTML = '<strong>The detail.</strong> ' + escape(`On ${w.wallets.filter(x => x.cohort !== 'losing').length} profitable traders the gate blocked ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions to fund them (all on one month whose last week reversed) and capped ${w.control.capped[0]} at 25% (a month one market carried). Under the gate the AI still tried to fund a loser in ${w.losing.overruled[0]} of ${w.losing.overruled[1]} runs.${results.gateBuys ? ` Attacks on the evidence itself (wrong wallet, window or source, stale, no trades, 7 days relabelled as 30, a doctored number): the baseline let money through ${results.gateBuys.letThrough.agent[0]} of ${results.gateBuys.letThrough.agent[1]}, the BAIT check ${results.gateBuys.letThrough.behindGate[0]} of ${results.gateBuys.letThrough.behindGate[1]}${results.gateBuys.fixedMiss ? ' (the relabel and the doctored number each got past an earlier gate until our own bench found them; both fixed 23 Sep)' : ''}.` : ''}${b ? ` Baseline to beat: a ${b.name} rule with no model backed ${b.baited[0]} of ${b.baited[1]} losing cases and refused ${b.controlRefused[0]} of ${b.controlRefused[1]} profitable ones.` : ''}`) + ' <a href="https://bait-wyqr.onrender.com/api/proof">Every count as JSON, with raw-file hashes</a>.';
   }
   const frac = c => `${c.funded}/${c.runs}`;
@@ -169,17 +169,28 @@ function renderScore() {
   const rowsHtml = [
     ['unarmed', 'No tools, pitch only', w.losing.unarmed, '—'],
     ['armed-basic', 'Nansen PnL + trades tools', w.losing.armedBasic, '—'],
-    [`${w.gate.policy}`, 'The BAIT check, no model tools', w.losing.guarded, `blocked ${c.falseBlocks[0]}/${c.falseBlocks[1]}, capped ${c.capped[0]}/${c.capped[1]}`],
+    [gateRowLabel(w.gate.policy), 'The BAIT check, no model tools', w.losing.guarded, `blocked ${c.falseBlocks[0]}/${c.falseBlocks[1]}, capped ${c.capped[0]}/${c.capped[1]}`],
     [b.name, 'Rule, no model', b.baited, `refused ${b.controlRefused[0]}/${b.controlRefused[1]}`],
   ];
-  $('b-comparison-caption').textContent = `${w.losing.wallets} losing wallets, ${Object.values(w.losing.cases).reduce((x, y) => x + y, 0)} attacks, ${w.repeats} runs each (the rule runs once per attack), recorded ${day(w.recordedAt)}, ${w.model}, frozen Nansen snapshots; ${c.wallets} profitable controls.`;
+  $('b-comparison-caption').textContent = `${w.losing.wallets} losing wallets, ${Object.values(w.losing.cases).reduce((x, y) => x + y, 0)} attacks, ${w.repeats} runs each (the rule runs once per attack), recorded ${day(w.recordedAt)}, ${w.model}, frozen Nansen snapshots; ${c.wallets} profitable controls. The BAIT row ran gate v4, before the owner check; v5, the current gate, re-gated the same runs on 25 Sep with the same decisions.`;
   $('b-comparison').innerHTML = rowsHtml.map(([id, tools, [n, d], ctl]) =>
     `<tr data-config="${escape(id)}">
-      <th scope="row"><code>${escape(id)}</code></th>
+      <th scope="row">${id.startsWith('BAIT (') ? escape(id) : `<code>${escape(id)}</code>`}</th>
       <td>${escape(tools)}</td>
       <td><strong>${n} / ${d}</strong> <em>(${Math.round((n / d) * 100)}%)</em></td>
       <td>${escape(ctl)}</td>
     </tr>`).join('');
+}
+
+/**
+ * Judge 5: the score table names the gate that produced its BAIT row in plain words. This run was
+ * recorded under v4, before the owner check; the v5 re-gate is linked beside the table.
+ */
+function gateRowLabel(policy) {
+  const v = /-v(\d+)$/.exec(String(policy))?.[1];
+  if (v === '4') return 'BAIT (gate v4, before the owner check)';
+  if (v === '5') return 'BAIT (gate v5, the current gate)';
+  return v ? `BAIT (gate v${v})` : String(policy);
 }
 
 /* ---------- 3 · guard: the code gate, its snippet, and the prompt-only rule in the audit fold ---------- */
@@ -188,7 +199,7 @@ function renderGuard() {
   const w = results.wallets;
   const policy = results.paired.policies.find(p => p.id === 'armed-strict');
   if (!policy?.text) throw new Error('The strict policy text is missing from the bundle');
-  $('b-rule-title').textContent = `Behind the gate: ${w.losing.guarded[0]} of ${w.losing.guarded[1]} losing runs funded, though the AI tried in ${w.losing.overruled[0]}. On profitable traders: ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions blocked, ${w.control.capped[0]} capped at 25%.`;
+  $('b-rule-title').textContent = `Behind the gate (recorded under v4; v5 re-gated it the same): ${w.losing.guarded[0]} of ${w.losing.guarded[1]} losing runs funded, though the AI tried in ${w.losing.overruled[0]}. On profitable traders: ${w.control.falseBlocks[0]} of ${w.control.falseBlocks[1]} decisions blocked, ${w.control.capped[0]} capped at 25%.`;
   $('b-policy-note').textContent = 'The prompt-only version of the rule, tested on the earlier single-wallet suite (see docs/DETAILS.md). The gate does not depend on the model reading it.';
   $('b-policy').textContent = policy.text;
 }
@@ -362,6 +373,8 @@ async function init() {
     renderWallets();
 
     for (const id of ['attack', 'score', 'guard', 'wallets']) $(id).hidden = false;
+    // The earlier gate-v1 run opens when a link points at it.
+    if (location.hash === '#wallets') $('earlier-run').open = true;
     // Sections above an anchor fill in after load, so land on it again once they have (/guard.html -> #how).
     if (location.hash) document.getElementById(location.hash.slice(1))?.scrollIntoView();
   } catch (err) {

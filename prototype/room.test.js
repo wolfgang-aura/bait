@@ -158,7 +158,7 @@ test('a round moves the meters; a commitment raises the meter and the player wir
   assert.equal(final.final.executed, 0, 'BAIT forces the wire to zero');
   assert.equal(final.final.gate.code, 'pnl_below_minimum');
   assert.equal(final.final.gate.pnlLabel, '-$4,745,429');
-  assert.equal(final.final.headline, 'PENNY never asked for the record and agreed to send $6,250.');
+  assert.equal(final.final.headline, 'PENNY agreed to send $6,250 without checking who funds the wallet.');
   assert.equal(final.final.subline, "BAIT's Nansen read blocked it: $6,250 held, $0 reached THE GRINDER.");
   assert.match(final.final.because, /-\$4,745,429/);
   assert.equal(final.final.checkedRecord, 'Nansen');
@@ -446,7 +446,7 @@ test('a profitable month carried by one market is capped, not blocked: a quarter
   assert.equal(final.final.executed, 1875);
   assert.equal(final.final.stamp, 'CAPPED');
   assert.equal(final.final.subline, "BAIT's Nansen read capped it: $7,500 requested, $1,875 allowed, $5,625 held.");
-  assert.equal(final.final.headline, 'PENNY never asked for the record and agreed to send $7,500.');
+  assert.equal(final.final.headline, 'PENNY agreed to send $7,500 without checking who funds the wallet.');
   assert.equal(final.leaderboard[0].prospect, 'THE REAL DEAL');
 });
 
@@ -488,7 +488,7 @@ test('the wired commitment is the one wire: the gate decides it once, when the p
   assert.equal(final.executed, 0);
   assert.equal(final.stamp, 'BLOCKED');
   assert.equal(final.gate.attempted, 4000, 'the card\'s gate table is the decision on the one wire');
-  assert.equal(final.headline, 'PENNY never asked for the record and agreed to send $4,000.', '"The thirty day is down" is a remark, not a request');
+  assert.equal(final.headline, 'PENNY agreed to send $4,000 without checking who funds the wallet.', '"The thirty day is down" is a remark, not a request');
   assert.equal(final.trail, null);
   assert.equal(final.wiresAttempted, 1);
   assert.equal(final.wiresBlocked, 1);
@@ -549,7 +549,7 @@ test('a caught lie sends no wire; a commitment is judged when it is wired', asyn
   assert.equal(shots[0].wire.stopped, 5625);
   assert.equal(final.stamp, 'CAPPED');
   assert.equal(final.executed, 1875);
-  assert.equal(final.headline, 'PENNY never asked for the record and agreed to send $7,500.');
+  assert.equal(final.headline, 'PENNY agreed to send $7,500 without checking who funds the wallet.');
 });
 
 test('the room gate table is complete: the week is read even after the month refuses, each check names its Nansen read', async () => {
@@ -590,7 +590,7 @@ test('the ending is worded from the round\'s own transcript: asked, then agreed 
   start = await blind.service.start();
   await pitch(blind.service, start.id, 0, '+$35,723 realised over the last 7 days.');
   ({ final } = await blind.service.finish(start.id, {}));
-  assert.equal(final.headline, 'PENNY never asked for the record and agreed to send $2,500.');
+  assert.equal(final.headline, 'PENNY agreed to send $2,500 without checking who funds the wallet.');
   assert.equal(final.quotes.asked, null);
   assert.doesNotMatch(JSON.stringify(final), /never looked/);
 });
@@ -842,4 +842,18 @@ test('the referee names only a figure the player typed that is not in the record
   assert.equal(offendingFigure(`It made $${Math.round(sealed).toLocaleString('en-US')} in 30 days.`, round.dossier, round.data), null);
   assert.equal(refereeLine('$209,987'), 'Referee: $209,987 is not in the record. The line is spent.');
   assert.equal(refereeLine(null), 'Referee: a figure in that line is not in the record. The line is spent.');
+});
+
+test('judge 5: the result headline is true in every case: "without checking who funds the wallet" unless PENNY asked', () => {
+  const s = shots => ({ prospect: { name: 'THE STEADY HAND' }, shots });
+  const shot = (n, line, extra = {}) => ({ n, text: 'Up big this week.', line, caught: false, allocation: 5000, ...extra });
+  // PENNY asked for the longer record without naming it (the judge's round).
+  const asked = endingCopy({ s: s([shot(1, "Seven days isn't thirty. Show the rest.", { wire: { attempted: 5000 } })]), peak: 5000, executed: 0, verdict: 'block' });
+  assert.match(asked.headline, /^PENNY asked for the record/);
+  assert.doesNotMatch(asked.headline, /never asked/);
+  // PENNY said nothing about the record: the always-true sentence. PENNY has no tools, so it
+  // never reads the owner.
+  assert.deepEqual(ROOM_DESK.tools, []);
+  const silent = endingCopy({ s: s([shot(1, 'Deal. Sending it.', { wire: { attempted: 5000 } })]), peak: 5000, executed: 0, verdict: 'block' });
+  assert.equal(silent.headline, 'PENNY agreed to send $5,000 without checking who funds the wallet.');
 });

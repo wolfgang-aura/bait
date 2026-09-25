@@ -76,9 +76,9 @@ reports and raw reads (`bench/figures.test.js`) and checks against every doc and
 
 | Figure | What it counts | Denominator | Source |
 | --- | --- | --- | --- |
-| 5 of 200 | Live-market wallets funded by an owner whose other wallets lost more than the wallet made; the PnL rule funds all 5, v5 blocks all 5 (4 on the owner, 1 for too few trades) | The top 200 of Nansen's 30-day Hyperliquid leaderboard, read 25 Sep 2026 06:04 UTC, pre-registered | [FIELD.md](../bench/FIELD.md) |
+| 5 of 200 | Live-market wallets funded by an owner whose other wallets lost more than the wallet made; the PnL rule funds all 5, v5 blocks all 5 (4 on the owner, 1 for too few trades) | The top 200 of Nansen's 30-day Hyperliquid leaderboard, read 25 Sep 2026 06:04 UTC; rule written before the read (dev commit `4647720`, not public; the public mirror shows plan and results together) | [FIELD.md](../bench/FIELD.md) |
 | 61 of 79, BAIT 0 | Attacks where the PnL rule sent money: owner attacks plus faked evidence | 12 + 67 | the two rows below |
-| 12, 11 and 0 of 12 | Owner attacks funded: the 19-line PnL rule, gate v4, gate v5 | 12 wallets with a positive 30-day record whose first-funder owner lost money over the same days, picked by a pre-registered rule from 1,238 wallets | [V5.md](../bench/V5.md) |
+| 12, 11 and 0 of 12 | Owner attacks funded: the 19-line PnL rule, gate v4, gate v5 | 12 wallets with a positive 30-day record whose first-funder owner lost money over the same days, picked from 1,238 wallets by a rule written before any read (dev commit `0816757`, not public) | [V5.md](../bench/V5.md) |
 | 26, 21 and 21 (of the 26) | Owner controls funded (the owner made money): rule, v4, v5 | 26 wallets picked the same way | [V5.md](../bench/V5.md) |
 | 36 of 36, 34 of 35, 0 of 36 | DeepSeek on the owner attacks: runs that sent money alone, with Nansen tools, behind BAIT v5 (v4 would have let 33 of 36 through) | 12 attacks, 3 runs each; 1 errored tools run is excluded, not scored as $0 | [DeepSeek report](../bench/reports/2026-09-24T23-44-16-093Z-wallets.md) |
 | 36, 36 and 0 of 36 | Claude Sonnet 5 on the same (v4 would have let 32 of 36 through) | the same 36 | [Claude report](../bench/reports/2026-09-25T00-10-51-771Z-wallets.md) |
@@ -99,8 +99,13 @@ were blocked. v5 added no block to them and none to the 26 owner controls.
 
 ## The owner behind the wallet (gate v5)
 
-Pre-registered in [bench/V5.md](../bench/V5.md): the rule, the thresholds, the universe, the
-selection and a ship rule were committed before any v5 read. Then 3,604 Nansen credits:
+Written in [bench/V5.md](../bench/V5.md) before any v5 read: the rule, the thresholds, the
+universe, the selection and a ship rule were committed in the development repository as `0816757`
+(24 Sep 2026 23:18:26 UTC), before the collection instant (23:19:17 UTC). That commit is not
+public: the earliest public copy, `07fdc5a` (25 Sep 00:33:33 UTC), holds the plan and the results
+together, so the order can be checked only against the dev repository. The field test
+([FIELD.md](../bench/FIELD.md)) is the same: dev `4647720` (25 Sep 06:04:03 UTC) before its first
+read, public `0564487` (06:53:31 UTC) with the results. Then 3,604 Nansen credits:
 
 1. **Universe.** 1,238 Hyperliquid wallets: ten `perp-leaderboard` pages by 30-day volume, the
    held-out sources and every benchmark wallet.

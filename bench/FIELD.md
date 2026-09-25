@@ -1,5 +1,15 @@
 # Field test: gate v5 on the wallets a copy desk would be pitched
 
+> **What you can check, and what you cannot (added 26 Sep 2026; not part of the pre-registration).**
+> The section below was committed in the development repository as `4647720` at
+> 25 Sep 2026 06:04:03 UTC, six seconds before the first field read (T = 06:04:09 UTC); the
+> results were committed there as `1a05742` at 06:51:32 UTC. The development repository is not
+> public, and neither are `4647720` or `67fce25` named below. The public repository is a squashed
+> copy: the earliest public commit holding this section is `0564487` (25 Sep 2026 06:53:31 UTC),
+> and it holds the results too. So the public mirror shows the plan and the results together; the
+> dev-repo commit that predates the results is not public. Read "pre-registration" here as: written
+> before the data was read (dev commit `4647720`, not public).
+
 ## Pre-registration (written and committed before any field read)
 
 Written 25 Sep 2026, 06:00 UTC, on top of `67fce25`. This section is not edited after the run;
@@ -92,7 +102,7 @@ node bench/field.js --collect    # Nansen credits, resumable
 node bench/field.js --score      # zero calls
 ```
 
-## Results (T = 25 Sep 2026 06:04:09 UTC; reads 06:04-06:48 UTC; scored after the pre-registration commit `4647720`)
+## Results (T = 25 Sep 2026 06:04:09 UTC; reads 06:04-06:48 UTC; scored after the plan's dev commit `4647720`, not public; see the note at the top)
 
 Spend: 2,398 Nansen credits (ledger 5,521 to 7,919; account balance 15,442 before, 13,045 after),
 0 model calls. The credit stop was not reached. Raw reads: `bench/field/reads/*.jsonl`, SHA-256 in

@@ -51,7 +51,12 @@ test('recorded page ships the guard as section 3 and reads the guarded row from 
   assert.match(html, /Copy the snippet/);
   assert.doesNotMatch(html, /Copy the rule|3<\/span>Fix|BAIT rule|Red-team kit for AI trading agents/);
   // The page renders the per-wallet run; the superseded single-wallet headline is gone.
-  assert.match(js, /Behind the gate: \$\{w\.losing\.guarded\[0\]\} of \$\{w\.losing\.guarded\[1\]\} losing runs funded/);
+  // Judge 5: the run names the gate it was recorded under (v4) and says v5 re-gated it the same.
+  assert.match(js, /Behind the gate \(recorded under v4; v5 re-gated it the same\): \$\{w\.losing\.guarded\[0\]\} of \$\{w\.losing\.guarded\[1\]\} losing runs funded/);
+  assert.match(js, /if \(v === '4'\) return 'BAIT \(gate v4, before the owner check\)';/);
+  assert.doesNotMatch(html, /gate v4 11,/, 'the owner-attack sentence names each gate in full');
+  assert.match(html, /the previous gate, v4, funded 11 of 12; v5, the current gate, funded <strong>0 of 12 owner attacks<\/strong>/);
+  assert.match(html, /this table&rsquo;s 6 profitable controls are 18 funding decisions\. With the 12 held-out good traders \(35 more decisions\) that makes 53, of which 38 went through in full/);
   assert.match(js, /capped \$\{c\.capped\[0\]\}/);
   assert.doesNotMatch(js + html, /24\/30|6\/30|0\/30|24 of 30|The guard that held/);
 });

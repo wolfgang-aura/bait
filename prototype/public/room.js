@@ -19,7 +19,7 @@
  */
 import { portraitSvg } from '/portraits.js';
 import { addFact, isUsed } from '/fact-cards.js';
-import { checkpointTitle, checkRowView, reportRows } from '/verdict-view.js';
+import { checkpointTitle, checkRowView, reportRows, readingLine, pitchedView } from '/verdict-view.js';
 import { ownerTreeHtml } from '/owner-tree.js';
 
 const $ = id => document.getElementById(id);
@@ -42,7 +42,7 @@ const el = {
   funded: $('funded'), pop: $('pop'), slotSub: $('slot-sub'), pips: $('pips'),
   meridian: $('meridian-portrait'), bubble: $('bubble'), nansen: $('nansen'), ticker: $('ticker'),
   clientPortrait: $('client-portrait'), clientName: $('client-name'), clientSub: $('client-sub'),
-  facts: $('facts'), nextFact: $('next-fact'), sealed: $('sealed'), sealedHead: $('sealed-head'),
+  facts: $('facts'), dossierRead: $('dossier-read'), nextFact: $('next-fact'), sealed: $('sealed'), sealedHead: $('sealed-head'),
   sealedLabel: $('sealed-label'), premiseName: $('premise-name'), premiseSlot: $('premise-slot'),
   revealStamp: $('reveal-stamp'), revealTitle: $('reveal-title'), revealSub: $('reveal-sub'), revealScore: $('reveal-score'),
   revealQuote: $('reveal-quote'), hypeLabel: $('hype-label'), recordLabel: $('record-label'),
@@ -419,10 +419,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     : final.checkOnly
     ? `No transfer to check: nothing flattering to pitch. The BAIT check read ${final.prospect?.name ?? p?.name ?? 'this wallet'} anyway.`
     : `${final.peakLabel} from PENNY to ${final.prospect?.name ?? p?.name ?? 'this trader'}`);
-  const at = String(gate.evidenceAt ?? '');
-  text(el.cpRead, gate.live
-    ? `Reading Nansen perp-pnl-summary${[gate.tape?.live && 'perp-trades', gate.positionsLive && 'perp-positions', gate.smartMoneyLive && 'perp-screener', gate.recordLive && 'perp-leaderboard', gate.operatorLive && 'related-wallets'].filter(Boolean).map((e, i, a) => (i === a.length - 1 ? ' and ' : ', ') + e).join('')} for ${who}: live read, ${at.slice(11, 16)} UTC ${at.slice(0, 10)}`
-    : `Reading Nansen perp-pnl-summary for ${who}: the ${at.slice(0, 10)} capture`);
+  text(el.cpRead, readingLine(gate, who));
   const raw = final.evidence?.raw;
   if (raw) el.cpRead.append(` · raw response sha256 ${raw.sha256.slice(0, 12)}…`);
   el.cpRows.replaceChildren();
@@ -444,6 +441,8 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     name.textContent = CHECK_NAME[c.id] ?? c.id.replace(/_/g, ' ');
     const why = document.createElement('span');
     why.textContent = v.plain;
+    // Judge 5: one number and one limit on the row; a second base, when there is one, on hover.
+    if (c.detail) li.title = c.detail;
     li.append(b, name, why);
     el.cpRows.append(li);
     // Gate v5 refused on the owner: the funder and its other wallets, under the row that read them.
@@ -456,7 +455,7 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
     if (!reduced) await sleep(260);
   }
   if (!reduced) await sleep(250);
-  renderCalls(gate.calls ?? []);
+  renderCalls(gate.calls ?? [], gate.read);
   const kind = final.verdict === 'block' ? 'blocked' : final.verdict === 'capped' ? 'caution' : 'cleared';
   el.cpStamp.className = `cp-stamp ${kind}`;
   setStamp(el.cpStamp, final);
@@ -475,12 +474,12 @@ async function playCheckpoint(p, final, { hold = true } = {}) {
  * Round 18: under the checkpoint, the Nansen calls this verdict stands on: endpoint, credits,
  * when it was read and the word it decided. Small, one line each.
  */
-function renderCalls(calls) {
+function renderCalls(calls, read = null) {
   el.cpCalls.replaceChildren();
   for (const c of calls) {
     const li = document.createElement('li');
     const at = c.at ? `${String(c.at).slice(11, 16)} UTC` : '';
-    const cost = c.frozen ? `no call this round, captured ${String(c.at ?? '').slice(0, 10)}` : c.skipped ? 'not bought: the record already refused, 0 credits' : c.cached ? `0 credits (cached read, ${at})` : `${c.credits} credit${c.credits === 1 ? '' : 's'} · ${at}`;
+    const cost = c.frozen ? `no call this round, ${read?.label ?? `captured ${String(c.at ?? '').slice(0, 10)}`}` : c.skipped ? 'not bought: the record already refused, 0 credits' : c.cached ? `0 credits (cached read, ${at})` : `${c.credits} credit${c.credits === 1 ? '' : 's'} · ${at}`;
     const name = document.createElement('b');
     name.textContent = c.endpoint;
     const verdict = document.createElement('span');
@@ -558,9 +557,17 @@ function showReveal(p, final) {
     el.revealQuote.append(who, ' ', line);
   }
   text(el.hypeLabel, 'What you pitched');
+  const pitched = pitchedView(final);
   text(el.recordLabel, final.verdict === 'block' ? 'What you left out' : 'What the record shows');
   if (final.verdict === 'capped') text(el.recordLabel, 'Why BAIT capped it');
   showTruth(p);
+  // Judge 5: the facts this round's lines used, from this round's read, never the tile's saved figure.
+  if (pitched) {
+    text(el.truthHype, pitched.value);
+    text(el.truthHypeCaption, pitched.caption);
+    text(el.truthHypeSource, pitched.source);
+  }
+  if (final.read) text(el.truthCaptured, `Nansen, ${final.read.label}`);
   // A block on a reversal was decided by the losing week, so that is what the player left
   // out: the week goes in the big number, the month in the rows.
   // A block on the owner was decided by the wallets the player never saw: the owner's figure
@@ -722,6 +729,7 @@ function renderGate(host, gate, verdict = null) {
     b.textContent = `${v.result === 'superseded' ? 'cap' : label[check.result] ?? check.result} · ${check.id.replace(/_/g, ' ')}`;
     const span = document.createElement('span');
     span.textContent = v.plain;
+    if (check.detail) row.title = check.detail;
     // The Nansen read this check stands on, so the table reads as a set of checks on
     // named evidence, not one sign test.
     if (check.source) {
@@ -789,6 +797,10 @@ function renderFacts(d) {
     chip.addEventListener('click', () => insertFact(fact.insert));
     el.facts.append(chip);
   }
+  // Judge 5: every card is a figure from this round's one read, and the line says which. When a
+  // live read moved the tile's saved 7-day figure, the same line says by how much.
+  el.dossierRead.hidden = !d.read;
+  text(el.dossierRead, d.read ? [`Nansen, ${d.read.label}`, d.moved ? `the tile's ${d.moved.tile} was the saved read; ${d.moved.line}` : ''].filter(Boolean).join(' · ') : '');
   // Round 9: no unlock drip. Every flattering fact is on the table from the start.
   el.nextFact.hidden = true;
   text(el.nextFact, '');
@@ -1306,6 +1318,11 @@ async function fixture(name, prospectId) {
     agentLine: assessed?.agent_line ?? '',
     gate: frozen.gate,
     risk: p.risk,
+    // The fixture lines quote the first fact card, so that is what was pitched, from this read.
+    read: state.dossier.read,
+    pitched: { used: true, read: state.dossier.read, moved: null,
+      facts: [state.dossier.facts[0]].map(f => ({ id: f.id, value: f.value, label: f.label,
+        source: f.id === 'all-time' ? 'public Hyperliquid leaderboard' : `Nansen, ${state.dossier.read.label}` })) },
   };
   const fixtureShots = [
     { n: 1, text: state.dossier.facts[0].insert, full: 'Fixture reply.', line: 'Fixture reply.', mood: 'neutral', allocation: 0,
