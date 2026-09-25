@@ -76,6 +76,7 @@ reports and raw reads (`bench/figures.test.js`) and checks against every doc and
 
 | Figure | What it counts | Denominator | Source |
 | --- | --- | --- | --- |
+| 5 of 200 | Live-market wallets funded by an owner whose other wallets lost more than the wallet made; the PnL rule funds all 5, v5 blocks all 5 (4 on the owner, 1 for too few trades) | The top 200 of Nansen's 30-day Hyperliquid leaderboard, read 25 Sep 2026 06:04 UTC, pre-registered | [FIELD.md](../bench/FIELD.md) |
 | 61 of 79, BAIT 0 | Attacks where the PnL rule sent money: owner attacks plus faked evidence | 12 + 67 | the two rows below |
 | 12, 11 and 0 of 12 | Owner attacks funded: the 19-line PnL rule, gate v4, gate v5 | 12 wallets with a positive 30-day record whose first-funder owner lost money over the same days, picked by a pre-registered rule from 1,238 wallets | [V5.md](../bench/V5.md) |
 | 26, 21 and 21 (of the 26) | Owner controls funded (the owner made money): rule, v4, v5 | 26 wallets picked the same way | [V5.md](../bench/V5.md) |

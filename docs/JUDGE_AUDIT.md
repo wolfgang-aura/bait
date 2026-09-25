@@ -6,10 +6,12 @@ of their votes. Each answer links to code or tracked evidence.
 ## First objection: "This is just a 30-day PnL checker"
 
 It was, until 22 September. The default gate became `wallet-copy-risk-v3` (v2's refusals, with a one-market month capped
-rather than refused), and since 23 September it is `wallet-copy-risk-v4`: every v3 row below
-plus `perp-screener` (smart money against the largest open position caps at 25%) and
-`perp-leaderboard` (a summary that claims more than the leaderboard's record refuses). The gate
-publishes its whole reasoning on every decision, allow or block:
+rather than refused). On 23 September v4 added `perp-screener` (smart money against the largest
+open position caps at 25%) and `perp-leaderboard` (a summary that claims more than the
+leaderboard's record refuses). Since 25 September the default is `wallet-copy-risk-v5`: every row
+below plus the owner behind the wallet (`operator_record`: the first funder's other wallets lost
+money over the same 30 days blocks). The gate publishes its whole reasoning on every decision,
+allow or block:
 
 | Check | Reads | Bar |
 | --- | --- | --- |
@@ -25,6 +27,7 @@ publishes its whole reasoning on every decision, allow or block:
 | `open_book` | `profiler/perp-positions` | Open positions down more than 25% of the account value cap at 25% (v3 r3) |
 | `smart_money_side` | `perp-screener`, smart money in the largest open position's market | Two thirds of at least $1M on the other side caps at 25% (v4) |
 | `independent_record` | `perp-leaderboard`, the same 30 days | A summary claiming more realised PnL than this record by over 25% of it and $1,000 blocks (v4) |
+| `operator_record` | `profiler/address/related-wallets`, `profiler/address/transactions`, each sibling's 30-day `profiler/perp-pnl-summary` | The owner (first funder) plus this wallet at or above $0 over the same 30 days; below $0 blocks (v5) |
 | `tail_loss`, `max_drawdown` | Per-trade fills | Reported `not_assessed` by the gate; the Pitch Room shows them from `profiler/perp-trades` as watch rows that never decide |
 
 Every row carries the number it read, the bar it wanted and one plain sentence. A
@@ -69,10 +72,10 @@ true facts and funds the loser anyway.
 BAIT protects a defined integration point: an AI proposes a dollar allocation to a
 perpetual-trading wallet, then BAIT independently returns `allow` or `block` before
 execution. The buyer, input, output, default policy, failure codes, exclusions, and
-operator duties are documented in [the integration contract](WALLET_ALLOCATION_GUARD.md).
+integrator duties are documented in [the integration contract](WALLET_ALLOCATION_GUARD.md).
 
 The game is the attack recorder. The benchmark measures agents against those attacks.
-The guard is the product an operator integrates.
+The guard is the product a trading desk integrates.
 
 ## Judge 2: "The model can ignore the rule"
 
@@ -116,8 +119,8 @@ repository contains the attack rows, frozen evidence, source hashes, determinist
 referee, reproduction command, production contract, and failure tests. The 59.5-second
 video (`SUBMISSION.md`) shows two real rounds played on the hosted site on fresh live Nansen
 reads, then the benchmark card, without narration. Every headline figure is checked against
-`bench/FIGURES.json` by `npm test`, and every denominator is explained once in the
-[README](EVIDENCE.md#the-numbers).
+`bench/FIGURES.json` by `npm test`, and every denominator is explained once in
+[EVIDENCE.md](EVIDENCE.md#the-numbers).
 
 ## Wallet-panel objection: "You picked winners and losers from whichever metric suited you"
 
@@ -135,5 +138,6 @@ sources, trade counts, and links.
 
 ## Remaining external steps
 
-The founder publishes the X post and submits its URL in Nansen's form. The hosted
+The [X post](https://x.com/WolfGanG_Aura/status/2102859321969442856) is published; its URL goes in
+Nansen's entry form. The hosted
 build (<https://bait-wyqr.onrender.com/>) plays live rounds on real Nansen reads.

@@ -307,7 +307,7 @@ shake; it still holds long enough to read before the reveal.
 
 Seen, 23 September: `scratch/round9/` before-* and after-* at desktop and phone.
 
-## Version H: the AI never looks, BAIT does, 23 September 2026 (current)
+## Version H: the AI never looks, BAIT does, 23 September 2026
 
 Changes on top of Version G, same tokens, fonts and viewports.
 
@@ -425,7 +425,7 @@ DeepSeek round `play-0-truth.png`, `play-1-shot.png`, `play-2-shot.png`,
 `play-3-final.png`. No console error. Phone front door checked at 375 wide with no
 horizontal scroll.
 
-## Version E: the cold open, 22 September 2026 (screen 0 of the current route)
+## Version E: the cold open, 22 September 2026 (screen 0 of the route then)
 
 Scope: a new first `section.screen` in `prototype/public/room.html`, its styles in
 `room.css` and its two render functions in `room.js`, fed by `prototype/opener.js`
@@ -524,7 +524,7 @@ existing `roster`, `truth`, `shot2` and `final` states.
 1280 x 720 at device scale 2, taken from the local server on the recorded fixtures with
 no console error and no boot error. Phone checked at 390 x 844 with no horizontal scroll.
 
-## Version D: Pick your hero, 22 September 2026 (current default route)
+## Version D: Pick your hero, 22 September 2026 (default route then)
 
 Scope: `prototype/public/room.html`, `room.css`, `room.js`, `portraits.js`, served at `/`.
 Version C below is superseded for the visual language and the flow; its tokens survive
@@ -675,7 +675,7 @@ model call, so a headless browser that cannot click can capture every screen.
 `frankdegods`, `orangie`. The `truth` and `final` states are the ones that need it most:
 a blocked prospect, a cautioned one and a cleared one are three different screens.
 
-## Version C: The Pitch Room, 22 September 2026 (current default route)
+## Version C: The Pitch Room, 22 September 2026 (default route then)
 
 Scope: `prototype/public/room.html`, `room.css`, `room.js`, served at `/`. The guard
 console moves to `/guard.html`, the recorded benchmark stays at `/replay.html`, and the

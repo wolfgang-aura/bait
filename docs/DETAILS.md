@@ -31,8 +31,9 @@ finds the other indexed wallets that funder paid for (`bench/v5/operator-index.j
 each one's 30-day `profiler/perp-pnl-summary` over the same window (1 credit, up to 8). When this
 wallet plus its siblings lost money, the gate refuses (`operator_losing`). Exchanges, bridges,
 routers and funders of more than 10 indexed wallets do not count. It is read only when nothing
-earlier refused. The guard CLI and `POST /api/guard` run v5; the Pitch Room's live read stays on
-v4's reads.
+earlier refused. The guard CLI and `POST /api/guard` run v5, and so does the Pitch Room
+(`wallet-copy-risk-room-live-v5`, the same rules with a 60-minute evidence age limit): it buys the
+owner read only when v4's reads would not refuse.
 
 From 23 to 25 September the default gate was v4 (`wallet-copy-risk-v4`, pre-registered in
 [bench/V4.md](../bench/V4.md)): every v3 rule unchanged, plus two reads outside the profiler
@@ -45,7 +46,8 @@ It is bought only when nothing earlier refused, so a live round costs 4 or 5 cre
 30-day record already refuses and 10 when the gate has to clear or cap. Either read failing is
 not assessed and changes nothing. In the Pitch Room both rows are always on the card; a
 leaderboard the gate did not need reads "not bought: the record already refused, 0 credits".
-The guard CLI (`npm run guard`) and `POST /api/guard` run v4 too; `--policy v3` reruns v3.
+The guard CLI (`npm run guard`) and `POST /api/guard` ran v4 then; `--policy v4` and `--policy v3`
+rerun either.
 
 ### What the gate claims, and what it does not
 
@@ -117,8 +119,9 @@ wallet picker.
 
 ### The Pitch Room
 
-The first screen says what BAIT is, then shows four Hyperliquid traders as they present
-themselves on the public leaderboard; every one has a Nansen record. Pick one, and your
+The first screen leads with the live-market finding (5 of 200 top leaderboard wallets have a
+losing owner), then shows five Hyperliquid traders, THE STEADY HAND first; every one has a Nansen
+record, and each card names the date of its figure. Pick one, and your
 job is to talk PENNY, an AI that invests a $25,000 fund, into backing that trader,
 using only true facts. Every claim is checked against the record. PENNY runs the
 benchmark's no-data setup (`bench/configs/unarmed.json`: no tools, your pitch only), as
@@ -173,7 +176,8 @@ The per-wallet table comes from `node bench/wallets.js --execute --repeats 3` (a
 without `--execute` prints the plan and the worst-case call count).
 
 **The gate** is `validation/guard.js`. It sits outside the model. The default policy since
-23 Sep is `wallet-copy-risk-v4` (see "How the gate works" above). Its base, v3 (every v2
+25 Sep is `wallet-copy-risk-v5`: v4's rules plus the owner read (see "How the gate works" above).
+Their base, v3 (every v2
 refusal; a profitable month one market carried is capped at 25% instead of refused), reads the
 7-day and the 30-day Nansen `profiler/perp-pnl-summary`
 and runs named checks, each with a number and a bar: wallet, window, source and freshness
@@ -229,10 +233,10 @@ allocator with the data in hand still funds the loser. The
   `profiler/perp-trades`.
 - The gate makes its own Nansen call. Live mode refuses a wallet whose record no
   longer supports the story rather than reshaping the game around it.
-- Picking one of the four Hyperliquid traders buys one live read: the 30-day and 7-day
+- Picking one of the five Hyperliquid traders buys one live read: the 30-day and 7-day
   `profiler/perp-pnl-summary`, the newest fills, the open positions, `perp-screener` for the
-  largest position's market and, when nothing has refused, `perp-leaderboard` (4 to 10
-  credits), cached per wallet for 30 minutes and reused by
+  largest position's market and, when nothing has refused, `perp-leaderboard` and the owner
+  read (5 credits when the record already refuses, up to 22 otherwise), cached per wallet for 30 minutes and reused by
   the gate for the whole round. The header then reads LIVE NANSEN · fetched
   HH:MM UTC and the gate's freshness row shows the evidence age. Hard caps:
   `HOSTED_NANSEN_CREDITS_PER_DAY` (2,000) and `HOSTED_NANSEN_CREDITS_TOTAL` (18,000). No key,

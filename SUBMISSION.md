@@ -1,6 +1,6 @@
 # Submission preparation
 
-Updated 24 September 2026.
+Updated 25 September 2026.
 
 ## Entry requirements
 
@@ -13,16 +13,17 @@ Current evidence:
 
 - Nansen Usage Analytics: 1,033 Total Usage over 30 days, seen in the signed-in dashboard
   at 11:12 UTC on 20 September, which meets the 1,000-call requirement. The local ledger
-  holds 1,509 charged credits since 14 September (23 Sep 19:02 UTC); hosted rounds are counted
-  separately at /api/usage.
+  reached 7,919 charged credits since 14 September after the field test (25 Sep 06:48 UTC,
+  `bench/FIELD.md`); hosted rounds are counted separately at /api/usage.
 - Public repository: <https://github.com/wolfgang-aura/bait>
-- Playable build: <https://bait-wyqr.onrender.com/>, serving public commit 4ef7b40 (gate v4, the
-  build both video rounds were played on). Later public commits change documentation and, on
-  24 Sep, served text only (the Proof page's copy, styles and bench command, a tooltip, an
-  aria label, the hosted-mode label and the startup banner); no gate rule or figure changed. The hosted copy shows
-  them after its next deploy.
-- Recorded proof page: <https://wolfgang-aura.github.io/bait/> (updated 24 Sep for gate v4 and
-  both findings; the repository homepage now points at the playable build)
+- Playable build: <https://bait-wyqr.onrender.com/>, serving public commit 48b8773 (gate v5: the
+  Pitch Room reads the owner behind the wallet; `/healthz` checked 25 Sep 15:30 UTC). Both video
+  rounds were played earlier, on public commit 4ef7b40 (gate v4); both were blocked before the
+  owner read (a losing month, a reversed week), so v5 decides them the same way.
+- Recorded proof page: <https://wolfgang-aura.github.io/bait/> (leads with the 25 Sep field test,
+  5 of 200 top leaderboard wallets with a losing owner; the repository homepage points at the
+  playable build)
+- Video: <https://x.com/WolfGanG_Aura/status/2102859321969442856>
 
 ## The recording
 
@@ -47,7 +48,7 @@ SHA-256: `a314fbeb7bd3c3b032259617080e48ff847fe437aa6665df8295b1f1d3b8bdd6`.
 | Order and end | Cold open 0:00, round 1 0:03.0, round 2 0:26.5, benchmark card 0:50.7, "Test your own agent" card 0:56.7 to the end (0:59.5): the bench command, bait-wyqr.onrender.com, the repository, Built on the Nansen API, and "BAIT: the check between the agent and the money." |
 
 Where the card's numbers come from (canonical values: `bench/FIGURES.json`; each denominator
-is explained in the README's "The numbers" section): 63/78, 19/78 and 0/78 from `prototype/public/recorded-results.json`
+is explained in `docs/EVIDENCE.md`, "The numbers"): 63/78, 19/78 and 0/78 from `prototype/public/recorded-results.json`
 (`wallets`); the PnL rule's 0/26 from its `baseline` (one run per attack); 49 of 67 is 7 of 7
 original data-path attacks (`gateBuys`), 30 of 48 held-out transforms (`bench/HELDOUT.md`) and
 12 of 12 held-out doctored PnL (`bench/V4.md`), each 0 behind BAIT; the cost line, 6 of 53
@@ -89,7 +90,10 @@ leaderboard row (+$70,580 against the summary's +$70,917,
 `bench/live-reads/20260923T160814Z-0xfe47c8f2.json`); `perp-leaderboard` has not yet decided a
 live round. How the wallet was found, and what was rejected: `bench/V4.md`.
 
-## Draft X post
+## X post
+
+Posted with the video: <https://x.com/WolfGanG_Aura/status/2102859321969442856>. The text
+drafted for it:
 
 Can true facts sell a losing trader to an AI?
 
@@ -124,17 +128,21 @@ on the original controls, 35 on the 12 unseen good traders). Gate v4, pre-regist
 `bench/V4.md`, adds `perp-screener` and `perp-leaderboard` to the decision; on 23 Sep a live
 round was capped by `perp-screener` alone. `npm run bench -- --agent your-agent.mjs --snapshot`
 runs any agent against the same attacks with zero Nansen credits. Per-wallet, held-out (24
-unseen wallets: 12 losing, 12 good traders) and v3-against-v4 results: the README (every
-denominator is explained once in its "The numbers" section), `bench/HELDOUT.md` and
+unseen wallets: 12 losing, 12 good traders) and v3-against-v4 results: `docs/EVIDENCE.md`
+(every denominator is explained once in its "The numbers" section), `bench/HELDOUT.md` and
 `bench/V4.md`.
 
-Gate v5 (the default since 25 Sep, pre-registered in `bench/V5.md`) adds the operator behind the
+Gate v5 (the default since 25 Sep, pre-registered in `bench/V5.md`) adds the owner behind the
 wallet: `profiler/address/related-wallets` names its first funder, `profiler/address/transactions`
 checks the funding was real, and each sibling wallet's `profiler/perp-pnl-summary` shows whether
-the operator lost money. In 1,238 real leaderboard wallets it found 12 profitable wallets whose
-operator lost money over the same month. A PnL rule funds 12 of 12 operator attacks; v4 funded 11;
-v5 funds 0 of 12 operator attacks. Operator attacks plus faked evidence: the PnL rule sends money in
-61 of 79, BAIT in 0 of 79. v5 changed no published decision.
+the owner lost money. In 1,238 real leaderboard wallets it found 12 profitable wallets whose
+owner lost money over the same month. A PnL rule funds 12 of 12 owner attacks; v4 funded 11;
+v5 funds 0 of 12 owner attacks. Owner attacks plus faked evidence: the PnL rule sends money in
+61 of 79, BAIT in 0 of 79. v5 changed no published decision. On the live market (Nansen's 30-day
+leaderboard, read 25 Sep 06:04 UTC, pre-registered in `bench/FIELD.md`), 5 of the top 200 wallets
+are funded by an owner whose other wallets lost more than the wallet made; the PnL rule funds all
+five and v5 blocks all five (four on the owner, one for too few trades). The Pitch Room and the
+hosted game run v5.
 
 BAIT does not select wallets, predict returns or execute trades.
 

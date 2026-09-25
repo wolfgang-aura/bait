@@ -19,14 +19,14 @@ minimum eligibility rule. It does not mean the wallet is safe or worth copying.
 `wallet-copy-risk-v5` (`PRODUCTION_GUARD_POLICY`, pre-registered in
 [bench/V5.md](../bench/V5.md)) keeps every v4 rule below and adds `operator_record`, read only
 when nothing earlier refused. `profiler/address/related-wallets` names the wallet's first funder on
-Ethereum and on Arbitrum (1 credit each). A funder counts as an operator unless its label is an
+Ethereum and on Arbitrum (1 credit each). A funder counts as the owner unless its label is an
 exchange, bridge, router or service, it first-funded more than 10 indexed wallets, or the funding
 transfer (`profiler/address/transactions`, 1 credit) was under $100. The other wallets in
 `bench/v5/operator-index.json` with the same first funder are its siblings; each one's 30-day
 `profiler/perp-pnl-summary` over the same window is read (1 credit, up to 8). When this wallet plus
 its siblings lost money, the gate refuses (`operator_losing`). Anything it cannot read is
 `not_assessed` and changes nothing. The executor answers one more tool, `get_operator({ wallet,
-days, window })`. `PRODUCTION_GUARD_POLICY_V4` or `--policy v4` runs v4.
+days, window })` (code and rule ids keep the older word "operator" for the owner). `PRODUCTION_GUARD_POLICY_V4` or `--policy v4` runs v4.
 
 ## `wallet-copy-risk-v4` (default 23-25 Sep 2026)
 
@@ -173,11 +173,12 @@ for (const check of decision.checks) {
 `guardAllocation` calls `executor.execute('get_pnl_summary', { wallet, days })`, twice
 from v2 on, once with `days: 30` and once with `days: 7`. v3 adds
 `get_open_positions({ wallet })`; v4 adds `get_smart_money_market({ token_symbol, days })`
-and `get_independent_record({ wallet, days, window })`. An adapter that throws or does not
-serve one of the later three leaves its row `not_assessed`.
+and `get_independent_record({ wallet, days, window })`; v5 adds `get_operator({ wallet, days,
+window })`. An adapter that throws or does not serve one of the later four leaves its row
+`not_assessed`.
 
 The caller receives the proposed amount, enforced amount, stable decision code,
-operator-safe reason, policy snapshot, and evidence snapshot. Provider diagnostics are
+user-safe reason, policy snapshot, and evidence snapshot. Provider diagnostics are
 separate from the public reason. The caller owns authentication, authorization,
 idempotency, order execution, persistence, and monitoring.
 
@@ -234,11 +235,11 @@ the page, the policy id and `credits_per_check` (`min`, `owner_read`, `max`) und
 
 The earlier form page, `/guard.html`, was retired; it now redirects to the Proof page's
 "How BAIT works" section. In the Pitch Room, "Or paste any Hyperliquid wallet" runs the same
-v4 gate on one live read.
+v5 gate (`wallet-copy-risk-room-live-v5`) on one live read.
 
 Two real checks on 20 September 2026 (UTC), run under `wallet-realized-pnl-30d-v1`, one
 credit each. *Note, 24 Sep 2026: since then every hosted Pitch Room round has run the live
-gate (v4 from 23 Sep), and its raw Nansen responses are committed in
+gate (v4 from 23 Sep, v5 from 25 Sep), and its raw Nansen responses are committed in
 [bench/live-reads/](../bench/live-reads/README.md).*
 
 | Wallet | Realised PnL, 30d | Decision | Code | Enforced | Retrieved |
@@ -289,7 +290,7 @@ than a fault.
 | `attempted` | What the caller proposed, kept for the audit trail. |
 | `blocked` | True when a positive proposal was forced to zero. |
 | `execution_authorized` | True only on an allow. Never true on any block. |
-| `reason` | One operator-safe sentence naming the first failing check. Contains no provider detail. |
+| `reason` | One user-safe sentence naming the first failing check. Contains no provider detail. |
 | `diagnostic` | Provider detail on a failure, or null. Log it, do not show it. |
 | `checks` | The full check table, one row per check: `id`, `result`, `value`, `threshold`, `plain`. Present on every decision, allow and block. |
 | `policy` | `id`, `version`, `window_days`, `short_window_days`, `minimum_realized_pnl_usd`, `max_evidence_age_ms`. |
@@ -301,8 +302,8 @@ than a fault.
 
 The benchmark uses tracked frozen evidence so every agent sees byte-identical facts.
 Its named benchmark policies, `wallet-realized-pnl-30d-benchmark-v1` through
-`wallet-copy-risk-benchmark-v4` (the one the published tables use; its `perp-screener` and
-`perp-leaderboard` rows read the saved responses in `bench/v4/reads/`), disable only the age
+`wallet-copy-risk-benchmark-v5` (v4's tables read the saved `perp-screener` and
+`perp-leaderboard` responses in `bench/v4/reads/`; v5's owner row reads `bench/v5/reads/`), disable only the age
 limit. Wallet, period, source and every numeric check still run. The production policies require fresh evidence by
 default. The public page labels its results as recorded and never presents frozen
 evidence as a live authorization.
@@ -353,9 +354,9 @@ blocked-decision counts.
 Run the contract tests with:
 
 ```powershell
-node --test validation/guard.test.js validation/guard-v2.test.js validation/guard-v3.test.js validation/guard-v4.test.js validation/guard-live.test.js scripts/guard.test.mjs
+node --test validation/guard.test.js validation/guard-v2.test.js validation/guard-v3.test.js validation/guard-v4.test.js validation/guard-v5.test.js validation/guard-live.test.js scripts/guard.test.mjs
 ```
 
 The tests cover the allow path and every fail-closed branch listed above, one test per
-v2 block reason, and the v3 and v4 cap and record rows. The live tests stub the Nansen client, so they make no network
+v2 block reason, the v3 and v4 cap and record rows, and v5's owner row. The live tests stub the Nansen client, so they make no network
 call and spend no credits.

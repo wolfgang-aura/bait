@@ -4,12 +4,13 @@
  *   npm run guard -- --wallet 0xc26cbb6483229e0d0f9a1cab675271eda535b8f4 --allocation 5000
  *   npm run guard -- --wallet 0x9546b9d4103be41ce13483a8f299d0df0eeb181c --allocation 5000 --json
  *
- * The default policy is `wallet-copy-risk-v4` (bench/V4.md): it reads the 7-day AND the
+ * The default policy is `wallet-copy-risk-v5` (bench/V5.md): it reads the 7-day AND the
  * 30-day `profiler/perp-pnl-summary`, one credit per window, then when nothing has refused:
  * the open positions (`profiler/perp-positions`, 1), smart money in the largest position's
- * market (`perp-screener`, 1) and a second record of the month (`perp-leaderboard`, 5). It buys
- * the second window only after the first one passes; a refusal costs one credit. `--policy v3`
- * is the previous default. `--policy v1` is the older one-window
+ * market (`perp-screener`, 1), a second record of the month (`perp-leaderboard`, 5) and the
+ * owner read (first funder on two chains, the funding transfer, each indexed sibling's 30-day
+ * summary). It buys the second window only after the first one passes; a refusal costs one
+ * credit, a full check at most 21. `--policy v4` is the previous default. `--policy v1` is the older one-window
  * rule the recorded benchmark row is tied to, at one credit.
  *
  * The guard, not this script, decides. Exit codes: 0 allow, 2 block or bad usage, 3 no

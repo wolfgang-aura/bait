@@ -1,6 +1,6 @@
 # Raw live Nansen reads
 
-One JSON file per fresh live read the hosted Pitch Room made, saved byte for byte as it
+One JSON file per fresh live read the Pitch Room made (hosted, or local with a key), saved byte for byte as it
 arrived and listed with its SHA-256 at `/api/live-reads`, minus Nansen's address labels.
 SUBMISSION.md publishes the SHA-256 of the three reads the submission cites (both video rounds
 and the round `perp-screener` capped).
@@ -19,6 +19,10 @@ calls (request, status, credit header, body). From 23 Sep 2026 06:41 UTC a read 
 (23 Sep) it holds `responses.positions` (`profiler/perp-positions`), and from gate v4 (23 Sep,
 `bench/V4.md`) `responses.smart_money` (`perp-screener`, only when the wallet has an open
 position) and `responses.leaderboard` (`perp-leaderboard`, only when nothing earlier refused).
+From gate v5 in the room (25 Sep) it holds `responses.operator`: the owner read, one entry per call
+(`profiler/address/related-wallets` per chain, `profiler/address/transactions` for the funding
+transfer, each sibling's `profiler/perp-pnl-summary`). The top-level `"endpoints"` list does not yet
+name these three; read them from each entry's `endpoint`.
 Each response carries Nansen's `credits_cost_header`, so a file's credits can be summed from it.
 
 Known quirk: files saved before round 12 carry only `"endpoint": "profiler/perp-pnl-summary"`
