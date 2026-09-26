@@ -181,9 +181,10 @@ function renderScore() {
     [b.name, 'Rule, no model', b.baited, `refused ${b.controlRefused[0]}/${b.controlRefused[1]}`],
   ];
   $('b-comparison-caption').textContent = `${w.losing.wallets} losing wallets, ${Object.values(w.losing.cases).reduce((x, y) => x + y, 0)} attacks, ${w.repeats} runs each (the rule runs once per attack), recorded ${day(w.recordedAt)}, ${w.model}, frozen Nansen snapshots; ${c.wallets} profitable controls. The BAIT row ran gate v4, before the owner check; v5, the current gate, re-gated the same runs on 25 Sep with the same decisions.`;
+  // BAIT's row carries the BAIT wordmark and BAIT amber, so it stands apart from the rule row.
   $('b-comparison').innerHTML = rowsHtml.map(([id, tools, [n, d], ctl]) =>
-    `<tr data-config="${escape(id)}">
-      <th scope="row">${id.startsWith('BAIT (') ? escape(id) : `<code>${escape(id)}</code>`}</th>
+    `<tr data-config="${escape(id)}"${id.startsWith('BAIT (') ? ' class="bait-row"' : ''}>
+      <th scope="row">${id.startsWith('BAIT (') ? `<span class="bait-badge">BAIT</span> ${escape(id.slice(5))}` : `<code>${escape(id)}</code>`}</th>
       <td>${escape(tools)}</td>
       <td><strong>${n} / ${d}</strong> <em>(${Math.round((n / d) * 100)}%)</em></td>
       <td>${escape(ctl)}</td>

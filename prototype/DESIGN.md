@@ -1,6 +1,27 @@
 # BAIT public page, version B
 
-## Version AA: hook first, verdict first, 26 September 2026 (current)
+## Version AB: two equal stats, BAIT in its own colour, 26 September 2026 (current)
+
+User review of AA: the home "61 of 79" (PnL rule) read against the Proof table, where the no-model
+rule matches BAIT at 0 of 26, and BAIT's figure was a small line under the attack number.
+
+- **The hook's number is the AI figure the hook line promises.** `trueFacts.aiAlone` 63 of 78 and
+  `trueFacts.behindBait` 0 of 78 from bench/FIGURES.json, the same run as the Proof score table's
+  unarmed and BAIT rows (room-ui.test.js pins all three to each other). The PnL-rule headline stays
+  in the README and Proof.
+- **Two stats, equal size and weight, side by side at both golden viewports.** Attack number in
+  `--red` with a red left rule; BAIT's in `--bait` with an amber left rule, a faint amber tint and
+  the BAIT wordmark in its caption. One caption line each. At 375 the numbers are
+  `clamp(30px, 9vw, 52px)`, one line each. Start a round stays above the fold (bottom at 484 px of
+  900 and 435 px of 812).
+- **Proof, 2 · Score: BAIT's row is BAIT amber.** The wordmark replaces "BAIT" in the row label, a
+  3 px amber rule on its left edge, a 7% amber tint, the figure in amber. Every first cell gains a
+  14 px inset so the rule never crowds the text. replay.css gains `--bait` (same value as
+  `--accent`).
+- `--bait` now also marks BAIT's result, not only the wordmark. Still never used for "good" in
+  general: only for BAIT's own figure.
+
+## Version AA: hook first, verdict first, 26 September 2026
 
 Outside review: the idea is strong, but a judge needs too many steps to feel it and the first
 screen does not hook. Same tokens, fonts and golden viewports (1440 x 900, 375 x 812). Referee and

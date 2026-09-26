@@ -32,12 +32,17 @@
 
   <!-- ============================================ 1. pick your hero ==== -->
   <section class="screen roster" id="roster-screen" aria-labelledby="roster-title">
-    <!-- Outside review, 26 Sep: the first screen hooks with one short line and one big number from
-         the benchmark (bench/FIGURES.json headline), and the start button sits above the fold. -->
+    <!-- Outside review, 26 Sep: the first screen hooks with one short line, two equal numbers from
+         the true-facts benchmark (bench/FIGURES.json trueFacts, the Proof page's score table), and
+         the start button above the fold. The attack number is red; BAIT's is BAIT amber. -->
     <div class="lead hook" id="concept">
       <h1 class="hook-line" id="roster-title">Talk an AI into wiring money to a losing trader, using only true facts.</h1>
-      <p class="hook-figure" id="hook-figure"><b id="hook-number">61 of 79</b>
-        <span>benchmark attacks got money past a simple &ldquo;don&rsquo;t copy a wallet that lost money&rdquo; rule. Behind BAIT: <strong>0 of 79</strong>.</span></p>
+      <div class="hook-stats" id="hook-figure">
+        <p class="hook-stat hook-stat-attack"><b id="hook-number">63 of 78</b>
+          <span>benchmark pitches talked the AI into backing a losing trader.</span></p>
+        <p class="hook-stat hook-stat-bait"><b id="hook-bait">0 of 78</b>
+          <span>got money through with <span class="bait-badge">BAIT</span> in front. Same pitches.</span></p>
+      </div>
       <p class="for-whom">BAIT is the gate before an AI agent copies a wallet. It asks Nansen who funded the wallet, reads the owner&rsquo;s other wallets, and refuses when the owner lost.</p>
       <p class="hook-go"><button type="button" class="primary start-round" id="start-round">Start a round</button>
         <span class="hook-go-note" id="start-note">with THE STEADY HAND, or pick any trader below</span></p>

@@ -209,10 +209,10 @@ test('the front door hooks with one line and the benchmark headline; the live-ma
   const hook = lead.match(/<h1 class="hook-line" id="roster-title">([^<]+)<\/h1>/);
   assert.ok(hook, 'the hook is the page h1');
   assert.ok(hook[1].split(/\s+/).length <= 14, `hook is ${hook[1].split(/\s+/).length} words`);
-  assert.doesNotMatch(lead, /of 78|26 attacks|6 losing wallets/, 'the true-facts benchmark stays in the room, not above the grid');
-  assert.ok(lead.indexOf('id="hook-number"') < lead.indexOf('id="start-round"'), 'number, then the start button');
+  assert.doesNotMatch(lead, /of 79|26 attacks|6 losing wallets/, 'the hook states the true-facts AI figure, not the PnL-rule headline');
+  assert.ok(lead.indexOf('id="hook-number"') < lead.indexOf('id="hook-bait"') && lead.indexOf('id="hook-bait"') < lead.indexOf('id="start-round"'), 'attack number, BAIT number, then the start button');
   assert.doesNotMatch(roster, /id="ladder"|26 attacks|6 losing wallets/);
-  assert.equal((roster.match(/of 78/g) ?? []).length, 2, 'one true-facts benchmark line: 63 of 78 and 0 of 78');
+  assert.equal((roster.match(/of 78/g) ?? []).length, 4, 'the two hook stats, and the benchmark line under the grid: 63 of 78 and 0 of 78');
   // The live-market finding moved under the grid, beside its five rows.
   const below = roster.slice(roster.indexOf('id="roster-grid"'));
   assert.match(below, /5 of the top 200 wallets are the winning face of an owner whose other wallets lost more than it made\./);
@@ -230,18 +230,38 @@ test('the front door hooks with one line and the benchmark headline; the live-ma
   assert.doesNotMatch(js, /renderLadder|ladderHead/);
 });
 
-test('the home number is the benchmark headline as recorded in bench/FIGURES.json, never typed from memory', () => {
+test('the home stats are the true-facts benchmark in bench/FIGURES.json, the same run as the Proof score table', () => {
   const F = JSON.parse(fs.readFileSync(new URL('../bench/FIGURES.json', import.meta.url), 'utf8'));
-  const [n, d] = F.headline.pnlRule;
-  const [b, bd] = F.headline.bait;
+  // Second pass, 26 Sep: the hook says "talk an AI into it", so the number is the AI alone against
+  // true facts, not the PnL-rule headline (which the Proof table shows matching BAIT on this set).
+  const [n, d] = F.trueFacts.aiAlone;
+  const [b, bd] = F.trueFacts.behindBait;
   const lead = html.slice(html.indexOf('id="concept"'), html.indexOf('id="roster-grid"'));
-  assert.ok(lead.includes(`<b id="hook-number">${n} of ${d}</b>`), `home number is ${n} of ${d}`);
-  assert.match(lead, /benchmark attacks got money past a simple &ldquo;don&rsquo;t copy a wallet that lost money&rdquo; rule\./);
-  assert.ok(lead.includes(`Behind BAIT: <strong>${b} of ${bd}</strong>.`), `BAIT figure is ${b} of ${bd}`);
-  // The README's table states the same two figures (README is frozen; this only reads it).
-  const readme = fs.readFileSync(new URL('../README.md', import.meta.url), 'utf8');
-  assert.ok(readme.includes(`| **${n} of ${d}** |`));
-  assert.ok(readme.includes(`| BAIT | **${b} of ${bd}** |`));
+  assert.ok(lead.includes(`<b id="hook-number">${n} of ${d}</b>`), `attack number is ${n} of ${d}`);
+  assert.ok(lead.includes(`<b id="hook-bait">${b} of ${bd}</b>`), `BAIT number is ${b} of ${bd}`);
+  assert.match(lead, /<p class="hook-stat hook-stat-attack"><b id="hook-number">[^<]+<\/b>\s*<span>benchmark pitches talked the AI into backing a losing trader\.<\/span><\/p>/);
+  assert.match(lead, /<p class="hook-stat hook-stat-bait"><b id="hook-bait">[^<]+<\/b>\s*<span>got money through with <span class="bait-badge">BAIT<\/span> in front\. Same pitches\.<\/span><\/p>/);
+  assert.doesNotMatch(lead, /don&rsquo;t copy a wallet that lost money&rdquo; rule/, 'the PnL-rule headline is off the hook');
+  // The Proof page's score table reads the same run from the served bundle.
+  const bundle = JSON.parse(read('recorded-results.json'));
+  assert.deepEqual(bundle.wallets.losing.unarmed, [n, d], 'Proof table, unarmed row');
+  assert.deepEqual(bundle.wallets.losing.guarded, [b, bd], 'Proof table, BAIT row');
+  // Equal weight, own colours: the attack number in the loss red, BAIT's in BAIT amber.
+  const css = read('room.css');
+  assert.match(css, /\.hook-stats \{ display: grid; grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(css, /\.hook-stat b \{ display: block; font: 700 /, 'one size for both numbers');
+  assert.match(css, /\.hook-stat-attack b \{ color: var\(--red\); \}/);
+  assert.match(css, /\.hook-stat-bait b \{ color: var\(--bait\); \}/);
+});
+
+test("the Proof score table marks BAIT's row in BAIT amber, with the wordmark", () => {
+  const rjs = read('replay.js');
+  assert.match(rjs, /\$\{id\.startsWith\('BAIT \('\) \? ' class="bait-row"' : ''\}/);
+  assert.match(rjs, /<span class="bait-badge">BAIT<\/span> \$\{escape\(id\.slice\(5\)\)\}/);
+  const rcss = read('replay.css');
+  assert.match(rcss, /--bait: #FFB020;/);
+  assert.match(rcss, /\.board tbody tr\.bait-row > th \{ box-shadow: inset 3px 0 0 var\(--bait\);/);
+  assert.match(rcss, /\.board tbody tr\.bait-row td strong, \.board tbody tr\.bait-row td em \{ color: var\(--bait\); \}/);
 });
 
 test('one click starts a round: the start button and every card mark the pick at once, then the pitch box is scrolled to and focused', () => {
