@@ -274,7 +274,7 @@ test('one click starts a round: the start button and every card mark the pick at
   assert.ok(pick.indexOf('markPicked(tile, true)') > 0 && pick.indexOf('markPicked(tile, true)') < pick.indexOf("api('/api/room/start'"), 'marked before the request');
   assert.match(pick, /catch \(err\) \{\s*markPicked\(tile, false\);/);
   assert.match(pick, /if \(picking\) return;/, 'a double click starts one round');
-  assert.match(js, /flag\.textContent = 'Picked · starting the round…';/);
+  assert.match(js, /flag\.textContent = liveReady \? 'Picked · reading Nansen live…' : 'Picked · starting the round…';/);
   assert.match(js, /tile\.classList\.toggle\('picked', on\);/);
   const css = read('room.css');
   assert.match(css, /\.tile\.picked \{ border-color: var\(--amber\);/);

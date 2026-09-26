@@ -259,7 +259,8 @@ async function pick() {
   el.grid.querySelectorAll('.tile').forEach(t => { t.disabled = true; });
   markPicked(tile, true);
   el.startRound.disabled = true;
-  text(el.startNote, `Starting a round with ${p.name}…`);
+  // A live pick reads Nansen before the room opens; say so, since the first read takes seconds.
+  text(el.startNote, liveReady ? `Reading ${p.name}’s record live from Nansen (7 and 30 days). The first read takes a few seconds…` : `Starting a round with ${p.name}…`);
   try {
     // Straight into the room. The record is the reveal, so it waits for BAIT's check.
     const state = await api('/api/room/start', { method: 'POST', body: { prospect: p.id } });
@@ -287,7 +288,7 @@ function markPicked(tile, on) {
     const flag = document.createElement('span');
     flag.className = 'tile-picked';
     flag.setAttribute('role', 'status');
-    flag.textContent = 'Picked · starting the round…';
+    flag.textContent = liveReady ? 'Picked · reading Nansen live…' : 'Picked · starting the round…';
     tile.querySelector('.tile-art')?.append(flag);
   }
 }
