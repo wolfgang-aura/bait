@@ -194,7 +194,7 @@ test('judge 9: the every-check page lets every grid track shrink and wraps long 
   assert.match(css, /\.final-grid \{ grid-template-columns: minmax\(0, 1fr\); \}/);
   assert.match(css, /\.final-col, \.final-col > \*, \.report, \.report > \*, \.flagline > \*[^{]*\{ min-width: 0; \}/);
   assert.match(css, /\.flagline span[^{]*\.report-foot[^{]*\{ overflow-wrap: anywhere; \}/);
-  assert.match(css, /@media \(max-width: 560px\) \{\n  \.flagline\.check \{ grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(css, /@media \(max-width: 560px\) \{\r?\n  \.flagline\.check \{ grid-template-columns: minmax\(0, 1fr\)/);
 });
 
 // ------------------------------------------------------------------------------------ nits
