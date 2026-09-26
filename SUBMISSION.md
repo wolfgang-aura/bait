@@ -18,18 +18,18 @@ Current evidence:
 - Public repository: <https://github.com/wolfgang-aura/bait>
 - Playable build: <https://bait-wyqr.onrender.com/>, serving public commit a0e37e2 or later (gate v5:
   the Pitch Room reads the owner behind the wallet; `/healthz` reports the exact commit it serves). Both video
-  rounds of the posted video (v27) were played earlier, on public commit 4ef7b40 (gate v4); both
-  were blocked before the owner read (a losing month, a reversed week), so v5 decides them the same
-  way. The v28 round below was played on 699c7e0 (gate v5) and blocked on the owner row.
+  The posted video (v28) is one round played on 699c7e0 (gate v5), blocked on the owner row. The
+  two rounds of the earlier video (v27) were played on public commit 4ef7b40 (gate v4); both were
+  blocked before the owner read (a losing month, a reversed week), so v5 decides them the same way.
 - Recorded proof page: <https://wolfgang-aura.github.io/bait/> (leads with the 25 Sep field test,
   5 of 200 top leaderboard wallets with a losing owner; the repository homepage points at the
   playable build)
-- Video: <https://x.com/WolfGanG_Aura/status/2102859321969442856> (v27). v28, described below,
-  is not posted yet; this link still points at v27.
+- Video: <https://x.com/WolfGanG_Aura/status/2103937755160137752> (v28, posted 27 Sep 2026 as a
+  quote of the v27 post, <https://x.com/WolfGanG_Aura/status/2102859321969442856>).
 
 ## The recording
 
-### v28 (26 Sep 2026, not posted yet)
+### v28 (posted 27 Sep 2026)
 
 `scratch/BAIT-judge-v28.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 44.8 s (ffprobe: 1,344
 frames at 30/1), 9,866,312 bytes. Poster frame: `scratch/BAIT-judge-v28-poster.png` (the cold
@@ -88,7 +88,7 @@ The optional second round (a losing record such as THE LEGEND) was dropped to ke
 and on the owner check; no Nansen read was spent on it. Review frames:
 `scratch/video-v28/` (takes) and the session's `shots/v28-*.png`.
 
-### v27 (posted)
+### v27 (posted 23 Sep 2026, superseded by v28)
 
 `scratch/BAIT-judge-v27.mp4`: 1920 by 1080 H.264, 30 fps, no audio track, 59.5 s (ffprobe:
 1,785 frames at 30/1). Rendered with HyperFrames (`scratch/hf/make-gen15.cjs` then `gen15.cjs`)
@@ -155,8 +155,21 @@ live round. How the wallet was found, and what was rejected: `bench/V4.md`.
 
 ## X post
 
-Posted with the video: <https://x.com/WolfGanG_Aura/status/2102859321969442856>. The text
-drafted for it:
+v28 was posted on 27 Sep 2026 as a quote of the v27 post:
+<https://x.com/WolfGanG_Aura/status/2103937755160137752>. Its text (248 characters as X counts
+them):
+
+New cut: the case a PnL rule can't see.
+
+A wallet up $403,766 in 30 days. Its owner's 5 wallets: down $831,500.
+
+BAIT asks Nansen who funded it and blocks the wire. Owner attacks: PnL rule 12/12, BAIT 0/12.
+
+Play: https://bait-wyqr.onrender.com
+@nansen_ai
+
+v27 was posted with the first video: <https://x.com/WolfGanG_Aura/status/2102859321969442856>.
+The text drafted for it:
 
 Can true facts sell a losing trader to an AI?
 

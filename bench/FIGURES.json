@@ -382,12 +382,12 @@
       "source": "PENNY's commitment in the hosted round of 23 Sep 2026 19:03 UTC (the raw read holds Nansen's responses, not the model's reply)"
     },
     "video": {
-      "file": "scratch/BAIT-judge-v27.mp4",
-      "seconds": 59.5,
+      "file": "scratch/BAIT-judge-v28.mp4",
+      "seconds": 44.8,
       "fps": 30,
       "width": 1920,
       "height": 1080,
-      "sha256": "a314fbeb7bd3c3b032259617080e48ff847fe437aa6665df8295b1f1d3b8bdd6",
+      "sha256": "708298a00dca105a92ab5c608472a20e7840973bc4fe395dfdee30efa9927ae2",
       "source": "ffprobe and SHA-256 of the final file in the private workspace (npm run submission:check); the file is not in this repository"
     }
   }

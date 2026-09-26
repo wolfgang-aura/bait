@@ -140,6 +140,6 @@ sources, trade counts, and links.
 
 ## Remaining external steps
 
-The [X post](https://x.com/WolfGanG_Aura/status/2102859321969442856) is published; its URL goes in
+The [X post](https://x.com/WolfGanG_Aura/status/2103937755160137752) (v28, quoting the v27 post) is published; its URL goes in
 Nansen's entry form. The hosted
 build (<https://bait-wyqr.onrender.com/>) plays live rounds on real Nansen reads.

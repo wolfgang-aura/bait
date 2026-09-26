@@ -9,7 +9,7 @@ On the live market: of 200 top leaderboard wallets, 5 are funded by an owner who
 ## 1. Look (1 minute)
 
 - Watch the round at the top of the [README](README.md), or the
-  [60-second video](https://x.com/WolfGanG_Aura/status/2102859321969442856).
+  [45-second video](https://x.com/WolfGanG_Aura/status/2103937755160137752).
 - Play one round: <https://bait-wyqr.onrender.com/>. Pick a trader or paste a Hyperliquid wallet,
   talk PENNY, the AI with a $25,000 fund, into backing it, press **Wire it**, then **See what happened**.
   The checkpoint lists each Nansen call it made and the rule each one drove.
